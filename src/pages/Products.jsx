@@ -6,7 +6,6 @@ import { useFlash } from '../hooks/useFlash.js';
 import { useWishlist } from '../context/WishlistProvider.jsx';
 import useProduct from '../hooks/useProduct.js';
 import useProducts from '../hooks/useProducts.js';
-import { useLenis } from 'lenis/react';
 
 // Import komponenti
 import ProductGallery from '../components/product/ProductGallery.jsx';
@@ -22,7 +21,6 @@ import ProductSpecs from '../components/product/ProductSpecs.jsx';
 
 export default function Product() {
   const { slug } = useParams();
-  const lenis = useLenis();
   const { product: p, loading, error } = useProduct(slug);
   const { items: allProducts } = useProducts();
   const { dispatch } = useCart();
@@ -31,8 +29,8 @@ export default function Product() {
   const isLiked = p ? isInWishlist(p.id) : false;
 
   useEffect(() => {
-    lenis?.scrollTo(0, { duration: 1.5 });
-  }, [lenis, slug]);
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [slug]);
 
   const relatedVariants = useMemo(() => {
     if (!p || !allProducts.length) return [];

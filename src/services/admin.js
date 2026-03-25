@@ -118,6 +118,15 @@ export const uploadRemoteImage = async (url, productName) => {
   }
 };
 
+export const repairProductImageUrls = async (productId = '') => {
+  const functions = getFunctions(app, 'europe-west3');
+  const repairImagesFn = httpsCallable(functions, 'repairProductImageUrls');
+
+  const payload = productId ? { productId } : {};
+  const result = await repairImagesFn(payload);
+  return result.data;
+};
+
 export const brandService = new CollectionService('brands');
 export const categoryService = new CollectionService('categories');
 export const specKeyService = new CollectionService('spec_keys');

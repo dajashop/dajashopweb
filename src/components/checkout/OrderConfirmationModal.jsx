@@ -8,7 +8,6 @@ import {
   Ticket,
   MessageSquareQuote,
 } from 'lucide-react';
-import { useLenis } from 'lenis/react';
 
 const MAP_API_KEY = 'AIzaSyCwDMD-56pwnAqgEDqNCT8uMxFy_mPbAe0';
 const SHOP_ADDRESS_QUERY = 'Daja Shop, TPC Gorca lokal C31, Nis, Srbija';
@@ -34,7 +33,6 @@ function OrderConfirmationModal({ order, money, onClose }) {
   const initialFocusRef = useRef(null);
   const orderId = order.id;
   const [showMap, setShowMap] = useState(false);
-  const lenis = useLenis();
 
   // [NOVO] Izračunavamo ime za prikaz
   const firstName = order.customer.name
@@ -43,17 +41,15 @@ function OrderConfirmationModal({ order, money, onClose }) {
   const vocativeName = toVocative(firstName);
 
   useEffect(() => {
-    if (lenis) lenis.stop();
     const originalOverflow = document.body.style.overflow;
     const originalOverscroll = document.body.style.overscrollBehavior;
     document.body.style.overflow = 'hidden';
     document.body.style.overscrollBehavior = 'none';
     return () => {
-      if (lenis) lenis.start();
       document.body.style.overflow = originalOverflow;
       document.body.style.overscrollBehavior = originalOverscroll;
     };
-  }, [lenis]);
+  }, []);
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose?.();
