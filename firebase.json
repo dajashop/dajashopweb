@@ -9,6 +9,12 @@
       "firebase-debug.*.log"
     ]
   },
+  "storage": [
+    {
+      "bucket": "daja-shop-site.firebasestorage.app",
+      "rules": "storage.rules"
+    }
+  ],
   "extensions": {
     "firebase-web-authn": "./node_modules/@firebase-web-authn/extension"
   }
