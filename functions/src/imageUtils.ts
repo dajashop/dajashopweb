@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import {getDownloadURL as getAdminDownloadURL} from "firebase-admin/storage";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import sharp from "sharp"; // UVEZENO: Za obradu slika
@@ -41,6 +42,114 @@ type DownloadResult =
   | DownloadSuccess
   | { success: false; error: string; url: string };
 
+const ensureDownloadToken = async (file: any): Promise<void> => {
+  const [metadata] = await file.getMetadata();
+  const customMetadata = metadata.metadata || {};
+
+  if (customMetadata.firebaseStorageDownloadTokens) {
+    return;
+  }
+
+  await file.setMetadata({
+    metadata: {
+      ...customMetadata,
+      firebaseStorageDownloadTokens: uuidv4(),
+    },
+  });
+};
+
+const getStableDownloadUrl = async (file: any): Promise<string> => {
+  await ensureDownloadToken(file);
+  return getAdminDownloadURL(file);
+};
+
+const extractStoragePath = (
+  input: unknown,
+  bucketName: string
+): string | null => {
+  if (typeof input !== "string" || input.trim().length === 0) {
+    return null;
+  }
+
+  const value = input.trim();
+
+  if (value.startsWith("gs://")) {
+    const withoutScheme = value.slice(5);
+    const firstSlashIndex = withoutScheme.indexOf("/");
+
+    if (firstSlashIndex === -1) {
+      return null;
+    }
+
+    const bucket = withoutScheme.slice(0, firstSlashIndex);
+    const path = withoutScheme.slice(firstSlashIndex + 1);
+
+    return bucket === bucketName && path ? decodeURIComponent(path) : null;
+  }
+
+  try {
+    const parsed = new URL(value);
+    const normalizedBucket = bucketName.toLowerCase();
+    const host = parsed.hostname.toLowerCase();
+    const cleanPath = parsed.pathname.replace(/^\/+/, "");
+
+    if (host === normalizedBucket) {
+      return cleanPath ? decodeURIComponent(cleanPath) : null;
+    }
+
+    if (host === "firebasestorage.googleapis.com") {
+      const match = cleanPath.match(/^v\d+\/b\/([^/]+)\/o\/(.+)$/i);
+
+      if (match && decodeURIComponent(match[1]).toLowerCase() === normalizedBucket) {
+        return decodeURIComponent(match[2]);
+      }
+    }
+
+    if (
+      (host === "storage.googleapis.com" ||
+        host === "storage.cloud.google.com") &&
+      cleanPath.toLowerCase().startsWith(`${normalizedBucket}/`)
+    ) {
+      return decodeURIComponent(cleanPath.slice(bucketName.length + 1));
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+};
+
+const repairStoredImage = async (
+  bucket: any,
+  bucketName: string,
+  image: Record<string, unknown>
+) => {
+  const path =
+    (typeof image.path === "string" && image.path.trim()) ||
+    extractStoragePath(image.url, bucketName);
+
+  if (!path) {
+    return {
+      image,
+      path: null as string | null,
+      changed: false,
+    };
+  }
+
+  const nextUrl = await getStableDownloadUrl(bucket.file(path));
+  const nextImage = {
+    ...image,
+    path,
+    url: nextUrl,
+  };
+
+  return {
+    image: nextImage,
+    path,
+    changed: nextImage.url !== image.url || nextImage.path !== image.path,
+  };
+};
+
 // Pomoćna funkcija za upload bafera i generisanje URL-a
 const uploadBuffer = async (
   buffer: Buffer,
@@ -63,15 +172,18 @@ const uploadBuffer = async (
 
   const fileName = `${basePath}/${fileNamePrefix}${Date.now()}_${uuidv4()}.${extension}`;
   const file = bucket.file(fileName);
+  const downloadToken = uuidv4();
 
   await file.save(buffer, {
-    metadata: { contentType: contentType },
+    metadata: {
+      contentType: contentType,
+      metadata: {
+        firebaseStorageDownloadTokens: downloadToken,
+      },
+    },
   });
 
-  const [tokenizedUrl] = await file.getSignedUrl({
-    action: "read",
-    expires: "01-01-2500",
-  });
+  const tokenizedUrl = await getAdminDownloadURL(file);
 
   return {
     success: true,
@@ -314,5 +426,146 @@ export const saveImageFromUrl = functions.https.onCall(
         `Backend greška: ${error.message}`
       );
     }
+  }
+);
+
+export const repairProductImageUrls = functions.https.onCall(
+  {
+    region: "europe-west3",
+    timeoutSeconds: 540,
+    memory: "1GiB",
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Morate biti prijavljeni da biste pokrenuli popravku slika."
+      );
+    }
+
+    const requestData = (request.data || {}) as {
+      productId?: string;
+    };
+    const productId = requestData.productId?.trim() || "";
+
+    const db = admin.firestore();
+    const bucket = admin.storage().bucket();
+    const bucketName = bucket.name;
+
+    const docs = productId
+      ? [await db.collection("products").doc(productId).get()]
+      : (await db.collection("products").get()).docs;
+
+    if (productId && (!docs[0] || !docs[0].exists)) {
+      throw new functions.https.HttpsError(
+        "not-found",
+        "Proizvod nije pronađen."
+      );
+    }
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
+    const errors: Array<{ id: string; error: string }> = [];
+
+    for (const productDoc of docs) {
+      const productData = productDoc.data();
+
+      if (!productData) {
+        skippedCount += 1;
+        continue;
+      }
+
+      try {
+        const currentImages = Array.isArray(productData.images)
+          ? productData.images.filter((image): image is Record<string, unknown> =>
+              !!image && typeof image === "object"
+            )
+          : [];
+
+        const repairedImageResults = await Promise.all(
+          currentImages.map((image) =>
+            repairStoredImage(bucket, bucketName, image)
+          )
+        );
+
+        const repairedImages = repairedImageResults.map((entry) => entry.image);
+        const primaryPath =
+          repairedImageResults[0]?.path ||
+          extractStoragePath(productData.mainImageUrl, bucketName) ||
+          extractStoragePath(productData.image, bucketName);
+        const thumbnailPath =
+          extractStoragePath(productData.thumbnailUrl, bucketName) ||
+          null;
+
+        const mainImageUrl = primaryPath
+          ? await getStableDownloadUrl(bucket.file(primaryPath))
+          : repairedImages[0]?.url || "";
+        const thumbnailUrl = thumbnailPath
+          ? await getStableDownloadUrl(bucket.file(thumbnailPath))
+          : mainImageUrl;
+        const image = mainImageUrl || repairedImages[0]?.url || "";
+
+        const patch: Record<string, unknown> = {};
+
+        if (
+          JSON.stringify(repairedImages) !== JSON.stringify(currentImages)
+        ) {
+          patch.images = repairedImages;
+        }
+
+        if (image && image !== (productData.image || "")) {
+          patch.image = image;
+        }
+
+        if (
+          mainImageUrl &&
+          mainImageUrl !== (productData.mainImageUrl || "")
+        ) {
+          patch.mainImageUrl = mainImageUrl;
+        }
+
+        if (
+          thumbnailUrl &&
+          thumbnailUrl !== (productData.thumbnailUrl || "")
+        ) {
+          patch.thumbnailUrl = thumbnailUrl;
+        }
+
+        if (primaryPath && primaryPath !== (productData.mainImagePath || "")) {
+          patch.mainImagePath = primaryPath;
+        }
+
+        if (
+          thumbnailPath &&
+          thumbnailPath !== (productData.thumbnailPath || "")
+        ) {
+          patch.thumbnailPath = thumbnailPath;
+        }
+
+        if (Object.keys(patch).length === 0) {
+          skippedCount += 1;
+          continue;
+        }
+
+        await productDoc.ref.update(patch);
+        updatedCount += 1;
+      } catch (error: any) {
+        errorCount += 1;
+        errors.push({
+          id: productDoc.id,
+          error: error?.message || "Nepoznata greška",
+        });
+      }
+    }
+
+    return {
+      success: errorCount === 0,
+      scannedCount: docs.length,
+      updatedCount,
+      skippedCount,
+      errorCount,
+      errors: errors.slice(0, 20),
+    };
   }
 );

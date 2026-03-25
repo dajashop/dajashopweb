@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './Catalog.css';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigationType, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader2, AlertTriangle, ArrowLeft, X } from 'lucide-react';
 
@@ -29,6 +29,15 @@ const TITLES = {
 
 export default function Catalog({ department = 'satovi' }) {
   const [sp, setSp] = useSearchParams();
+  const spKey = sp.toString();
+  const navType = useNavigationType();
+
+  // Kluc za cuvanje pozicije skrola po odeljenju + aktivnim filterima
+  const scrollKey = useMemo(
+    () => `catalog-scroll:${department}:${spKey}` ,
+    [department, spKey]
+  );
+  const savedScrollRef = useRef(null);
 
   // --- PROVERA ADMINA ---
   const { user } = useAuth();
@@ -176,9 +185,58 @@ export default function Catalog({ department = 'satovi' }) {
   const [page, setPage] = useState(1);
   const totalCount = filteredData.length;
 
+  // Vrati skrol i paginaciju kad se vracamo (Back/Forward), bez Lenis-a
   useEffect(() => {
+    if (navType === 'POP') {
+      const savedRaw = sessionStorage.getItem(scrollKey);
+      if (savedRaw) {
+        try {
+          const saved = JSON.parse(savedRaw);
+          savedScrollRef.current = saved;
+          if (saved?.page) setPage(saved.page);
+
+          requestAnimationFrame(() => {
+            window.scrollTo({
+              top: saved?.y ?? 0,
+              left: 0,
+              behavior: 'auto',
+            });
+          });
+          return;
+        } catch (e) {
+          console.warn('Ne mogu da parsiram sacuvanu poziciju', e);
+        }
+      }
+    }
+
+    // Novi filteri/odeljenje -> reset na vrh i prva strana
+    savedScrollRef.current = null;
     setPage(1);
-  }, [sp, department]);
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [spKey, department, navType, scrollKey]);
+
+  // Kada se data ucita, ponovi skrol (u slucaju da je layout naknadno narastao)
+  useEffect(() => {
+    if (navType !== 'POP') return;
+    if (!savedScrollRef.current) return;
+    if (loading) return;
+
+    requestAnimationFrame(() => {
+      window.scrollTo({
+        top: savedScrollRef.current?.y ?? 0,
+        left: 0,
+        behavior: 'auto',
+      });
+    });
+  }, [loading, navType]);
+
+  // Cuvamo poziciju skrola i trenutnu stranicu pri izlasku sa kataloga
+  useEffect(() => {
+    return () => {
+      const payload = JSON.stringify({ y: window.scrollY, page });
+      sessionStorage.setItem(scrollKey, payload);
+    };
+  }, [scrollKey, page]);
 
   const start = (page - 1) * PER_PAGE;
   const itemsToShow = filteredData.slice(start, start + PER_PAGE);

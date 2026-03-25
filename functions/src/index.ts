@@ -9,7 +9,7 @@
 
 import { setGlobalOptions } from "firebase-functions";
 
-import { saveImageFromUrl } from "./imageUtils";
+import { repairProductImageUrls, saveImageFromUrl } from "./imageUtils";
 // import { sendNewOrderToAdmins } from "./adminUtils";
 // import { sendOrderConfirmation, sendOrderStatusUpdate } from "./orderUtils";
 // import { sendNewsletterPromo } from "./newsletters";
@@ -17,6 +17,7 @@ import { saveImageFromUrl } from "./imageUtils";
 // Izvozimo svaku funkciju ponaosob
 export {
   saveImageFromUrl,
+  repairProductImageUrls,
   // sendNewOrderToAdmins,
   //sendOrderConfirmation,
   //sendOrderStatusUpdate,
