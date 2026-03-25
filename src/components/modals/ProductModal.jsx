@@ -1,15 +1,15 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from 'react';
 // eslint-disable-next-line no-unused-vars
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   UploadCloud,
   Loader2,
   Trash2,
   Image as ImageIcon,
-} from "lucide-react";
-import { saveProduct, uploadImages } from "../../services/products";
-import UploadProgressBar from "../UploadProgressBar"; // Proveri putanju ako je drugačija
+} from 'lucide-react';
+import { saveProduct, uploadImages } from '../../services/products';
+import UploadProgressBar from '../UploadProgressBar'; // Proveri putanju ako je drugačija
 
 export default function ProductModal({ open, onClose }) {
   const [loading, setLoading] = useState(false);
@@ -21,23 +21,23 @@ export default function ProductModal({ open, onClose }) {
   const [previews, setPreviews] = useState([]);
 
   const [form, setForm] = useState({
-    brand: "",
-    name: "",
-    price: "",
-    category: "",
-    gender: "MUŠKI",
-    slug: "",
+    brand: '',
+    name: '',
+    price: '',
+    category: '',
+    gender: 'MUŠKI',
+    slug: '',
   });
 
   // Resetovanje stanja pri zatvaranju
   const close = () => {
     setForm({
-      brand: "",
-      name: "",
-      price: "",
-      category: "",
-      gender: "MUŠKI",
-      slug: "",
+      brand: '',
+      name: '',
+      price: '',
+      category: '',
+      gender: 'MUŠKI',
+      slug: '',
     });
     setSelectedFiles([]);
     setPreviews((prev) => {
@@ -46,20 +46,20 @@ export default function ProductModal({ open, onClose }) {
     });
     setUploadProgress(0);
     setIsUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = '';
     onClose();
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    if (name === "name") {
+    if (name === 'name') {
       setForm((prev) => ({
         ...prev,
         slug: value
           .toLowerCase()
-          .replace(/ /g, "-")
-          .replace(/[^\w-]+/g, ""),
+          .replace(/ /g, '-')
+          .replace(/[^\w-]+/g, ''),
       }));
     }
   };
@@ -101,11 +101,17 @@ export default function ProductModal({ open, onClose }) {
     try {
       const newId = `${form.brand.toLowerCase()}-${Date.now()}`;
       let uploadedImages = [];
-      let imageUrl = "/placeholder.png";
+      let imageUrl = '/placeholder.png';
 
       // Ako ima slika, otpremi ih
       if (selectedFiles.length > 0) {
         setIsUploading(true);
+
+        // Pravi mapu file -> index UNAPRED (izbegava indexOf koji je O(n))
+        const fileIndexMap = new Map();
+        Array.from(selectedFiles).forEach((file, idx) => {
+          fileIndexMap.set(file, idx);
+        });
 
         // Praćenje progresa za svaki fajl pojedinačno da bismo dobili prosečan total
         const fileProgressMap = new Array(selectedFiles.length).fill(0);
@@ -114,14 +120,14 @@ export default function ProductModal({ open, onClose }) {
           newId,
           selectedFiles,
           ({ file, progress }) => {
-            // Nađemo indeks fajla da ažuriramo njegov progres
-            const idx = selectedFiles.indexOf(file);
-            if (idx !== -1) {
+            // Koristi prethodno kreiranu mapu (O(1) lookup)
+            const idx = fileIndexMap.get(file);
+            if (idx !== undefined) {
               fileProgressMap[idx] = progress;
               const total = fileProgressMap.reduce((a, b) => a + b, 0);
               setUploadProgress(Math.round(total / selectedFiles.length));
             }
-          }
+          },
         );
 
         if (uploadedImages.length > 0) {
@@ -144,7 +150,7 @@ export default function ProductModal({ open, onClose }) {
       close();
     } catch (error) {
       console.error(error);
-      alert("Greška pri čuvanju.");
+      alert('Greška pri čuvanju.');
       setIsUploading(false);
     } finally {
       setLoading(false);
@@ -180,7 +186,7 @@ export default function ProductModal({ open, onClose }) {
               {isUploading && (
                 <motion.div
                   initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: "auto", marginBottom: 20 }}
+                  animate={{ opacity: 1, height: 'auto', marginBottom: 20 }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                 >
                   <UploadProgressBar
@@ -273,7 +279,7 @@ export default function ProductModal({ open, onClose }) {
               {/* UPLOAD SEKCIJA */}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">
-                  Slike proizvoda{" "}
+                  Slike proizvoda{' '}
                   {selectedFiles.length > 0 && `(${selectedFiles.length})`}
                 </label>
 
@@ -339,7 +345,7 @@ export default function ProductModal({ open, onClose }) {
                   `Dodaj proizvod ${
                     selectedFiles.length > 1
                       ? `(${selectedFiles.length} slika)`
-                      : ""
+                      : ''
                   }`
                 )}
               </button>

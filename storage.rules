@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // --- JAVNI PRISTUP ZA PREUZIMANJE SLIKA (SVE DATOTEKE) ---
+    match /{allPaths=**} {
+      allow read: if true;  // Bilo ko može čitati
+    }
+
+    // --- ADMIN UPLOAD ZAŠTITA (samo autentifikovani korisnici sa admin dozvola) ---
+    match /products/{productFolder}/{allFiles=**} {
+      // SVE DATOTEKE U products/ FOLDERU
+      // Autentifikovani korisnici mogu pisati
+      allow write: if request.auth != null && 
+                     request.auth.customClaims.admin == true;
+    }
+
+    // --- AVATARI KORISNIKA ---
+    match /avatars/{userId}/{allFiles=**} {
+      // Korisnik može pisati samo svoje avatar-e
+      allow write: if request.auth != null && 
+                     request.auth.uid == userId;
+    }
+
+    // --- 3D MODELI (SVE DATOTEKE) ---
+    match /models/{allPaths=**} {
+      // Autentifikovani korisnici (admini) mogu pisati
+      allow write: if request.auth != null && 
+                     request.auth.customClaims.admin == true;
+    }
+  }
+}
