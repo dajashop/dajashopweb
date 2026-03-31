@@ -35,8 +35,8 @@ const ExcelManager = ({ products, brands, categories, onImport }) => {
   const getVal = (row, ...keys) => {
     const foundKey = Object.keys(row).find((k) =>
       keys.some(
-        (searchKey) => k.toLowerCase().trim() === searchKey.toLowerCase()
-      )
+        (searchKey) => k.toLowerCase().trim() === searchKey.toLowerCase(),
+      ),
     );
     return foundKey ? row[foundKey] : null;
   };

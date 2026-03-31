@@ -50,7 +50,11 @@ export const exportToExcel = async (data, fileName = 'proizvodi') => {
     { header: 'Cena', key: 'Cena', width: 10 },
     { header: 'Slika', key: 'Slika', width: 30 },
     { header: 'Opis', key: 'Opis', width: 40 },
-    ...[...specKeys].map((k) => ({ header: `Spec: ${k}`, key: `Spec: ${k}`, width: 20 })),
+    ...[...specKeys].map((k) => ({
+      header: `Spec: ${k}`,
+      key: `Spec: ${k}`,
+      width: 20,
+    })),
   ];
   worksheet.addRows(cleanData);
 
@@ -90,7 +94,7 @@ export const importFromExcel = (file) => {
 // --- NAPREDNI ŠABLON ---
 export const downloadTemplate = async (
   existingBrands = [],
-  existingCategories = []
+  existingCategories = [],
 ) => {
   const workbook = new ExcelJS.Workbook();
 
