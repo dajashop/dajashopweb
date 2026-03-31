@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import { generateSlug } from '../utils/generators';
+import UploadProgressBar from '../../../components/UploadProgressBar';
 import { uploadImages } from '../../../services/products';
 
 import {
@@ -70,7 +71,7 @@ function ImageManager({
       const uploaded = await uploadImages(
         storageFolderName,
         files,
-        ({ progress }) => setProgress(progress)
+        ({ progress }) => setProgress(progress),
       );
       onChange([...images, ...uploaded]);
     } catch (err) {
@@ -111,7 +112,7 @@ function ImageManager({
         // auto-generisani thumbnail (500x500 sliku), jer on ne treba da bude u reorder listi.
         const additionalImages = (res.results || [])
           .filter(
-            (r) => r.success && !r.storagePath.includes('resized_500x500_')
+            (r) => r.success && !r.storagePath.includes('resized_500x500_'),
           )
           .map((r) => ({
             url: r.newUrl, // Ovo je sada ORIGINALNA slika i sve dodatne slike

@@ -7,12 +7,14 @@ service firebase.storage {
       allow read: if true;  // Bilo ko može čitati
     }
 
-    // --- ADMIN UPLOAD ZAŠTITA (samo autentifikovani korisnici sa admin dozvola) ---
+    // --- ADMIN UPLOAD ZAŠTITA (samo admin korisnici po email-u) ---
     match /products/{productFolder}/{allFiles=**} {
       // SVE DATOTEKE U products/ FOLDERU
-      // Autentifikovani korisnici mogu pisati
-      allow write: if request.auth != null && 
-                     request.auth.customClaims.admin == true;
+      // Samo autentifikovani korisnici čiji email je na admin listi
+      allow write: if request.auth != null &&
+                     (request.auth.token.email == "cvelenis42@yahoo.com" ||
+                      request.auth.token.email == "dajashopnis@gmail.com" ||
+                      request.auth.token.email == "lazar.cve@gmail.com");
     }
 
     // --- AVATARI KORISNIKA ---
