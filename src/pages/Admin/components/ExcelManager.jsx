@@ -19,14 +19,14 @@ const ExcelManager = ({ products, brands, categories, onImport }) => {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
 
-  const handleExport = () => {
-    exportToExcel(products);
+  const handleExport = async () => {
+    await exportToExcel(products);
     setStatus({ type: 'success', msg: 'Tabela uspešno preuzeta!' });
     setTimeout(() => setStatus(null), 3000);
   };
 
-  const handleDownloadTemplate = () => {
-    downloadTemplate(brands, categories);
+  const handleDownloadTemplate = async () => {
+    await downloadTemplate(brands, categories);
     setStatus({ type: 'success', msg: 'Šablon sa šifarnikom preuzet.' });
     setTimeout(() => setStatus(null), 4000);
   };
