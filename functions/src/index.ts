@@ -9,7 +9,11 @@
 
 import { setGlobalOptions } from "firebase-functions";
 
-import { repairProductImageUrls, saveImageFromUrl } from "./imageUtils";
+import {
+  generateThumbnailFromStorage,
+  repairProductImageUrls,
+  saveImageFromUrl,
+} from "./imageUtils";
 import { generateSitemap } from "./sitemap";
 // import { sendNewOrderToAdmins } from "./adminUtils";
 // import { sendOrderConfirmation, sendOrderStatusUpdate } from "./orderUtils";
@@ -18,6 +22,7 @@ import { generateSitemap } from "./sitemap";
 // Izvozimo svaku funkciju ponaosob
 export {
   saveImageFromUrl,
+  generateThumbnailFromStorage,
   repairProductImageUrls,
   generateSitemap,
   // sendNewOrderToAdmins,

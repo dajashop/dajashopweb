@@ -26,7 +26,7 @@ class CollectionService {
         const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
         onData(items);
       },
-      onError
+      onError,
     );
   }
 
@@ -71,7 +71,7 @@ export const ordersService = {
         }));
         onData(items);
       },
-      onError
+      onError,
     );
   },
 
@@ -82,7 +82,7 @@ export const ordersService = {
       'Ažuriram status za dokument:',
       docId,
       'Novi status:',
-      newStatus
+      newStatus,
     );
 
     const docRef = doc(db, 'orders', docId);
@@ -124,6 +124,24 @@ export const repairProductImageUrls = async (productId = '') => {
 
   const payload = productId ? { productId } : {};
   const result = await repairImagesFn(payload);
+  return result.data;
+};
+
+export const generateThumbnail = async (storagePath) => {
+  if (!storagePath || !String(storagePath).trim()) {
+    throw new Error('storagePath je obavezan.');
+  }
+
+  const functions = getFunctions(app, 'europe-west3');
+  const generateThumbnailFn = httpsCallable(
+    functions,
+    'generateThumbnailFromStorage',
+  );
+
+  const result = await generateThumbnailFn({
+    storagePath: String(storagePath).trim(),
+  });
+
   return result.data;
 };
 

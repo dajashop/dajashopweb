@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import {getDownloadURL as getAdminDownloadURL} from "firebase-admin/storage";
+import { getDownloadURL as getAdminDownloadURL } from "firebase-admin/storage";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import sharp from "sharp"; // UVEZENO: Za obradu slika
@@ -65,7 +65,7 @@ const getStableDownloadUrl = async (file: any): Promise<string> => {
 
 const extractStoragePath = (
   input: unknown,
-  bucketName: string
+  bucketName: string,
 ): string | null => {
   if (typeof input !== "string" || input.trim().length === 0) {
     return null;
@@ -100,7 +100,10 @@ const extractStoragePath = (
     if (host === "firebasestorage.googleapis.com") {
       const match = cleanPath.match(/^v\d+\/b\/([^/]+)\/o\/(.+)$/i);
 
-      if (match && decodeURIComponent(match[1]).toLowerCase() === normalizedBucket) {
+      if (
+        match &&
+        decodeURIComponent(match[1]).toLowerCase() === normalizedBucket
+      ) {
         return decodeURIComponent(match[2]);
       }
     }
@@ -122,7 +125,7 @@ const extractStoragePath = (
 const repairStoredImage = async (
   bucket: any,
   bucketName: string,
-  image: Record<string, unknown>
+  image: Record<string, unknown>,
 ) => {
   const path =
     (typeof image.path === "string" && image.path.trim()) ||
@@ -157,8 +160,13 @@ const uploadBuffer = async (
   bucket: any,
   originalUrl: string,
   contentType: string,
-  fileNamePrefix: string = ORIGINAL_PREFIX
+  fileNamePrefix: string = ORIGINAL_PREFIX,
 ): Promise<UploadSuccess> => {
+  const normalizedBasePath = basePath
+    .trim()
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "");
+
   let extension = contentType.includes("png") ? "png" : "jpg";
 
   if (fileNamePrefix.includes(THUMBNAIL_PREFIX)) {
@@ -170,7 +178,10 @@ const uploadBuffer = async (
     else if (contentType.includes("svg")) extension = "svg";
   }
 
-  const fileName = `${basePath}/${fileNamePrefix}${Date.now()}_${uuidv4()}.${extension}`;
+  const generatedFileName = `${fileNamePrefix}${Date.now()}_${uuidv4()}.${extension}`;
+  const fileName = normalizedBasePath
+    ? `${normalizedBasePath}/${generatedFileName}`
+    : generatedFileName;
   const file = bucket.file(fileName);
   const downloadToken = uuidv4();
 
@@ -217,7 +228,7 @@ const downloadSingleImage = async (url: string): Promise<DownloadResult> => {
 const processAdditionalImage = async (
   url: string,
   basePath: string,
-  bucket: any
+  bucket: any,
 ): Promise<UploadResult> => {
   const downloadResult = await downloadSingleImage(url);
 
@@ -234,7 +245,7 @@ const processAdditionalImage = async (
     bucket,
     url,
     contentType,
-    ADDITIONAL_PREFIX
+    ADDITIONAL_PREFIX,
   );
 };
 
@@ -242,7 +253,7 @@ const processAdditionalImage = async (
 const processMainImageWithResize = async (
   url: string,
   basePath: string,
-  bucket: any
+  bucket: any,
 ) => {
   const downloadResult = await downloadSingleImage(url);
 
@@ -267,7 +278,7 @@ const processMainImageWithResize = async (
     bucket,
     originalUrl,
     contentType,
-    ORIGINAL_PREFIX
+    ORIGINAL_PREFIX,
   );
   results.push(originalUploadResult);
 
@@ -289,7 +300,7 @@ const processMainImageWithResize = async (
       bucket,
       originalUrl,
       "image/webp",
-      THUMBNAIL_PREFIX
+      THUMBNAIL_PREFIX,
     );
 
     thumbnailUrl = thumbnailUploadResult.newUrl;
@@ -297,7 +308,7 @@ const processMainImageWithResize = async (
   } catch (resizeError: any) {
     console.error(
       `Failed to resize main image: ${originalUrl}`,
-      resizeError.message
+      resizeError.message,
     );
     // U slučaju greške, za thumbnail koristimo originalni URL
   }
@@ -339,7 +350,7 @@ export const saveImageFromUrl = functions.https.onCall(
     ) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "URL (ili lista URL-ova) je obavezan string."
+        "URL (ili lista URL-ova) je obavezan string.",
       );
     }
 
@@ -352,7 +363,7 @@ export const saveImageFromUrl = functions.https.onCall(
     if (urlList.length === 0) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Nije pronađen nijedan validan link."
+        "Nije pronađen nijedan validan link.",
       );
     }
 
@@ -378,13 +389,13 @@ export const saveImageFromUrl = functions.https.onCall(
       const mainImageProcess = await processMainImageWithResize(
         mainImageUrl,
         basePath,
-        bucket
+        bucket,
       );
 
       if (!mainImageProcess.success && urlList.length === 1) {
         throw new functions.https.HttpsError(
           "internal",
-          `Backend greška prilikom obrade glavne slike: ${mainImageProcess.originalUrl}`
+          `Backend greška prilikom obrade glavne slike: ${mainImageProcess.originalUrl}`,
         );
       }
 
@@ -393,15 +404,15 @@ export const saveImageFromUrl = functions.https.onCall(
       // --- B. BATCH OBRADA OSTALIH SLIKA (Paralelno, bez resize-a) ---
       const otherResults: UploadResult[] = await Promise.all(
         otherImageUrls.map((url) =>
-          processAdditionalImage(url, basePath, bucket)
-        )
+          processAdditionalImage(url, basePath, bucket),
+        ),
       );
 
       // Spajamo sve rezultate u jedan niz (uspešne i neuspešne)
       allResults = [...allResults, ...otherResults];
 
       const successfulUploads = allResults.filter(
-        (r): r is UploadSuccess => r.success
+        (r): r is UploadSuccess => r.success,
       );
 
       // --- FINALNI RETURN OBJEKAT ---
@@ -423,10 +434,96 @@ export const saveImageFromUrl = functions.https.onCall(
       console.error("Global Upload error:", error.message);
       throw new functions.https.HttpsError(
         "internal",
-        `Backend greška: ${error.message}`
+        `Backend greška: ${error.message}`,
       );
     }
-  }
+  },
+);
+
+export const generateThumbnailFromStorage = functions.https.onCall(
+  {
+    region: "europe-west3",
+    timeoutSeconds: 120,
+    memory: "1GiB",
+  },
+  async (data) => {
+    const requestData = data as any;
+    let storagePath = requestData.storagePath;
+
+    if (!storagePath && requestData.data) {
+      storagePath = requestData.data.storagePath;
+    }
+
+    if (typeof storagePath !== "string" || storagePath.trim().length === 0) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "storagePath je obavezan i mora biti validan string.",
+      );
+    }
+
+    const normalizedStoragePath = storagePath.trim().replace(/^\/+/, "");
+    const bucket = admin.storage().bucket();
+    const originalFile = bucket.file(normalizedStoragePath);
+
+    try {
+      const [exists] = await originalFile.exists();
+
+      if (!exists) {
+        throw new functions.https.HttpsError(
+          "not-found",
+          "Originalna slika nije pronađena u Storage-u.",
+        );
+      }
+
+      const [originalBuffer] = await originalFile.download();
+
+      const resizedBuffer = await sharp(originalBuffer)
+        .resize(THUMBNAIL_SIZE, THUMBNAIL_SIZE, {
+          fit: sharp.fit.inside,
+          withoutEnlargement: true,
+        })
+        .webp({ quality: 80 })
+        .toBuffer();
+
+      const lastSlashIndex = normalizedStoragePath.lastIndexOf("/");
+      const basePath =
+        lastSlashIndex === -1
+          ? ""
+          : normalizedStoragePath.slice(0, lastSlashIndex);
+
+      const thumbnailUploadResult = await uploadBuffer(
+        resizedBuffer,
+        basePath,
+        bucket,
+        normalizedStoragePath,
+        "image/webp",
+        THUMBNAIL_PREFIX,
+      );
+
+      const mainImageUrl = await getStableDownloadUrl(originalFile);
+
+      return {
+        success: true,
+        thumbnailUrl: thumbnailUploadResult.newUrl,
+        mainImageUrl,
+        thumbnailPath: thumbnailUploadResult.storagePath,
+      };
+    } catch (error: any) {
+      if (error instanceof functions.https.HttpsError) {
+        throw error;
+      }
+
+      console.error(
+        `Greška pri generisanju thumbnail-a za path: ${normalizedStoragePath}`,
+        error?.message || error,
+      );
+
+      throw new functions.https.HttpsError(
+        "internal",
+        "Došlo je do greške pri generisanju thumbnail-a.",
+      );
+    }
+  },
 );
 
 export const repairProductImageUrls = functions.https.onCall(
@@ -439,7 +536,7 @@ export const repairProductImageUrls = functions.https.onCall(
     if (!request.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
-        "Morate biti prijavljeni da biste pokrenuli popravku slika."
+        "Morate biti prijavljeni da biste pokrenuli popravku slika.",
       );
     }
 
@@ -459,7 +556,7 @@ export const repairProductImageUrls = functions.https.onCall(
     if (productId && (!docs[0] || !docs[0].exists)) {
       throw new functions.https.HttpsError(
         "not-found",
-        "Proizvod nije pronađen."
+        "Proizvod nije pronađen.",
       );
     }
 
@@ -478,15 +575,16 @@ export const repairProductImageUrls = functions.https.onCall(
 
       try {
         const currentImages = Array.isArray(productData.images)
-          ? productData.images.filter((image): image is Record<string, unknown> =>
-              !!image && typeof image === "object"
+          ? productData.images.filter(
+              (image): image is Record<string, unknown> =>
+                !!image && typeof image === "object",
             )
           : [];
 
         const repairedImageResults = await Promise.all(
           currentImages.map((image) =>
-            repairStoredImage(bucket, bucketName, image)
-          )
+            repairStoredImage(bucket, bucketName, image),
+          ),
         );
 
         const repairedImages = repairedImageResults.map((entry) => entry.image);
@@ -495,8 +593,7 @@ export const repairProductImageUrls = functions.https.onCall(
           extractStoragePath(productData.mainImageUrl, bucketName) ||
           extractStoragePath(productData.image, bucketName);
         const thumbnailPath =
-          extractStoragePath(productData.thumbnailUrl, bucketName) ||
-          null;
+          extractStoragePath(productData.thumbnailUrl, bucketName) || null;
 
         const mainImageUrl = primaryPath
           ? await getStableDownloadUrl(bucket.file(primaryPath))
@@ -508,9 +605,7 @@ export const repairProductImageUrls = functions.https.onCall(
 
         const patch: Record<string, unknown> = {};
 
-        if (
-          JSON.stringify(repairedImages) !== JSON.stringify(currentImages)
-        ) {
+        if (JSON.stringify(repairedImages) !== JSON.stringify(currentImages)) {
           patch.images = repairedImages;
         }
 
@@ -518,17 +613,11 @@ export const repairProductImageUrls = functions.https.onCall(
           patch.image = image;
         }
 
-        if (
-          mainImageUrl &&
-          mainImageUrl !== (productData.mainImageUrl || "")
-        ) {
+        if (mainImageUrl && mainImageUrl !== (productData.mainImageUrl || "")) {
           patch.mainImageUrl = mainImageUrl;
         }
 
-        if (
-          thumbnailUrl &&
-          thumbnailUrl !== (productData.thumbnailUrl || "")
-        ) {
+        if (thumbnailUrl && thumbnailUrl !== (productData.thumbnailUrl || "")) {
           patch.thumbnailUrl = thumbnailUrl;
         }
 
@@ -567,5 +656,5 @@ export const repairProductImageUrls = functions.https.onCall(
       errorCount,
       errors: errors.slice(0, 20),
     };
-  }
+  },
 );

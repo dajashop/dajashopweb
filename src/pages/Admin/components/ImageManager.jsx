@@ -18,6 +18,7 @@ import { uploadImages } from '../../../services/products';
 
 import {
   uploadRemoteImage, // <--- DODAJ OVO
+  generateThumbnail,
 } from '../../../services/admin';
 
 // --- 2. Image Manager (SA CLICK EVENTOM) ---
@@ -49,11 +50,13 @@ function ImageManager({
   // --- NOVI STATE ZA URL ---
   const [urlInput, setUrlInput] = useState('');
   const [urlLoading, setUrlLoading] = useState(false);
+  const [thumbnailLoading, setThumbnailLoading] = useState(false);
 
   // --- POSTOJEĆI UPLOAD (LOKALNI FAJLOVI) ---
   const handleUpload = async (e) => {
     const files = e.target.files;
     if (!files?.length) return;
+    const isFirstImageUpload = images.length === 0;
 
     let storageFolderName = productSlug;
     if (!storageFolderName && productName) {
@@ -74,6 +77,18 @@ function ImageManager({
         ({ progress }) => setProgress(progress),
       );
       onChange([...images, ...uploaded]);
+
+      if (isFirstImageUpload && uploaded[0]?.path) {
+        setThumbnailLoading(true);
+        try {
+          const res = await generateThumbnail(uploaded[0].path);
+          onRemoteUploadSuccess?.(res);
+        } catch (thumbnailError) {
+          console.error('Thumbnail generation failed', thumbnailError);
+        } finally {
+          setThumbnailLoading(false);
+        }
+      }
     } catch (err) {
       console.error('Upload failed', err);
       alert('Greška pri otpremanju slika.');
@@ -213,6 +228,30 @@ function ImageManager({
               progress={progress}
               label="Otpremanje sa računara..."
             />
+          </motion.div>
+        )}
+
+        {thumbnailLoading && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-2"
+          >
+            <div className="w-full rounded-2xl border border-emerald-100 bg-emerald-50/60 p-2">
+              <div className="flex justify-between text-xs mb-1 text-emerald-700 font-medium">
+                <span>Generisanje thumbnail-a...</span>
+                <Loader2 size={12} className="animate-spin" />
+              </div>
+              <div className="h-1.5 rounded-full bg-emerald-100 overflow-hidden">
+                <motion.div
+                  className="h-full bg-emerald-500"
+                  initial={{ x: '-100%' }}
+                  animate={{ x: '100%' }}
+                  transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                />
+              </div>
+            </div>
           </motion.div>
         )}
 
