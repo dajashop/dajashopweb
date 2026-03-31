@@ -18,6 +18,24 @@ import ProductTrust from '../components/product/ProductTrust.jsx';
 import RelatedProducts from '../components/product/RelatedProducts.jsx';
 // [NOVO] Import nove komponente
 import ProductSpecs from '../components/product/ProductSpecs.jsx';
+import SEOHead from '../components/seo/SEOHead.jsx';
+import ProductJsonLd from '../components/seo/ProductJsonLd.jsx';
+import BreadcrumbJsonLd from '../components/seo/BreadcrumbJsonLd.jsx';
+import { seoConfig } from '../config/seo.js';
+
+const DEPARTMENT_LABELS = {
+  satovi: 'Ručni Satovi',
+  daljinski: 'Daljinski Upravljači',
+  baterije: 'Baterije & Oprema',
+  naocare: 'Sunčane Naočare',
+};
+
+const DEPARTMENT_PATHS = {
+  satovi: '/catalog',
+  daljinski: '/daljinski',
+  baterije: '/baterije',
+  naocare: '/naocare',
+};
 
 export default function Product() {
   const { slug } = useParams();
@@ -38,7 +56,7 @@ export default function Product() {
     if (parts.length < 2) return [];
     const baseName = parts.slice(0, -1).join('-');
     return allProducts.filter(
-      (item) => item.id !== p.id && item.name.startsWith(baseName)
+      (item) => item.id !== p.id && item.name.startsWith(baseName),
     );
   }, [p, allProducts]);
 
@@ -53,6 +71,16 @@ export default function Product() {
     return <div className="container product-loading">Učitavanje...</div>;
   if (error || !p)
     return <div className="container product-error">Nije pronađeno.</div>;
+
+  const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
+  const productTitle = `${p.brand || ''} ${p.name || ''}`.trim();
+  const productDescription =
+    p.description ||
+    `Kupite ${productTitle} po ceni od ${p.price} RSD. Besplatna dostava.`;
+  const productImage = p.mainImageUrl || p.images?.[0]?.url || p.image;
+  const department = p.department || 'satovi';
+  const departmentPath = DEPARTMENT_PATHS[department] || '/catalog';
+  const departmentName = DEPARTMENT_LABELS[department] || 'Katalog';
 
   const handleAdd = () => {
     dispatch({
@@ -82,6 +110,21 @@ export default function Product() {
 
   return (
     <div className="product-page-wrapper">
+      <SEOHead
+        title={productTitle}
+        description={productDescription}
+        image={productImage}
+        type="product"
+        url={`${siteRoot}/product/${p.slug}`}
+      />
+      <ProductJsonLd product={p} />
+      <BreadcrumbJsonLd
+        items={[
+          { name: departmentName, url: `${siteRoot}${departmentPath}` },
+          { name: productTitle, url: `${siteRoot}/product/${p.slug}` },
+        ]}
+      />
+
       <div className="product product-layout">
         {/* LEVA KOLONA */}
         <div className="product__gallery-container">

@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import App from './App.jsx';
 import './styles/base.css';
 import { ThemeProvider } from './context/ThemeProvider.jsx';
@@ -18,14 +19,16 @@ createRoot(document.getElementById('root')).render(
           <FlashProvider>
             <UndoProvider>
               <WishlistProvider>
-                <BrowserRouter>
-                  <App />
-                </BrowserRouter>
+                <HelmetProvider>
+                  <BrowserRouter>
+                    <App />
+                  </BrowserRouter>
+                </HelmetProvider>
               </WishlistProvider>
             </UndoProvider>
           </FlashProvider>
         </CartProvider>
       </ThemeProvider>
     </AuthProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

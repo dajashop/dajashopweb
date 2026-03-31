@@ -16,6 +16,7 @@ import AboutTimeline from '../components/about/AboutTimeline.jsx';
 //import AboutTestimonials from '../components/about/AboutTestimonials.jsx';
 import AboutFAQ from '../components/about/AboutFAQ.jsx';
 import AboutCTA from '../components/about/AboutCTA.jsx';
+import SEOHead from '../components/seo/SEOHead.jsx';
 
 export default function About() {
   return (
@@ -27,6 +28,10 @@ export default function About() {
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.4 }}
       >
+        <SEOHead
+          title="O nama"
+          description="Saznajte više o DajaShop priči, vrednostima i našem timu."
+        />
         <AboutHero />
         <AboutStats />
         <AboutStory />

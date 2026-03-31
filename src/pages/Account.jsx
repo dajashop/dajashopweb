@@ -15,6 +15,7 @@ import WishlistSection from '../components/account/WishlistSection.jsx';
 import OrdersSection from '../components/account/OrdersSection.jsx';
 import SecuritySection from '../components/account/SecuritySection.jsx';
 import { AnimatePresence } from 'framer-motion';
+import SEOHead from '../components/seo/SEOHead.jsx';
 
 export default function Account() {
   const { user, logout, showAuth } = useAuth();
@@ -22,7 +23,7 @@ export default function Account() {
 
   // Inicijalno stanje uzimamo iz URL-a ili default 'profile'
   const [activeTab, setActiveTab] = useState(
-    searchParams.get('tab') || 'profile'
+    searchParams.get('tab') || 'profile',
   );
 
   // Ovo osigurava da se tab promeni ako korisnik klikne srce dok je VEĆ na account strani
@@ -36,6 +37,7 @@ export default function Account() {
   if (!user) {
     return (
       <div className="container account-page centered">
+        <SEOHead title="Moj nalog" noIndex={true} />
         <motion.div
           className="glass account-empty-card"
           initial={{ opacity: 0, scale: 0.95 }}
@@ -72,6 +74,7 @@ export default function Account() {
   }
   return (
     <div className="container account-dashboard">
+      <SEOHead title="Moj nalog" noIndex={true} />
       <AccountNav
         activeTab={activeTab}
         setActiveTab={setActiveTab}

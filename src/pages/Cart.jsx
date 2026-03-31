@@ -22,6 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import { PROMO_CODES } from '../data/promoCodes.js';
+import SEOHead from '../components/seo/SEOHead.jsx';
 
 function QtyInput({ value, id, dispatch }) {
   const [localVal, setLocalVal] = useState(value);
@@ -199,7 +200,7 @@ export default function Cart() {
   const missingForFree = FREE_SHIPPING_LIMIT - subtotalAfterDiscount;
   const progressPct = Math.min(
     100,
-    (subtotalAfterDiscount / FREE_SHIPPING_LIMIT) * 100
+    (subtotalAfterDiscount / FREE_SHIPPING_LIMIT) * 100,
   );
 
   const finalTotal =
@@ -244,6 +245,8 @@ export default function Cart() {
 
   return (
     <div className="cart container">
+      <SEOHead title="Korpa" noIndex={true} />
+
       <ConfirmModal
         isOpen={showClearModal}
         onClose={() => setShowClearModal(false)}

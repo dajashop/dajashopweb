@@ -7,6 +7,9 @@ import HeroBgSlider from '../components/HeroBgSlider.jsx';
 import FeaturedSlider from '../components/FeaturedSlider.jsx';
 import { Check } from 'lucide-react';
 import TrustBar from '../components/TrustBar.jsx';
+import SEOHead from '../components/seo/SEOHead.jsx';
+import OrganizationJsonLd from '../components/seo/OrganizationJsonLd.jsx';
+import { seoConfig } from '../config/seo.js';
 
 const bgSlides = [
   {
@@ -25,6 +28,14 @@ const bgSlides = [
 export default function Home() {
   return (
     <div className="home">
+      <SEOHead
+        title="Početna"
+        description={seoConfig.siteDescription}
+        keywords={seoConfig.siteKeywords}
+        type="website"
+      />
+      <OrganizationJsonLd />
+
       {/* HERO */}
       <section className="hero">
         <HeroBgSlider slides={bgSlides} interval={5200} />

@@ -27,6 +27,7 @@ import DeliveryForm from '../components/checkout/DeliveryForm';
 import ShippingSection from '../components/checkout/ShippingSection';
 import PaymentSection from '../components/checkout/PaymentSection';
 import OrderSummary from '../components/checkout/OrderSummary';
+import SEOHead from '../components/seo/SEOHead.jsx';
 
 // [IZMENJENO]: Asinhrona funkcija za generisanje DAJA-xxxxxx ID-a sa proverom jedinstvenosti
 const generateUniqueDisplayId = async () => {
@@ -58,7 +59,7 @@ const generateUniqueDisplayId = async () => {
   if (!uniqueIdFound) {
     // Fallback: Ako smo potrošili sve pokušaje, vraćamo vremensku oznaku
     console.error(
-      'Nije moguće generisati jedinstven DAJA-ID nakon 10 pokušaja.'
+      'Nije moguće generisati jedinstven DAJA-ID nakon 10 pokušaja.',
     );
     return `FALLBACK-${Date.now()}`;
   }
@@ -141,7 +142,7 @@ export default function Checkout() {
           const q = query(
             collection(db, 'users', user.uid, 'addresses'),
             orderBy('createdAt', 'desc'),
-            limit(1)
+            limit(1),
           );
           const snapshot = await getDocs(q);
           if (!snapshot.empty) {
@@ -290,7 +291,7 @@ export default function Checkout() {
         flash(
           'Greška',
           'Nismo uspeli da sačuvamo porudžbinu. Pokušajte ponovo.',
-          'error'
+          'error',
         );
       } finally {
         setIsProcessing(false);
@@ -310,6 +311,7 @@ export default function Checkout() {
 
   return (
     <div className="container checkout-page">
+      <SEOHead title="Plaćanje" noIndex={true} />
       <h1 className="checkout-title">Naplata i Isporuka</h1>
       <form className="checkout-layout" onSubmit={preventFormSubmit} noValidate>
         <div className="checkout-left">

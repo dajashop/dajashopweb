@@ -1,6 +1,7 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
 import './Contact.css';
+import SEOHead from '../components/seo/SEOHead.jsx';
 
 /**
  * @file src/pages/Contact.jsx
@@ -25,6 +26,11 @@ export default function Contact() {
 
   return (
     <div className="contact-page page-container">
+      <SEOHead
+        title="Kontakt"
+        description="Kontaktirajte DajaShop tim za pitanja, porudžbine i korisničku podršku."
+      />
+
       {/* HERO SECTION - Minimalistički naslov */}
       <section className="contact-hero">
         <h1>Kontaktirajte nas</h1>

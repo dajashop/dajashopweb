@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { faqContent } from '../data/faqContent.js';
 import Breadcrumbs from '../components/Breadcrumbs.jsx';
+import SEOHead from '../components/seo/SEOHead.jsx';
+import FAQJsonLd from '../components/seo/FAQJsonLd.jsx';
 import './FAQ.css';
 
 // Komponenta za pojedinačni akordeon
@@ -37,8 +39,18 @@ const AccordionItem = ({ item }) => {
 };
 
 export default function FAQ() {
+  const faqJsonItems = faqContent.map((item) => ({
+    question: item.question,
+    answer: item.answer,
+  }));
+
   return (
     <main className="faq-page container">
+      <SEOHead
+        title="Često postavljana pitanja"
+        description="Odgovori na najčešća pitanja o poručivanju, isporuci i reklamacijama u DajaShop-u."
+      />
+      <FAQJsonLd items={faqJsonItems} />
       <Breadcrumbs />
 
       {/* PROFESIONALAN NASLOV I PODNASLOV */}

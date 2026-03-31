@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { isAdminEmail } from '../../services/firebase';
 import { useNavigate } from 'react-router-dom';
 import AdminOrders from './components/AdminOrders'; // Tvoja postojeća komponenta
+import SEOHead from '../../components/seo/SEOHead.jsx';
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -19,6 +20,7 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen pb-20 bg-[#f5f5f7]">
+      <SEOHead title="Admin - Porudžbine" noIndex={true} />
       {/* HEADER */}
       <div className="bg-white border-b border-neutral-200 sticky top-[var(--header-bar-h)] z-30 shadow-sm">
         <div className="container py-6 flex items-center justify-between">

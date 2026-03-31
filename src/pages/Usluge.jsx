@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Ažurirano: Uklanjamo ShieldCheck, dodajemo KeyRound za daljinske
 import { Store, BatteryCharging, Wrench, KeyRound } from 'lucide-react';
 import '../pages/About.css';
+import SEOHead from '../components/seo/SEOHead.jsx';
 
 // Varijante za animaciju ulaska stranice
 const pageVariants = {
@@ -77,6 +78,10 @@ export default function Usluge() {
         transition={{ duration: 0.5 }}
         style={{ padding: '48px 0', gap: '64px' }}
       >
+        <SEOHead
+          title="Usluge"
+          description="Usluge servisa satova, zamene baterija i programiranja daljinskih upravljača u DajaShop radnji."
+        />
         <header className="section">
           <h1 className="h1" style={{ color: 'var(--color-primary)' }}>
             Profesionalne Usluge i Servis

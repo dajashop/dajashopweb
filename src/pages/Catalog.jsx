@@ -10,6 +10,9 @@ import ProductGrid from '../components/ProductGrid.jsx';
 import Filters from '../components/Filters.jsx';
 import Pagination from '../components/Pagination.jsx';
 import FilterDrawer from '../components/FilterDrawer.jsx';
+import SEOHead from '../components/seo/SEOHead.jsx';
+import BreadcrumbJsonLd from '../components/seo/BreadcrumbJsonLd.jsx';
+import { seoConfig } from '../config/seo.js';
 
 // Hookovi
 import useProducts from '../hooks/useProducts.js';
@@ -27,15 +30,45 @@ const TITLES = {
   naocare: 'Sunčane Naočare',
 };
 
+const departmentSEO = {
+  satovi: {
+    title: 'Satovi - Katalog',
+    description: 'Pregledajte našu kolekciju satova poznatih brendova.',
+    keywords: 'satovi,rucni satovi,Casio,Orient,Daniel Klein',
+    path: '/catalog',
+  },
+  daljinski: {
+    title: 'Daljinski upravljači - Katalog',
+    description: 'Daljinski upravljači za televizore i uređaje.',
+    keywords: 'daljinski upravljaci,remote,upravljaci',
+    path: '/daljinski',
+  },
+  baterije: {
+    title: 'Baterije - Katalog',
+    description: 'Baterije za satove i elektroniku.',
+    keywords: 'baterije,dugmaste baterije,baterije za sat',
+    path: '/baterije',
+  },
+  naocare: {
+    title: 'Naočare - Katalog',
+    description: 'Naočare za sunce i dioptrijske naočare.',
+    keywords: 'naocare,suncane naocare,dioptrijske naocare',
+    path: '/naocare',
+  },
+};
+
 export default function Catalog({ department = 'satovi' }) {
+  const activeSeo = departmentSEO[department] || departmentSEO.satovi;
+  const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
+
   const [sp, setSp] = useSearchParams();
   const spKey = sp.toString();
   const navType = useNavigationType();
 
   // Kluc za cuvanje pozicije skrola po odeljenju + aktivnim filterima
   const scrollKey = useMemo(
-    () => `catalog-scroll:${department}:${spKey}` ,
-    [department, spKey]
+    () => `catalog-scroll:${department}:${spKey}`,
+    [department, spKey],
   );
   const savedScrollRef = useRef(null);
 
@@ -66,7 +99,7 @@ export default function Catalog({ department = 'satovi' }) {
     brands.forEach((b) => active.push({ key: 'brand', val: b, label: b }));
     genders.forEach((g) => active.push({ key: 'gender', val: g, label: g }));
     categories.forEach((c) =>
-      active.push({ key: 'category', val: c, label: c })
+      active.push({ key: 'category', val: c, label: c }),
     );
 
     if (min || max) {
@@ -74,7 +107,7 @@ export default function Catalog({ department = 'satovi' }) {
         key: 'price',
         val: 'price',
         label: `${Number(min || 0).toLocaleString()} - ${Number(
-          max || '∞'
+          max || '∞',
         ).toLocaleString()} RSD`,
       });
     }
@@ -146,7 +179,7 @@ export default function Catalog({ department = 'satovi' }) {
 
     if (q)
       out = out.filter((p) =>
-        (p.brand + ' ' + p.name).toLowerCase().includes(q)
+        (p.brand + ' ' + p.name).toLowerCase().includes(q),
       );
     if (brands.length) out = out.filter((p) => brands.includes(p.brand));
 
@@ -164,7 +197,7 @@ export default function Catalog({ department = 'satovi' }) {
     if (max !== null) out = out.filter((p) => p.price <= max);
 
     const specParams = Array.from(sp.keys()).filter((k) =>
-      k.startsWith('spec_')
+      k.startsWith('spec_'),
     );
     specParams.forEach((paramKey) => {
       const specName = paramKey.replace('spec_', '');
@@ -174,7 +207,7 @@ export default function Catalog({ department = 'satovi' }) {
           (p) =>
             p.specs &&
             p.specs[specName] &&
-            selectedValues.includes(p.specs[specName])
+            selectedValues.includes(p.specs[specName]),
         );
       }
     });
@@ -303,6 +336,21 @@ export default function Catalog({ department = 'satovi' }) {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
+      <SEOHead
+        title={activeSeo.title}
+        description={activeSeo.description}
+        keywords={activeSeo.keywords}
+        url={`${siteRoot}${activeSeo.path}`}
+      />
+      <BreadcrumbJsonLd
+        items={[
+          {
+            name: TITLES[department] || department,
+            url: `${siteRoot}${activeSeo.path}`,
+          },
+        ]}
+      />
+
       <div className="catalog-mobile-trigger lg:hidden mb-4">
         <FilterDrawer products={departmentItems} />
       </div>

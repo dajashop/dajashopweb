@@ -10,6 +10,7 @@
 import { setGlobalOptions } from "firebase-functions";
 
 import { repairProductImageUrls, saveImageFromUrl } from "./imageUtils";
+import { generateSitemap } from "./sitemap";
 // import { sendNewOrderToAdmins } from "./adminUtils";
 // import { sendOrderConfirmation, sendOrderStatusUpdate } from "./orderUtils";
 // import { sendNewsletterPromo } from "./newsletters";
@@ -18,6 +19,7 @@ import { repairProductImageUrls, saveImageFromUrl } from "./imageUtils";
 export {
   saveImageFromUrl,
   repairProductImageUrls,
+  generateSitemap,
   // sendNewOrderToAdmins,
   //sendOrderConfirmation,
   //sendOrderStatusUpdate,

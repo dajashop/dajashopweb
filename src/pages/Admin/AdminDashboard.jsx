@@ -33,6 +33,7 @@ import {
   uploadRemoteImage,
 } from '../../services/admin';
 import { money } from '../../utils/currency';
+import SEOHead from '../../components/seo/SEOHead.jsx';
 
 // ... (sanitizeItem i generateSlug funkcije ostaju iste)
 
@@ -164,7 +165,7 @@ export default function AdminDashboard() {
   // --- Helper funkcije za UI akcije ---
   const toggleSearchFilter = (id) => {
     setSearchFilters((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id],
     );
   };
 
@@ -201,7 +202,7 @@ export default function AdminDashboard() {
     setCatFilters((prev) =>
       prev.includes(deptId)
         ? prev.filter((d) => d !== deptId)
-        : [...prev, deptId]
+        : [...prev, deptId],
     );
     setCatBrandFilter('');
     setNewCatBrand('');
@@ -243,7 +244,7 @@ export default function AdminDashboard() {
     setSpecFilters((prev) =>
       prev.includes(deptId)
         ? prev.filter((d) => d !== deptId)
-        : [...prev, deptId]
+        : [...prev, deptId],
     );
   const handleAddSpec = async (e) => {
     e.preventDefault();
@@ -277,7 +278,7 @@ export default function AdminDashboard() {
     setBrandFilters((prev) =>
       prev.includes(deptId)
         ? prev.filter((d) => d !== deptId)
-        : [...prev, deptId]
+        : [...prev, deptId],
     );
 
   const openNew = () => {
@@ -302,7 +303,7 @@ export default function AdminDashboard() {
     try {
       const result = await repairProductImageUrls();
       alert(
-        `Popravka završena. Ažurirano: ${result.updatedCount}, preskočeno: ${result.skippedCount}, greške: ${result.errorCount}.`
+        `Popravka završena. Ažurirano: ${result.updatedCount}, preskočeno: ${result.skippedCount}, greške: ${result.errorCount}.`,
       );
     } catch (error) {
       console.error('Greška pri popravci slika:', error);
@@ -340,7 +341,7 @@ export default function AdminDashboard() {
   const visibleBrands = useMemo(() => {
     if (brandFilters.length === 0) return brands;
     return brands.filter((b) =>
-      brandFilters.includes(b.department || 'satovi')
+      brandFilters.includes(b.department || 'satovi'),
     );
   }, [brands, brandFilters]);
   const availableBrandsForFilter = useMemo(() => {
@@ -372,6 +373,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen pb-20 bg-[#f5f5f7] rounded-b-2xl">
+      <SEOHead title="Admin" noIndex={true} />
       {/* HEADER OSTAJE ISTI */}
       <div className="bg-white border-b border-neutral-200 sticky top-[var(--header-bar-h)] z-30 shadow-sm">
         <div className="container py-6">
