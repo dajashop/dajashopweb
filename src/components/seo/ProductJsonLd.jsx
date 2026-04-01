@@ -32,11 +32,20 @@ function getAverageRating(reviews) {
 export default function ProductJsonLd({ product, reviews = [] }) {
   if (!product) return null;
 
-  const image = collectProductImages(product);
+  const imageUrls = collectProductImages(product);
+  const seoImageAlt = (product.seo?.imageAltText || '').trim();
   const productName = `${product.brand || ''} ${product.name || ''}`.trim();
   const description =
+    product.seo?.metaDescription ||
     product.description ||
     `Kupite ${productName} po ceni od ${product.price} RSD. Besplatna dostava.`;
+  const image = seoImageAlt
+    ? imageUrls.map((url) => ({
+        '@type': 'ImageObject',
+        url,
+        name: seoImageAlt,
+      }))
+    : imageUrls;
 
   const schema = {
     '@context': 'https://schema.org',

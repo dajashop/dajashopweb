@@ -10,33 +10,73 @@ function getSlugFromPath(pathname) {
   return parts[1] || '';
 }
 
+function toFirestoreNumber(field) {
+  if (!field || typeof field !== 'object') return null;
+
+  if (field.doubleValue !== undefined) {
+    const parsed = Number(field.doubleValue);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  if (field.integerValue !== undefined) {
+    const parsed = Number(field.integerValue);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function toFirestoreImages(arrayValue) {
+  const values = arrayValue?.values;
+  if (!Array.isArray(values)) return [];
+
+  return values
+    .map((entry) => {
+      const fields = entry?.mapValue?.fields;
+      if (!fields) return null;
+      return { url: fields.url?.stringValue || '' };
+    })
+    .filter((img) => img?.url);
+}
+
 function buildMetaTags({ siteUrl, product }) {
-  const title =
-    `${product.brand || ''} ${product.name || ''}`.trim() || 'DajaShop';
+  const baseTitle = `${product.brand || ''} ${product.name || ''}`.trim();
+  const title = product.seo?.metaTitle || baseTitle || 'DajaShop';
   const description =
+    product.seo?.metaDescription ||
     product.description ||
     `Kupite ${title} po odličnoj ceni u DajaShop prodavnici.`;
+  const keywords = product.seo?.metaKeywords || '';
   const image =
+    product.seo?.ogImage ||
     product.mainImageUrl ||
     product.image ||
     product.images?.[0]?.url ||
     `${siteUrl}/images/og-default.jpg`;
+  const imageAlt = product.seo?.imageAltText || title;
   const url = `${siteUrl}/product/${product.slug}`;
+  const price = Number.isFinite(product.price) ? String(product.price) : '';
 
   return [
     `<title>${title} | DajaShop</title>`,
     `<meta name="description" content="${escapeHtml(description)}">`,
+    keywords ? `<meta name="keywords" content="${escapeHtml(keywords)}">` : '',
     `<meta property="og:type" content="product">`,
     `<meta property="og:title" content="${escapeHtml(title)} | DajaShop">`,
     `<meta property="og:description" content="${escapeHtml(description)}">`,
     `<meta property="og:image" content="${escapeHtml(image)}">`,
+    `<meta property="og:image:alt" content="${escapeHtml(imageAlt)}">`,
     `<meta property="og:url" content="${escapeHtml(url)}">`,
+    price ? `<meta property="product:price:amount" content="${price}">` : '',
+    price ? '<meta property="product:price:currency" content="RSD">' : '',
     `<meta name="twitter:card" content="summary_large_image">`,
     `<meta name="twitter:title" content="${escapeHtml(title)} | DajaShop">`,
     `<meta name="twitter:description" content="${escapeHtml(description)}">`,
     `<meta name="twitter:image" content="${escapeHtml(image)}">`,
     `<link rel="canonical" href="${escapeHtml(url)}">`,
-  ].join('');
+  ]
+    .filter(Boolean)
+    .join('');
 }
 
 function escapeHtml(value) {
@@ -88,6 +128,7 @@ async function fetchProductBySlug({ slug, env, request }) {
   if (!found) return null;
 
   const fields = found.document.fields;
+  const seoFields = fields.seo?.mapValue?.fields || {};
   const product = {
     slug: fields.slug?.stringValue || slug,
     name: fields.name?.stringValue || '',
@@ -95,6 +136,15 @@ async function fetchProductBySlug({ slug, env, request }) {
     description: fields.description?.stringValue || '',
     image: fields.image?.stringValue || '',
     mainImageUrl: fields.mainImageUrl?.stringValue || '',
+    price: toFirestoreNumber(fields.price),
+    images: toFirestoreImages(fields.images?.arrayValue),
+    seo: {
+      metaTitle: seoFields.metaTitle?.stringValue || '',
+      metaDescription: seoFields.metaDescription?.stringValue || '',
+      metaKeywords: seoFields.metaKeywords?.stringValue || '',
+      ogImage: seoFields.ogImage?.stringValue || '',
+      imageAltText: seoFields.imageAltText?.stringValue || '',
+    },
   };
 
   await cache.put(

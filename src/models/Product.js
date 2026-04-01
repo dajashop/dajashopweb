@@ -12,6 +12,7 @@ export default class Product {
     specs = {},
     model3DUrl = null,
     department = 'satovi', // <--- NOVO: Podrazumevano je satovi
+    seo = {},
   }) {
     this.id = id;
     this.brand = brand;
@@ -25,5 +26,6 @@ export default class Product {
     this.specs = specs;
     this.model3DUrl = model3DUrl;
     this.department = department;
+    this.seo = seo;
   }
 }

@@ -78,6 +78,10 @@ export default function Product() {
     p.description ||
     `Kupite ${productTitle} po ceni od ${p.price} RSD. Besplatna dostava.`;
   const productImage = p.mainImageUrl || p.images?.[0]?.url || p.image;
+  const seoTitle = p.seo?.metaTitle || productTitle;
+  const seoDescription = p.seo?.metaDescription || productDescription;
+  const seoKeywords = p.seo?.metaKeywords || undefined;
+  const seoImage = p.seo?.ogImage || productImage;
   const department = p.department || 'satovi';
   const departmentPath = DEPARTMENT_PATHS[department] || '/catalog';
   const departmentName = DEPARTMENT_LABELS[department] || 'Katalog';
@@ -111,9 +115,10 @@ export default function Product() {
   return (
     <div className="product-page-wrapper">
       <SEOHead
-        title={productTitle}
-        description={productDescription}
-        image={productImage}
+        title={seoTitle}
+        description={seoDescription}
+        keywords={seoKeywords}
+        image={seoImage}
         type="product"
         url={`${siteRoot}/product/${p.slug}`}
       />

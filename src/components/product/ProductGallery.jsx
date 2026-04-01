@@ -18,10 +18,10 @@ export default function ProductGallery({ product }) {
       product.images && product.images.length > 0
         ? product.images
         : product.image
-        ? [{ url: product.image }]
-        : [];
+          ? [{ url: product.image }]
+          : [];
     images.forEach((img, i) => {
-      list.push({ type: 'image', src: img.url, id: `img-${i}` });
+      list.push({ type: 'image', src: img.url, id: `img-${i}`, imageIndex: i });
     });
     return list;
   }, [product]);
@@ -29,13 +29,15 @@ export default function ProductGallery({ product }) {
   const galleryImages = useMemo(
     () =>
       mediaList.filter((m) => m.type === 'image').map((m) => ({ url: m.src })),
-    [mediaList]
+    [mediaList],
   );
 
   const activeItem = mediaList[activeIndex] || mediaList[0];
   const currentGalleryIndex = galleryImages.findIndex(
-    (img) => img.url === activeItem?.src
+    (img) => img.url === activeItem?.src,
   );
+  const defaultAlt = `${product.brand || ''} ${product.name || ''}`.trim();
+  const mainImageAlt = product.seo?.imageAltText || defaultAlt || product.name;
 
   if (!product) return null;
 
@@ -62,7 +64,7 @@ export default function ProductGallery({ product }) {
           >
             <img
               src={activeItem?.src}
-              alt={product.name}
+              alt={mainImageAlt}
               className="product__img-full transition-transform duration-700 hover:scale-105"
             />
             <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm text-white p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none transform translate-y-2 group-hover:translate-y-0">
@@ -89,7 +91,11 @@ export default function ProductGallery({ product }) {
                     <span>3D</span>
                   </div>
                 ) : (
-                  <img src={item.src} alt="" className="thumb-img" />
+                  <img
+                    src={item.src}
+                    alt={`${product.name} - slika ${(item.imageIndex || 0) + 1}`}
+                    className="thumb-img"
+                  />
                 )}
               </button>
             );

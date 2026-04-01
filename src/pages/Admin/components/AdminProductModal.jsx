@@ -26,9 +26,34 @@ import CustomSelect from './CustomSelect.jsx';
  * ... (dokumentacija ostaje ista) ...
  */
 export default function AdminProductModal({ product, onClose, onSuccess }) {
+  const buildSeoDefaults = (baseProduct = {}) => {
+    const baseTitle =
+      `${baseProduct.brand || ''} ${baseProduct.name || ''}`.trim();
+    return {
+      metaTitle: '',
+      metaDescription: '',
+      metaKeywords: '',
+      ogImage: '',
+      imageAltText: baseTitle,
+    };
+  };
+
+  const cleanSeoPayload = (seo = {}) => {
+    const normalized = {
+      metaTitle: (seo.metaTitle || '').trim(),
+      metaDescription: (seo.metaDescription || '').trim(),
+      metaKeywords: (seo.metaKeywords || '').trim(),
+      ogImage: (seo.ogImage || '').trim(),
+      imageAltText: (seo.imageAltText || '').trim(),
+    };
+
+    return Object.fromEntries(Object.entries(normalized).filter(([, v]) => v));
+  };
+
   const [brands, setBrands] = useState([]);
   const [cats, setCats] = useState([]);
   const [specKeys, setSpecKeys] = useState([]);
+  const [isSeoOpen, setIsSeoOpen] = useState(true);
 
   const [form, setForm] = useState({
     name: '',
@@ -46,6 +71,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     slug: '',
     thumbnailUrl: '',
     mainImageUrl: '',
+    seo: buildSeoDefaults(),
   });
 
   // State za Image Gallery Modal
@@ -84,6 +110,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         // [NOVO] Učitavamo postojeće URL-ove ako ih proizvod već ima
         thumbnailUrl: product.thumbnailUrl || '',
         mainImageUrl: product.mainImageUrl || '',
+        seo: {
+          ...buildSeoDefaults(product),
+          ...(product.seo || {}),
+        },
       });
     } else {
       // [NOVO] Reset za novi proizvod - dodajemo jedan prazan red da bude spremno
@@ -93,6 +123,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         // [NOVO] Učitavamo postojeće URL-ove ako ih proizvod već ima
         thumbnailUrl: '',
         mainImageUrl: '',
+        seo: buildSeoDefaults(),
       }));
     }
 
@@ -167,7 +198,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
       // [NOVO] Filtriramo prazne redove pre čuvanja
       const cleanFeatures = (form.features || []).filter(
-        (f) => f.title && f.title.trim() !== ''
+        (f) => f.title && f.title.trim() !== '',
       );
 
       const payload = {
@@ -176,7 +207,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         image: form.mainImageUrl || form.images[0]?.url || '',
         slug: finalSlug,
         features: cleanFeatures, // [NOVO] Dodajemo u payload
+        seo: cleanSeoPayload(form.seo),
       };
+
+      if (!Object.keys(payload.seo).length) {
+        delete payload.seo;
+      }
+
       if (!product) delete payload.id;
       else payload.id = product.id;
 
@@ -287,7 +324,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   const filteredCats = useMemo(() => {
     let c = cats.filter(
-      (cat) => (cat.department || 'satovi') === form.department
+      (cat) => (cat.department || 'satovi') === form.department,
     );
     if (form.brand) {
       c = c.filter((cat) => cat.brand === form.brand);
@@ -303,7 +340,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   const filteredSpecs = useMemo(() => {
     return specKeys.filter(
-      (s) => (s.department || 'satovi') === form.department
+      (s) => (s.department || 'satovi') === form.department,
     );
   }, [specKeys, form.department]);
 
@@ -329,6 +366,16 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   const activeUnit =
     specOptions.find((o) => o.value === tempSpecKey)?.unit || '';
+
+  const fallbackSeoTitle = `${form.brand || ''} ${form.name || ''}`.trim();
+  const fallbackSeoDescription = (form.description || '').trim();
+  const effectiveSeoTitle =
+    (form.seo?.metaTitle || '').trim() || fallbackSeoTitle;
+  const effectiveSeoDescription =
+    (form.seo?.metaDescription || '').trim() || fallbackSeoDescription;
+  const googlePreviewUrl = `dajashop.rs/product/${form.slug || generateSlug(form.name) || 'proizvod'}`;
+  const titleLen = (form.seo?.metaTitle || '').length;
+  const descLen = (form.seo?.metaDescription || '').length;
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
@@ -466,8 +513,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     !form.brand
                       ? 'Prvo izaberi brend'
                       : catOptions.length === 0
-                      ? 'Nema kategorija'
-                      : 'Izaberi kategoriju'
+                        ? 'Nema kategorija'
+                        : 'Izaberi kategoriju'
                   }
                   disabled={!form.brand || catOptions.length === 0}
                 />
@@ -492,6 +539,150 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     />
                   </label>
                 </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                      SEO / Meta Tagovi
+                    </h3>
+                    <p className="text-xs text-neutral-500 mt-1">
+                      Ova polja su opciona. Ako ostavite prazno, automatski će
+                      se koristiti naziv i opis proizvoda.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSeoOpen((prev) => !prev)}
+                    className="text-xs font-bold text-neutral-700 bg-neutral-100 px-3 py-2 rounded-lg hover:bg-neutral-200 transition-colors"
+                  >
+                    {isSeoOpen ? 'Sakrij sekciju' : 'Prikaži sekciju'}
+                  </button>
+                </div>
+
+                {isSeoOpen && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="block md:col-span-2">
+                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                          SEO Naslov
+                        </span>
+                        <input
+                          value={form.seo?.metaTitle || ''}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              seo: { ...prev.seo, metaTitle: e.target.value },
+                            }))
+                          }
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
+                          placeholder="Automatski iz brenda i naziva"
+                        />
+                        <div className="text-[11px] text-neutral-400 mt-1 text-right">
+                          {titleLen}/60
+                        </div>
+                      </label>
+
+                      <label className="block md:col-span-2">
+                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                          SEO Opis
+                        </span>
+                        <textarea
+                          value={form.seo?.metaDescription || ''}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              seo: {
+                                ...prev.seo,
+                                metaDescription: e.target.value,
+                              },
+                            }))
+                          }
+                          rows={3}
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200 resize-y"
+                          placeholder="Automatski iz opisa proizvoda"
+                        />
+                        <div className="text-[11px] text-neutral-400 mt-1 text-right">
+                          {descLen}/160
+                        </div>
+                      </label>
+
+                      <label className="block">
+                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                          Ključne Reči
+                        </span>
+                        <input
+                          value={form.seo?.metaKeywords || ''}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              seo: {
+                                ...prev.seo,
+                                metaKeywords: e.target.value,
+                              },
+                            }))
+                          }
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
+                          placeholder="sat, casio, g-shock, muški sat"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                          OG Slika URL
+                        </span>
+                        <input
+                          value={form.seo?.ogImage || ''}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              seo: { ...prev.seo, ogImage: e.target.value },
+                            }))
+                          }
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
+                          placeholder="Ostavi prazno za glavnu sliku proizvoda"
+                        />
+                      </label>
+
+                      <label className="block md:col-span-2">
+                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                          Alt Tekst Slike
+                        </span>
+                        <input
+                          value={form.seo?.imageAltText || ''}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              seo: {
+                                ...prev.seo,
+                                imageAltText: e.target.value,
+                              },
+                            }))
+                          }
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
+                          placeholder="Automatski iz brenda i naziva"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                      <p className="text-[11px] uppercase tracking-wider text-neutral-400 font-bold mb-2">
+                        Google Preview
+                      </p>
+                      <p className="text-base leading-snug text-blue-700 font-medium line-clamp-2">
+                        {effectiveSeoTitle || 'Naslov proizvoda'}
+                      </p>
+                      <p className="text-xs text-green-700 mt-1">
+                        {googlePreviewUrl}
+                      </p>
+                      <p className="text-sm text-neutral-600 mt-2 line-clamp-3">
+                        {effectiveSeoDescription ||
+                          'Opis proizvoda će biti prikazan ovde.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* --- [NOVO] MANUAL FEATURE TEXT SEKCIJA --- */}
@@ -532,7 +723,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                               handleFeatureChange(
                                 index,
                                 'title',
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm font-bold placeholder:font-normal"
@@ -546,7 +737,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                               handleFeatureChange(
                                 index,
                                 'subtitle',
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm"
