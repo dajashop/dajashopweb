@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { getDownloadURL as getAdminDownloadURL } from "firebase-admin/storage";
 import axios from "axios";
@@ -322,15 +322,15 @@ const processMainImageWithResize = async (
   };
 };
 
-export const saveImageFromUrl = functions.https.onCall(
+export const saveImageFromUrl = onCall(
   {
     region: "europe-west3",
     timeoutSeconds: 300,
     memory: "1GiB",
   },
-  async (data, context) => {
+  async (request) => {
     // --- PARSIRANJE ---
-    const requestData = data as any;
+    const requestData = request.data as any;
     let inputUrls = requestData.url;
     let productName = requestData.productName;
 
@@ -348,7 +348,7 @@ export const saveImageFromUrl = functions.https.onCall(
       typeof inputUrls !== "string" ||
       inputUrls.trim().length === 0
     ) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "invalid-argument",
         "URL (ili lista URL-ova) je obavezan string.",
       );
@@ -361,7 +361,7 @@ export const saveImageFromUrl = functions.https.onCall(
       .filter((u) => u.length > 0);
 
     if (urlList.length === 0) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "invalid-argument",
         "Nije pronađen nijedan validan link.",
       );
@@ -393,7 +393,7 @@ export const saveImageFromUrl = functions.https.onCall(
       );
 
       if (!mainImageProcess.success && urlList.length === 1) {
-        throw new functions.https.HttpsError(
+        throw new HttpsError(
           "internal",
           `Backend greška prilikom obrade glavne slike: ${mainImageProcess.originalUrl}`,
         );
@@ -432,22 +432,19 @@ export const saveImageFromUrl = functions.https.onCall(
       };
     } catch (error: any) {
       console.error("Global Upload error:", error.message);
-      throw new functions.https.HttpsError(
-        "internal",
-        `Backend greška: ${error.message}`,
-      );
+      throw new HttpsError("internal", `Backend greška: ${error.message}`);
     }
   },
 );
 
-export const generateThumbnailFromStorage = functions.https.onCall(
+export const generateThumbnailFromStorage = onCall(
   {
     region: "europe-west3",
     timeoutSeconds: 120,
     memory: "1GiB",
   },
-  async (data) => {
-    const requestData = data as any;
+  async (request) => {
+    const requestData = request.data as any;
     let storagePath = requestData.storagePath;
 
     if (!storagePath && requestData.data) {
@@ -455,7 +452,7 @@ export const generateThumbnailFromStorage = functions.https.onCall(
     }
 
     if (typeof storagePath !== "string" || storagePath.trim().length === 0) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "invalid-argument",
         "storagePath je obavezan i mora biti validan string.",
       );
@@ -469,7 +466,7 @@ export const generateThumbnailFromStorage = functions.https.onCall(
       const [exists] = await originalFile.exists();
 
       if (!exists) {
-        throw new functions.https.HttpsError(
+        throw new HttpsError(
           "not-found",
           "Originalna slika nije pronađena u Storage-u.",
         );
@@ -509,7 +506,7 @@ export const generateThumbnailFromStorage = functions.https.onCall(
         thumbnailPath: thumbnailUploadResult.storagePath,
       };
     } catch (error: any) {
-      if (error instanceof functions.https.HttpsError) {
+      if (error instanceof HttpsError) {
         throw error;
       }
 
@@ -518,7 +515,7 @@ export const generateThumbnailFromStorage = functions.https.onCall(
         error?.message || error,
       );
 
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "internal",
         "Došlo je do greške pri generisanju thumbnail-a.",
       );
@@ -526,7 +523,7 @@ export const generateThumbnailFromStorage = functions.https.onCall(
   },
 );
 
-export const repairProductImageUrls = functions.https.onCall(
+export const repairProductImageUrls = onCall(
   {
     region: "europe-west3",
     timeoutSeconds: 540,
@@ -534,7 +531,7 @@ export const repairProductImageUrls = functions.https.onCall(
   },
   async (request) => {
     if (!request.auth) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "unauthenticated",
         "Morate biti prijavljeni da biste pokrenuli popravku slika.",
       );
@@ -554,10 +551,7 @@ export const repairProductImageUrls = functions.https.onCall(
       : (await db.collection("products").get()).docs;
 
     if (productId && (!docs[0] || !docs[0].exists)) {
-      throw new functions.https.HttpsError(
-        "not-found",
-        "Proizvod nije pronađen.",
-      );
+      throw new HttpsError("not-found", "Proizvod nije pronađen.");
     }
 
     let updatedCount = 0;

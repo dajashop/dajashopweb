@@ -3,7 +3,7 @@
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { logger } from "firebase-functions";
 import { transporter } from "./transporter";
-import * as functions from "firebase-functions";
+import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin"; // OBAVEZNO: Dodaj ovo
 
 // Inicijalizacija admin-a ako već nije uradjena negde drugde
@@ -62,10 +62,10 @@ export const sendWelcomeEmail = onDocumentCreated(
       logger.error("Error sending email:", error);
       return null;
     }
-  }
+  },
 );
 
-export const sendNewsletterPromo = functions.https.onRequest(
+export const sendNewsletterPromo = onRequest(
   {
     region: "europe-west3",
   },
@@ -95,7 +95,9 @@ export const sendNewsletterPromo = functions.https.onRequest(
       if (!snapshot.empty) {
         // AKO POSTOJI -> Vrati status 409 (Conflict)
         // Ovo je ključni deo koji aktivira tvoj React kod za duplikate!
-        res.status(409).send({ message: "Hvala na interesovanju ali već ste prijavljeni." });
+        res
+          .status(409)
+          .send({ message: "Hvala na interesovanju ali već ste prijavljeni." });
         return;
       }
       // 1. Upisujemo korisnika u 'newsletter' kolekciju u bazi
@@ -127,5 +129,5 @@ export const sendNewsletterPromo = functions.https.onRequest(
       console.error("Greška:", error);
       res.status(500).json({ error: "Greška na serveru." });
     }
-  }
+  },
 );

@@ -63,10 +63,7 @@ export const generateSitemap = onRequest(
       const baseUrl = SITE_URL.value().replace(/\/$/, "");
       const db = admin.firestore();
 
-      const productSnapshot = await db
-        .collection("products")
-        .where("isVisible", "==", true)
-        .get();
+      const productSnapshot = await db.collection("products").get();
 
       const staticNodes = STATIC_PAGES.map((page) =>
         buildUrlNode({
@@ -80,7 +77,9 @@ export const generateSitemap = onRequest(
         .map((doc: QueryDocumentSnapshot) => ({ id: doc.id, ...doc.data() }))
         .filter(
           (product: any) =>
-            typeof product.slug === "string" && product.slug.trim(),
+            product.isVisible !== false &&
+            typeof product.slug === "string" &&
+            product.slug.trim(),
         )
         .map((product: any) => {
           const updatedAt = product.updatedAt?.toDate?.();

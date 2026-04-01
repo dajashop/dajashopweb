@@ -10,4 +10,4 @@ Disallow: /admin
 Disallow: /verify-email
 
 # Sitemap (azurirati ako se promeni domen)
-Sitemap: https://dajashop.pages.dev/sitemap.xml
+Sitemap: https://dajashop.rs/sitemap.xml
