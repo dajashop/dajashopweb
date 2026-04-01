@@ -116,6 +116,23 @@ export default {
     const userAgent = request.headers.get('user-agent') || '';
     const isBot = BOT_UA_REGEX.test(userAgent);
 
+    const functionsBase = `https://europe-west1-${env.FIREBASE_PROJECT_ID}.cloudfunctions.net`;
+
+    if (url.pathname === '/sitemap.xml') {
+      return fetch(`${functionsBase}/generateSitemap`, {
+        cf: { cacheEverything: true, cacheTtl: 3600 },
+      });
+    }
+
+    if (url.pathname.startsWith('/firebase-web-authn-api')) {
+      const suffix =
+        url.pathname.slice('/firebase-web-authn-api'.length) + url.search;
+      return fetch(
+        `${functionsBase}/ext-firebase-web-authn-api${suffix}`,
+        new Request(request),
+      );
+    }
+
     const response = await env.ASSETS.fetch(request);
     if (!isBot || !isProductPath(url.pathname)) {
       return response;
