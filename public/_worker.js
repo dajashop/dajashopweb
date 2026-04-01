@@ -116,7 +116,9 @@ export default {
     const userAgent = request.headers.get('user-agent') || '';
     const isBot = BOT_UA_REGEX.test(userAgent);
 
-    const functionsBase = `https://europe-west1-${env.FIREBASE_PROJECT_ID}.cloudfunctions.net`;
+    const functionsBase =
+      env.FUNCTIONS_BASE_URL ||
+      'https://europe-west1-daja-shop-site.cloudfunctions.net';
 
     if (url.pathname === '/sitemap.xml') {
       return fetch(`${functionsBase}/generateSitemap`, {
@@ -133,7 +135,17 @@ export default {
       );
     }
 
-    const response = await env.ASSETS.fetch(request);
+    let response = await env.ASSETS.fetch(request);
+
+    // SPA fallback: ako statički asset ne postoji, serviraj index.html
+    if (response.status === 404) {
+      const indexRequest = new Request(
+        `${url.protocol}//${url.host}/index.html`,
+        request,
+      );
+      response = await env.ASSETS.fetch(indexRequest);
+    }
+
     if (!isBot || !isProductPath(url.pathname)) {
       return response;
     }
