@@ -42,7 +42,7 @@ export default function Header() {
           {/* LISTA ŽELJA: Klasa 'header__wishlist' (nema korpu na mobilnom) */}
           <Link
             className="header__wishlist"
-            to="/account?tab=wishlist"
+            to="/account/wishlist"
             title="Lista želja"
           >
             <Heart size={22} />

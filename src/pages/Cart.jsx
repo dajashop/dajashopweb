@@ -407,8 +407,11 @@ export default function Cart() {
                   </span>
                 ) : (
                   <span style={{ color: 'var(--color-text)' }}>
-                    Još <strong>{money(missingForFree)}</strong> do besplatne
-                    dostave
+                    Još{' '}
+                    <strong style={{ color: '#40a840', fontWeight: 700 }}>
+                      {money(missingForFree)}
+                    </strong>{' '}
+                    do besplatne dostave
                   </span>
                 )}
                 <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>
@@ -429,16 +432,14 @@ export default function Cart() {
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPct}%` }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
-                  style={{
-                    height: '100%',
-                    background: isFreeShipping
-                      ? '#40a840'
-                      : 'var(--color-muted)',
-                    borderRadius: 99,
-                  }}
-                />
-              </div>
+                style={{
+                  height: '100%',
+                  background: '#40a840',
+                  borderRadius: 99,
+                }}
+              />
             </div>
+          </div>
 
             <PromoCodeSection
               onApply={handleApplyPromo}

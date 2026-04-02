@@ -194,8 +194,8 @@
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
 }
 .qty__btn {
   width: 28px;
@@ -216,12 +216,15 @@
 .cart__qty {
   width: 42px;
   text-align: center;
-  border: none;
+  border: 1px solid transparent;
   outline: none;
-  color: var(--text);
+  color: #111;
   background: transparent;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+.cart__qty:focus {
+  border-color: var(--primary);
 }
 /* No Spinners */
 input.no-spin::-webkit-outer-spin-button,
@@ -373,8 +376,8 @@ input.no-spin {
   flex: 1;
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
   border-radius: 12px;
   padding: 0 12px;
   height: 100%; /* Popunjava celu visinu promo-boxa */
@@ -389,7 +392,7 @@ input.no-spin {
 }
 
 .promo-box .icon {
-  color: var(--muted);
+  color: #6b7280;
   margin-right: 8px;
   flex-shrink: 0;
 }
@@ -399,7 +402,7 @@ input.no-spin {
   background: transparent;
   border: 0;
   outline: 0;
-  color: var(--text);
+  color: #111;
   font-size: 1rem;
   min-width: 0;
   height: 100%;

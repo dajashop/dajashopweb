@@ -248,7 +248,11 @@ function DesktopDropdown({
             )}
 
             {user ? (
-              <DDItem to="/account" label="Moj nalog" onClose={onClose} />
+              <DDItem
+                to="/account/profile"
+                label="Moj nalog"
+                onClose={onClose}
+              />
             ) : (
               <button
                 type="button"
@@ -398,7 +402,11 @@ function MobileSheet({ open, onClose, user, showAuth, isAdmin, unreadOrders }) {
 
               {user ? (
                 <>
-                  <Link className="hm__link" to="/account" onClick={onClose}>
+                  <Link
+                    className="hm__link"
+                    to="/account/profile"
+                    onClick={onClose}
+                  >
                     <User size={18} style={{ marginRight: 10 }} /> Moj nalog
                   </Link>
 

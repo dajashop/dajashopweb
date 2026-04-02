@@ -29,6 +29,20 @@ export const ADDRESS_ICONS = {
   gym: { label: 'Trening', icon: Dumbbell },
 };
 
+export const ADDRESS_ICON_ORDER = [
+  'home',
+  'briefcase',
+  'mapPin',
+  'heart',
+  'star',
+  'sun',
+  'coffee',
+  'gamepad',
+  'school',
+  'building',
+  'gym',
+];
+
 export const COUNTRY_CODES = [
   { code: 'RS', dial: '+381', label: 'Srbija' },
   { code: 'ME', dial: '+382', label: 'Crna Gora' },

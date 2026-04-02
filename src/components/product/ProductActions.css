@@ -14,21 +14,21 @@
   padding: 16px 24px;
   border-radius: 14px;
   border: none;
-  background: var(--color-primary, #000); /* Crna pozadina */
-  color: var(--color-onPrimary, #fff); /* Beli tekst */
+  background: #d4d4d4; /* Svetlo siva pozadina */
+  color: #111; /* Tamni tekst */
   font-size: 1rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); /* Blaga senka */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Blaga senka */
 }
 
 .cta-button:hover {
-  filter: brightness(1.2); /* Malo posvetli na hover */
+  background: #c7c7c7; /* Malo tamnija na hover */
   transform: translateY(-2px); /* Podigne se gore */
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
 .cta-button:active {
