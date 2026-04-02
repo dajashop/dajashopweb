@@ -295,7 +295,7 @@ export default function ProductCard({ p }) {
           </div>
 
           <button
-            className="product-card__btn mt-3 w-full py-2 bg-zinc-900 text-white dark:bg-white dark:text-black rounded-lg font-medium text-sm hover:opacity-90 transition-opacity"
+            className="product-card__btn mt-3 w-full py-2 bg-neutral-300 text-neutral-900 rounded-lg font-medium text-sm hover:bg-neutral-400 transition-all hover:shadow-md active:scale-95"
             onClick={addToCart}
           >
             Dodaj u korpu

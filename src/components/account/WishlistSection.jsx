@@ -15,6 +15,7 @@ function WishlistSection() {
   const { dispatch } = useCart();
   const { flash } = useFlash();
   const { showUndo } = useUndo();
+  const placeholderImage = 'https://via.placeholder.com/300?text=Watch';
 
   const [deleteId, setDeleteId] = useState(null);
 
@@ -68,7 +69,7 @@ function WishlistSection() {
           </p>
           <Link
             to="/catalog"
-            className="px-6 py-3 bg-primary text-onPrimary rounded-xl font-bold hover:opacity-90 transition-opacity"
+            className="px-6 py-3 bg-neutral-300 text-neutral-900 rounded-xl font-bold hover:bg-neutral-400 transition-colors"
           >
             Istraži ponudu
           </Link>
@@ -93,7 +94,12 @@ function WishlistSection() {
                 className="wishlist-img-wrapper"
               >
                 <img
-                  src={item.image}
+                  src={
+                    item.image ||
+                    item.images?.[0]?.url ||
+                    item.imageUrl ||
+                    placeholderImage
+                  }
                   alt={item.name}
                   className="wishlist-img"
                 />
@@ -108,9 +114,14 @@ function WishlistSection() {
               {/* Podaci */}
               <div className="wishlist-body">
                 <div className="mb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted block mb-1">
-                    {item.brand}
-                  </span>
+                  {item.brand && (
+                    <Link
+                      to={`/catalog?brand=${encodeURIComponent(item.brand)}`}
+                      className="inline-block text-[10px] font-bold uppercase tracking-widest text-muted mb-1 hover:text-primary transition-colors"
+                    >
+                      {item.brand}
+                    </Link>
+                  )}
                   <Link
                     to={`/product/${item.slug}`}
                     className="block font-bold text-base leading-snug hover:text-primary transition-colors line-clamp-2 min-h-[2.5em]"
@@ -126,7 +137,7 @@ function WishlistSection() {
 
                   <button
                     onClick={() => moveToCart(item)}
-                    className="w-full py-2.5 rounded-lg bg-neutral-900 text-white font-medium text-sm flex items-center justify-center gap-2 hover:bg-black transition-all hover:shadow-lg active:scale-95"
+                    className="w-full py-2.5 rounded-lg bg-neutral-300 text-neutral-900 font-medium text-sm flex items-center justify-center gap-2 hover:bg-neutral-400 transition-all hover:shadow-lg active:scale-95"
                   >
                     <ShoppingCart size={16} /> Dodaj u korpu
                   </button>

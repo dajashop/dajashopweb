@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   useState,
   useEffect,
   useRef,
@@ -22,6 +22,7 @@ import {
   Home,
   Briefcase,
   Plus,
+  Edit2,
   Building2,
   Heart,
   MessageSquare, // Dodata ikonica za napomenu
@@ -30,7 +31,18 @@ import ErrorMessage from './ErrorMessage';
 
 // --- FIREBASE IMPORTI ---
 import { db } from '../../services/firebase';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  orderBy,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
+import {
+  ADDRESS_ICONS,
+  ADDRESS_ICON_ORDER,
+} from '../../utils/accountHelpers';
 
 // Konstante
 const getFlagUrl = (code) =>
@@ -108,6 +120,8 @@ export default function DeliveryForm({
   isRegistering,
   popoverDismissed,
   createAccount,
+  validateAll,
+  flash,
   // NOVO: Props za napomenu
 }) {
   const emailInputRef = useRef(null);
@@ -130,6 +144,21 @@ export default function DeliveryForm({
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [isAddressSelectorOpen, setIsAddressSelectorOpen] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState('new');
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [addressPrediction, setAddressPrediction] = useState('');
+
+  const DEFAULT_ADDRESS_ICON = 'home';
+  const defaultAddressLabel =
+    ADDRESS_ICONS[DEFAULT_ADDRESS_ICON]?.label || 'Kuća';
+
+  // --- STATE ZA ČUVANJE ADRESE ---
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [newAddressLabel, setNewAddressLabel] =
+    useState(defaultAddressLabel);
+  const [newAddressIcon, setNewAddressIcon] =
+    useState(DEFAULT_ADDRESS_ICON);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [manualLabelEdited, setManualLabelEdited] = useState(false);
 
   // --- TELEFON LOGIKA ---
   const { phonePrefix, localPhone } = useMemo(() => {
@@ -154,6 +183,7 @@ export default function DeliveryForm({
 
   // --- LOGIKA POPUNJAVANJA POLJA (AUTOFILL) ---
   const selectAddress = (addr) => {
+    setAddressPrediction('');
     if (!addr) {
       setSelectedAddressId('new');
       if (setFormData) {
@@ -225,33 +255,17 @@ export default function DeliveryForm({
     if (!addr)
       return <Plus size={size} className="text-[var(--color-primary)]" />;
 
-    if (addr.icon) {
-      switch (addr.icon) {
-        case 'home':
-          return <Home size={size} className="text-[var(--color-primary)]" />;
-        case 'briefcase':
-          return (
-            <Briefcase size={size} className="text-[var(--color-primary)]" />
-          );
-        case 'building':
-          return (
-            <Building2 size={size} className="text-[var(--color-primary)]" />
-          );
-        case 'heart':
-          return <Heart size={size} className="text-[var(--color-primary)]" />;
-        case 'mapPin':
-          return <MapPin size={size} className="text-[var(--color-primary)]" />;
-        default:
-          return <MapPin size={size} className="text-[var(--color-primary)]" />;
-      }
-    }
+    const normalizedLabel = (addr.label || '').trim().toLowerCase();
 
-    if (addr.label === 'Kuća')
-      return <Home size={size} className="text-[var(--color-primary)]" />;
-    if (addr.label === 'Posao')
-      return <Briefcase size={size} className="text-[var(--color-primary)]" />;
+    const iconKeyFromLabel = Object.keys(ADDRESS_ICONS).find(
+      (key) =>
+        ADDRESS_ICONS[key].label?.trim().toLowerCase() === normalizedLabel
+    );
 
-    return <MapPin size={size} className="text-[var(--color-primary)]" />;
+    const iconKey = addr.icon || iconKeyFromLabel;
+    const IconComp = ADDRESS_ICONS[iconKey]?.icon || MapPin;
+
+    return <IconComp size={size} className="text-[var(--color-primary)]" />;
   };
 
   const getSelectedAddressLabel = () => {
@@ -266,6 +280,57 @@ export default function DeliveryForm({
     const addr = savedAddresses.find((a) => a.id === selectedAddressId);
     return getAddressIcon(addr, 18);
   };
+
+  // --- ADDRESS HELPERS ---
+  function normalizeAddress(val = '') {
+    return val.trim().toLowerCase();
+  }
+
+  const addressExists = useMemo(
+    () =>
+      savedAddresses.some(
+        (a) => normalizeAddress(a.address) === normalizeAddress(formData.address)
+      ),
+    [savedAddresses, formData.address]
+  );
+
+  const buildAddressSuggestions = useCallback(
+    (value) => {
+      const rawValue = value || '';
+      const norm = normalizeAddress(value);
+      if (norm.length < 2) {
+        setAddressSuggestions([]);
+        setAddressPrediction('');
+        return;
+      }
+      const matches = savedAddresses.filter((a) =>
+        normalizeAddress(a.address).startsWith(norm)
+      );
+      setAddressSuggestions(matches);
+      if (matches.length > 0) {
+        const suggestion = matches[0].address || '';
+        const typed = rawValue.trimEnd();
+        if (
+          suggestion
+            .toLowerCase()
+            .startsWith(typed.toLowerCase()) &&
+          suggestion.length > typed.length
+        ) {
+          setAddressPrediction(
+            suggestion
+              .slice(typed.length)
+              .replace(/^\s+/, '')
+              .toLowerCase()
+          );
+        } else {
+          setAddressPrediction('');
+        }
+      } else {
+        setAddressPrediction('');
+      }
+    },
+    [savedAddresses]
+  );
 
   // --- GOOGLE MAPS INIT ---
   useEffect(() => {
@@ -324,11 +389,13 @@ export default function DeliveryForm({
             city: city || prev.city,
             postalCode: zip || prev.postalCode,
           }));
+          buildAddressSuggestions(fullAddress || prev.address || '');
         } else {
           if (fullAddress)
             handleChange({ target: { name: 'address', value: fullAddress } });
           if (city) handleChange({ target: { name: 'city', value: city } });
           if (zip) handleChange({ target: { name: 'postalCode', value: zip } });
+          if (fullAddress) buildAddressSuggestions(fullAddress);
         }
       });
       autocompleteInstance.current = autocomplete;
@@ -373,6 +440,70 @@ export default function DeliveryForm({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // --- CTA LOGIKA ZA ČUVANJE ADRESE ---
+  const courierFieldsFilled =
+    requiredForCourier &&
+    formData.name &&
+    formData.surname &&
+    (formData.phone || formData.email) &&
+    formData.address &&
+    formData.city &&
+    formData.postalCode;
+
+  const canShowSaveCta =
+    !!user &&
+    requiredForCourier &&
+    courierFieldsFilled &&
+    !addressExists;
+
+  const handleOpenSaveModal = () => {
+    if (!canShowSaveCta) return;
+    if (validateAll && !validateAll()) return;
+    setManualLabelEdited(false);
+    setShowSaveModal(true);
+  };
+
+  const handleSaveAddress = async () => {
+    if (!validateAll || !validateAll()) return;
+    if (!user?.uid) return;
+
+    const label = (newAddressLabel || '').trim() || 'Adresa';
+    const icon = newAddressIcon || 'mapPin';
+
+    const payload = {
+      label,
+      icon,
+      name: `${formData.name} ${formData.surname}`.trim(),
+      address: formData.address,
+      city: formData.city,
+      zip: formData.postalCode,
+      phone: formData.phone,
+      createdAt: serverTimestamp(),
+    };
+
+    try {
+      setIsSavingAddress(true);
+      const docRef = await addDoc(
+        collection(db, 'users', user.uid, 'addresses'),
+        payload
+      );
+      const fullAddress = { ...payload, id: docRef.id };
+      setSavedAddresses((prev) => [fullAddress, ...prev]);
+      selectAddress(fullAddress);
+      setShowSaveModal(false);
+      setNewAddressLabel(defaultAddressLabel);
+      setNewAddressIcon(DEFAULT_ADDRESS_ICON);
+      setManualLabelEdited(false);
+      if (flash)
+        flash('Uspeh', 'Adresa sačuvana za sledeću kupovinu.', 'success');
+    } catch (error) {
+      console.error('Greška pri čuvanju adrese', error);
+      if (flash) flash('Greška', 'Nismo mogli da sačuvamo adresu.', 'error');
+    } finally {
+      setIsSavingAddress(false);
+    }
+  };
 
   // --- HANDLERS ---
   const handleEmailInput = (e) => {
@@ -451,6 +582,16 @@ export default function DeliveryForm({
     const val = e.target.value;
     const full = `${phonePrefix} ${val}`;
     handleChange({ target: { name: 'phone', value: full } });
+  };
+  const handleAddressInput = (e) => {
+    handleChange(e);
+    buildAddressSuggestions(e.target.value);
+  };
+  const handleAddressKeyDown = (e) => {
+    if (e.key === 'Tab' && addressPrediction && addressSuggestions.length > 0) {
+      e.preventDefault();
+      selectAddress(addressSuggestions[0]);
+    }
   };
 
   return (
@@ -800,9 +941,26 @@ export default function DeliveryForm({
               style={{ gridColumn: '1 / -1', overflow: 'hidden' }}
             >
               <div className="input-wrapper-col full-width">
-                <div className={`input-group ${getInputClass('address')}`}>
+                <div
+                  className={`input-group ghost-container ${getInputClass(
+                    'address'
+                  )}`}
+                >
+                  <div className="ghost-overlay" style={{ paddingLeft: '42px' }}>
+                    <span className="invisible-text">{formData.address}</span>
+                    <span className="prediction-text">
+                      {addressPrediction}
+                    </span>
+                    {addressPrediction && (
+                      <span className="tab-hint-inline">
+                        <ArrowRightToLine size={10} /> Tab
+                      </span>
+                    )}
+                  </div>
                   <MapPin
-                    className={`input-icon ${!mapsReady ? 'opacity-50' : ''}`}
+                    className={`input-icon z-index-fix ${
+                      !mapsReady ? 'opacity-50' : ''
+                    }`}
                     size={18}
                   />
                   <input
@@ -815,10 +973,12 @@ export default function DeliveryForm({
                         : 'Učitavanje mape...'
                     }
                     value={formData.address}
-                    onChange={handleChange}
+                    onChange={handleAddressInput}
+                    onKeyDown={handleAddressKeyDown}
                     onBlur={handleBlur}
                     required={requiredForCourier}
                     autoComplete="new-password"
+                    className="real-input"
                   />
                   {!mapsReady && (
                     <div style={{ position: 'absolute', right: 12 }}>
@@ -869,6 +1029,30 @@ export default function DeliveryForm({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {canShowSaveCta && (
+          <div
+            className="full-width save-address-cta"
+            style={{ gridColumn: '1 / -1' }}
+          >
+            <div className="save-address-card">
+              <div>
+                <p className="save-title">Sačuvaj ovu adresu</p>
+                <p className="save-subtitle">
+                  Spremaj je za sledeću porudžbinu i popuni automatski.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="save-address-btn"
+                onClick={handleOpenSaveModal}
+              >
+                <Plus size={16} />
+                Sačuvaj adresu
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* REGISTER POPOUT */}
         <AnimatePresence>
@@ -930,6 +1114,119 @@ export default function DeliveryForm({
           )}
         </AnimatePresence>
       </div>
+
+      {/* SAVE ADDRESS MODAL */}
+      <AnimatePresence>
+        {showSaveModal && (
+          <motion.div
+            className="save-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowSaveModal(false)}
+          >
+            <motion.div
+              className="save-modal"
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ type: 'spring', duration: 0.35, bounce: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="save-modal-header">
+                <div>
+                  <p className="save-modal-title">Sačuvaj adresu</p>
+                  <p className="save-modal-desc">
+                    Daj naziv i odaberi ikonicu da je brže pronađeš.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="save-close-btn"
+                  onClick={() => setShowSaveModal(false)}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <label className="save-input-label">
+                Naziv adrese
+                <div className="save-input-wrapper">
+                  <Edit2 size={16} className="save-input-icon" />
+                  <input
+                    type="text"
+                    value={newAddressLabel}
+                    onChange={(e) => {
+                      setNewAddressLabel(e.target.value);
+                      setManualLabelEdited(true);
+                    }}
+                    placeholder="Kuća, Posao..."
+                  />
+                </div>
+              </label>
+
+              <div className="icon-grid">
+                {(ADDRESS_ICON_ORDER?.length
+                  ? ADDRESS_ICON_ORDER
+                  : Object.keys(ADDRESS_ICONS)
+                )
+                  .filter((key) => ADDRESS_ICONS[key])
+                  .map((key) => {
+                    const val = ADDRESS_ICONS[key];
+                    const IconComp = val.icon;
+                    const isActive = newAddressIcon === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`icon-pill ${isActive ? 'active' : ''}`}
+                        onClick={() => {
+                          setNewAddressIcon(key);
+                          if (!manualLabelEdited || !newAddressLabel.trim()) {
+                            setNewAddressLabel(val.label);
+                          }
+                        }}
+                        title={val.label}
+                      >
+                        <IconComp size={18} />
+                        <span>{val.label}</span>
+                      </button>
+                    );
+                  })}
+              </div>
+
+              <button
+                type="button"
+                className="save-primary-btn"
+                onClick={handleSaveAddress}
+                disabled={isSavingAddress}
+              >
+                {isSavingAddress ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} />
+                    ČUVANJE...
+                  </>
+                ) : (
+                  'Sačuvaj'
+                )}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

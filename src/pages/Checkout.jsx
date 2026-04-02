@@ -336,6 +336,8 @@ export default function Checkout() {
             isRegistering={isRegistering}
             popoverDismissed={popoverDismissed}
             createAccount={createAccount}
+            validateAll={validateAll}
+            flash={flash}
           />
           <ShippingSection
             shippingMethod={shippingMethod}

@@ -1,11 +1,11 @@
 // src/pages/Account.jsx
 
-import React, { useState, useEffect } from 'react'; // Dodat useEffect
+import React, { useEffect } from 'react'; // Dodat useEffect
 import { useAuth } from '../hooks/useAuth.js';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { User } from 'lucide-react';
 import './Account.css';
-import { useSearchParams } from 'react-router-dom'; // <--- NOVO: Import
+import { useNavigate, useParams } from 'react-router-dom'; // <--- NOVO: Import
 
 // Uvezene izdvojene komponente
 import AccountNav from '../components/account/AccountNav.jsx';
@@ -14,25 +14,28 @@ import AddressSection from '../components/account/AddressSection.jsx';
 import WishlistSection from '../components/account/WishlistSection.jsx';
 import OrdersSection from '../components/account/OrdersSection.jsx';
 import SecuritySection from '../components/account/SecuritySection.jsx';
-import { AnimatePresence } from 'framer-motion';
 import SEOHead from '../components/seo/SEOHead.jsx';
+
+const allowedTabs = ['profile', 'orders', 'security', 'addresses', 'wishlist'];
+const defaultTab = 'profile';
 
 export default function Account() {
   const { user, logout, showAuth } = useAuth();
-  const [searchParams] = useSearchParams(); // <--- NOVO: Čitanje URL-a
+  const navigate = useNavigate();
+  const { section } = useParams();
 
-  // Inicijalno stanje uzimamo iz URL-a ili default 'profile'
-  const [activeTab, setActiveTab] = useState(
-    searchParams.get('tab') || 'profile',
-  );
+  const activeTab = allowedTabs.includes(section) ? section : defaultTab;
 
-  // Ovo osigurava da se tab promeni ako korisnik klikne srce dok je VEĆ na account strani
   useEffect(() => {
-    const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl);
+    if (!section || !allowedTabs.includes(section)) {
+      navigate(`/account/${defaultTab}`, { replace: true });
     }
-  }, [searchParams]);
+  }, [section, allowedTabs, navigate]);
+
+  const handleTabChange = (id) => {
+    if (!allowedTabs.includes(id)) return;
+    navigate(`/account/${id}`, { replace: true });
+  };
 
   if (!user) {
     return (
@@ -50,8 +53,8 @@ export default function Account() {
 
           <h1>Dobrodošli u Daja Shop Nalog</h1>
           <p className="lead">
-            Prijavom dobijate pristup praćenju statusa porudžbina, čuvanju
-            adresa i kreiranju liste želja.
+            Prijavom dobijate pristup praćenju statusa porudžbina, čuvanju adresa
+            i kreiranju liste želja.
           </p>
 
           <div className="auth-actions">
@@ -72,12 +75,13 @@ export default function Account() {
       </div>
     );
   }
+
   return (
     <div className="container account-dashboard">
       <SEOHead title="Moj nalog" noIndex={true} />
       <AccountNav
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         logout={logout}
       />
       <main className="account-main">

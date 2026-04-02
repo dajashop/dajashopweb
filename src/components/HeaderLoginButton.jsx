@@ -21,7 +21,7 @@ export default function HeaderLoginButton() {
   return (
     <div className="header-user">
       <Link
-        to="/account"
+        to="/account/profile"
         className="avatar small"
         aria-label="Moj nalog"
         // Dodajemo overflow: hidden da slika ne bi izlazila iz kruga

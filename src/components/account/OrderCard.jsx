@@ -9,10 +9,12 @@ import {
   CreditCard,
   Clock,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { money } from '../../utils/currency';
 
 export default function OrderCard({ order }) {
   const [isOpen, setIsOpen] = useState(false);
+  const placeholderImage = '/placeholder.png';
 
   // Određivanje boje bedža na osnovu statusa
   const getStatusColor = (status) => {
@@ -96,22 +98,82 @@ export default function OrderCard({ order }) {
                   Artikli
                 </h5>
                 <div className="space-y-3">
-                  {order.items.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex justify-between items-start text-sm"
-                    >
-                      <span className="text-[var(--color-text)]">
-                        <span className="text-[var(--color-primary)] font-bold">
-                          {item.qty}x
-                        </span>{' '}
+                  {order.items.map((item, idx) => {
+                    const lineTotal = money((item.price || 0) * (item.qty || 1));
+                    // Koristimo isti prioritet kao u korpi: image iz item-a, zatim prvi iz images niza, pa rezervni.
+                    const imageSrc =
+                      item.image ||
+                      item.images?.[0]?.url ||
+                      item.imageUrl ||
+                      placeholderImage;
+                    const nameNode = item.slug ? (
+                      <Link
+                        to={`/product/${item.slug}`}
+                        className="text-[var(--color-text)] font-semibold hover:text-[var(--color-primary)] transition-colors line-clamp-2"
+                      >
+                        {item.name}
+                      </Link>
+                    ) : (
+                      <span className="text-[var(--color-text)] font-semibold line-clamp-2">
                         {item.name}
                       </span>
-                      <span className="text-[var(--color-text)] font-medium">
-                        {money(item.price * item.qty)}
-                      </span>
-                    </div>
-                  ))}
+                    );
+
+                    const imageNode = (
+                      <div className="relative group w-20 h-20 rounded-lg overflow-hidden border border-[var(--color-border)] bg-white flex-shrink-0">
+                        <img
+                          src={imageSrc}
+                          alt={item.name}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                          onError={(e) => {
+                            if (e.target.dataset.fallback) return;
+                            e.target.dataset.fallback = 'true';
+                            e.target.src = placeholderImage;
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity duration-200 grid place-items-center">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-white border border-white/30 px-2 py-1 rounded-full backdrop-blur-md">
+                            Detalji
+                          </span>
+                        </div>
+                      </div>
+                    );
+
+                    return (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-3 border-b border-[#b8b8b8] last:border-b-0"
+                      >
+                        {item.slug ? (
+                          <Link to={`/product/${item.slug}`}>{imageNode}</Link>
+                        ) : (
+                          imageNode
+                        )}
+
+                        <div className="flex-1 min-w-0">
+                          {nameNode}
+                          {item.brand && (
+                            <Link
+                              to={`/catalog?brand=${encodeURIComponent(item.brand)}`}
+                              className="inline-block text-xs text-[var(--color-muted)] mt-1 hover:text-[var(--color-primary)] transition-colors"
+                            >
+                              {item.brand}
+                            </Link>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2 text-sm">
+                          <span className="text-[var(--color-text)] font-semibold">
+                            {item.qty || 1}x
+                          </span>
+                          <span className="text-[var(--color-text)] font-bold">
+                            {lineTotal}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="mt-4 pt-3 border-t border-[var(--color-border)] flex justify-between items-center">
                   <span className="text-[var(--color-muted)]">Dostava:</span>

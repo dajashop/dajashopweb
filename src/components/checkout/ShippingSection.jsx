@@ -59,12 +59,16 @@ export default function ShippingSection({
                        {' '}
             <div className="radio-price">
                            {' '}
-              {finalShipping === 0 && shippingMethod === 'courier' ? (
+              {isFreeShipping ? (
                 <span
                   className="text-success"
-                  style={{ textAlign: 'right', minWidth: '100px' }}
+                  style={{
+                    textAlign: 'right',
+                    minWidth: '100px',
+                    display: 'inline-block',
+                  }}
                 >
-                                    Besplatna                {' '}
+                  Besplatna
                 </span>
               ) : (
                 <span>{money(COURIER_COST)}</span>
