@@ -2,7 +2,7 @@
 
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { logger } from "firebase-functions";
-import { transporter } from "./transporter";
+import { getTransporter } from "./transporter";
 import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin"; // OBAVEZNO: Dodaj ovo
 
@@ -56,7 +56,7 @@ export const sendWelcomeEmail = onDocumentCreated(
     };
 
     try {
-      await transporter.sendMail(mailOptions);
+      await getTransporter().sendMail(mailOptions);
       return snapshot.ref.update({ emailSent: true, emailSentAt: new Date() });
     } catch (error) {
       logger.error("Error sending email:", error);
@@ -123,7 +123,7 @@ export const sendNewsletterPromo = onRequest(
       `,
       };
 
-      await transporter.sendMail(mailOptions);
+      await getTransporter().sendMail(mailOptions);
       res.status(200).json({ success: true, message: "Prijavljeni ste!" });
     } catch (error) {
       console.error("Greška:", error);

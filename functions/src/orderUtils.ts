@@ -4,7 +4,7 @@ import {
   onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
-import { transporter } from "./transporter";
+import { getTransporter } from "./transporter";
 import { formatMoney } from "./helpers";
 
 if (admin.apps.length === 0) {
@@ -18,7 +18,7 @@ const SHOP_DETAILS = {
   city: "18000 Niš",
   email: "dajashopnis@gmail.com",
   phone: "+381 64 126 24 25", // Ubaci pravi telefon
-  website: "https://dajashop.com",
+  website: "https://dajashop.rs",
 };
 
 const THEME = {
@@ -115,15 +115,17 @@ export const sendOrderConfirmation = onDocumentCreated(
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) return;
-const order = snapshot.data();
+    const order = snapshot.data();
     const docId = event.params.orderId;
-    
+
     // Čitanje polja 'id' iz dokumenta
-    const customOrderId = order['id']; 
-    const displayId = customOrderId || docId; 
+    const customOrderId = order["id"];
+    const displayId = customOrderId || docId;
 
     // --- DEBAGIRANJE ---
-    console.log(`ORDER ID DEBUG: Custom ID: ${customOrderId}, Document ID: ${docId}, Final Display ID: ${displayId}`);
+    console.log(
+      `ORDER ID DEBUG: Custom ID: ${customOrderId}, Document ID: ${docId}, Final Display ID: ${displayId}`,
+    );
     // -------------------
     if (!order || !order.customer || !order.items) {
       console.error("Nedostaju podaci porudžbine.");
@@ -152,8 +154,8 @@ const order = snapshot.data();
           <div style="max-width: 600px; margin: 40px auto; background-color: ${
             THEME.surface
           }; border-radius: 12px; border: 1px solid ${
-        THEME.border
-      }; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+            THEME.border
+          }; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
             
             <div style="padding: 40px 40px 20px 40px; text-align: center; border-bottom: 1px solid ${
               THEME.bg
@@ -170,8 +172,8 @@ const order = snapshot.data();
                 <div style="display: inline-block; padding: 6px 14px; background-color: ${
                   THEME.bg
                 }; color: ${
-        THEME.muted
-      }; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 16px; letter-spacing: 0.5px;">
+                  THEME.muted
+                }; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 16px; letter-spacing: 0.5px;">
                   ⏳ Status: Evidentirano
                 </div>
                 <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 700; color: ${
@@ -259,12 +261,12 @@ const order = snapshot.data();
     };
 
     try {
-      await transporter.sendMail(mailOptions);
+      await getTransporter().sendMail(mailOptions);
       console.log(`[Confirmation] Email poslat: ${order.customer.email}`);
     } catch (error) {
       console.error("[Confirmation] Greška pri slanju:", error);
     }
-  }
+  },
 );
 
 // ------------------------------------------------------------------
@@ -363,8 +365,8 @@ export const sendOrderStatusUpdate = onDocumentUpdated(
           <div style="max-width: 600px; margin: 40px auto; background-color: ${
             THEME.surface
           }; border-radius: 12px; border: 1px solid ${
-        THEME.border
-      }; overflow: hidden;">
+            THEME.border
+          }; overflow: hidden;">
             
             <div style="padding: 40px 40px 20px 40px; text-align: center; border-bottom: 1px solid ${
               THEME.bg
@@ -394,8 +396,8 @@ export const sendOrderStatusUpdate = onDocumentUpdated(
                 <div style="background-color: ${
                   THEME.bg
                 }; padding: 16px; border-radius: 8px; border-left: 4px solid ${
-        statusConfig.color
-      };">
+                  statusConfig.color
+                };">
                   <p style="margin: 0; font-size: 15px; line-height: 22px; color: ${
                     THEME.text
                   }; text-align: left;">
@@ -450,10 +452,10 @@ export const sendOrderStatusUpdate = onDocumentUpdated(
     };
 
     try {
-      await transporter.sendMail(mailOptions);
+      await getTransporter().sendMail(mailOptions);
       console.log(`[Status Update] Poslato na: ${newData.customer.email}`);
     } catch (error) {
       console.error("[Status Update] Greška:", error);
     }
-  }
+  },
 );

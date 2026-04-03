@@ -1,9 +1,10 @@
 // functions/src/adminUtils.ts
 
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
-import { transporter } from "./transporter";
+import { getTransporter } from "./transporter";
 import { formatMoney } from "./helpers";
 import * as admin from "firebase-admin";
+import { defineString } from "firebase-functions/params";
 
 // Inicijalizacija admina je obavezna u svakom fajlu koji koristi admin SDK
 if (admin.apps.length === 0) {
@@ -71,19 +72,22 @@ export const sendNewOrderToAdmins = onDocumentCreated(
           </span>
         </td>
       </tr>
-    `
+    `,
       )
       .join("");
 
     // Link do admin panela (prilagodi putanju ako je drugačija u tvom routeru)
     // const adminLink = `https://dajashop.pages.dev/admin/orders/${orderId}`;
-    const adminLink = `https://dajashop.pages.dev/admin/orders`;
+    const SITE_URL = defineString("SITE_URL", {
+      default: "https://dajashop.pages.dev",
+    });
+    const adminLink = `${SITE_URL.value()}/admin/orders`;
 
     const mailOptions = {
       from: '"Daja Shop Bot" <dajashopnis@gmail.com>',
       to: ADMIN_EMAILS.join(","), // Šalje svima iz liste
       subject: `🔥 NOVA PORUDŽBINA: #${orderId} - ${formatMoney(
-        order.finalTotal
+        order.finalTotal,
       )}`,
       html: `
         <!DOCTYPE html>
@@ -145,16 +149,16 @@ export const sendNewOrderToAdmins = onDocumentCreated(
                       <a href="tel:${
                         order.customer.phone
                       }" style="color: #2563eb; text-decoration: none;">${
-        order.customer.phone
-      }</a>
+                        order.customer.phone
+                      }</a>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding-bottom: 8px; color: #6b7280;">Adresa:</td>
                     <td style="padding-bottom: 8px; color: #111827;">
                       ${order.customer.address}, ${order.customer.postalCode} ${
-        order.customer.city
-      }
+                        order.customer.city
+                      }
                     </td>
                   </tr>
                 </table>
@@ -201,10 +205,10 @@ export const sendNewOrderToAdmins = onDocumentCreated(
     };
 
     try {
-      await transporter.sendMail(mailOptions);
+      await getTransporter().sendMail(mailOptions);
       console.log("Admin notifikacija poslata.");
     } catch (error) {
       console.error("Greška pri slanju admin maila:", error);
     }
-  }
+  },
 );

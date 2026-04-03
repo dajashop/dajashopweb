@@ -15,6 +15,9 @@ import {
   saveImageFromUrl,
 } from "./imageUtils";
 import { generateSitemap } from "./sitemap";
+import { sendNewOrderToAdmins } from "./adminUtils";
+import { sendOrderConfirmation, sendOrderStatusUpdate } from "./orderUtils";
+import { sendNewsletterPromo, sendWelcomeEmail } from "./newsletters";
 // import { sendNewOrderToAdmins } from "./adminUtils";
 // import { sendOrderConfirmation, sendOrderStatusUpdate } from "./orderUtils";
 // import { sendNewsletterPromo } from "./newsletters";
@@ -25,11 +28,11 @@ export {
   generateThumbnailFromStorage,
   repairProductImageUrls,
   generateSitemap,
-  // sendNewOrderToAdmins,
-  //sendOrderConfirmation,
-  //sendOrderStatusUpdate,
-  //sendWelcomeEmail,
-  // sendNewsletterPromo,
+  sendNewOrderToAdmins,
+  sendOrderConfirmation,
+  sendOrderStatusUpdate,
+  sendWelcomeEmail,
+  sendNewsletterPromo,
 };
 
 // **ovo u terminal
