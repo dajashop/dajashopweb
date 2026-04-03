@@ -16,9 +16,9 @@ import {
   orderBy,
   limit,
   getDocs,
-  addDoc,
+  setDoc,
+  doc,
   serverTimestamp,
-  where,
 } from 'firebase/firestore';
 
 // Uvoz komponenti
@@ -29,42 +29,10 @@ import PaymentSection from '../components/checkout/PaymentSection';
 import OrderSummary from '../components/checkout/OrderSummary';
 import SEOHead from '../components/seo/SEOHead.jsx';
 
-// [IZMENJENO]: Asinhrona funkcija za generisanje DAJA-xxxxxx ID-a sa proverom jedinstvenosti
-const generateUniqueDisplayId = async () => {
-  const maxRetries = 10;
-  let attempts = 0;
-  let uniqueIdFound = false;
-  let displayId = '';
-
-  while (attempts < maxRetries && !uniqueIdFound) {
-    // Generiše nasumičan broj od 100000 do 999999 (tačno 6 cifara)
-    const randomNumber = Math.floor(100000 + Math.random() * 900000);
-    displayId = `DAJA-${randomNumber}`;
-
-    attempts++;
-
-    // Proveravamo u bazi da li već postoji porudžbina sa istim displayId
-    const ordersRef = collection(db, 'orders');
-    const q = query(ordersRef, where('displayId', '==', displayId), limit(1));
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      uniqueIdFound = true;
-    } else {
-      // Mali timeout da se izbegne prevelik pritisak na Firestore
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
-
-  if (!uniqueIdFound) {
-    // Fallback: Ako smo potrošili sve pokušaje, vraćamo vremensku oznaku
-    console.error(
-      'Nije moguće generisati jedinstven DAJA-ID nakon 10 pokušaja.',
-    );
-    return `FALLBACK-${Date.now()}`;
-  }
-
-  return displayId;
+// Generiše DAJA-xxxxxx display ID.
+const generateDisplayId = () => {
+  const randomNumber = Math.floor(100000 + Math.random() * 900000);
+  return `DAJA-${randomNumber}`;
 };
 
 export default function Checkout() {
@@ -243,45 +211,67 @@ export default function Checkout() {
         }
       }
 
-      // [IZMENA 2]: Poziv asinhronog generatora jedinstvenog ID-a
-      const displayId = await generateUniqueDisplayId();
-
-      // Koristimo Firestore-ov auto-generisani ID (docRef.id) i custom displayId za kupca
-      const newOrder = {
-        // [IZMENA 3]: Dodajemo displayId, orderId se više ne generiše
-        displayId: displayId,
-        customer: {
-          ...formData,
-          uid: user ? user.uid : 'guest',
-        },
-        items: items,
-        subtotal: total, // Originalni total
-
-        // 4. DODAJEMO PODATKE O POPUSTU U OBJEKAT PORUDŽBINE
-        promoCode: appliedPromo ? appliedPromo.code : null,
-        discountAmount: discountAmount,
-        subtotalAfterDiscount: subtotalAfterDiscount,
-
-        shippingCost: finalShipping,
-        shippingMethod: shippingMethod,
-        paymentMethod: payMethod,
-        finalTotal: finalTotal,
-        status: 'Na čekanju',
-        isRead: false,
-        date: new Date().toLocaleDateString('sr-RS'),
-        createdAt: serverTimestamp(),
-      };
-
       try {
-        // addDoc generiše automatski document ID (koji nam je potreban za update statusa)
-        const docRef = await addDoc(collection(db, 'orders'), newOrder);
+        const maxCreateAttempts = 12;
+        let finalDocId = null;
+        let newOrder = null;
+
+        // Pokušaj kreiranja sa nasumičnim displayId-em; ako postoji kolizija,
+        // setDoc će pokušati update i rules će to odbiti za običnog korisnika.
+        for (let attempt = 0; attempt < maxCreateAttempts; attempt++) {
+          const displayId = generateDisplayId();
+          const orderRef = doc(db, 'orders', displayId);
+
+          newOrder = {
+            displayId: displayId,
+            customer: {
+              ...formData,
+              uid: user ? user.uid : 'guest',
+            },
+            items: items,
+            subtotal: total,
+            promoCode: appliedPromo ? appliedPromo.code : null,
+            discountAmount: discountAmount,
+            subtotalAfterDiscount: subtotalAfterDiscount,
+            shippingCost: finalShipping,
+            shippingMethod: shippingMethod,
+            paymentMethod: payMethod,
+            finalTotal: finalTotal,
+            status: 'Na čekanju',
+            isRead: false,
+            date: new Date().toLocaleDateString('sr-RS'),
+            createdAt: serverTimestamp(),
+          };
+
+          try {
+            await setDoc(orderRef, newOrder);
+            finalDocId = displayId;
+            break;
+          } catch (err) {
+            const isPermissionDenied =
+              typeof err?.code === 'string' &&
+              (err.code === 'permission-denied' ||
+                err.code === 'firestore/permission-denied');
+
+            if (!isPermissionDenied || attempt === maxCreateAttempts - 1) {
+              throw err;
+            }
+          }
+        }
+
+        if (!finalDocId || !newOrder) {
+          throw new Error('Nije moguće kreirati jedinstven ID porudžbine.');
+        }
 
         // 5. BRIŠEMO PROMO KOD I KORPU POSLE USPEŠNE KUPOVINE
         removePromo();
 
-        // [KLJUČNA ISPRAVKA]: Ažuriramo orderData za modal sa displayId-em za 'id'
-        // i originalnim docId-em za 'docId' (za internu upotrebu ako zatreba).
-        const finalOrderData = { ...newOrder, id: displayId, docId: docRef.id };
+        // ID i docId su isti jer displayId koristimo kao Firestore document ID.
+        const finalOrderData = {
+          ...newOrder,
+          id: finalDocId,
+          docId: finalDocId,
+        };
 
         setOrderData(finalOrderData);
         setShowSuccessModal(true);

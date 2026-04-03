@@ -1,63 +1,176 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
     
-    // --- JAVNE KOLEKCIJE (Čitanje bez autentifikacije) ---
-    match /products/{document=**} {
-      allow read: if true;  // Javno čitanje proizvoda
-      allow create: if request.auth != null && 
-                       request.auth.customClaims.admin == true;
-      allow update: if request.auth != null && 
-                       request.auth.customClaims.admin == true;
-      allow delete: if request.auth != null && 
-                       request.auth.customClaims.admin == true;
+    // Proverava da li je korisnik ulogovan
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    match /categories/{document=**} {
+    // Proverava da li je korisnik vlasnik dokumenta (na osnovu UID-a)
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Admin ako:
+    // 1) ima custom claim `admin: true`  ILI
+    // 2) postoji dokument /admins/{uid}
+    function isAdmin() {
+      return isSignedIn() &&
+        (
+          request.auth.token.admin == true ||
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        );
+    }
+
+    function validProduct(data) {
+      return
+        // --- Obavezna polja ---
+        data.name is string &&
+        data.brand is string &&
+        data.slug is string &&
+        data.slug.matches('^[a-z0-9-]{2,}$') &&
+        data.price is number && 
+        data.price >= 0 &&
+
+        // --- Opcionalna polja ---
+        // Koristimo .get() da proverimo da li polje postoji ili je null pre provere tipa
+        (data.get('novo', null) == null || data.novo is bool) &&
+        (data.get('images', null) == null || data.images is list);
+    }
+
+    // ===== Proizvodi =====
+    match /products/{productId} {
+      // Svi mogu da čitaju katalog
       allow read: if true;
-      allow write: if request.auth != null && 
-                      request.auth.customClaims.admin == true;
-    }
 
-    match /brands/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null && 
-                      request.auth.customClaims.admin == true;
-    }
+      // Kreiranje – samo admin + validacija; zahtevamo da id polja odgovara doc id-u
+      allow write: if isAdmin();
 
-    match /spec_keys/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null && 
-                      request.auth.customClaims.admin == true;
-    }
+      // Izmena – samo admin + validacija
+      allow update: if isAdmin() &&
+                    validProduct(request.resource.data);
 
-    // --- KORISNIČKE KOLEKCIJE (Privatne) ---
-    match /users/{userId} {
-      allow read: if request.auth != null && 
-                     (request.auth.uid == userId || 
-                      request.auth.customClaims.admin == true);
-      allow write: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // Brisanje – samo admin
+      allow delete: if isAdmin();
     }
-
-    match /users/{userId}/{document=**} {
-      allow read: if request.auth != null && 
-                     (request.auth.uid == userId || 
-                      request.auth.customClaims.admin == true);
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // --- PORUDŽBINE (Samo čitanje za vlasnike) ---
+    
+    // 2. PORUDŽBINE (Orders)
     match /orders/{orderId} {
-      allow read: if request.auth != null && 
-                     (request.auth.uid == resource.data.userId || 
-                      request.auth.customClaims.admin == true);
-      allow write: if request.auth != null && 
-                      request.auth.customClaims.admin == true;
-      allow create: if request.auth != null;
+      // Admin vidi sve, Korisnik vidi samo svoje porudžbine (provera po emailu)
+      allow read: if isAdmin() || (isSignedIn() && resource.data.customer.email == request.auth.token.email);
+      
+      // Kreiranje porudžbine: ulogovan korisnik ili admin.
+      // setDoc na postojećem dokumentu pada na update granu i nije dozvoljen običnom korisniku.
+      allow create: if isSignedIn();
+
+      // Izmena i brisanje: samo admin (statusi, backoffice izmene).
+      allow update, delete: if isAdmin();
     }
 
-    // --- DEFAULT: Odbij sve ostalo ---
+    // ===== Admin registar (read samo adminu; write zaključan) =====
+    match /admins/{uid} {
+      allow read: if isAdmin();
+      allow write: if false; // upravljaj preko servera/CLI-a ili Cloud Function-om
+    }
+
+    // (Opcionalno) user profili – samo vlasnik čita/piše svoj dokument
+    match /users/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+      
+      match /addresses/{addressId} {
+      	allow read: if true;
+      	allow write: if isSignedIn();
+    	}
+      // Podkolekcija: LISTA ŽELJA (Wishlist - priprema za budućnost)
+      match /wishlist/{itemId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+    
+    match /newsletter_subscribers/{document} {
+      // Dozvoli upis svima (da bi gosti mogli da se prijave)
+      // Ali samo ako šalju validan email format
+      allow create: if request.resource.data.email is string 
+                    && request.resource.data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+      
+      // Niko ne može da čita listu javno (samo ti iz Admin panela ili konzole)
+      allow read, update, delete: if isAdmin(); 
+    }
+    
+    // --- NEWSLETTER (Novo!) ---
+    // Ključno za tvoj promo kod!
+    match /newsletter/{email} {
+      // 1. DOZVOLI ČITANJE:
+      // Korisnik sme da pročita dokument SAMO ako se ID dokumenta (email)
+      // poklapa sa njegovim emailom u autentifikaciji.
+      // Ovo omogućava usePromo hook-u da proveri: "Da li sam JA u bazi?"
+      allow read: if true;
+      
+      // 2. DOZVOLI PISANJE:
+      // Obično piše samo Admin ili Cloud Function (koja ima admin prava i ignoriše pravila).
+      // Ali ako želiš da dozvoliš i direktan upis sa klijenta (opciono):
+      allow write: if true; // Ostavljamo false jer Cloud Function upisuje ovo
+    }
+    
+    // --- 3. Meta podaci (Brendovi, Kategorije, Specifikacije) ---
+    // Isto pravilo: Javnost čita, Admin piše
+    match /brands/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+     // --- NOVA PRAVILA ZA RECENZIJE ---
+    match /reviews/{reviewId} {
+
+      // 1. ČITANJE: Svako može da vidi recenzije (javno)
+      allow read: if true;
+
+      // 2. KREIRANJE: Stroga pravila
+      allow create: if 
+        // A) Korisnik mora biti ulogovan
+        request.auth != null &&
+
+        // B) Podatak 'userId' koji šalješ mora biti TVOJ auth.uid (sprečava lažiranje tuđeg imena)
+        request.resource.data.userId == request.auth.uid &&
+
+        // C) Validacija ocene (Mora biti broj, celi broj, između 1 i 5)
+        request.resource.data.rating is int &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5 &&
+
+        // D) Validacija komentara (Mora biti tekst, max 1000 slova)
+        request.resource.data.comment is string &&
+        request.resource.data.comment.size() < 1000 &&
+        request.resource.data.comment.size() > 0 &&
+
+        // E) Mora postojati ID proizvoda i ime
+        request.resource.data.productId is string &&
+        request.resource.data.userName is string;
+
+      // 3. BRISANJE: Samo onaj ko je napisao može da obriše (svoje)
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // 4. IZMENA: Za sada zabranjujemo izmenu (česta praksa za recenzije), 
+      // ali ako želiš, možeš koristiti ista pravila kao za delete.
+      allow update: if false; 
+    }
+    
+    match /categories/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /spec_keys/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Ostalo zaključaj
     match /{document=**} {
       allow read, write: if false;
     }
