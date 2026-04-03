@@ -21,10 +21,24 @@ export default function ProductGallery({ product }) {
           ? [{ url: product.image }]
           : [];
     images.forEach((img, i) => {
-      list.push({ type: 'image', src: img.url, id: `img-${i}`, imageIndex: i });
+      list.push({
+        type: 'image',
+        src: img.url,
+        id: `img-${i}`,
+        imageIndex: i,
+      });
     });
-    return list;
+    // Dodajemo indeks da bismo ga sačuvali čak i kada neke thumb-ove sakrijemo
+    return list.map((item, idx) => ({ ...item, mediaIndex: idx }));
   }, [product]);
+
+  // Thumbs: ukupno 5 taba max (4 direktno prikazana + 1 \"još\")
+  const TOTAL_TABS = 5;
+  const hasOverflow = mediaList.length > TOTAL_TABS;
+  const directThumbCount = hasOverflow ? TOTAL_TABS - 1 : mediaList.length;
+  const visibleThumbs = mediaList.slice(0, directThumbCount);
+  const hiddenThumbs = mediaList.slice(directThumbCount);
+  const hasHiddenThumbs = hiddenThumbs.length > 0;
 
   const galleryImages = useMemo(
     () =>
@@ -77,12 +91,12 @@ export default function ProductGallery({ product }) {
       {/* Thumbnails */}
       {mediaList.length > 1 && (
         <div className="product__thumbs">
-          {mediaList.map((item, index) => {
-            const isActive = activeIndex === index;
+          {visibleThumbs.map((item) => {
+            const isActive = activeIndex === item.mediaIndex;
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveIndex(index)}
+                onClick={() => setActiveIndex(item.mediaIndex)}
                 className={`thumb-btn ${isActive ? 'is-active' : ''}`}
               >
                 {item.type === '3d' ? (
@@ -100,6 +114,23 @@ export default function ProductGallery({ product }) {
               </button>
             );
           })}
+
+          {hasHiddenThumbs && (
+            <button
+              type="button"
+              className="thumb-btn more-thumb"
+              onClick={() => {
+                // Pozicioniramo se na prvu sakrivenu sliku i odmah otvaramo fullscreen
+                setActiveIndex(hiddenThumbs[0].mediaIndex);
+                setIsGalleryOpen(true);
+              }}
+            >
+              <div className="more-thumb__overlay">
+                <ImageIcon size={18} strokeWidth={1.5} />
+                <span>+{hiddenThumbs.length}</span>
+              </div>
+            </button>
+          )}
         </div>
       )}
     </div>

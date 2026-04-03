@@ -364,6 +364,7 @@ function AddressSection({ user }) {
             className="address-form card glass"
             onSubmit={handleSave}
             noValidate
+            autoComplete="off"
             style={{ position: 'relative', zIndex: 20 }}
           >
             <h4>{editingId ? 'Izmeni adresu' : 'Nova adresa'}</h4>
@@ -406,6 +407,10 @@ function AddressSection({ user }) {
                       }
                       className="border-primary mb-3"
                       autoFocus
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
                       required
                     />
                     <span>Izaberi ikonicu:</span>
@@ -437,6 +442,10 @@ function AddressSection({ user }) {
                   onChange={handleInputChange}
                   onBlur={handleBlur}
                   placeholder="Ime i prezime"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="words"
+                  spellCheck={false}
                   className={errors.name ? 'input-error' : ''}
                 />
                 <AnimatePresence mode="wait">
@@ -459,16 +468,20 @@ function AddressSection({ user }) {
                   />
                   <input
                     ref={addressInputRef}
-                    name="address"
-                    value={form.address}
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    placeholder="Počnite da kucate adresu..."
-                    className={errors.address ? 'input-error' : ''}
-                    style={{ paddingLeft: '36px' }}
-                  />
-                </div>
-                <AnimatePresence mode="wait">
+                  name="address"
+                  value={form.address}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  placeholder="Počnite da kucate adresu..."
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  className={errors.address ? 'input-error' : ''}
+                  style={{ paddingLeft: '36px' }}
+                />
+              </div>
+              <AnimatePresence mode="wait">
                   {errors.address && (
                     <ErrorMessage
                       key={`addr-${submitCount}`}
@@ -485,6 +498,10 @@ function AddressSection({ user }) {
                   onChange={handleInputChange}
                   onBlur={handleBlur}
                   placeholder="Niš"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="words"
+                  spellCheck={false}
                   className={errors.city ? 'input-error' : ''}
                 />
                 <AnimatePresence mode="wait">
@@ -504,6 +521,11 @@ function AddressSection({ user }) {
                   onChange={handleInputChange}
                   onBlur={handleBlur}
                   placeholder="18000"
+                  autoComplete="off"
+                  inputMode="numeric"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   className={errors.zip ? 'input-error' : ''}
                 />
                 <AnimatePresence mode="wait">
@@ -608,6 +630,11 @@ function AddressSection({ user }) {
                       value={form.phone}
                       onChange={handleInputChange}
                       onBlur={handleBlur}
+                      autoComplete="off"
+                      inputMode="tel"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
                       className={`w-full p-3 pl-10 bg-[var(--color-surface)] rounded-xl border ${
                         errors.phone
                           ? 'border-red-500'

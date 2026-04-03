@@ -90,3 +90,32 @@
   font-weight: 800;
   margin-top: 2px;
 }
+
+.more-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--color-primary), transparent 90%);
+  border-style: dashed;
+}
+
+.more-thumb__overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .product__thumbs {
+    gap: 8px;
+    padding: 8px 6px;
+  }
+  .thumb-btn {
+    flex-basis: clamp(64px, 20vw, 80px);
+    height: clamp(64px, 20vw, 80px);
+  }
+}
