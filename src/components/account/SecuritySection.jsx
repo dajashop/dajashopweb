@@ -211,7 +211,7 @@ export default function SecuritySection({ user }) {
                         value={passForm.current}
                         onChange={handlePassChange}
                         required
-                        className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--color-primary)] outline-none text-[var(--color-text)]"
+                        className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[1rem] focus:border-[var(--color-primary)] outline-none text-[var(--color-text)]"
                       />
                     </div>
                     <div className="input-group">
@@ -222,7 +222,7 @@ export default function SecuritySection({ user }) {
                         value={passForm.new}
                         onChange={handlePassChange}
                         required
-                        className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--color-primary)] outline-none text-[var(--color-text)]"
+                        className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[1rem] focus:border-[var(--color-primary)] outline-none text-[var(--color-text)]"
                       />
                     </div>
                     <div className="input-group">
@@ -233,7 +233,7 @@ export default function SecuritySection({ user }) {
                         value={passForm.confirm}
                         onChange={handlePassChange}
                         required
-                        className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:border-[var(--color-primary)] outline-none text-[var(--color-text)]"
+                        className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[1rem] focus:border-[var(--color-primary)] outline-none text-[var(--color-text)]"
                       />
                     </div>
 

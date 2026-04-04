@@ -32,6 +32,9 @@
   display: grid;
   gap: 6px;
 }
+.slider-dots {
+  z-index: 4;
+}
 .product-card__brand {
   color: var(--color-muted);
   font-size: 0.85rem;

@@ -222,7 +222,7 @@ export default function ProductCard({ p }) {
           </AnimatePresence>
 
           <LayoutGroup>
-            <div className="absolute inset-x-0 bottom-0 z-20 p-3 pointer-events-none">
+            <div className="slider-dots absolute inset-x-0 bottom-0 p-3 pointer-events-none">
               <div className="pointer-events-auto">
                 {imgs.length > 1 && (
                   <div className="flex justify-center items-center gap-2">
