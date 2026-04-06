@@ -163,3 +163,37 @@
 .fd-content .filter-row {
   padding: 12px 8px !important;
 }
+
+/* Floating mini trigger (mobile) */
+.fd-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-surface, #f5f5f7);
+  color: var(--color-text, #111);
+  font-weight: 800;
+  box-shadow: var(--shadow-3, 0 10px 24px rgba(0, 0, 0, 0.16));
+  cursor: pointer;
+  z-index: 11000;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+.fd-fab:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-3, 0 12px 28px rgba(0, 0, 0, 0.18));
+}
+.fd-fab:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-2, 0 6px 16px rgba(0, 0, 0, 0.12));
+}
+
+@media (min-width: 1031px) {
+  .fd-fab {
+    display: none;
+  }
+}

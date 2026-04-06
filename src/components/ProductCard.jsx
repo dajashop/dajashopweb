@@ -290,16 +290,18 @@ export default function ProductCard({ p }) {
             </Link>
           </div>
 
-          <div className="product-card__price text-zinc-900 dark:text-white font-medium">
-            {money(p.price)}
-          </div>
+          <div className="product-card__footer">
+            <div className="product-card__price text-zinc-900 dark:text-white font-medium">
+              {money(p.price)}
+            </div>
 
-          <button
-            className="product-card__btn mt-3 w-full py-2 bg-neutral-300 text-neutral-900 rounded-lg font-medium text-sm hover:bg-neutral-400 transition-all hover:shadow-md active:scale-95"
-            onClick={addToCart}
-          >
-            Dodaj u korpu
-          </button>
+            <button
+              className="product-card__btn w-full py-2 bg-neutral-300 text-neutral-900 rounded-lg font-medium text-sm hover:bg-neutral-400 transition-all hover:shadow-md active:scale-95"
+              onClick={addToCart}
+            >
+              Dodaj u korpu
+            </button>
+          </div>
 
           {/* --- ADMIN KONTROLE NA KARTICI --- */}
           {isAdmin && (

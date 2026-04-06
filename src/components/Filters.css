@@ -1,7 +1,7 @@
 /* ===== Container ===== */
 .filters {
-  position: sticky;
-  top: 5rem;
+  position: static;
+  top: auto;
   z-index: 1050;
   margin-top: 6vh;
 

@@ -12,3 +12,10 @@
     gap: 12px;
   }
 }
+
+@media (max-width: 379px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

@@ -301,29 +301,36 @@
     grid-template-columns: 1fr 1fr;
     gap: 48px;
   }
+}
+
+@media (max-width: 1024px) and (min-width: 641px) {
   .brand-col {
-    grid-column: 1 / -1;
-    align-items: center;
-    text-align: center;
+    grid-column: auto;
+    align-items: flex-start;
+    text-align: left;
   }
   .footer__desc {
-    margin: 0 auto;
+    margin: 0;
   }
   .footer__socials {
-    justify-content: center;
+    justify-content: flex-start;
   }
 }
 
-@media (max-width: 900px) {
-  /* Koristimo nove klase */
+@media (max-width: 1300px) {
+  /* Newsletter: stack text + form and center align */
   .footer-newsletter-content {
     flex-direction: column;
     text-align: center;
     gap: 24px;
+    align-items: center;
+  }
+  .footer-newsletter-text {
+    text-align: center;
   }
   .footer-newsletter-form {
     width: 100%;
-    max-width: 100%;
+    max-width: 540px;
   }
 }
 
