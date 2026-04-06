@@ -104,6 +104,14 @@ html.lenis body {
 .lenis.lenis-scrolling iframe {
   pointer-events: none; /* Poboljšava performanse dok se skroluje preko mapa itd. */
 }
+
+/* Helper: scrollable dropdowns (e.g. izbor države za telefon) */
+.country-dropdown-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #000;
+}
 /* =========================================
    GLOBALNI MODERN SCROLLBAR (DajaShop)
    ========================================= */

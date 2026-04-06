@@ -1,118 +1,172 @@
-# Plan: 500x500 Thumbnail za lokalni upload
+# Plan: Product SEO Meta Tags & Google Images
 
 ## TL;DR
 
-Lokalni upload slika (file picker) ne generiše 500x500 thumbnail — samo remote URL upload to radi preko `saveImageFromUrl` CF. Rešenje: nova callable CF `generateThumbnailFromStorage` + frontend integracija.
+Add per-product SEO fields (metaTitle, metaDescription, metaKeywords, ogImage) to Firestore, the admin form, the product page rendering, and the Cloudflare Worker bot injection. Also improve image SEO for Google Images visibility (alt texts, image sitemap, structured data enhancements).
 
-## Faza 1: Backend — Nova Cloud Function
+## Context / Current State
 
-1. U `functions/src/imageUtils.ts` dodati novu callable CF `generateThumbnailFromStorage`:
-   - **Input:** `{ storagePath: string }` — putanja fajla u Storage (npr. `products/casio-a500/1234_photo.jpg`)
-   - Čita fajl: `bucket.file(storagePath).download()`
-   - Resize: `sharp(buffer).resize(500, 500, { fit: inside, withoutEnlargement: true }).webp({ quality: 80 })`
-   - Upload thumbnail sa `resized_500x500_` prefiksom u isti folder koristeći `uploadBuffer()` helper
-   - Generiše stable download URL za original: `getStableDownloadUrl()`
-   - **Output:** `{ success: boolean, thumbnailUrl: string, mainImageUrl: string, thumbnailPath: string }`
-   - Config: region `europe-west3`, memory `1GiB`, timeout `120s`
+- **SEO infrastructure is solid**: `react-helmet-async`, `SEOHead.jsx`, JSON-LD components (`ProductJsonLd`, `BreadcrumbJsonLd`, etc.) all exist
+- **Cloudflare Worker** (`_worker.js`) already injects OG/meta tags for bots on `/product/:slug` using raw product fields (name, brand, description, mainImageUrl)
+- **Sitemap** Cloud Function generates XML with all visible products
+- **Admin modal** (`AdminProductModal.jsx`) has no SEO section
+- **Product fields in Firestore** currently have NO SEO-specific fields
+- **Image alt tags**: main image uses `product.name`, thumbnails use empty `alt=""`
+- **ProductJsonLd** already outputs `schema.org/Product` with images, but no per-image alt or custom SEO description
 
-2. Eksportovati u `functions/src/index.ts`
+---
 
-## Faza 2: Frontend — Servis i poziv CF (zavisi od Faze 1)
+## Phase 1: Firestore Schema — Add SEO Fields to Products
 
-3. U `src/services/admin.js` dodati `generateThumbnail(storagePath)`:
-   - Callable wrapper po uzoru na `uploadRemoteImage()`
-   - Poziva CF `generateThumbnailFromStorage`
+**Steps:**
 
-4. U `src/pages/Admin/components/ImageManager.jsx`, u `handleUpload()` (~linija 62):
-   - Posle uspešnog uploada proveriti `images.length === 0` pre uploada (znači uploadovana postaje index 0)
-   - Ako jeste, pozvati `generateThumbnail(uploaded[0].path)`
-   - Proslediti rezultat kroz `onRemoteUploadSuccess?.(res)` callback
-   - Loading state dok CF radi
+1. Add new optional fields to product documents (no migration needed — Firestore is schemaless):
+   - `seo.metaTitle` (string) — custom SEO title, falls back to `{brand} {name}`
+   - `seo.metaDescription` (string) — custom meta description, falls back to `description`
+   - `seo.metaKeywords` (string) — comma-separated keywords
+   - `seo.ogImage` (string) — optional OG image override URL
+   - `seo.imageAltText` (string) — custom alt text for main product image, falls back to `{brand} {name}`
 
-5. `AdminProductModal.jsx` → `handleRemoteImageSuccess()` — **BEZ PROMENA** (već pravilno setuje thumbnailUrl i mainImageUrl)
+**Relevant files:**
 
-## Faza 3: Reorder scenario (opciono, za sledeću iteraciju)
+- `src/models/Product.js` — update model (if referenced anywhere)
+- `firestore.rules` — no changes needed (products already admin-write-only, new fields are just part of the document)
 
-6. U `handleImageChange()` u `AdminProductModal.jsx` kad se index 0 promeni, opciono pozvati `generateThumbnail()` za novu prvu sliku. Za sada fallback na pun URL je OK.
+---
 
-## Relevantni fajlovi
+## Phase 2: Admin UI — SEO Section in AdminProductModal
 
-- `functions/src/imageUtils.ts` — no# Plan: 500x500 Thumbnail za lokalni upload
+**Steps:**
 
-## TL;DR
+1. Add `seo` nested object to the `form` state initial value in `AdminProductModal.jsx`
+2. When editing, populate `seo` from `product.seo || {}`
+3. Add a new collapsible/expandable "SEO / Meta Tagovi" section in the form, visually grouped like existing sections (features, specs). Place it AFTER the description field area, BEFORE the features section.
+4. Fields in the SEO section:
+   - **SEO Naslov** (`seo.metaTitle`) — text input, placeholder: auto-generated from brand+name, max 60 chars with character counter
+   - **SEO Opis** (`seo.metaDescription`) — textarea, placeholder: auto-generated from description, max 160 chars with character counter
+   - **Ključne Reči** (`seo.metaKeywords`) — text input, placeholder: "sat, casio, g-shock, muški sat"
+   - **OG Slika URL** (`seo.ogImage`) — text input, placeholder: "Ostavi prazno za glavnu sliku proizvoda"
+   - **Alt Tekst Slike** (`seo.imageAltText`) — text input, placeholder: auto-generated from brand+name
+5. Add a preview snippet showing how the product would appear in Google search results (title in blue, URL in green, description in gray) — like a mini "Google preview" card
+6. Include `seo` in the `handleSubmit` payload — clean empty strings to avoid storing blank fields
+7. Add helper text explaining: "Ova polja su opciona. Ako ostavite prazno, automatski će se koristiti naziv i opis proizvoda."
 
-Lokalni upload slika (file picker) ne generiše 500x500 thumbnail — samo remote URL upload to radi preko `saveImageFromUrl` CF. Rešenje: nova callable CF `generateThumbnailFromStorage` + frontend integracija.
+**Relevant files:**
 
-## Faza 1: Backend — Nova Cloud Function
+- `src/pages/Admin/components/AdminProductModal.jsx` — main form, add SEO section + form state + submit logic
 
-1. U `functions/src/imageUtils.ts` dodati novu callable CF `generateThumbnailFromStorage`:
-   - **Input:** `{ storagePath: string }` — putanja fajla u Storage (npr. `products/casio-a500/1234_photo.jpg`)
-   - Čita fajl: `bucket.file(storagePath).download()`
-   - Resize: `sharp(buffer).resize(500, 500, { fit: inside, withoutEnlargement: true }).webp({ quality: 80 })`
-   - Upload thumbnail sa `resized_500x500_` prefiksom u isti folder koristeći `uploadBuffer()` helper
-   - Generiše stable download URL za original: `getStableDownloadUrl()`
-   - **Output:** `{ success: boolean, thumbnailUrl: string, mainImageUrl: string, thumbnailPath: string }`
-   - Config: region `europe-west3`, memory `1GiB`, timeout `120s`
+---
 
-2. Eksportovati u `functions/src/index.ts`
+## Phase 3: Frontend — Consume SEO Fields on Product Page
 
-## Faza 2: Frontend — Servis i poziv CF (zavisi od Faze 1)
+**Steps:**
 
-3. U `src/services/admin.js` dodati `generateThumbnail(storagePath)`:
-   - Callable wrapper po uzoru na `uploadRemoteImage()`
-   - Poziva CF `generateThumbnailFromStorage`
+1. Update `Products.jsx` to read `p.seo` and pass custom SEO fields to `<SEOHead>`:
+   - `title` → `p.seo?.metaTitle || productTitle`
+   - `description` → `p.seo?.metaDescription || productDescription`
+   - `keywords` → `p.seo?.metaKeywords || undefined` (falls back to SEOHead default)
+   - `image` → `p.seo?.ogImage || productImage`
+2. Update `ProductJsonLd.jsx` to use `product.seo?.metaDescription` as description override if present
+3. Update `ProductGallery.jsx`:
+   - Main image `alt` → `product.seo?.imageAltText || \`${product.brand} ${product.name}\``
+   - Thumbnail `alt` → `\`${product.name} - slika ${index + 1}\`` instead of empty string
 
-4. U `src/pages/Admin/components/ImageManager.jsx`, u `handleUpload()` (~linija 62):
-   - Posle uspešnog uploada proveriti `images.length === 0` pre uploada (znači uploadovana postaje index 0)
-   - Ako jeste, pozvati `generateThumbnail(uploaded[0].path)`
-   - Proslediti rezultat kroz `onRemoteUploadSuccess?.(res)` callback
-   - Loading state dok CF radi
+**Relevant files:**
 
-5. `AdminProductModal.jsx` → `handleRemoteImageSuccess()` — **BEZ PROMENA** (već pravilno setuje thumbnailUrl i mainImageUrl)
+- `src/pages/Products.jsx` — consume `p.seo` fields for SEOHead props
+- `src/components/seo/ProductJsonLd.jsx` — use seo.metaDescription as description override
+- `src/components/product/ProductGallery.jsx` — fix alt texts
 
-## Faza 3: Reorder scenario (opciono, za sledeću iteraciju)
+---
 
-6. U `handleImageChange()` u `AdminProductModal.jsx` kad se index 0 promeni, opciono pozvati `generateThumbnail()` za novu prvu sliku. Za sada fallback na pun URL je OK.
+## Phase 4: Cloudflare Worker — Read SEO Fields for Bot Injection
 
-## Relevantni fajlovi
+**Steps:**
 
-- `functions/src/imageUtils.ts` — nova CF, reuse `uploadBuffer()`, `getStableDownloadUrl()`, Sharp
-- `functions/src/index.ts` — eksport
-- `src/services/admin.js` — novi wrapper `generateThumbnail()`
-- `src/pages/Admin/components/ImageManager.jsx` — poziv CF posle lokalnog uploada index 0
-- `src/components/ProductCard.jsx` — BEZ PROMENA (već koristi thumbnailUrl)
+1. Update `fetchProductBySlug()` in `_worker.js` to also read `seo` map fields from Firestore REST response:
+   - `seo.metaTitle` → `fields.seo?.mapValue?.fields?.metaTitle?.stringValue`
+   - `seo.metaDescription` → `fields.seo?.mapValue?.fields?.metaDescription?.stringValue`
+   - `seo.metaKeywords` → `fields.seo?.mapValue?.fields?.metaKeywords?.stringValue`
+   - `seo.ogImage` → `fields.seo?.mapValue?.fields?.ogImage?.stringValue`
+   - `seo.imageAltText` → `fields.seo?.mapValue?.fields?.imageAltText?.stringValue`
+2. Update `buildMetaTags()` to use SEO fields with fallbacks:
+   - `<title>` → `seo.metaTitle || {brand} {name}`
+   - `<meta name="description">` → `seo.metaDescription || description`
+   - Add `<meta name="keywords">` → `seo.metaKeywords` (if present)
+   - `og:image` → `seo.ogImage || mainImageUrl || image`
+   - Add `<meta property="product:price:amount">` and `<meta property="product:price:currency">` for rich product sharing
+3. Add `<meta property="og:image:alt">` tag using `seo.imageAltText || title`
 
-## Verifikacija
+**Relevant files:**
 
-1. Lokalni upload za nov proizvod → proveriti `resized_500x500_*.webp` u Storage
-2. Sačuvati → proveriti `thumbnailUrl` u Firestore dokumentu
-3. Katalog → DevTools Network → potvrda da ProductCard učitava webp
-4. URL upload → regresioni test
-5. Reorder slika → thumbnail se resetuje na novu prvu
+- `public/_worker.js` — update `fetchProductBySlug()` and `buildMetaTags()`
 
-## Odluke
+---
 
-- Callable CF (eksplicitni poziv) umesto onFinalize
-- Samo novi proizvodi (bez backfill-a)
-- Reorder auto-regeneracija → sledeća iteracija
-- CF čita iz Storage (ne prima base64 sa klijenta)
-  va CF, reuse `uploadBuffer()`, `getStableDownloadUrl()`, Sharp
-- `functions/src/index.ts` — eksport
-- `src/services/admin.js` — novi wrapper `generateThumbnail()`
-- `src/pages/Admin/components/ImageManager.jsx` — poziv CF posle lokalnog uploada index 0
-- `src/components/ProductCard.jsx` — BEZ PROMENA (već koristi thumbnailUrl)
+## Phase 5: Google Images Optimization
 
-## Verifikacija
+### 5a. Structured Data Enhancement (code changes)
 
-1. Lokalni upload za nov proizvod → proveriti `resized_500x500_*.webp` u Storage
-2. Sačuvati → proveriti `thumbnailUrl` u Firestore dokumentu
-3. Katalog → DevTools Network → potvrda da ProductCard učitava webp
-4. URL upload → regresioni test
-5. Reorder slika → thumbnail se resetuje na novu prvu
+1. In `ProductJsonLd.jsx`, enhance image output to use `ImageObject` schema instead of plain URLs when `seo.imageAltText` is available:
+   ```
+   image: [{ "@type": "ImageObject", url: "...", name: "alt text" }]
+   ```
+2. This helps Google understand product images better
 
-## Odluke
+### 5b. Image Sitemap (code changes)
 
-- Callable CF (eksplicitni poziv) umesto onFinalize
-- Samo novi proizvodi (bez backfill-a)
-- Reorder auto-regeneracija → sledeća iteracija
-- CF čita iz Storage (ne prima base64 sa klijenta)
+1. Update `functions/src/sitemap.ts` to include `<image:image>` extensions in the sitemap for each product:
+   - `<image:loc>` — mainImageUrl
+   - `<image:title>` — `seo.imageAltText || {brand} {name}`
+   - `<image:caption>` — `seo.metaDescription || description`
+   - Include additional product images (up to 5) from `images[]` array
+2. The sitemap function already reads all products — just need to add image fields to the Firestore read and XML output
+
+### 5c. Manual Steps — Tutorial (documentation only)
+
+Create a brief tutorial section for the user covering:
+
+1. **Google Search Console**: Submit image sitemap, check indexing
+2. **Image file naming**: Recommend descriptive file names when uploading (e.g., "casio-gshock-ga2100.webp" not "IMG_001.webp")
+3. **Image sizes**: Recommend at least 1200px wide images for Google Discover/Images
+4. **Google Merchant Center**: Optional free product listings for Google Shopping/Images
+5. **Alt text best practices**: Short, descriptive, include brand and product type
+
+---
+
+## Relevant Files Summary
+
+| File                                               | Changes                                                              |
+| -------------------------------------------------- | -------------------------------------------------------------------- |
+| `src/pages/Admin/components/AdminProductModal.jsx` | Add SEO section with 5 fields + Google preview + form state + submit |
+| `src/pages/Products.jsx`                           | Use `p.seo` fields for SEOHead props                                 |
+| `src/components/seo/SEOHead.jsx`                   | No changes needed (already accepts all needed props)                 |
+| `src/components/seo/ProductJsonLd.jsx`             | Use seo.metaDescription, enhance image schema                        |
+| `src/components/product/ProductGallery.jsx`        | Fix alt texts on main image and thumbnails                           |
+| `public/_worker.js`                                | Read seo fields from Firestore, use in buildMetaTags                 |
+| `functions/src/sitemap.ts`                         | Add `<image:image>` extensions to product URLs                       |
+| `src/models/Product.js`                            | Optionally update if used anywhere                                   |
+
+## Verification
+
+1. **Admin UI**: Open admin → create/edit product → verify SEO section appears, character counters work, Google preview renders correctly
+2. **Frontend meta tags**: Open product page → inspect `<head>` → verify custom metaTitle, metaDescription, keywords, ogImage appear when set
+3. **Fallback behavior**: Leave SEO fields empty → verify auto-generated values still work correctly (no regressions)
+4. **Bot injection**: Use `curl -A Googlebot {product-url}` → verify custom SEO meta tags in HTML response
+5. **Structured data**: Use Google Rich Results Test (https://search.google.com/test/rich-results) on a product URL → verify Product schema is valid
+6. **Image sitemap**: Fetch `/sitemap.xml` → verify `<image:image>` tags appear for products with images
+7. **Alt texts**: Inspect product gallery images → verify descriptive alt attributes
+
+## Decisions
+
+- SEO fields stored as nested `seo` map in Firestore (not flat fields) to keep product documents organized
+- All SEO fields are optional — always fall back to existing auto-generated values
+- Character counters (60 for title, 160 for description) are advisory, not enforced limits
+- Google preview in admin is a visual aid, updates in real-time as user types
+- Image sitemap includes up to 5 images per product (Google's recommended limit per URL)
+
+## Further Considerations
+
+1. **Bulk SEO editing**: Currently SEO can only be set per-product in the modal. A future improvement could be a bulk SEO editor table view. → Exclude from this plan, can be added later.
+2. **Auto-generation with AI**: Could add a "Generate" button that auto-fills SEO fields based on product data using an LLM API. → Exclude from this plan, nice future feature.
+3. **Prerendering**: The Cloudflare Worker handles bot injection, but for full SSR-quality SEO, consider Cloudflare Workers SSR or prerendering in the future. → Current setup is sufficient.

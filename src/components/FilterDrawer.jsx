@@ -89,6 +89,12 @@ export default function FilterDrawer({ className = '', products }) {
   const [open, setOpen] = useState(false);
   const activeCount = useActiveCount();
 
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia('(max-width: 1030px)').matches;
+  });
+  const [scrolledPastFab, setScrolledPastFab] = useState(false);
+
   useLockBody(open);
   useHeaderHeight(open);
 
@@ -98,6 +104,36 @@ export default function FilterDrawer({ className = '', products }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
+
+  // Prati breakpoint ≤1030px
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mql = window.matchMedia('(max-width: 1030px)');
+    const onChange = (e) => setIsMobile(e.matches);
+    if (mql.addEventListener) mql.addEventListener('change', onChange);
+    else mql.addListener(onChange);
+    setIsMobile(mql.matches);
+    return () => {
+      if (mql.removeEventListener) mql.removeEventListener('change', onChange);
+      else mql.removeListener(onChange);
+    };
+  }, []);
+
+  // Prati skrol za prikaz fab-a posle 280px
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!isMobile) {
+      setScrolledPastFab(false);
+      return;
+    }
+    const handleScroll = () => {
+      const y = window.scrollY || window.pageYOffset || 0;
+      setScrolledPastFab(y > 100);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isMobile]);
 
   const setInitialFocus = (node) => {
     if (node) {
@@ -132,6 +168,31 @@ export default function FilterDrawer({ className = '', products }) {
           </span>
         )}
       </button>
+
+      {isMobile && !open && scrolledPastFab && (
+        <button
+          type="button"
+          className="fd-fab"
+          onClick={() => setOpen(true)}
+          aria-label="Otvori filtere"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M3 5h18M6 12h12M10 19h4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+          <span>Filteri</span>
+          {activeCount > 0 && (
+            <span className="fd-badge" aria-label={`${activeCount} aktivno`}>
+              {activeCount}
+            </span>
+          )}
+        </button>
+      )}
 
       {open && (
         <div

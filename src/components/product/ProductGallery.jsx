@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Box, Maximize2, Image as ImageIcon } from 'lucide-react';
 import Watch3DViewer from '../Watch3DViewer.jsx';
 import ImageGalleryModal from '../modals/ImageGalleryModal.jsx';
@@ -6,6 +6,24 @@ import './ProductGallery.css';
 export default function ProductGallery({ product }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [totalTabs, setTotalTabs] = useState(4); // default: 4 taba za manje ekrane
+
+  // Breakpoint logika: 700-999 => 8 taba, 1000-1299 => 7 taba, 1300+ => 10 taba
+  useEffect(() => {
+    const calcTabs = (w) => {
+      if (w >= 1300) return 10;
+      if (w >= 1000) return 7;
+      if (w >= 700) return 8;
+      return 4;
+    };
+    const update = () => {
+      if (typeof window === 'undefined') return;
+      setTotalTabs(calcTabs(window.innerWidth));
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   // Priprema liste medija (3D + Slike)
   const mediaList = useMemo(() => {
@@ -32,13 +50,19 @@ export default function ProductGallery({ product }) {
     return list.map((item, idx) => ({ ...item, mediaIndex: idx }));
   }, [product]);
 
-  // Thumbs: ukupno 5 taba max (4 direktno prikazana + 1 \"još\")
-  const TOTAL_TABS = 5;
-  const hasOverflow = mediaList.length > TOTAL_TABS;
-  const directThumbCount = hasOverflow ? TOTAL_TABS - 1 : mediaList.length;
-  const visibleThumbs = mediaList.slice(0, directThumbCount);
-  const hiddenThumbs = mediaList.slice(directThumbCount);
-  const hasHiddenThumbs = hiddenThumbs.length > 0;
+  // Thumbs: brojimo samo slike u limit (3D se prikazuje ali ne "pojede" slot)
+  const imageItems = mediaList.filter((item) => item.type === 'image');
+  const nonImageItems = mediaList.filter((item) => item.type !== 'image');
+
+  const hasOverflow = imageItems.length > totalTabs;
+  const visibleImages = hasOverflow
+    ? imageItems.slice(0, totalTabs - 1)
+    : imageItems;
+  const hiddenImages = hasOverflow ? imageItems.slice(totalTabs - 1) : [];
+  const hasHiddenImages = hiddenImages.length > 0;
+
+  // Kombinujemo: prvo 3D ili drugi ne-image, pa vidljive slike
+  const visibleThumbs = [...nonImageItems, ...visibleImages];
 
   const galleryImages = useMemo(
     () =>
@@ -115,19 +139,19 @@ export default function ProductGallery({ product }) {
             );
           })}
 
-          {hasHiddenThumbs && (
+          {hasHiddenImages && (
             <button
               type="button"
               className="thumb-btn more-thumb"
               onClick={() => {
                 // Pozicioniramo se na prvu sakrivenu sliku i odmah otvaramo fullscreen
-                setActiveIndex(hiddenThumbs[0].mediaIndex);
+                setActiveIndex(hiddenImages[0].mediaIndex);
                 setIsGalleryOpen(true);
               }}
             >
               <div className="more-thumb__overlay">
                 <ImageIcon size={18} strokeWidth={1.5} />
-                <span>+{hiddenThumbs.length}</span>
+                <span>+{hiddenImages.length}</span>
               </div>
             </button>
           )}

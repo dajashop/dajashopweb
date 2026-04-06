@@ -23,6 +23,14 @@ import { isAdminEmail } from '../services/firebase';
 
 const PER_PAGE = 32;
 
+const SORT_OPTIONS = [
+  { value: 'popular', label: 'Popularnost' },
+  { value: 'newest', label: 'Najnovije' },
+  { value: 'price-desc', label: 'Cena ↓' },
+  { value: 'price-asc', label: 'Cena ↑' },
+  { value: 'name', label: 'Naziv A-Z' },
+];
+
 const TITLES = {
   satovi: 'Ručni Satovi',
   daljinski: 'Daljinski Upravljači',
@@ -65,6 +73,22 @@ export default function Catalog({ department = 'satovi' }) {
   const spKey = sp.toString();
   const navType = useNavigationType();
 
+  const sortParam = sp.get('sort') || 'popular';
+  const backendOrderField = useMemo(() => {
+    if (sortParam === 'price-asc' || sortParam === 'price-desc') return 'price';
+    if (sortParam === 'newest') return 'createdAt';
+    if (sortParam === 'name') return 'name';
+    return 'name'; // Popularnost sortiramo na klijentu da izbegnemo Firestore indekse
+  }, [sortParam]);
+
+  const handleSortChange = (val) => {
+    const next = new URLSearchParams(sp);
+    if (val) next.set('sort', val);
+    else next.delete('sort');
+    setSp(next, { replace: true });
+    setPage(1);
+  };
+
   // Kluc za cuvanje pozicije skrola po odeljenju + aktivnim filterima
   const scrollKey = useMemo(
     () => `catalog-scroll:${department}:${spKey}`,
@@ -82,7 +106,7 @@ export default function Catalog({ department = 'satovi' }) {
     loading,
     err,
   } = useProducts({
-    order: sp.get('sort') || 'name',
+    order: backendOrderField,
   });
 
   // --- FILTRIRANJE ---
@@ -212,7 +236,42 @@ export default function Catalog({ department = 'satovi' }) {
       }
     });
 
-    return out;
+    const collator = new Intl.Collator('sr-RS', { sensitivity: 'base' });
+    const getDate = (val) => {
+      if (!val) return 0;
+      if (typeof val.toDate === 'function') return val.toDate().getTime();
+      const d = new Date(val);
+      return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+    };
+    const getPopularity = (p) =>
+      Number(
+        p.popularity ??
+          p.popularityScore ??
+          p.ordersCount ??
+          p.sold ??
+          p.views ??
+          p.viewsCount ??
+          p.rating ??
+          0,
+      );
+
+    const sorted = [...out].sort((a, b) => {
+      switch (sortParam) {
+        case 'price-asc':
+          return (Number(a.price) || 0) - (Number(b.price) || 0);
+        case 'price-desc':
+          return (Number(b.price) || 0) - (Number(a.price) || 0);
+        case 'newest':
+          return getDate(b.createdAt) - getDate(a.createdAt);
+        case 'popular':
+          return getPopularity(b) - getPopularity(a);
+        case 'name':
+        default:
+          return collator.compare(a.name || '', b.name || '');
+      }
+    });
+
+    return sorted;
   }, [departmentItems, sp]);
 
   const [page, setPage] = useState(1);
@@ -273,6 +332,7 @@ export default function Catalog({ department = 'satovi' }) {
 
   const start = (page - 1) * PER_PAGE;
   const itemsToShow = filteredData.slice(start, start + PER_PAGE);
+  const showingCount = itemsToShow.length;
 
   const renderContent = () => {
     if (loading) {
@@ -376,13 +436,13 @@ export default function Catalog({ department = 'satovi' }) {
             </div>
 
             <div className="catalog__toprow mt-4 pb-4 border-b border-(--color-border) relative min-h-[40px]">
-              <div className="flex flex-wrap items-center gap-2 pr-[110px]">
+              <div className="flex flex-wrap items-center gap-2 flex-1">
                 <h1 className="text-2xl font-bold text-text mr-2 whitespace-nowrap">
                   Rezultat za:
                 </h1>
 
                 {activeFilters.length === 0 && (
-                  <span className="text-muted text-sm font-medium">
+                  <span className="catalog__pill catalog__pill--ghost">
                     Svi proizvodi
                   </span>
                 )}
@@ -391,26 +451,47 @@ export default function Catalog({ department = 'satovi' }) {
                   <button
                     key={`${f.key}-${f.val}-${idx}`}
                     onClick={() => removeFilter(f.key, f.val)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 text-white text-xs font-bold uppercase tracking-wide hover:bg-neutral-700 transition-colors shadow-sm"
+                    className="catalog__pill"
                     title="Ukloni filter"
                   >
                     {f.label}
-                    <X size={13} className="text-white/70" />
+                    <X size={13} className="catalog__pill-x" />
                   </button>
                 ))}
 
                 {activeFilters.length > 0 && (
                   <button
                     onClick={clearAllFilters}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-100 text-xs font-bold uppercase tracking-wide hover:bg-red-100 transition-colors"
+                    className="catalog__pill catalog__pill--danger"
                   >
                     Obriši sve
                   </button>
                 )}
               </div>
 
-              <div className="absolute right-0 top-1 catalog__count text-sm font-semibold text-muted bg-surface px-3 py-1 rounded-full border border-(--color-border) whitespace-nowrap">
-                {totalCount} kom.
+            </div>
+
+            <div className="catalog__subrow">
+              <div className="catalog__showing">
+                Prikazano {showingCount} proizvoda
+              </div>
+              <div className="catalog__sort-block">
+                <span className="catalog__sort-label">Sortiraj</span>
+                <div className="catalog__sort relative">
+                  <select
+                    value={sortParam}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    className="catalog__sort-select text-sm font-semibold text-text bg-white border border-(--color-border) rounded-full pl-3 pr-9 py-1.5 shadow-[0_6px_20px_rgba(0,0,0,0.05)] hover:-translate-y-[1px] transition-transform duration-150 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    aria-label="Sortiraj"
+                  >
+                    {SORT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="catalog__sort-chevron" aria-hidden="true">▾</span>
+                </div>
               </div>
             </div>
           </div>
