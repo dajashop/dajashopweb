@@ -279,7 +279,7 @@
   grid-column: 1 / -1;
 }
 .categoryTile--wide .categoryTile__img {
-  aspect-ratio: 21 / 9;
+  aspect-ratio: 32 / 9;
 }
 .categories-grid .categoryTile:nth-child(1) {
   grid-area: left;
@@ -298,6 +298,132 @@
   }
   .categoryTile--wide .categoryTile__img {
     aspect-ratio: 16 / 9;
+  }
+}
+
+/* SERVICE HERO CTA */
+.serviceHero {
+  padding-top: 12px;
+}
+.serviceHero__card {
+  position: relative;
+  display: block;
+  border-radius: clamp(24px, 2vw, 28px);
+  overflow: hidden;
+  aspect-ratio: 21 / 9;
+  background: #f8fbff url('/images/servisthumb.png') center/cover no-repeat;
+  box-shadow: 0 16px 34px rgba(12, 37, 72, 0.14);
+  color: #0b1d2f;
+  isolation: isolate;
+  --service-gradient-fade: 65%;
+}
+.serviceHero__card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(110% 160% at 14% 80%, rgba(11, 37, 74, 0.18), transparent 64%),
+    linear-gradient(
+      90deg,
+      rgba(232, 242, 255, 0.85) 0%,
+      rgba(228, 240, 255, 0.7) 22%,
+      rgba(216, 234, 255, 0.4) 35%,
+      rgba(204, 228, 255, 0.18) 48%,
+      rgba(190, 223, 255, 0.08) var(--service-gradient-fade),
+      rgba(190, 223, 255, 0) calc(var(--service-gradient-fade) + 8%)
+    );
+  z-index: 1;
+  pointer-events: none;
+}
+.serviceHero__content {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  align-content: end;
+  justify-items: start;
+  padding: clamp(18px, 5vw, 38px) clamp(18px, 6vw, 44px) clamp(20px, 6vw, 42px);
+  gap: clamp(12px, 2vw, 18px);
+  width: min(46%, 680px);
+}
+.serviceHero__content > * {
+  max-width: 100%;
+}
+.serviceHero__content > * {
+  max-width: 100%;
+}
+.serviceHero__content h2 {
+  margin: 0;
+  font-size: clamp(22px, 4.2vw, 32px);
+  letter-spacing: -0.01em;
+  font-weight: 800;
+  line-height: 1.08;
+  color: #0a1f33;
+  text-shadow: 0 10px 22px rgba(8, 26, 44, 0.18);
+}
+.serviceHero__content .lede {
+  color: rgba(10, 31, 51, 0.82);
+  line-height: 1.45;
+  max-width: 58ch;
+}
+.serviceHero__btn {
+  min-height: 44px;
+  padding: 11px 16px;
+  border-color: rgba(12, 47, 82, 0.42);
+  color: #0c2034;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(2.5px);
+  box-shadow: 0 10px 22px rgba(12, 37, 72, 0.14);
+}
+.serviceHero__btn:hover {
+  color: #08192b;
+  border-color: rgba(12, 47, 82, 0.58);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+@media (max-width: 900px) {
+  .serviceHero__card {
+    aspect-ratio: 16 / 10;
+    --service-gradient-fade: 75%;
+  }
+  .serviceHero__content {
+    width: min(72%, 760px);
+    padding: clamp(16px, 6vw, 28px);
+  }
+}
+
+@media (max-width: 640px) {
+  .serviceHero__card {
+    aspect-ratio: 4 / 3;
+  }
+  .serviceHero__content {
+    width: 100%;
+    justify-items: center;
+    text-align: center;
+    gap: 12px;
+    padding: clamp(18px, 6vw, 26px) clamp(14px, 6vw, 22px) clamp(18px, 6vw, 26px);
+  }
+  .serviceHero__content::after {
+    content: '';
+    position: absolute;
+    inset: auto 12px 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(94%, 480px);
+    height: 68%;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(4px);
+    border-radius: 18px;
+    z-index: -1;
+    box-shadow: 0 14px 28px rgba(12, 37, 72, 0.14);
+  }
+  .serviceHero__cta {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .serviceHero__content h2 {
+    font-size: clamp(20px, 5vw, 26px);
   }
 }
 
@@ -531,6 +657,98 @@
 }
 .btn--ghost:hover {
   border-color: color-mix(in oklab, var(--color-text) 26%, transparent);
+}
+
+.watchfinder-hero {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: clamp(14px, 3vw, 26px) 0;
+}
+.watchfinder-hero__panel {
+  width: min(1600px, 100%);
+  margin: 0 auto;
+  padding: clamp(22px, 4vw, 38px);
+  border-radius: clamp(20px, 1.6vw, 30px);
+  background:
+    radial-gradient(120% 90% at 20% 25%, color-mix(in oklab, var(--color-primary) 12%, #fff), #fff),
+    radial-gradient(90% 70% at 80% 30%, color-mix(in oklab, var(--color-primary) 6%, #fff), #fff),
+    #ffffff;
+  border: 1px solid color-mix(in oklab, var(--color-text) 10%, transparent);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+  transition: padding 240ms ease, box-shadow 240ms ease, transform 240ms ease;
+}
+.watchfinder-hero__panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 120% at 50% 40%, rgba(255, 255, 255, 0.5), transparent 60%);
+  pointer-events: none;
+}
+.watchfinder-hero__panel.is-active {
+  padding: clamp(28px, 5vw, 48px);
+  box-shadow: 0 26px 52px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+}
+.watchfinder-hero__text {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  max-width: 780px;
+  z-index: 1;
+}
+.watchfinder-hero__text h2 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 40px);
+  letter-spacing: -0.02em;
+}
+.watchfinder-hero__text .lede {
+  max-width: 620px;
+  color: color-mix(in oklab, var(--color-text) 80%, #000);
+}
+.watchfinder-hero__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.watchfinder-hero__actions .btn {
+  min-height: 46px;
+}
+
+@media (max-width: 900px) {
+  .watchfinder-hero__panel {
+    padding: clamp(18px, 5vw, 30px);
+  }
+  .watchfinder-hero__actions {
+    width: 100%;
+  }
+}
+
+.watchfinder-section {
+  margin: clamp(14px, 3vw, 28px) 0;
+}
+.watchfinder-section--dark {
+  background: #1d1d1f;
+  color: #f5f5f5;
+  padding: clamp(28px, 5vw, 48px) 0;
+}
+.watchfinder-section__inner {
+  width: min(1400px, 94vw);
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 720px) {
+  .watchfinder-hero__actions {
+    width: 100%;
+  }
+  .watchfinder-hero__actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 900px) {

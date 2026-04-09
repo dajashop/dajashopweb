@@ -5,6 +5,7 @@ import HeroBgSlider from '../components/HeroBgSlider.jsx';
 import BrandStrip from '../components/BrandStrip.jsx';
 import TrustBar from '../components/TrustBar.jsx';
 import HomeProductCard from '../components/home/HomeProductCard.jsx';
+import WatchFinder from '../components/WatchFinder.jsx';
 import useProducts from '../hooks/useProducts.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import OrganizationJsonLd from '../components/seo/OrganizationJsonLd.jsx';
@@ -81,44 +82,20 @@ const STYLE_FILTERS = [
   { key: 'SMART', label: 'Smart' },
 ];
 
-const MOOD_CARDS = [
+const CATEGORY_TILES = [
   {
-    title: 'Dress & Classic',
-    copy: 'Tanko kućište, čelik i koža za svaki dan.',
-    image: '/images/daniel-klein-dk13965-4.jpg',
-    to: '/catalog?category=DRESS',
+    title: 'Ženski satovi',
+    image: '/images/daniel-klain-5252.PNG',
+    to: '/catalog?gender=ŽENSKI',
   },
   {
-    title: 'G‑Shock / Sport',
-    copy: 'Otpornost, karbon core, 200m.',
-    image:
-      '/images/casio-g-shock-original-ga-2100-4aer-carbon-core-guard_183960_205228.jpg',
+    title: 'G‑Shock',
+    image: '/images/casio-g-shock-original-ga-2100-4aer-carbon-core-guard_183960_205228.jpg',
     to: '/catalog?brand=CASIO&category=G-SHOCK',
   },
   {
-    title: 'Ženski izbor',
-    copy: 'Elegancija sa suptilnim akcentima.',
-    image: '/images/daniel-klain-5252.PNG',
-    to: '/catalog?gender=ŽENSKI',
-  },
-];
-
-const STORY_IMG = '/images/BANNER_big-Kopie-w-1024.jpeg';
-
-const CATEGORY_TILES = [
-  {
-    title: 'Damski satovi',
-    image: '/images/daniel-klain-5252.PNG',
-    to: '/catalog?gender=ŽENSKI',
-  },
-  {
-    title: 'Muški satovi',
-    image: '/images/casio-g-shock-original-ga-2100-4aer-carbon-core-guard_183960_205228.jpg',
-    to: '/catalog?gender=MUŠKI',
-  },
-  {
     title: 'Nakit & pokloni',
-    image: '/images/BANNER_big-Kopie-w-1024.jpeg',
+    image: '/images/Casiothumb.webp',
     to: '/catalog?category=NAKIT',
     wide: true,
   },
@@ -173,6 +150,7 @@ function matchesStyle(product, selected) {
 export default function Home() {
   const [gender, setGender] = useState('ALL');
   const [style, setStyle] = useState('ALL');
+  const [startFinder, setStartFinder] = useState(false);
 
   const { items, loading } = useProducts({ order: 'name', limit: 64 });
 
@@ -280,6 +258,41 @@ export default function Home() {
         brands={['CASIO', 'DANIEL KLEIN', 'Q&Q', 'ORIENT', 'G-SHOCK', 'EDIFICE', 'RETRO']}
       />
 
+      {/* WATCH FINDER HERO */}
+      <section className="watchfinder-hero">
+        <div className={`watchfinder-hero__panel ${startFinder ? 'is-active' : ''}`}>
+          <div className="watchfinder-hero__text">
+            <p className="eyebrow">Watch Finder</p>
+            <h2>Pronađi sat koji ti stvarno leži.</h2>
+            <p className="lede">
+              Par kratkih odgovora vodi do predloga po stilu, budžetu i funkcijama. Ako nisi siguran,
+              tu smo da pomognemo.
+            </p>
+            <div className="watchfinder-hero__actions">
+              <Link to="/watch-finder" className="btn btn--primary">
+                Pokreni Watch Finder
+              </Link>
+              <Link to="/usluge" className="btn btn--ghost">
+                Saznaj više
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* WATCH FINDER */}
+      <section id="watchfinder" className="watchfinder-section watchfinder-section--dark">
+        <div className="watchfinder-section__inner">
+          <WatchFinder
+            autoStart={startFinder}
+            fullWidth
+            showIntro={false}
+            layout="stack"
+            variant="dark"
+          />
+        </div>
+      </section>
+
       {/* TOP SELEKCIJA */}
       <section className="section container">
         <div className="section__head">
@@ -376,55 +389,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* KOLEKCIJE / MOOD PLOČE */}
-      <section className="section container">
-        <div className="section__head">
-          <div>
-            <p className="eyebrow">Kolekcije</p>
-            <h2 className="section__title">Po stilu</h2>
-          </div>
-        </div>
+      {/* KOLEKCIJE / MOOD PLOČE removed per request */}
+      {/* STORY BLOCK removed per request */}
 
-        <div className="mood-grid">
-          {MOOD_CARDS.map((c) => (
-            <Link key={c.title} to={c.to} className="mood">
-              <div className="mood__copy">
-                <h3>{c.title}</h3>
-                <p>{c.copy}</p>
-                <span className="mood__cta">
-                  Pogledaj <ArrowRight size={16} />
-                </span>
-              </div>
-              <div className="mood__img">
-                <img src={c.image} alt={c.title} loading="lazy" />
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* STORY BLOCK */}
-      <section className="section container story">
-        <div className="story__copy">
-          <p className="eyebrow">Ovlašćeni prodavac</p>
-          <h2>Originali, servis i tim koji zna svaki model.</h2>
-          <p className="lede">
-            Daja Shop je porodična radnja sa više od 20 godina iskustva. Svi
-            satovi su sa zvaničnim garancijama, a naš servis podešava kaiš,
-            menja baterije i savetuje oko svakodnevnog nošenja.
-          </p>
-          <div className="story__actions">
-            <Link to="/about" className="btn btn--ghost">
-              O nama
-            </Link>
-            <Link to="/contact" className="btn btn--primary">
-              Kontakt
-            </Link>
+      {/* SERVICE HERO CTA */}
+      <section className="section container serviceHero">
+        <Link to="/usluge" className="serviceHero__card">
+          <div className="serviceHero__content">
+            <p className="eyebrow">Servis</p>
+            <h2>Servis i tim koji zna svaki model.</h2>
+            <p className="lede">
+              Zamena baterije i narukvice uz ovlašćene majstore i originalne
+              delove.
+            </p>
+            <div className="serviceHero__cta">
+              <span className="btn btn--ghost serviceHero__btn">
+                Saznaj više <ArrowRight size={16} />
+              </span>
+            </div>
           </div>
-        </div>
-        <div className="story__img">
-          <img src={STORY_IMG} alt="Daja shop" loading="lazy" />
-        </div>
+        </Link>
       </section>
 
       {/* CONCIERGE CTA */}
