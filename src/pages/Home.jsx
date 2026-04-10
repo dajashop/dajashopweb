@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import HeroBgSlider from '../components/HeroBgSlider.jsx';
 import BrandStrip from '../components/BrandStrip.jsx';
 import TrustBar from '../components/TrustBar.jsx';
-import HomeProductCard from '../components/home/HomeProductCard.jsx';
 import WatchFinder from '../components/WatchFinder.jsx';
 import useProducts from '../hooks/useProducts.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
@@ -30,34 +29,6 @@ const HERO_SLIDES = [
   },
 ];
 
-const HERO_BRANDS = [
-  { label: 'Casio', to: '/catalog?brand=CASIO' },
-  { label: 'Daniel Klein', to: '/catalog?brand=DANIEL%20KLEIN' },
-  { label: 'Q&Q', to: '/catalog?brand=Q%26Q' },
-  { label: 'Orient', to: '/catalog?brand=ORIENT' },
-];
-
-const PROMO_TRIO = [
-  {
-    title: 'Casio kolekcija',
-    subtitle: 'Kupite kolekciju',
-    image: '/images/banner-watches-casio.png',
-    to: '/catalog?brand=CASIO',
-  },
-  {
-    title: 'Daniel Klein',
-    subtitle: 'Kupite kolekciju',
-    image: '/images/model_banner_bed6ebb9-b47f-438a-835e-f63534a7d455.jpg',
-    to: '/catalog?brand=DANIEL%20KLEIN',
-  },
-  {
-    title: 'G‑Shock / Sport',
-    subtitle: 'Kupite kolekciju',
-    image: '/images/casio-g-shock-original-ga-2100-4aer-carbon-core-guard_183960_205228.jpg',
-    to: '/catalog?brand=CASIO&category=G-SHOCK',
-  },
-];
-
 const TOP_SLUGS = [
   'casio-mtp-1314pl-8a',
   'daniel-3271',
@@ -65,21 +36,6 @@ const TOP_SLUGS = [
   'ga-100-1a1',
   'orient-diver',
   'daniel-klein-dk13965-4',
-];
-
-const GENDER_FILTERS = [
-  { key: 'ALL', label: 'Svi' },
-  { key: 'MUŠKI', label: 'Muški' },
-  { key: 'ŽENSKI', label: 'Ženski' },
-  { key: 'UNISEX', label: 'Unisex' },
-];
-
-const STYLE_FILTERS = [
-  { key: 'ALL', label: 'Sve' },
-  { key: 'SPORT', label: 'Sport' },
-  { key: 'DRESS', label: 'Dress' },
-  { key: 'RETRO', label: 'Retro' },
-  { key: 'SMART', label: 'Smart' },
 ];
 
 const CATEGORY_TILES = [
@@ -100,10 +56,6 @@ const CATEGORY_TILES = [
     wide: true,
   },
 ];
-
-function normalize(val) {
-  return (val || '').toString().toUpperCase().trim();
-}
 
 function BestProductItem({ product }) {
   if (!product) return null;
@@ -131,26 +83,8 @@ function BestProductItem({ product }) {
   );
 }
 
-function matchesGender(product, selected) {
-  if (selected === 'ALL') return true;
-  const g = normalize(product.gender);
-  if (selected === 'UNISEX') return g === 'UNISEX' || !g;
-  if (selected === 'MUŠKI') return g === 'MUŠKI' || g === 'MUSKI';
-  if (selected === 'ŽENSKI') return g === 'ŽENSKI' || g === 'ZENSKI';
-  return true;
-}
-
-function matchesStyle(product, selected) {
-  if (selected === 'ALL') return true;
-  const cat = normalize(product.category);
-  if (!cat) return selected === 'ALL';
-  return cat.includes(selected);
-}
-
 export default function Home() {
-  const [gender, setGender] = useState('ALL');
-  const [style, setStyle] = useState('ALL');
-  const [startFinder, setStartFinder] = useState(false);
+  const [startFinder] = useState(false);
 
   const { items, loading } = useProducts({ order: 'name', limit: 64 });
 
@@ -163,14 +97,6 @@ export default function Home() {
     }, {});
     return filtered.sort((a, b) => (orderMap[a.slug] ?? 99) - (orderMap[b.slug] ?? 99));
   }, [items]);
-
-  const filteredTop = useMemo(
-    () =>
-      topProducts.filter(
-        (p) => matchesGender(p, gender) && matchesStyle(p, style),
-      ),
-    [topProducts, gender, style],
-  );
 
   const bestProducts = useMemo(() => {
     const curated = topProducts.slice(0, 4);
@@ -195,50 +121,6 @@ export default function Home() {
       {/* HERO */}
       <section className="hero">
         <HeroBgSlider slides={HERO_SLIDES} interval={5600} />
-        <div className="hero__overlay">
-          <div className="container hero__content">
-            <p className="eyebrow">Nova sezona</p>
-            <h1>Preciznost. Bez šuma.</h1>
-            <p className="lede">
-              Kurirani izbor satova bez viška priče. Originali, 2 godine
-              garancije i servis koji poznaje svaki model.
-            </p>
-
-            <div className="hero__cta">
-              <Link to="/catalog" className="btn btn--primary">
-                Pogledaj katalog <ArrowRight size={18} />
-              </Link>
-              <div className="hero__chips">
-                {HERO_BRANDS.map((b) => (
-                  <Link key={b.label} to={b.to} className="chip">
-                    {b.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            <div className="hero__miniTrust">
-              <span>✓ Original 100%</span>
-              <span>✓ 24 meseca garancija</span>
-              <span>✓ Ovlašćeni servis</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* PROMO TRIO */}
-      <section className="section container promo-rail">
-        {PROMO_TRIO.map((p) => (
-          <Link key={p.title} to={p.to} className="promoCard">
-            <div className="promoCard__img">
-              <img src={p.image} alt={p.title} loading="lazy" />
-            </div>
-            <div className="promoCard__body">
-              <div className="promoCard__title">{p.title}</div>
-              <div className="promoCard__subtitle">{p.subtitle}</div>
-            </div>
-          </Link>
-        ))}
       </section>
 
       {/* TRUST BAR */}
@@ -281,69 +163,16 @@ export default function Home() {
       </section>
 
       {/* WATCH FINDER */}
-      <section id="watchfinder" className="watchfinder-section watchfinder-section--dark">
+      <section id="watchfinder" className="watchfinder-section watchfinder-section--light">
         <div className="watchfinder-section__inner">
           <WatchFinder
             autoStart={startFinder}
             fullWidth
             showIntro={false}
-            layout="stack"
-            variant="dark"
+            layout="split"
+            variant="editorial"
+            className="watchfinder-home"
           />
-        </div>
-      </section>
-
-      {/* TOP SELEKCIJA */}
-      <section className="section container">
-        <div className="section__head">
-          <div>
-            <p className="eyebrow">Top selekcija</p>
-            <h2 className="section__title">Bestseller izbor</h2>
-          </div>
-          <Link to="/catalog" className="link">
-            Pogledaj sve
-          </Link>
-        </div>
-
-        <div className="chips-row">
-          <div className="chip-group" aria-label="Filter pol">
-            {GENDER_FILTERS.map((f) => (
-              <button
-                key={f.key}
-                className={`chip ${gender === f.key ? 'is-active' : ''}`}
-                onClick={() => setGender((prev) => (prev === f.key ? 'ALL' : f.key))}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <div className="chip-group" aria-label="Filter stil">
-            {STYLE_FILTERS.map((f) => (
-              <button
-                key={f.key}
-                className={`chip ${style === f.key ? 'is-active' : ''}`}
-                onClick={() => setStyle((prev) => (prev === f.key ? 'ALL' : f.key))}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="top-grid">
-          {loading &&
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="skeleton-card" />
-            ))}
-
-          {!loading && filteredTop.length === 0 && (
-            <div className="empty">
-              Još punimo ovu selekciju. Pogledaj katalog dok čekamo drop.
-            </div>
-          )}
-
-          {!loading &&
-            filteredTop.map((p) => <HomeProductCard key={p.id} product={p} />)}
         </div>
       </section>
 

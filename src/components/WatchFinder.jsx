@@ -70,18 +70,6 @@ const QUESTIONS = [
     ],
   },
   {
-    key: 'mehanizam',
-    title: 'Mehanizam',
-    paramKey: 'spec_mehanizam',
-    options: [
-      { label: 'Quartz', value: 'Quartz' },
-      { label: 'Automatski', value: 'Automatski' },
-      { label: 'Solar', value: 'Solar' },
-      { label: 'Digitalni', value: 'Digitalni' },
-      { label: 'Nije bitno', value: '' },
-    ],
-  },
-  {
     key: 'narukvica',
     title: 'Narukvica',
     paramKey: 'spec_narukvica',
@@ -188,32 +176,28 @@ function filterProducts(answers, products) {
 
 const HELPERS = {
   gender: {
-    help: 'Muški i ženski modeli se razlikuju u širini kućišta, dužini kaiša i dizajnu brojčanika.',
-    tip: 'Unisex uzmi ako želiš manji prečnik ili neutralan stil koji pristaje većini zglobova.',
+    help: 'Pol najčešće utiče na proporcije sata, širinu kućišta, dužinu kaiša i ukupan vizuelni balans na ruci. Muški modeli su obično veći i izraženiji, ženski često elegantniji i uži, dok unisex ostavlja najviše prostora za neutralan izbor bez strogih pravila.',
+    tip: 'Ako biraš poklon ili nisi siguran koliko upečatljiv sat treba da bude na zglobu, unisex je često najsigurnija opcija jer pokriva i klasične i modernije proporcije bez previše rizika.',
   },
   stil: {
-    help: 'Stil određuje oblik kazaljki, veličinu kućišta, nivo robusnosti i vidljivost na ruci.',
-    tip: 'Za odelo traži tanje kućište i čelik/kožu; za sport prioritet su otpornost, guma/silikon i veća čitljivost.',
+    help: 'Stil je najbrži način da suziš izbor jer određuje da li tražiš sat za svakodnevicu, kancelariju, aktivniji ritam ili upečatljiv statement komad. Od njega zavise oblik kućišta, kontrast brojčanika, prisustvo dodatnih funkcija i koliko sat deluje formalno ili opušteno na ruci.',
+    tip: 'Ako sat treba da radi u više situacija tokom dana, kreni od casual ili minimal/retro pravca. Poslovni je bolji kada želiš čist i uredan izgled, dok sport i outdoor imaju smisla kada su ti otpornost, čitljivost i robusniji karakter važniji od formalnosti.',
   },
   budzet: {
-    help: 'Budžet utiče na mehanizam (quartz vs. auto), vrstu stakla, završnu obradu i vodootpornost.',
-    tip: 'Do 20k najviše vrednosti daju quartz modeli; 20k+ otvara automatik i bolje materijale.',
+    help: 'Budžet ne menja samo cenu, već i nivo završne obrade, kvalitet materijala, osećaj na ruci i širinu izbora između jednostavnih i ozbiljnijih modela. U nižim rangovima fokus je na praktičnim i pouzdanim satovima, dok viši budžet obično otvara bolje kućište, detaljniji brojčanik, kvalitetniju narukvicu i premium prisustvo.',
+    tip: 'Ako tražiš najbolji odnos uloženog i dobijenog, srednji raspon je često najzahvalniji. Ako želiš da sat deluje ozbiljnije, luksuznije ili kao poklon koji treba da ostavi jači utisak, idi stepen iznad onoga što si prvobitno planirao.',
   },
   brand: {
-    help: 'Brend nosi specifičan dizajn i servise; izbor brenda odmah skraćuje listu.',
-    tip: 'Ako nisi siguran, ostavi “Nije bitno” pa filtriraj dalje po stilu i budžetu.',
+    help: 'Svaki brend nosi drugačiji dizajnerski potpis i očekivanje od proizvoda. Neki su poznati po funkcionalnosti i izdržljivosti, neki po elegantnijem izgledu, a neki po dobroj svakodnevnoj vrednosti. Kada izabereš brend, mnogo brže dolaziš do modela koji vizuelno i praktično liče na ono što tražiš.',
+    tip: 'Ako već znaš da ti se dopada određeni karakter sata, izbor brenda može odmah preseći pola kataloga. Ako još vagaš između više pravaca, slobodno ostavi “Nije bitno” i pusti da stil i budžet prvo odrade glavno sužavanje.',
   },
   precnik: {
-    help: 'Prečnik i lug-to-lug dužina diktiraju kako sat sedi na zglobu.',
-    tip: '36–40mm je najsvestranije; 40–44mm za sport/statement; 44mm+ kada želiš maksimalnu prisutnost.',
-  },
-  mehanizam: {
-    help: 'Mehanizam utiče na preciznost, servis i osećaj pri nošenju.',
-    tip: 'Quartz = najtačniji i bez brige; automatik = mehanički šarm, traži povremeno nošenje; solar = puni se svetlom.',
+    help: 'Prečnik govori koliko će sat biti prisutan na zglobu i da li će delovati diskretno, uravnoteženo ili naglašeno. Manji modeli su elegantniji i lakši za nošenje uz formalniji stil, srednji raspon je najsvestraniji, dok veći prečnici daju sportskiji i izraženiji utisak.',
+    tip: 'Ako ne znaš odakle da kreneš, 36–40mm je najbezbedniji izbor za većinu ljudi i stilova. Veći prečnici imaju smisla kada želiš jači vizuelni efekat ili robusniji karakter sata, ali mogu delovati prenaglašeno na užem zglobu.',
   },
   narukvica: {
-    help: 'Materijal kaiša menja udobnost, težinu i formalnost sata.',
-    tip: 'Čelik za eleganciju i trajnost; koža za klasičan look; silikon za sport i vodu; NATO/platno za lagan, ležeran stil.',
+    help: 'Narukvica ili kaiš u velikoj meri određuju kako sat izgleda, koliko je udoban i u kojim situacijama ga je najprirodnije nositi. Čelik deluje ozbiljnije i traje dugo, koža je klasična i elegantna, silikon je praktičan za aktivniji ritam, a platno i mesh daju opušteniji ili stilizovaniji karakter.',
+    tip: 'Ako ti je važna svakodnevna praktičnost i lakše održavanje, čelik i silikon su najjednostavniji izbor. Ako ti je važniji utisak i stil na ruci, koža i mesh često daju više karaktera čak i kada je sam sat vrlo jednostavan.',
   },
 };
 
@@ -228,6 +212,7 @@ export default function WatchFinder({
   const navigate = useNavigate();
   const isSplit = layout === 'split';
   const isDark = variant === 'dark';
+  const isEditorial = variant === 'editorial';
   const hasIntro = showIntro && !isSplit;
   const initialMode = hasIntro ? 'intro' : 'quiz';
   const [mode, setMode] = useState(initialMode); // intro | quiz | results
@@ -246,11 +231,12 @@ export default function WatchFinder({
   ).padStart(2, '0')}`;
   const modeDescription = (() => {
     if (mode === 'quiz')
-      return '7 kratkih pitanja, svaki klik te automatski vodi dalje. Brzo do predloga.';
+      return '6 kratkih pitanja, svaki klik te automatski vodi dalje. Brzo do predloga.';
     if (mode === 'results')
       return 'Predlozi po tvojim kriterijumima. Možeš ih otvoriti ili otići u katalog.';
-    return '7 kratkih pitanja za brze predloge po stilu, budžetu i funkcijama.';
+    return '6 kratkih pitanja za brze predloge po stilu, budžetu i funkcijama.';
   })();
+  const asideTitle = isEditorial ? 'Curated Watch Finder' : 'Pronađi sat koji ti stvarno leži.';
   const headingTitle =
     mode === 'quiz'
       ? current.title
@@ -259,6 +245,26 @@ export default function WatchFinder({
         : isDark
           ? 'Watch Finder'
           : 'Nađi svoj sat';
+  const activeHelper = mode === 'quiz' ? HELPERS[current.key] : null;
+  const editorialNoteTitle =
+    mode === 'quiz'
+      ? current.title
+      : mode === 'results'
+        ? 'Predlozi su spremni za pregled.'
+        : 'Odgovori kratko, a mi slažemo uži izbor.';
+  const editorialNoteCopy =
+    mode === 'quiz'
+      ? activeHelper?.help ||
+        'Odaberi opciju koja ti je najbliža. Sve možeš ponovo da prođeš bez gubitka toka.'
+      : mode === 'results'
+        ? 'Predlozi su složeni prema tvom izboru brenda, budžeta i detalja koje si označio tokom kviza.'
+        : 'Kviz je namenjen brzom sužavanju izbora bez komplikovanih filtera i bez suvišnog skrolovanja.';
+  const editorialNoteTip =
+    mode === 'quiz'
+      ? activeHelper?.tip || 'Ako si između dve opcije, izaberi onu kojoj više naginješ.'
+      : mode === 'results'
+        ? 'Ako želiš širi pregled, otvori katalog i nastavi od već primenjenih kriterijuma.'
+        : 'Ne tražimo savršen odgovor, već smer koji vodi do boljih preporuka.';
 
   const handleStart = () => {
     setMode('quiz');
@@ -326,6 +332,7 @@ export default function WatchFinder({
   if (fullWidth) rootClasses.push('watchfinder--full');
   rootClasses.push(isSplit ? 'watchfinder--split' : 'watchfinder--stack');
   if (isDark) rootClasses.push('watchfinder--dark');
+  if (isEditorial) rootClasses.push('watchfinder--editorial');
 
   const renderProgress = (
     !isDark && (
@@ -345,6 +352,74 @@ export default function WatchFinder({
     )
   );
 
+  const resultsContent = (
+    <>
+      <div className="wf-results__head">
+        <div>
+          <p className="eyebrow">Rezultati</p>
+          <h3>Predlozi na osnovu tvog izbora</h3>
+        </div>
+        <div className="wf-results__actions">
+          <button className="btn btn--primary" onClick={goToCatalog}>
+            Vidi u katalogu <ArrowRight size={16} />
+          </button>
+          <button className="btn btn--ghost wf-reset" onClick={handleReset}>
+            <RefreshCw size={16} /> Nova pitanja
+          </button>
+        </div>
+      </div>
+
+      {loading && <div className="wf-skeleton">Učitavanje predloga…</div>}
+
+      {!loading && results.length === 0 && (
+        <div className="wf-empty">
+          <div className="wf-empty__text">Još uvek nema predloga — probaj druga pitanja.</div>
+          <div className="wf-empty__actions">
+            <button className="btn btn--ghost" onClick={handleReset}>
+              <RefreshCw size={14} /> Pokreni ponovo
+            </button>
+            <button className="btn btn--primary" onClick={goToCatalog}>
+              Vidi u katalogu <ArrowRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!loading && results.length > 0 && (
+        <div className="wf-results__grid">
+          {results.map((p) => (
+            <motion.div
+              layout
+              key={p.id}
+              className="wf-card-mini"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Link to={`/product/${p.slug}`} className="wf-card-mini__img">
+                <img src={p.thumbnailUrl || p.image} alt={p.name} loading="lazy" />
+              </Link>
+              <div className="wf-card-mini__body">
+                <div className="wf-card-mini__brand">{p.brand}</div>
+                <Link to={`/product/${p.slug}`} className="wf-card-mini__name">
+                  {p.name}
+                </Link>
+                <div className="wf-card-mini__price">{money(p.price)}</div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      <div className="wf-results__cta">
+        <button className="btn btn--primary" onClick={goToCatalog}>
+          Vidi u katalogu <ArrowRight size={16} />
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <motion.div
       className={rootClasses.join(' ').trim()}
@@ -358,7 +433,7 @@ export default function WatchFinder({
             <div className="wf-aside">
               <div>
                 <p className="eyebrow">Watch Finder</p>
-                <h2>Pronađi sat koji ti stvarno leži.</h2>
+                <h2>{asideTitle}</h2>
                 <p className="lede wf-aside__lede">{modeDescription}</p>
               </div>
               {mode !== 'intro' && renderProgress}
@@ -408,13 +483,22 @@ export default function WatchFinder({
                         <span className="wf-pill">
                           Pitanje {step + 1}/{totalSteps}
                         </span>
+                        {(isSplit || isEditorial) && (
+                          <div className="wf-step__question">{current.title}</div>
+                        )}
+                        {isEditorial && (
+                          <p className="wf-step__hint">
+                            Odaberi opciju koja najbolje opisuje ono što tražiš. Sledeći korak se
+                            otvara odmah nakon izbora.
+                          </p>
+                        )}
                       </div>
                     )}
-                      <div className="wf-options">
-                        {current.options.map((opt) => {
-                          const active = answers[current.key] === opt.value;
-                          return (
-                            <motion.button
+                    <div className="wf-options">
+                      {current.options.map((opt) => {
+                        const active = answers[current.key] === opt.value;
+                        return (
+                          <motion.button
                             key={opt.value || opt.label}
                             whileHover={{ y: -2, scale: 1.01 }}
                             whileTap={{ scale: 0.98 }}
@@ -426,14 +510,27 @@ export default function WatchFinder({
                         );
                       })}
                     </div>
-                    <div className="wf-help">
-                      <p className="wf-help__title">Need help?</p>
-                      <p className="wf-help__copy">{HELPERS[current.key]?.help || 'Odaberi najbližu opciju – sve se može promeniti u rezultatima.'}</p>
-                      <p className="wf-help__tip">Watch tip: {HELPERS[current.key]?.tip || 'Pogledaj predloge pa doradi filtere u katalogu.'}</p>
-                    </div>
+                    {!isEditorial && (
+                      <div className="wf-help">
+                        <p className="wf-help__title">Need help?</p>
+                        <p className="wf-help__copy">
+                          {HELPERS[current.key]?.help ||
+                            'Odaberi najbližu opciju – sve se može promeniti u rezultatima.'}
+                        </p>
+                        <p className="wf-help__tip">
+                          Watch tip:{' '}
+                          {HELPERS[current.key]?.tip ||
+                            'Pogledaj predloge pa doradi filtere u katalogu.'}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="wf-actions">
-                      <button className="btn btn--ghost wf-backOnly" aria-label="Nazad" onClick={handlePrev}>
+                      <button
+                        className="btn btn--ghost wf-backOnly"
+                        aria-label="Nazad"
+                        onClick={handlePrev}
+                      >
                         <ArrowLeft size={16} />
                       </button>
                       <div className="wf-actions__right" />
@@ -519,6 +616,13 @@ export default function WatchFinder({
                         <span className="wf-pill">
                           Pitanje {step + 1}/{totalSteps}
                         </span>
+                        {isEditorial && <div className="wf-step__question">{current.title}</div>}
+                        {isEditorial && (
+                          <p className="wf-step__hint">
+                            Odaberi opciju koja najbolje opisuje ono što tražiš. Sledeći korak se
+                            otvara odmah nakon izbora.
+                          </p>
+                        )}
                       </div>
                     )}
                     <div className="wf-options">
@@ -537,14 +641,27 @@ export default function WatchFinder({
                         );
                       })}
                     </div>
-                    <div className="wf-help">
-                      <p className="wf-help__title">Need help?</p>
-                      <p className="wf-help__copy">{HELPERS[current.key]?.help || 'Odaberi najbližu opciju – sve se može promeniti u rezultatima.'}</p>
-                      <p className="wf-help__tip">Watch tip: {HELPERS[current.key]?.tip || 'Pogledaj predloge pa doradi filtere u katalogu.'}</p>
-                    </div>
+                    {!isEditorial && (
+                      <div className="wf-help">
+                        <p className="wf-help__title">Need help?</p>
+                        <p className="wf-help__copy">
+                          {HELPERS[current.key]?.help ||
+                            'Odaberi najbližu opciju – sve se može promeniti u rezultatima.'}
+                        </p>
+                        <p className="wf-help__tip">
+                          Watch tip:{' '}
+                          {HELPERS[current.key]?.tip ||
+                            'Pogledaj predloge pa doradi filtere u katalogu.'}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="wf-actions">
-                      <button className="btn btn--ghost wf-backOnly" aria-label="Nazad" onClick={handlePrev}>
+                      <button
+                        className="btn btn--ghost wf-backOnly"
+                        aria-label="Nazad"
+                        onClick={handlePrev}
+                      >
                         <ArrowLeft size={16} />
                       </button>
                       <div className="wf-actions__right" />
@@ -556,83 +673,46 @@ export default function WatchFinder({
             {isDark && <div className="wf-illustration" aria-hidden="true" />}
           </div>
         )}
+
+        {isEditorial && (
+          <div className="wf-editorialNote wf-editorialNote--full">
+            <div className="wf-editorialNote__title">{editorialNoteTitle}</div>
+            <p className="wf-editorialNote__copy">{editorialNoteCopy}</p>
+            <p className="wf-editorialNote__tip">{editorialNoteTip}</p>
+          </div>
+        )}
+
+        {isEditorial && (
+          <AnimatePresence>
+            {mode === 'results' && (
+              <motion.div
+                key="results-grid-editorial"
+                className="wf-results wf-results--editorial wf-results--inline"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
+              >
+                {resultsContent}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
       </div>
 
       <AnimatePresence>
-        {mode === 'results' && (
+        {!isEditorial && mode === 'results' && (
           <motion.div
             key="results-grid"
-            className={`wf-results ${isDark ? 'wf-results--on-dark' : ''}`}
+            className={`wf-results ${isDark ? 'wf-results--on-dark' : ''} ${
+              isEditorial ? 'wf-results--editorial' : ''
+            }`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25 }}
           >
-            <div className="wf-results__head">
-              <div>
-                <p className="eyebrow">Rezultati</p>
-                <h3>Predlozi na osnovu tvog izbora</h3>
-              </div>
-              <div className="wf-results__actions">
-                <button className="btn btn--primary" onClick={goToCatalog}>
-                  Vidi u katalogu <ArrowRight size={16} />
-                </button>
-                <button className="btn btn--ghost wf-reset" onClick={handleReset}>
-                  <RefreshCw size={16} /> Nova pitanja
-                </button>
-              </div>
-            </div>
-
-            {loading && <div className="wf-skeleton">Učitavanje predloga…</div>}
-
-            {!loading && results.length === 0 && (
-              <div className="wf-empty">
-                <div className="wf-empty__text">
-                  Još uvek nema predloga — probaj druga pitanja.
-                </div>
-                <div className="wf-empty__actions">
-                  <button className="btn btn--ghost" onClick={handleReset}>
-                    <RefreshCw size={14} /> Pokreni ponovo
-                  </button>
-                  <button className="btn btn--primary" onClick={goToCatalog}>
-                    Vidi u katalogu <ArrowRight size={14} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {!loading && results.length > 0 && (
-              <div className="wf-results__grid">
-                {results.map((p) => (
-                  <motion.div
-                    layout
-                    key={p.id}
-                    className="wf-card-mini"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Link to={`/product/${p.slug}`} className="wf-card-mini__img">
-                      <img src={p.thumbnailUrl || p.image} alt={p.name} loading="lazy" />
-                    </Link>
-                    <div className="wf-card-mini__body">
-                      <div className="wf-card-mini__brand">{p.brand}</div>
-                      <Link to={`/product/${p.slug}`} className="wf-card-mini__name">
-                        {p.name}
-                      </Link>
-                      <div className="wf-card-mini__price">{money(p.price)}</div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-
-            <div className="wf-results__cta">
-              <button className="btn btn--primary" onClick={goToCatalog}>
-                Vidi u katalogu <ArrowRight size={16} />
-              </button>
-            </div>
+            {resultsContent}
           </motion.div>
         )}
       </AnimatePresence>

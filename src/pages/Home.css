@@ -20,66 +20,6 @@
   overflow: hidden;
   border: 1px solid color-mix(in oklab, var(--color-text) 8%, transparent);
 }
-.hero__overlay {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-      circle at 15% 20%,
-      color-mix(in oklab, var(--color-primary) 20%, transparent),
-      transparent 42%
-    ),
-    radial-gradient(
-      circle at 80% 10%,
-      color-mix(in oklab, var(--color-primary) 18%, transparent),
-      transparent 48%
-    ),
-    linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--color-bg) 82%, transparent) 0%,
-      color-mix(in oklab, var(--color-bg) 94%, transparent) 100%
-    );
-  display: grid;
-  align-items: center;
-  z-index: 2;
-}
-.hero__content {
-  position: relative;
-  z-index: 3;
-  display: grid;
-  gap: 14px;
-  max-width: 820px;
-  padding: clamp(24px, 4vw, 40px) 0;
-}
-.hero h1 {
-  margin: 0;
-  font-size: clamp(36px, 6vw, 64px);
-  letter-spacing: -0.02em;
-  font-weight: 800;
-}
-.hero .lede {
-  max-width: 720px;
-}
-.hero__cta {
-  display: grid;
-  gap: 12px;
-  align-content: start;
-}
-.hero__cta .btn {
-  width: fit-content;
-  gap: 8px;
-}
-.hero__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.hero__miniTrust {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  color: var(--color-muted);
-  font-size: 0.95rem;
-}
 
 /* TRUST / BRAND STRIP spacing handled in components */
 
@@ -160,12 +100,6 @@
   font-weight: 800;
 }
 
-/* CHIPS */
-.chips-row {
-  display: grid;
-  gap: 10px;
-  align-items: center;
-}
 .chip-group {
   display: flex;
   flex-wrap: wrap;
@@ -190,52 +124,6 @@
   background: var(--color-primary);
   color: var(--color-on-primary, #fff);
   border-color: var(--color-primary);
-}
-
-/* PROMO RAIL */
-.promo-rail {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
-}
-.promoCard {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--color-surface) 90%, transparent);
-  border: 1px solid color-mix(in oklab, var(--color-text) 8%, transparent);
-  text-decoration: none;
-  color: inherit;
-  display: grid;
-  gap: 10px;
-  transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
-}
-.promoCard:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in oklab, var(--color-primary) 28%, transparent);
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.08);
-}
-.promoCard__img {
-  aspect-ratio: 3 / 2;
-  overflow: hidden;
-}
-.promoCard__img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.promoCard__body {
-  padding: 0 12px 14px;
-  display: grid;
-  gap: 2px;
-}
-.promoCard__title {
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-.promoCard__subtitle {
-  font-size: 0.9rem;
-  color: var(--color-muted);
 }
 
 /* CATEGORY TILES */
@@ -427,12 +315,6 @@
   }
 }
 
-/* TOP GRID */
-.top-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: clamp(14px, 2vw, 18px);
-}
 .skeleton-card {
   border-radius: var(--radius-md);
   min-height: 320px;
@@ -457,15 +339,6 @@
     background-position: 0 50%;
   }
 }
-.empty {
-  grid-column: 1 / -1;
-  padding: 18px;
-  border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--color-surface) 90%, transparent);
-  color: var(--color-muted);
-  border: 1px dashed color-mix(in oklab, var(--color-text) 10%, transparent);
-}
-
 /* BEST SELLERS */
 .best-grid {
   display: grid;
@@ -729,16 +602,22 @@
 .watchfinder-section {
   margin: clamp(14px, 3vw, 28px) 0;
 }
+.watchfinder-section--light {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
 .watchfinder-section--dark {
   background: #1d1d1f;
   color: #f5f5f5;
   padding: clamp(28px, 5vw, 48px) 0;
 }
 .watchfinder-section__inner {
-  width: min(1400px, 94vw);
+  width: min(1480px, 96vw);
   margin: 0 auto;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 @media (max-width: 720px) {
@@ -748,6 +627,9 @@
   .watchfinder-hero__actions .btn {
     flex: 1;
     justify-content: center;
+  }
+  .watchfinder-section--light {
+    padding: 0;
   }
 }
 
@@ -764,9 +646,5 @@
   .section__head {
     flex-direction: column;
     align-items: flex-start;
-  }
-  .hero__miniTrust {
-    flex-direction: column;
-    gap: 6px;
   }
 }
