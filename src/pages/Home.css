@@ -532,73 +532,6 @@
   border-color: color-mix(in oklab, var(--color-text) 26%, transparent);
 }
 
-.watchfinder-hero {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  padding: clamp(14px, 3vw, 26px) 0;
-}
-.watchfinder-hero__panel {
-  width: min(1600px, 100%);
-  margin: 0 auto;
-  padding: clamp(22px, 4vw, 38px);
-  border-radius: clamp(20px, 1.6vw, 30px);
-  background:
-    radial-gradient(120% 90% at 20% 25%, color-mix(in oklab, var(--color-primary) 12%, #fff), #fff),
-    radial-gradient(90% 70% at 80% 30%, color-mix(in oklab, var(--color-primary) 6%, #fff), #fff),
-    #ffffff;
-  border: 1px solid color-mix(in oklab, var(--color-text) 10%, transparent);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.06);
-  position: relative;
-  overflow: hidden;
-  transition: padding 240ms ease, box-shadow 240ms ease, transform 240ms ease;
-}
-.watchfinder-hero__panel::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(120% 120% at 50% 40%, rgba(255, 255, 255, 0.5), transparent 60%);
-  pointer-events: none;
-}
-.watchfinder-hero__panel.is-active {
-  padding: clamp(28px, 5vw, 48px);
-  box-shadow: 0 26px 52px rgba(0, 0, 0, 0.08);
-  transform: translateY(-4px);
-}
-.watchfinder-hero__text {
-  position: relative;
-  display: grid;
-  gap: 10px;
-  max-width: 780px;
-  z-index: 1;
-}
-.watchfinder-hero__text h2 {
-  margin: 0;
-  font-size: clamp(28px, 4vw, 40px);
-  letter-spacing: -0.02em;
-}
-.watchfinder-hero__text .lede {
-  max-width: 620px;
-  color: color-mix(in oklab, var(--color-text) 80%, #000);
-}
-.watchfinder-hero__actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.watchfinder-hero__actions .btn {
-  min-height: 46px;
-}
-
-@media (max-width: 900px) {
-  .watchfinder-hero__panel {
-    padding: clamp(18px, 5vw, 30px);
-  }
-  .watchfinder-hero__actions {
-    width: 100%;
-  }
-}
-
 .watchfinder-section {
   margin: clamp(14px, 3vw, 28px) 0;
 }
@@ -614,20 +547,16 @@
   padding: clamp(28px, 5vw, 48px) 0;
 }
 .watchfinder-section__inner {
-  width: min(1480px, 96vw);
+  width: 100%;
+  max-width: 1332px;
   margin: 0 auto;
+  padding-inline: clamp(10px, 2vw, 20px);
+  box-sizing: border-box;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 @media (max-width: 720px) {
-  .watchfinder-hero__actions {
-    width: 100%;
-  }
-  .watchfinder-hero__actions .btn {
-    flex: 1;
-    justify-content: center;
-  }
   .watchfinder-section--light {
     padding: 0;
   }

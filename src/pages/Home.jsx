@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import './Home.css';
 import { Link } from 'react-router-dom';
 import HeroBgSlider from '../components/HeroBgSlider.jsx';
@@ -84,8 +84,6 @@ function BestProductItem({ product }) {
 }
 
 export default function Home() {
-  const [startFinder] = useState(false);
-
   const { items, loading } = useProducts({ order: 'name', limit: 64 });
 
   const topProducts = useMemo(() => {
@@ -140,33 +138,10 @@ export default function Home() {
         brands={['CASIO', 'DANIEL KLEIN', 'Q&Q', 'ORIENT', 'G-SHOCK', 'EDIFICE', 'RETRO']}
       />
 
-      {/* WATCH FINDER HERO */}
-      <section className="watchfinder-hero">
-        <div className={`watchfinder-hero__panel ${startFinder ? 'is-active' : ''}`}>
-          <div className="watchfinder-hero__text">
-            <p className="eyebrow">Watch Finder</p>
-            <h2>Pronađi sat koji ti stvarno leži.</h2>
-            <p className="lede">
-              Par kratkih odgovora vodi do predloga po stilu, budžetu i funkcijama. Ako nisi siguran,
-              tu smo da pomognemo.
-            </p>
-            <div className="watchfinder-hero__actions">
-              <Link to="/watch-finder" className="btn btn--primary">
-                Pokreni Watch Finder
-              </Link>
-              <Link to="/usluge" className="btn btn--ghost">
-                Saznaj više
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* WATCH FINDER */}
       <section id="watchfinder" className="watchfinder-section watchfinder-section--light">
         <div className="watchfinder-section__inner">
           <WatchFinder
-            autoStart={startFinder}
             fullWidth
             showIntro={false}
             layout="split"

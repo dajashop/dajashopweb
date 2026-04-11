@@ -14,7 +14,6 @@ import FAQ from './pages/FAQ.jsx';
 import Contact from './pages/Contact.jsx';
 import Usluge from './pages/Usluge.jsx';
 import OrdersPage from './pages/Admin/OrdersPage';
-import WatchFinderPage from './pages/WatchFinder.jsx';
 
 export default function AppRoutes() {
   return (
@@ -42,7 +41,6 @@ export default function AppRoutes() {
       <Route path="/faq" element={<FAQ />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/usluge" element={<Usluge />} />
-      <Route path="/watch-finder" element={<WatchFinderPage />} />
       <Route path="/admin/orders" element={<OrdersPage />} />
     </Routes>
   );
