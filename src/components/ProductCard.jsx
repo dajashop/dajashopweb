@@ -76,6 +76,8 @@ export default function ProductCard({ p }) {
   };
 
   const showSliderControls = imgs.length > 1;
+  const imageAlt =
+    `${p.brand || ''} ${p.name || ''}`.trim() || p.name || 'Proizvod';
 
   // Admin check
   const [userEmail, setUserEmail] = useState(
@@ -234,7 +236,7 @@ export default function ProductCard({ p }) {
                       ? p.thumbnailUrl || imgs[imageIndex]?.thumb
                       : imgs[imageIndex]?.thumb
                   }
-                  alt={p.name}
+                  alt={imageAlt}
                   draggable={false}
                   className="w-full h-full object-cover pointer-events-none"
                 />

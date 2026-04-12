@@ -585,19 +585,17 @@ export const uploadProductImagesToR2 = onCall(
     const thumbBuffer = Buffer.from(data.thumbBase64, "base64");
     const originalBuffer = Buffer.from(data.originalBase64, "base64");
 
-    const uniqueSuffix = `${Date.now()}-${uuidv4().slice(0, 8)}`;
     const thumbFileName = sanitizeFilename(
       data.thumbFilename || `${slug}-${Number(data.index || 0) + 1}-thumb.webp`,
       `${slug}-${Number(data.index || 0) + 1}-thumb.webp`,
     );
     const originalFileName = sanitizeFilename(
-      data.originalFilename ||
-        `${slug}-${Number(data.index || 0) + 1}-original.webp`,
-      `${slug}-${Number(data.index || 0) + 1}-original.webp`,
+      data.originalFilename || `${slug}-${Number(data.index || 0) + 1}.webp`,
+      `${slug}-${Number(data.index || 0) + 1}.webp`,
     );
 
-    const thumbKey = `${slug}/${uniqueSuffix}-${thumbFileName}`;
-    const originalKey = `${slug}/${uniqueSuffix}-${originalFileName}`;
+    const thumbKey = `${slug}/${thumbFileName}`;
+    const originalKey = `${slug}/${originalFileName}`;
 
     const thumb = await uploadToR2(thumbBuffer, thumbKey, "image/webp");
     const original = await uploadToR2(
