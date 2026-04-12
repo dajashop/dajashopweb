@@ -78,6 +78,12 @@ export default function ProductCard({ p }) {
   const showSliderControls = imgs.length > 1;
   const imageAlt =
     `${p.brand || ''} ${p.name || ''}`.trim() || p.name || 'Proizvod';
+  const activeImage = imgs[imageIndex];
+  const firstImageThumb = p.thumbnailUrl || imgs[0]?.thumb;
+  const activeImageSrc =
+    imageIndex === 0
+      ? firstImageThumb || activeImage?.url || p.mainImageUrl || p.image
+      : activeImage?.url || p.mainImageUrl || p.image;
 
   // Admin check
   const [userEmail, setUserEmail] = useState(
@@ -230,7 +236,7 @@ export default function ProductCard({ p }) {
                 draggable={false}
               >
                 <ProgressiveImage
-                  src={imgs[imageIndex]?.url ?? p.mainImageUrl ?? p.image}
+                  src={activeImageSrc}
                   thumbSrc={
                     imageIndex === 0
                       ? p.thumbnailUrl || imgs[imageIndex]?.thumb
