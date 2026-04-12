@@ -10,9 +10,11 @@
 import { setGlobalOptions } from "firebase-functions";
 
 import {
+  deleteProductImagesFromR2,
   generateThumbnailFromStorage,
   repairProductImageUrls,
   saveImageFromUrl,
+  uploadProductImagesToR2,
 } from "./imageUtils";
 import { generateSitemap } from "./sitemap";
 import { sendNewOrderToAdmins } from "./adminUtils";
@@ -25,6 +27,8 @@ import { sendNewsletterPromo, sendWelcomeEmail } from "./newsletters";
 // Izvozimo svaku funkciju ponaosob
 export {
   saveImageFromUrl,
+  uploadProductImagesToR2,
+  deleteProductImagesFromR2,
   generateThumbnailFromStorage,
   repairProductImageUrls,
   generateSitemap,

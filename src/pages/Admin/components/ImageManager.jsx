@@ -14,12 +14,9 @@ import {
 
 import { generateSlug } from '../utils/generators';
 import UploadProgressBar from '../../../components/UploadProgressBar';
-import { uploadImages } from '../../../services/products';
+import { uploadProductImages } from '../../../services/r2ImageService';
 
-import {
-  uploadRemoteImage, // <--- DODAJ OVO
-  generateThumbnail,
-} from '../../../services/admin';
+import { uploadRemoteImage } from '../../../services/admin';
 
 // --- 2. Image Manager (SA CLICK EVENTOM) ---
 // --- 2. Image Manager (SA URL UPLOADOM) ---
@@ -50,13 +47,11 @@ function ImageManager({
   // --- NOVI STATE ZA URL ---
   const [urlInput, setUrlInput] = useState('');
   const [urlLoading, setUrlLoading] = useState(false);
-  const [thumbnailLoading, setThumbnailLoading] = useState(false);
 
   // --- POSTOJEĆI UPLOAD (LOKALNI FAJLOVI) ---
   const handleUpload = async (e) => {
     const files = e.target.files;
     if (!files?.length) return;
-    const isFirstImageUpload = images.length === 0;
 
     let storageFolderName = productSlug;
     if (!storageFolderName && productName) {
@@ -71,23 +66,18 @@ function ImageManager({
 
     setUploading(true);
     try {
-      const uploaded = await uploadImages(
+      const uploaded = await uploadProductImages(
         storageFolderName,
         files,
         ({ progress }) => setProgress(progress),
       );
       onChange([...images, ...uploaded]);
 
-      if (isFirstImageUpload && uploaded[0]?.path) {
-        setThumbnailLoading(true);
-        try {
-          const res = await generateThumbnail(uploaded[0].path);
-          onRemoteUploadSuccess?.(res);
-        } catch (thumbnailError) {
-          console.error('Thumbnail generation failed', thumbnailError);
-        } finally {
-          setThumbnailLoading(false);
-        }
+      if (uploaded[0]) {
+        onRemoteUploadSuccess?.({
+          thumbnailUrl: uploaded[0].thumb || uploaded[0].url,
+          mainImageUrl: uploaded[0].url,
+        });
       }
     } catch (err) {
       console.error('Upload failed', err);
@@ -119,27 +109,21 @@ function ImageManager({
 
     setUrlLoading(true);
     try {
-      // Pozivamo Cloud Function koja sada vraća thumbnailUrl i mainImageUrl kao zasebne atribute
       const res = await uploadRemoteImage(sanitizedUrlInput, storageFolderName);
 
       if (res.success) {
-        // BITNA KOREKCIJA: Filtriramo niz rezultata (res.results) da bismo isključili
-        // auto-generisani thumbnail (500x500 sliku), jer on ne treba da bude u reorder listi.
         const additionalImages = (res.results || [])
-          .filter(
-            (r) => r.success && !r.storagePath.includes('resized_500x500_'),
-          )
+          .filter((r) => r.success && !r.isThumbnail)
           .map((r) => ({
-            url: r.newUrl, // Ovo je sada ORIGINALNA slika i sve dodatne slike
+            url: r.newUrl,
+            thumb: r.thumbnailUrl || r.newUrl,
             path: r.storagePath,
           }));
 
         if (additionalImages.length > 0) {
-          // onChange sada šalje listu slika za reorder listu (samo originalne i dodatne)
           onChange([...images, ...additionalImages]);
-          setUrlInput(''); // Reset polja
+          setUrlInput('');
 
-          // KLJUČNA IZMENA: Šaljemo ceo odgovor nazad roditelju
           onRemoteUploadSuccess?.(res);
         } else {
           alert('Server nije uspeo da preuzme validnu sliku. Proverite link.');
@@ -231,30 +215,6 @@ function ImageManager({
           </motion.div>
         )}
 
-        {thumbnailLoading && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-2"
-          >
-            <div className="w-full rounded-2xl border border-emerald-100 bg-emerald-50/60 p-2">
-              <div className="flex justify-between text-xs mb-1 text-emerald-700 font-medium">
-                <span>Generisanje thumbnail-a...</span>
-                <Loader2 size={12} className="animate-spin" />
-              </div>
-              <div className="h-1.5 rounded-full bg-emerald-100 overflow-hidden">
-                <motion.div
-                  className="h-full bg-emerald-500"
-                  initial={{ x: '-100%' }}
-                  animate={{ x: '100%' }}
-                  transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-
         {/* URL upload "fake" progress (jer cloud function ne vraća stream procenata) */}
         {urlLoading && (
           <motion.div
@@ -288,7 +248,7 @@ function ImageManager({
         axis="y"
         values={images}
         onReorder={onChange}
-        className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1"
+        className="space-y-2 max-h-75 overflow-y-auto custom-scrollbar pr-1"
       >
         {images.map((img, idx) => (
           <Reorder.Item
@@ -312,7 +272,7 @@ function ImageManager({
                 onClick={() => onImageClick(idx)}
               >
                 <img
-                  src={img.url || '/placeholder.png'}
+                  src={img.thumb || img.url || '/placeholder.png'}
                   alt=""
                   className="h-full w-full object-cover hover:scale-110 transition-transform duration-300"
                 />

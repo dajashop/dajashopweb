@@ -9,6 +9,7 @@ import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { Edit3, Heart, Trash2, Star, Eye, EyeOff } from 'lucide-react'; // Dodate ikonice
 import { auth, ADMIN_EMAILS } from '../services/firebase';
 import { deleteProduct, saveProduct } from '../services/products';
+import ProgressiveImage from './ui/ProgressiveImage.jsx';
 
 // Uvozimo Modal
 import AdminProductModal from '../pages/Admin/components/AdminProductModal.jsx';
@@ -43,8 +44,24 @@ export default function ProductCard({ p }) {
 
   const imgs = useMemo(() => {
     const arr = p.images ?? (p.image ? [{ url: p.image }] : []);
-    return Array.isArray(arr) ? arr : [];
-  }, [p.images, p.image]);
+    if (!Array.isArray(arr)) return [];
+
+    return arr
+      .map((img, idx) => {
+        if (typeof img === 'string') {
+          return {
+            url: img,
+            thumb: idx === 0 ? p.thumbnailUrl || img : img,
+          };
+        }
+
+        return {
+          ...img,
+          thumb: img.thumb || (idx === 0 ? p.thumbnailUrl || img.url : img.url),
+        };
+      })
+      .filter((img) => img?.url);
+  }, [p.images, p.image, p.thumbnailUrl]);
 
   const imageIndex = Math.abs(page % imgs.length);
 
@@ -62,29 +79,32 @@ export default function ProductCard({ p }) {
 
   // Admin check
   const [userEmail, setUserEmail] = useState(
-    () => auth?.currentUser?.email ?? null
+    () => auth?.currentUser?.email ?? null,
   );
   useEffect(() => {
     const unsub = auth?.onAuthStateChanged?.((u) =>
-      setUserEmail(u?.email ?? null)
+      setUserEmail(u?.email ?? null),
     );
     return () => unsub?.();
   }, []);
 
   const isAdmin = useMemo(
     () => !!userEmail && ADMIN_EMAILS.includes(userEmail.toLowerCase()),
-    [userEmail]
+    [userEmail],
   );
 
   // Handleri
   const addToCart = () => {
+    const firstImage = imgs?.[0];
     dispatch({
       type: 'ADD',
       item: {
         id: p.id,
         name: p.name,
         price: p.price,
-        image: imgs?.[0]?.url ?? p.image,
+        image: firstImage?.url ?? p.mainImageUrl ?? p.image,
+        thumb:
+          firstImage?.thumb ?? p.thumbnailUrl ?? firstImage?.url ?? p.image,
         brand: p.brand,
         slug: p.slug,
       },
@@ -99,7 +119,7 @@ export default function ProductCard({ p }) {
       flash(
         'Uspeh',
         `Status 'Novo' je ${!p.novo ? 'uključen' : 'isključen'}.`,
-        'success'
+        'success',
       );
     } catch (error) {
       console.error(error);
@@ -116,7 +136,7 @@ export default function ProductCard({ p }) {
       flash(
         'Uspeh',
         `Proizvod je sada ${!currentStatus ? 'vidljiv' : 'sakriven'}.`,
-        'success'
+        'success',
       );
     } catch (error) {
       console.error(error);
@@ -207,11 +227,12 @@ export default function ProductCard({ p }) {
                 className="block w-full h-full"
                 draggable={false}
               >
-                <img
-                  src={
-                    imageIndex === 0 && p.thumbnailUrl // Proveravamo da li je prva slika I da li thumbnail postoji
-                      ? p.thumbnailUrl // Ako jeste, koristimo optimizovani thumbnail
-                      : imgs[imageIndex]?.url ?? p.image // U suprotnom, vraćamo se na punu rezoluciju iz slajdera
+                <ProgressiveImage
+                  src={imgs[imageIndex]?.url ?? p.mainImageUrl ?? p.image}
+                  thumbSrc={
+                    imageIndex === 0
+                      ? p.thumbnailUrl || imgs[imageIndex]?.thumb
+                      : imgs[imageIndex]?.thumb
                   }
                   alt={p.name}
                   draggable={false}
@@ -266,7 +287,12 @@ export default function ProductCard({ p }) {
                   id: p.id,
                   name: p.name,
                   price: p.price,
-                  image: imgs?.[0]?.url ?? p.image,
+                  image: imgs?.[0]?.url ?? p.mainImageUrl ?? p.image,
+                  thumb:
+                    imgs?.[0]?.thumb ??
+                    p.thumbnailUrl ??
+                    imgs?.[0]?.url ??
+                    p.image,
                   brand: p.brand,
                   slug: p.slug,
                 });

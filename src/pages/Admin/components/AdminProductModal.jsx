@@ -90,9 +90,25 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     if (product) {
       let loadedImages = [];
       if (product.images && Array.isArray(product.images)) {
-        loadedImages = product.images;
+        loadedImages = product.images.map((img, idx) => {
+          if (typeof img === 'string') {
+            return {
+              url: img,
+              thumb: idx === 0 ? product.thumbnailUrl || img : img,
+            };
+          }
+
+          return {
+            ...img,
+            thumb:
+              img.thumb ||
+              (idx === 0 ? product.thumbnailUrl || img.url : img.url),
+          };
+        });
       } else if (product.image) {
-        loadedImages = [{ url: product.image }];
+        loadedImages = [
+          { url: product.image, thumb: product.thumbnailUrl || product.image },
+        ];
       }
 
       setForm({
@@ -252,7 +268,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         // SLUČAJ 1: Slika na indexu 0 se promenila (reorderovana ili zamenjena novim LOKALNIM fajlom).
         // GUBIMO link na posvećeni resize URL, pa resetujemo oba na URL nove prve slike.
         nextMainImageUrl = newPrimaryUrl;
-        nextThumbnailUrl = newPrimaryUrl; // Privremeni fallback (originalni URL)
+        nextThumbnailUrl = newImages[0]?.thumb || newPrimaryUrl;
       } else if (isListNowEmpty) {
         // SLUČAJ 2: Niz je prazan. Resetujemo sve.
         nextMainImageUrl = '';

@@ -97,7 +97,12 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
           >
             <div className="related-image-box">
               <img
-                src={item.images?.[0]?.url || item.image}
+                src={
+                  item.thumbnailUrl ||
+                  item.images?.[0]?.thumb ||
+                  item.images?.[0]?.url ||
+                  item.image
+                }
                 alt={item.name}
                 className="related-img"
                 draggable="false" // Bitno: Da se slika ne vuče kao fajl

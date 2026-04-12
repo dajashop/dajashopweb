@@ -314,7 +314,7 @@ export default function Cart() {
                   >
                     <img
                       className="cart__thumb"
-                      src={it.image}
+                      src={it.thumb || it.image}
                       alt={it.name}
                       loading="lazy"
                     />
@@ -432,14 +432,14 @@ export default function Cart() {
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPct}%` }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
-                style={{
-                  height: '100%',
-                  background: '#40a840',
-                  borderRadius: 99,
-                }}
-              />
+                  style={{
+                    height: '100%',
+                    background: '#40a840',
+                    borderRadius: 99,
+                  }}
+                />
+              </div>
             </div>
-          </div>
 
             <PromoCodeSection
               onApply={handleApplyPromo}

@@ -145,6 +145,20 @@ export const generateThumbnail = async (storagePath) => {
   return result.data;
 };
 
+export const uploadProductImagesToR2 = async (payload) => {
+  const functions = getFunctions(app, 'europe-west3');
+  const uploadFn = httpsCallable(functions, 'uploadProductImagesToR2');
+  const result = await uploadFn(payload);
+  return result.data;
+};
+
+export const deleteProductImagesFromR2 = async (slug) => {
+  const functions = getFunctions(app, 'europe-west3');
+  const deleteFn = httpsCallable(functions, 'deleteProductImagesFromR2');
+  const result = await deleteFn({ slug });
+  return result.data;
+};
+
 export const brandService = new CollectionService('brands');
 export const categoryService = new CollectionService('categories');
 export const specKeyService = new CollectionService('spec_keys');
