@@ -97,6 +97,6 @@ export async function generateVariants(file) {
 export function generateSeoFilename(slug, index, variant) {
   const safeSlug = slugify(slug) || 'product';
   const safeIndex = Number.isFinite(Number(index)) ? Number(index) + 1 : 1;
-  const safeVariant = variant === 'thumb' ? 'thumb' : 'original';
-  return `${safeSlug}-${safeIndex}-${safeVariant}.webp`;
+  const safeVariant = variant === 'thumb' ? '-thumb' : '';
+  return `${safeSlug}-${safeIndex}${safeVariant}.webp`;
 }

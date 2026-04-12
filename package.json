@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "migrate:images": "node scripts/migrate-images-to-r2.mjs"
+    "migrate:images": "node scripts/migrate-images-to-r2.mjs",
+    "migrate:images:seo": "node scripts/rename-r2-images-seo.mjs --dry-run",
+    "migrate:images:seo:run": "node scripts/rename-r2-images-seo.mjs --confirm"
   },
   "dependencies": {
     "@dataconnect/generated": "file:src/dataconnect-generated",
