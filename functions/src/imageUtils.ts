@@ -10,8 +10,8 @@ if (admin.apps.length === 0) {
 }
 
 // Definicije za resize
-const THUMBNAIL_SIZE = 500;
-const THUMBNAIL_PREFIX = `resized_${THUMBNAIL_SIZE}x${THUMBNAIL_SIZE}_`;
+const THUMBNAIL_SIZE = 256;
+const THUMBNAIL_PREFIX = `thumb_${THUMBNAIL_SIZE}_`;
 const ORIGINAL_PREFIX = "original_";
 const ADDITIONAL_PREFIX = "additional_";
 
@@ -22,6 +22,8 @@ interface UploadSuccess {
   originalUrl: string;
   newUrl: string;
   storagePath: string;
+  isThumbnail?: boolean;
+  thumbnailUrl?: string;
 }
 
 interface UploadFailure {
@@ -61,6 +63,102 @@ const ensureDownloadToken = async (file: any): Promise<void> => {
 const getStableDownloadUrl = async (file: any): Promise<string> => {
   await ensureDownloadToken(file);
   return getAdminDownloadURL(file);
+};
+
+const getR2Config = () => {
+  const workerUrl = String(process.env.R2_WORKER_URL || "").replace(/\/$/, "");
+  const authToken = String(process.env.R2_AUTH_TOKEN || "").trim();
+
+  if (!workerUrl || !authToken) {
+    throw new HttpsError(
+      "failed-precondition",
+      "R2 konfiguracija nedostaje. Postavite R2_WORKER_URL i R2_AUTH_TOKEN.",
+    );
+  }
+
+  return { workerUrl, authToken };
+};
+
+const assertAdminUser = (request: any) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Morate biti prijavljeni.");
+  }
+
+  const token = request.auth.token || {};
+  if (token.admin === true) return;
+
+  const allowed = String(process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((v) => v.trim().toLowerCase())
+    .filter(Boolean);
+
+  const email = String(token.email || "").toLowerCase();
+  if (email && allowed.includes(email)) return;
+
+  throw new HttpsError("permission-denied", "Nemate admin dozvolu.");
+};
+
+const sanitizeSegment = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-_]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-_]+|[-_]+$/g, "");
+
+const sanitizeFilename = (value: string, fallback: string) => {
+  const normalized = value.trim().toLowerCase();
+  const safe = normalized
+    .replace(/[^a-z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-_]+|[-_]+$/g, "");
+
+  if (!safe) return fallback;
+  return safe.endsWith(".webp") ? safe : `${safe}.webp`;
+};
+
+const uploadToR2 = async (
+  buffer: Buffer,
+  key: string,
+  contentType: string,
+): Promise<string> => {
+  const { workerUrl, authToken } = getR2Config();
+  const response = await fetch(`${workerUrl}/images/${key}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": contentType,
+      "X-Auth-Token": authToken,
+    },
+    body: new Uint8Array(buffer),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new HttpsError(
+      "internal",
+      `R2 upload neuspešan (${response.status}): ${message}`,
+    );
+  }
+
+  return `${workerUrl}/images/${key}`;
+};
+
+const deleteR2BySlug = async (slug: string): Promise<void> => {
+  const { workerUrl, authToken } = getR2Config();
+  const response = await fetch(`${workerUrl}/images/${slug}/*`, {
+    method: "DELETE",
+    headers: {
+      "X-Auth-Token": authToken,
+    },
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new HttpsError(
+      "internal",
+      `R2 delete neuspešan (${response.status}): ${message}`,
+    );
+  }
 };
 
 const extractStoragePath = (
@@ -228,7 +326,6 @@ const downloadSingleImage = async (url: string): Promise<DownloadResult> => {
 const processAdditionalImage = async (
   url: string,
   basePath: string,
-  bucket: any,
 ): Promise<UploadResult> => {
   const downloadResult = await downloadSingleImage(url);
 
@@ -239,22 +336,30 @@ const processAdditionalImage = async (
 
   // Ako je uspelo, obrađujemo bafer
   const { buffer, contentType } = downloadResult;
-  return uploadBuffer(
-    buffer,
-    basePath,
-    bucket,
-    url,
-    contentType,
-    ADDITIONAL_PREFIX,
-  );
+
+  try {
+    const extension = contentType.includes("png") ? "png" : "jpg";
+    const fileName = `${ADDITIONAL_PREFIX}${Date.now()}_${uuidv4()}.${extension}`;
+    const key = `${basePath}/${fileName}`;
+    const publicUrl = await uploadToR2(buffer, key, contentType);
+
+    return {
+      success: true,
+      originalUrl: url,
+      newUrl: publicUrl,
+      storagePath: `images/${key}`,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      originalUrl: url,
+      error: error?.message || "R2 upload failed",
+    };
+  }
 };
 
 // Pomoćna funkcija za OBRADU GLAVNE SLIKE (resize + original)
-const processMainImageWithResize = async (
-  url: string,
-  basePath: string,
-  bucket: any,
-) => {
+const processMainImageWithResize = async (url: string, basePath: string) => {
   const downloadResult = await downloadSingleImage(url);
 
   if (!downloadResult.success) {
@@ -267,22 +372,29 @@ const processMainImageWithResize = async (
     };
   }
 
-  const { buffer, contentType } = downloadResult;
+  const { buffer } = downloadResult;
   const originalUrl = url;
   const results: UploadSuccess[] = [];
 
-  // 1. Upload ORIGINALNE slike (za Product stranicu)
-  const originalUploadResult = await uploadBuffer(
-    buffer,
-    basePath,
-    bucket,
-    originalUrl,
-    contentType,
-    ORIGINAL_PREFIX,
+  const originalFileName = `${ORIGINAL_PREFIX}${Date.now()}_${uuidv4()}.webp`;
+  const originalKey = `${basePath}/${originalFileName}`;
+
+  const originalWebp = await sharp(buffer).webp({ quality: 85 }).toBuffer();
+  const originalR2Url = await uploadToR2(
+    originalWebp,
+    originalKey,
+    "image/webp",
   );
+
+  const originalUploadResult: UploadSuccess = {
+    success: true,
+    originalUrl,
+    newUrl: originalR2Url,
+    storagePath: `images/${originalKey}`,
+  };
   results.push(originalUploadResult);
 
-  // 2. Resize i upload THUMBNAIL-a (500x500 za Catalog)
+  // 2. Resize i upload THUMBNAIL-a (256x256 za Catalog)
   let thumbnailUrl: string | null = null;
 
   try {
@@ -291,17 +403,25 @@ const processMainImageWithResize = async (
         fit: sharp.fit.inside,
         withoutEnlargement: true,
       })
-      .webp({ quality: 80 }) // WebP za efikasnost
+      .webp({ quality: 75 })
       .toBuffer();
 
-    const thumbnailUploadResult = await uploadBuffer(
+    const thumbnailFileName = `${THUMBNAIL_PREFIX}${Date.now()}_${uuidv4()}.webp`;
+    const thumbnailKey = `${basePath}/${thumbnailFileName}`;
+    const thumbnailR2Url = await uploadToR2(
       resizedBuffer,
-      basePath,
-      bucket,
-      originalUrl,
+      thumbnailKey,
       "image/webp",
-      THUMBNAIL_PREFIX,
     );
+
+    const thumbnailUploadResult: UploadSuccess = {
+      success: true,
+      originalUrl,
+      newUrl: thumbnailR2Url,
+      storagePath: `images/${thumbnailKey}`,
+      isThumbnail: true,
+      thumbnailUrl: thumbnailR2Url,
+    };
 
     thumbnailUrl = thumbnailUploadResult.newUrl;
     results.unshift(thumbnailUploadResult); // Thumbnail je PRVI u nizu
@@ -310,7 +430,6 @@ const processMainImageWithResize = async (
       `Failed to resize main image: ${originalUrl}`,
       resizeError.message,
     );
-    // U slučaju greške, za thumbnail koristimo originalni URL
   }
 
   return {
@@ -382,14 +501,12 @@ export const saveImageFromUrl = onCall(
           .replace(/-+/g, "-");
       }
 
-      const basePath = `products/${folderName}`;
-      const bucket = admin.storage().bucket();
+      const basePath = sanitizeSegment(folderName) || "uncategorized";
 
       // --- A. OBRADA GLAVNE SLIKE (sa resize-om) ---
       const mainImageProcess = await processMainImageWithResize(
         mainImageUrl,
         basePath,
-        bucket,
       );
 
       if (!mainImageProcess.success && urlList.length === 1) {
@@ -403,9 +520,7 @@ export const saveImageFromUrl = onCall(
 
       // --- B. BATCH OBRADA OSTALIH SLIKA (Paralelno, bez resize-a) ---
       const otherResults: UploadResult[] = await Promise.all(
-        otherImageUrls.map((url) =>
-          processAdditionalImage(url, basePath, bucket),
-        ),
+        otherImageUrls.map((url) => processAdditionalImage(url, basePath)),
       );
 
       // Spajamo sve rezultate u jedan niz (uspešne i neuspešne)
@@ -434,6 +549,91 @@ export const saveImageFromUrl = onCall(
       console.error("Global Upload error:", error.message);
       throw new HttpsError("internal", `Backend greška: ${error.message}`);
     }
+  },
+);
+
+export const uploadProductImagesToR2 = onCall(
+  {
+    region: "europe-west3",
+    timeoutSeconds: 300,
+    memory: "1GiB",
+  },
+  async (request) => {
+    assertAdminUser(request);
+
+    const data = (request.data || {}) as {
+      slug?: string;
+      index?: number;
+      thumbBase64?: string;
+      originalBase64?: string;
+      thumbFilename?: string;
+      originalFilename?: string;
+    };
+
+    const slug = sanitizeSegment(String(data.slug || ""));
+    if (!slug) {
+      throw new HttpsError("invalid-argument", "slug je obavezan.");
+    }
+
+    if (!data.thumbBase64 || !data.originalBase64) {
+      throw new HttpsError(
+        "invalid-argument",
+        "thumbBase64 i originalBase64 su obavezni.",
+      );
+    }
+
+    const thumbBuffer = Buffer.from(data.thumbBase64, "base64");
+    const originalBuffer = Buffer.from(data.originalBase64, "base64");
+
+    const uniqueSuffix = `${Date.now()}-${uuidv4().slice(0, 8)}`;
+    const thumbFileName = sanitizeFilename(
+      data.thumbFilename || `${slug}-${Number(data.index || 0) + 1}-thumb.webp`,
+      `${slug}-${Number(data.index || 0) + 1}-thumb.webp`,
+    );
+    const originalFileName = sanitizeFilename(
+      data.originalFilename ||
+        `${slug}-${Number(data.index || 0) + 1}-original.webp`,
+      `${slug}-${Number(data.index || 0) + 1}-original.webp`,
+    );
+
+    const thumbKey = `${slug}/${uniqueSuffix}-${thumbFileName}`;
+    const originalKey = `${slug}/${uniqueSuffix}-${originalFileName}`;
+
+    const thumb = await uploadToR2(thumbBuffer, thumbKey, "image/webp");
+    const original = await uploadToR2(
+      originalBuffer,
+      originalKey,
+      "image/webp",
+    );
+
+    return {
+      success: true,
+      thumb,
+      original,
+      path: `images/${originalKey}`,
+      thumbPath: `images/${thumbKey}`,
+    };
+  },
+);
+
+export const deleteProductImagesFromR2 = onCall(
+  {
+    region: "europe-west3",
+    timeoutSeconds: 180,
+    memory: "256MiB",
+  },
+  async (request) => {
+    assertAdminUser(request);
+
+    const data = (request.data || {}) as { slug?: string };
+    const slug = sanitizeSegment(String(data.slug || ""));
+
+    if (!slug) {
+      throw new HttpsError("invalid-argument", "slug je obavezan.");
+    }
+
+    await deleteR2BySlug(slug);
+    return { success: true };
   },
 );
 

@@ -77,7 +77,12 @@ export default function Product() {
   const productDescription =
     p.description ||
     `Kupite ${productTitle} po ceni od ${p.price} RSD. Besplatna dostava.`;
-  const productImage = p.mainImageUrl || p.images?.[0]?.url || p.image;
+  const productImage =
+    p.mainImageUrl ||
+    p.images?.[0]?.url ||
+    p.thumbnailUrl ||
+    p.images?.[0]?.thumb ||
+    p.image;
   const seoTitle = p.seo?.metaTitle || productTitle;
   const seoDescription = p.seo?.metaDescription || productDescription;
   const seoKeywords = p.seo?.metaKeywords || undefined;
@@ -93,7 +98,12 @@ export default function Product() {
         id: p.id,
         name: p.name,
         price: p.price,
-        image: p.images?.[0]?.url || p.image,
+        image: p.images?.[0]?.url || p.mainImageUrl || p.image,
+        thumb:
+          p.thumbnailUrl ||
+          p.images?.[0]?.thumb ||
+          p.images?.[0]?.url ||
+          p.image,
         brand: p.brand,
         slug: p.slug,
       },
@@ -106,7 +116,9 @@ export default function Product() {
       id: p.id,
       name: p.name,
       price: p.price,
-      image: p.images?.[0]?.url || p.image,
+      image: p.images?.[0]?.url || p.mainImageUrl || p.image,
+      thumb:
+        p.thumbnailUrl || p.images?.[0]?.thumb || p.images?.[0]?.url || p.image,
       brand: p.brand,
       slug: p.slug,
     });

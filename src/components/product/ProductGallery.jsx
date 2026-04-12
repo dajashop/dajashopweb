@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Box, Maximize2, Image as ImageIcon } from 'lucide-react';
 import Watch3DViewer from '../Watch3DViewer.jsx';
 import ImageGalleryModal from '../modals/ImageGalleryModal.jsx';
+import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import './ProductGallery.css';
 export default function ProductGallery({ product }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -34,7 +35,9 @@ export default function ProductGallery({ product }) {
     }
     const images =
       product.images && product.images.length > 0
-        ? product.images
+        ? product.images.map((img) =>
+            typeof img === 'string' ? { url: img } : img,
+          )
         : product.image
           ? [{ url: product.image }]
           : [];
@@ -42,6 +45,8 @@ export default function ProductGallery({ product }) {
       list.push({
         type: 'image',
         src: img.url,
+        thumb:
+          img.thumb || (i === 0 ? product.thumbnailUrl || img.url : img.url),
         id: `img-${i}`,
         imageIndex: i,
       });
@@ -66,7 +71,9 @@ export default function ProductGallery({ product }) {
 
   const galleryImages = useMemo(
     () =>
-      mediaList.filter((m) => m.type === 'image').map((m) => ({ url: m.src })),
+      mediaList
+        .filter((m) => m.type === 'image')
+        .map((m) => ({ url: m.src, thumb: m.thumb || m.src })),
     [mediaList],
   );
 
@@ -100,8 +107,9 @@ export default function ProductGallery({ product }) {
             className="view-image-wrapper cursor-zoom-in relative overflow-hidden"
             onClick={() => setIsGalleryOpen(true)}
           >
-            <img
+            <ProgressiveImage
               src={activeItem?.src}
+              thumbSrc={activeItem?.thumb}
               alt={mainImageAlt}
               className="product__img-full transition-transform duration-700 hover:scale-105"
             />
@@ -130,7 +138,7 @@ export default function ProductGallery({ product }) {
                   </div>
                 ) : (
                   <img
-                    src={item.src}
+                    src={item.thumb || item.src}
                     alt={`${product.name} - slika ${(item.imageIndex || 0) + 1}`}
                     className="thumb-img"
                   />

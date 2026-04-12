@@ -1,0 +1,41 @@
+name = "dajashop-r2-image-worker"
+main = "src/workers/r2-image-worker.js"
+compatibility_date = "2026-04-12"
+workers_dev = true
+account_id = "10bd3bdfe4417a769f8efd8d3f54bc74"
+
+[[r2_buckets]]
+binding = "DAJASHOP_IMAGES"
+bucket_name = "dajashop-images"
+
+[vars]
+ALLOWED_ORIGINS = "https://dajashop.rs,https://www.dajashop.rs"
+
+[env.production]
+workers_dev = false
+
+[[env.production.routes]]
+pattern = "cdn.dajashop.rs"
+custom_domain = true
+
+[[env.production.r2_buckets]]
+binding = "DAJASHOP_IMAGES"
+bucket_name = "dajashop-images"
+
+[env.production.vars]
+ALLOWED_ORIGINS = "https://dajashop.rs,https://www.dajashop.rs"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1

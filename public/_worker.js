@@ -34,7 +34,10 @@ function toFirestoreImages(arrayValue) {
     .map((entry) => {
       const fields = entry?.mapValue?.fields;
       if (!fields) return null;
-      return { url: fields.url?.stringValue || '' };
+      return {
+        url: fields.url?.stringValue || '',
+        thumb: fields.thumb?.stringValue || '',
+      };
     })
     .filter((img) => img?.url);
 }

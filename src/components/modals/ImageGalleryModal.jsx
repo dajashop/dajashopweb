@@ -13,6 +13,7 @@ import {
   ZoomOut,
   Loader2,
 } from 'lucide-react';
+import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 
 export default function ImageGalleryModal({ images, initialIndex, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -30,6 +31,7 @@ export default function ImageGalleryModal({ images, initialIndex, onClose }) {
   // Resetuj samo zum i poziciju kad se promeni slika
   useEffect(() => {
     setIsZoomed(false);
+    setIsImgLoaded(false);
     x.set(0);
     y.set(0);
   }, [currentIndex]);
@@ -93,11 +95,11 @@ export default function ImageGalleryModal({ images, initialIndex, onClose }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center"
+        className="fixed inset-0 z-200 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center"
       >
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[250]"
+          className="absolute top-5 right-5 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-250"
         >
           <X size={24} />
         </button>
@@ -139,33 +141,34 @@ export default function ImageGalleryModal({ images, initialIndex, onClose }) {
             )}
 
             {/* SLIKA */}
-            <motion.img
-              key={`img-${currentIndex}`} // Ovo forsira rerender kad se slika promeni
-              src={images[currentIndex].url || '/placeholder.png'}
-              alt="Gallery preview"
-              onLoad={() => setIsImgLoaded(true)}
-              // Koristimo animate samo za Zoom, ne za Opacity (da ne bi blinkalo)
-              animate={{
-                scale: isZoomed ? 2.5 : 1,
-              }}
+            <motion.div
+              key={`img-${currentIndex}`}
+              animate={{ scale: isZoomed ? 2.5 : 1 }}
               style={{
                 x: isZoomed ? invertedX : 0,
                 y: isZoomed ? invertedY : 0,
                 touchAction: 'none',
               }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              // Klasa kontroliše vidljivost
               className={`
-                max-w-[90vw] max-h-[80vh] object-contain rounded-lg shadow-2xl select-none transition-opacity duration-300
-                ${isImgLoaded ? 'opacity-100' : 'opacity-0'} 
+                max-w-[90vw] max-h-[80vh] rounded-lg shadow-2xl select-none transition-opacity duration-300
+                ${isImgLoaded ? 'opacity-100' : 'opacity-0'}
                 ${isZoomed ? '' : 'cursor-zoom-in'}
               `}
-            />
+            >
+              <ProgressiveImage
+                src={images[currentIndex].url || '/placeholder.png'}
+                thumbSrc={images[currentIndex].thumb}
+                alt="Gallery preview"
+                onLoad={() => setIsImgLoaded(true)}
+                className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg"
+              />
+            </motion.div>
 
             {/* Dragger */}
             {isZoomed && isImgLoaded && (
               <motion.div
-                className="fixed -inset-[200%] z-[200] cursor-grab active:cursor-grabbing"
+                className="fixed -inset-[200%] z-200 cursor-grab active:cursor-grabbing"
                 style={{ x, y }}
                 drag
                 dragElastic={0.2}
@@ -191,7 +194,7 @@ export default function ImageGalleryModal({ images, initialIndex, onClose }) {
             )}
 
             {isImgLoaded && (
-              <div className="absolute bottom-4 right-4 bg-black/50 px-3 py-1.5 rounded-full text-white text-xs font-medium pointer-events-none flex items-center gap-2 backdrop-blur-sm border border-white/10 z-[210]">
+              <div className="absolute bottom-4 right-4 bg-black/50 px-3 py-1.5 rounded-full text-white text-xs font-medium pointer-events-none flex items-center gap-2 backdrop-blur-sm border border-white/10 z-210">
                 {isZoomed ? <ZoomOut size={14} /> : <ZoomIn size={14} />}
                 {isZoomed ? 'Klikni za izlaz' : 'Klikni za zum'}
               </div>
@@ -213,14 +216,14 @@ export default function ImageGalleryModal({ images, initialIndex, onClose }) {
                   setIsImgLoaded(false);
                   setCurrentIndex(idx);
                 }}
-                className={`relative h-14 w-14 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
+                className={`relative h-14 w-14 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${
                   currentIndex === idx
                     ? 'border-white scale-110 shadow-lg'
                     : 'border-transparent opacity-50 hover:opacity-100'
                 }`}
               >
                 <img
-                  src={img.url || '/placeholder.png'}
+                  src={img.thumb || img.url || '/placeholder.png'}
                   className="w-full h-full object-cover"
                   alt={`thumbnail-${idx}`}
                 />

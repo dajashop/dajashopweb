@@ -30,3 +30,4 @@ tmp
 *.sln
 *.sw?
 functions/.env.daja-shop-site
+serviceAccount.json
