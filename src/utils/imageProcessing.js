@@ -89,7 +89,7 @@ export async function resizeToWebP(file, maxSize, quality) {
 }
 
 export async function generateVariants(file) {
-  const thumb = await resizeToWebP(file, 256, 0.75);
+  const thumb = await resizeToWebP(file, 512, 0.75);
   const original = await resizeToWebP(file, 2400, 0.85);
   return { thumb, original };
 }
