@@ -1,31 +1,112 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import './Home.css';
 import { Link } from 'react-router-dom';
-import Carousel from '../components/Carousel.jsx';
-import BrandStrip from '../components/BrandStrip.jsx';
 import HeroBgSlider from '../components/HeroBgSlider.jsx';
-import FeaturedSlider from '../components/FeaturedSlider.jsx';
-import { Check } from 'lucide-react';
+import BrandStrip from '../components/BrandStrip.jsx';
 import TrustBar from '../components/TrustBar.jsx';
+import WatchFinder from '../components/WatchFinder.jsx';
+import useProducts from '../hooks/useProducts.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import OrganizationJsonLd from '../components/seo/OrganizationJsonLd.jsx';
+import { ArrowRight, Phone, CheckCircle2, ShieldCheck, Wrench, Headset } from 'lucide-react';
 import { seoConfig } from '../config/seo.js';
 
-const bgSlides = [
+const HERO_SLIDES = [
   {
     src: '/images/banner-watches-casio.png',
-    alt: 'Casio',
+    alt: 'Casio kolekcija',
     to: '/catalog?brand=CASIO',
   },
   {
     src: '/images/model_banner_bed6ebb9-b47f-438a-835e-f63534a7d455.jpg',
-    alt: 'Daniel Klein',
-    to: '/catalog?brand=DANIEL+KLEIN',
+    alt: 'Daniel Klein izbor',
+    to: '/catalog?brand=DANIEL%20KLEIN',
   },
-  { src: '/images/q&q.png', alt: 'Q&Q', to: '/catalog?brand=Q%26Q' },
+  {
+    src: '/images/casio-g-shock-original-ga-2100-4aer-carbon-core-guard_183960_205228.jpg',
+    alt: 'G-Shock GA-2100',
+    to: '/catalog?brand=CASIO&category=G-SHOCK',
+  },
 ];
 
+const TOP_SLUGS = [
+  'casio-mtp-1314pl-8a',
+  'daniel-3271',
+  'qq-classic-qw12',
+  'ga-100-1a1',
+  'orient-diver',
+  'daniel-klein-dk13965-4',
+];
+const BEST_COUNT = 6;
+
+const CATEGORY_TILES = [
+  {
+    title: 'Ženski satovi',
+    image: '/images/daniel-klain-5252.PNG',
+    to: '/catalog?gender=ŽENSKI',
+  },
+  {
+    title: 'G‑Shock',
+    image: '/images/casio-g-shock-original-ga-2100-4aer-carbon-core-guard_183960_205228.jpg',
+    to: '/catalog?brand=CASIO&category=G-SHOCK',
+  },
+  {
+    title: 'Nakit & pokloni',
+    image: '/images/Casiothumb.webp',
+    to: '/catalog?category=NAKIT',
+    wide: true,
+  },
+];
+
+function BestProductItem({ product }) {
+  if (!product) return null;
+  const primaryImg =
+    product.thumbnailUrl ||
+    product.images?.[0]?.url ||
+    product.image ||
+    'https://via.placeholder.com/640x640.png?text=Watch';
+
+  return (
+    <article className="bestCard">
+      <Link to={`/product/${product.slug}`} className="bestCard__img">
+        <img src={primaryImg} alt={product.name} loading="lazy" />
+      </Link>
+      <div className="bestCard__body">
+        <div className="bestCard__meta">RUČNI SAT</div>
+        <Link to={`/product/${product.slug}`} className="bestCard__name">
+          {product.name}
+        </Link>
+        <div className="bestCard__price">
+          {Number(product.price || 0).toLocaleString('sr-RS')} RSD
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function Home() {
+  const { items, loading } = useProducts({ order: 'name', limit: 64 });
+
+  const topProducts = useMemo(() => {
+    if (!items?.length) return [];
+    const filtered = items.filter((p) => TOP_SLUGS.includes(p.slug));
+    const orderMap = TOP_SLUGS.reduce((acc, slug, idx) => {
+      acc[slug] = idx;
+      return acc;
+    }, {});
+    return filtered.sort((a, b) => (orderMap[a.slug] ?? 99) - (orderMap[b.slug] ?? 99));
+  }, [items]);
+
+  const bestProducts = useMemo(() => {
+    const curated = topProducts.slice(0, BEST_COUNT);
+    if (curated.length >= BEST_COUNT) return curated;
+    const seen = new Set(curated.map((p) => p.id));
+    const extras = (items || [])
+      .filter((p) => !seen.has(p.id))
+      .slice(0, BEST_COUNT - curated.length);
+    return [...curated, ...extras].slice(0, BEST_COUNT);
+  }, [topProducts, items]);
+
   return (
     <div className="home">
       <SEOHead
@@ -38,147 +119,123 @@ export default function Home() {
 
       {/* HERO */}
       <section className="hero">
-        <HeroBgSlider slides={bgSlides} interval={5200} />
-        <picture className="hero__media">
-          {/* zameni placeholder realnim coverom */}
-          <img src="/placeholder.png" alt="" />
-        </picture>
-
-        {/* glass panel
-        <div className="hero__glass card shadow">
-          <div className="hero__wrap container">
-            <div className="hero__copy">
-              <h1 className="hero__title">
-                Vreme je da <span className="gradient">zablistaš</span>
-              </h1>
-              <p className="hero__lead">
-                Minimalistički izbor satova – bez suvišnih priča. Samo dobar
-                dizajn.
-              </p>
-              <div className="hero__actions">
-                <Link to="/catalog" className="btn btn--primary">
-                  Pogledaj katalog
-                </Link>
-                <Link to="/catalog?brand=CASIO" className="btn btn--ghost">
-                  Casio
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div> */}
+        <HeroBgSlider slides={HERO_SLIDES} interval={5600} />
       </section>
 
-      {/* TRUST BAR
-      <section className="trust container">
-        <div className="trust__item">
-          <Check /> Original proizvodi
-        </div>
-        <div className="trust__item">🚚 Isporuka širom Srbije</div>
-        <div className="trust__item">🔄 14 dana povraćaj</div>
-        <div className="trust__item">☎️ Podrška</div>
-      </section> */}
-      <TrustBar variant="glass" mobileVariant="cards" />
-
-      {/* BRAND STRIP (marquee-like, ali bez animacije koja smara) */}
-      <BrandStrip
-        brands={[
-          'CASIO',
-          'DANIEL KLEIN',
-          'Q&Q',
-          'ORIENT',
-          'G-SHOCK',
-          'EDIFICE',
-          'SHEEN',
-          'RETRO',
+      {/* TRUST BAR */}
+      <TrustBar
+        variant="glass"
+        mobileVariant="cards"
+        items={[
+          { icon: CheckCircle2, title: 'Original proizvodi', desc: 'Direktno od brendova' },
+          { icon: ShieldCheck, title: '2 godine garancije', desc: 'Na mehanizam i bateriju' },
+          { icon: Wrench, title: 'Ovlašćeni servis', desc: 'Podešavanje i zamena' },
+          { icon: Headset, title: 'Podrška', desc: 'Telefon, Viber, email' },
         ]}
       />
 
-      {/* FEATURED SLIDER */}
-      <FeaturedSlider />
-      {/* <section className="section container">
+      {/* BRAND STRIP */}
+      <BrandStrip
+        brands={['CASIO', 'DANIEL KLEIN', 'Q&Q', 'ORIENT', 'G-SHOCK', 'EDIFICE', 'RETRO']}
+      />
+
+      {/* NAJPRODAVANIJE - vitrina */}
+      <section className="section container best">
         <div className="section__head">
-          <h2 className="section__title">Izdvojeno</h2>
-          <Link to="/catalog" className="link">
-            Sve
+          <div className="section__titleRow">
+            <h2 className="section__title">Preporučujemo</h2>
+          </div>
+        </div>
+        <div className="best-grid">
+          {loading &&
+            Array.from({ length: BEST_COUNT }).map((_, i) => (
+              <div key={i} className="skeleton-card skeleton-card--best" />
+            ))}
+          {!loading &&
+            bestProducts.map((p, idx) => (
+              <BestProductItem key={p.id || p.slug || idx} product={p} />
+            ))}
+        </div>
+        <div className="best__cta">
+          <Link to="/catalog?sort=popular" className="btn btn--dark">
+            Pogledajte sve <ArrowRight size={16} />
           </Link>
         </div>
+      </section>
 
-        <Carousel autoPlay interval={4500} showDots>
-          {izdvojeno.map((item, i) => (
-            <article key={i} className="card productCard">
-              <div className="productCard__img">
-                <img src={item.img} alt={`Model ${item.name}`} loading="lazy" />
-              </div>
-              <div className="productCard__body">
-                <div className="productCard__brand">{item.brand}</div>
-                <div className="productCard__name">{item.name}</div>
-                <div className="productCard__price">{item.price}</div>
-                <div className="productCard__actions">
-                  <Link to={item.to} className="btn btn--primary">
-                    Detalji
-                  </Link>
-                  <Link to="/cart" className="btn btn--ghost">
-                    Dodaj
-                  </Link>
-                </div>
-              </div>
-            </article>
-          ))}
-        </Carousel>
-      </section> */}
-
-      {/* EDITORIAL SLIDE (čisto, velika tipografija) */}
-      <section className="section container">
-        <div className="section__head">
-          <h2 className="section__title">Kolekcije</h2>
+      {/* WATCH FINDER */}
+      <section id="watchfinder" className="watchfinder-section watchfinder-section--light">
+        <div className="watchfinder-section__inner">
+          <WatchFinder
+            fullWidth
+            showIntro={false}
+            layout="split"
+            variant="editorial"
+            className="watchfinder-home"
+          />
         </div>
+      </section>
 
-        <Carousel autoPlay interval={5200} arrows>
-          <div className="editorial">
-            <div className="editorial__copy">
-              <h3>Retro</h3>
-              <p>Ikonični modeli koji su obeležili generacije.</p>
-              <Link to="/catalog?category=RETRO" className="btn btn--primary">
-                Retro linija
+      {/* CATEGORIES HERO TILES */}
+      <section className="section container categories">
+        <div className="categories-grid">
+          {CATEGORY_TILES.map((tile) => (
+            <Link
+              key={tile.title}
+              to={tile.to}
+              className={`categoryTile ${tile.wide ? 'categoryTile--wide' : ''}`}
+            >
+              <div className="categoryTile__img">
+                <img src={tile.image} alt={tile.title} loading="lazy" />
+              </div>
+              <div className="categoryTile__label">{tile.title}</div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* KOLEKCIJE / MOOD PLOČE removed per request */}
+      {/* STORY BLOCK removed per request */}
+
+      {/* SERVICE HERO CTA */}
+      <section className="section container serviceHero">
+        <Link to="/usluge" className="serviceHero__card">
+          <div className="serviceHero__content">
+            <p className="eyebrow">Servis</p>
+            <h2>Servis i tim koji zna svaki model.</h2>
+            <p className="lede">
+              Zamena baterije i narukvice uz ovlašćene majstore i originalne
+              delove.
+            </p>
+            <div className="serviceHero__cta">
+              <span className="btn btn--ghost serviceHero__btn">
+                Saznaj više <ArrowRight size={16} />
+              </span>
+            </div>
+          </div>
+        </Link>
+      </section>
+
+      {/* CONCIERGE CTA */}
+      <section className="section container concierge">
+        <div className="concierge__card">
+          <div>
+            <p className="eyebrow">Treba preporuka?</p>
+            <h3>Concierge / Kontakt</h3>
+            <p className="lede">
+              Javi se i zajedno ćemo odabrati sat koji odgovara tvom stilu i
+              budžetu.
+            </p>
+            <div className="concierge__actions">
+              <a className="btn btn--primary" href="tel:+381641262425">
+                <Phone size={18} /> +381 64 126 24 25
+              </a>
+              <Link to="/contact" className="btn btn--ghost">
+                Piši nam
               </Link>
             </div>
-            <img
-              className="editorial__img"
-              src="images/Screenshot 2025-11-13 at 5.39.19 PM.png"
-              alt=""
-            />
           </div>
-
-          <div className="editorial">
-            <div className="editorial__copy">
-              <h3>G-Shock</h3>
-              <p>Robusnost bez kompromisa. Za teren i grad.</p>
-              <Link to="/catalog?category=G-SHOCK" className="btn btn--primary">
-                G-Shock
-              </Link>
-            </div>
-            <img
-              className="editorial__img"
-              src="images/casio-g-shock-original-ga-2100-4aer-carbon-core-guard_183960_205228.jpg"
-              alt=""
-            />
-          </div>
-
-          <div className="editorial">
-            <div className="editorial__copy">
-              <h3>Ženski izbor</h3>
-              <p>Elegancija koja prati tvoj dan.</p>
-              <Link to="/catalog?gender=ŽENSKI" className="btn btn--primary">
-                Pogledaj
-              </Link>
-            </div>
-            <img
-              className="editorial__img"
-              src="/images/daniel-klain-5252.PNG"
-              alt=""
-            />
-          </div>
-        </Carousel>
+        </div>
       </section>
     </div>
   );
