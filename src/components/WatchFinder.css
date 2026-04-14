@@ -52,9 +52,14 @@
 }
 
 .watchfinder--selection-only .wf-card {
-  max-width: min(860px, 100%);
+  max-width: 100%;
   margin-inline: auto;
   padding: clamp(18px, 2.8vw, 28px);
+  overflow: visible;
+}
+
+.watchfinder--editorial.watchfinder--selection-only .wf-card {
+  overflow: visible;
 }
 
 .watchfinder--selection-only .wf-card::before,
@@ -157,6 +162,7 @@
   display: grid;
   gap: 16px;
   align-content: start;
+  container-type: inline-size;
   padding: clamp(14px, 2vw, 18px);
   border: 1px solid var(--wf-border);
   border-radius: 18px;
@@ -452,6 +458,7 @@
   justify-items: flex-start;
   gap: 12px;
   text-align: left;
+  container-type: inline-size;
 }
 .wf-introSimple .btn {
   width: fit-content;
@@ -467,11 +474,22 @@
 }
 .wf-intro__title {
   margin: 0;
-  font-size: clamp(1.55rem, 3vw, 2.35rem);
-  line-height: 1.02;
+  font-size: clamp(1.02rem, 0.84rem + 1.75vw, 2.35rem);
+  font-size: clamp(0.82rem, 9.8cqw, 2.35rem);
+  line-height: 1.05;
   letter-spacing: -0.04em;
   text-wrap: balance;
   overflow-wrap: anywhere;
+}
+.wf-twoLineTitle {
+  display: grid;
+  gap: 0.04em;
+  max-width: 100%;
+}
+.wf-twoLineTitle > span {
+  display: block;
+  white-space: nowrap;
+  text-wrap: nowrap;
 }
 .wf-intro__copy {
   margin: 0;
@@ -491,6 +509,61 @@
 .wf-selectionState--ready {
   justify-items: center;
   text-align: center;
+}
+
+.wf-selectionState--resultsOnly {
+  display: grid;
+  gap: clamp(10px, 1.6vw, 16px);
+  justify-items: stretch;
+  text-align: left;
+}
+
+.wf-selectionState--resultsOnly .wf-selectionHead {
+  justify-items: start;
+  text-align: left;
+  gap: 8px;
+}
+
+.wf-selectionState--resultsOnly .wf-selectionHead h3 {
+  margin: 0;
+}
+
+.wf-selectionState--resultsOnly .wf-selectionCopy {
+  max-width: 62ch;
+}
+
+.wf-selectionCopy--split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35ch;
+}
+
+.wf-selectionCopy--split .wf-selectionCopy__line {
+  white-space: normal;
+}
+
+@media (min-width: 1001px) {
+  .wf-selectionState--resultsOnly .wf-selectionCopy {
+    max-width: none;
+  }
+  .wf-selectionCopy--split {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+  .wf-selectionCopy--split .wf-selectionCopy__line {
+    white-space: nowrap;
+  }
+}
+
+.wf-selectionActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: clamp(8px, 1.2vw, 14px);
+  padding-top: clamp(10px, 1.4vw, 14px);
+  border-top: 1px solid color-mix(in oklab, var(--wf-border) 88%, transparent);
 }
 
 .wf-selectionTitle {
@@ -768,10 +841,12 @@
   margin: 6px 0 0;
   max-width: 15ch;
   font-family: inherit;
-  font-size: clamp(2.8rem, 5.4vw, 4.6rem);
-  line-height: 0.93;
+  font-size: clamp(1.5rem, 1.2rem + 3.1vw, 4.6rem);
+  font-size: clamp(1.06rem, 14.2cqw, 4.6rem);
+  line-height: 0.95;
   letter-spacing: -0.05em;
-  white-space: pre-line;
+  white-space: normal;
+  text-wrap: balance;
   color: var(--wf-editorial-ink);
 }
 
@@ -797,9 +872,9 @@
 
 .watchfinder--editorial .wf-editorialNote--full {
   grid-template-columns: minmax(0, 1fr);
-  justify-items: center;
-  align-items: center;
-  text-align: center;
+  justify-items: stretch;
+  align-items: stretch;
+  text-align: left;
 }
 
 .watchfinder--editorial .wf-editorialNote__lead {
@@ -827,8 +902,9 @@
 .watchfinder--editorial .wf-editorialNote__content {
   width: 100%;
   display: grid;
-  gap: 10px;
-  justify-items: center;
+  gap: 0;
+  padding-inline: clamp(8px, 1.4vw, 14px);
+  justify-items: stretch;
 }
 
 .watchfinder--editorial .wf-editorialNote__title {
@@ -850,10 +926,11 @@
 .watchfinder--editorial .wf-editorialNote__copy,
 .watchfinder--editorial .wf-editorialNote__tip {
   margin: 0;
-  max-width: 68ch;
+  width: 100%;
+  max-width: none;
   color: var(--wf-editorial-muted);
   line-height: var(--wf-note-body-lh);
-  text-align: center;
+  text-align: left;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -861,16 +938,17 @@
 
 .watchfinder--editorial .wf-editorialNote__copy {
   -webkit-line-clamp: var(--wf-note-copy-lines);
-  min-height: calc(1em * var(--wf-note-body-lh) * var(--wf-note-copy-lines));
-  max-height: calc(1em * var(--wf-note-body-lh) * var(--wf-note-copy-lines));
+  min-height: 0;
+  max-height: none;
 }
 
 .watchfinder--editorial .wf-editorialNote__tip {
+  margin-top: 0.08em;
   grid-column: auto;
   color: color-mix(in oklab, var(--color-text) 78%, var(--color-muted) 22%);
   -webkit-line-clamp: var(--wf-note-tip-lines);
-  min-height: calc(1em * var(--wf-note-body-lh) * var(--wf-note-tip-lines));
-  max-height: calc(1em * var(--wf-note-body-lh) * var(--wf-note-tip-lines));
+  min-height: 0;
+  max-height: none;
 }
 
 .watchfinder--editorial .wf-aside__actions {
@@ -888,6 +966,7 @@
   position: relative;
   z-index: 1;
   min-height: 100%;
+  max-width: 746px;
   align-self: start;
   margin-left: clamp(-12px, -1vw, -6px);
   padding-left: 0;
@@ -1151,7 +1230,6 @@
 }
 
 .watchfinder--editorial .wf-results__grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -1162,16 +1240,13 @@
 }
 
 .watchfinder--editorial .wf-card-mini__img {
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--color-surface) 92%, var(--color-bg) 8%) 0%,
-    color-mix(in oklab, var(--color-surface) 74%, var(--color-bg) 26%) 100%
-  );
+  background: #ffffff;
 }
 
 .watchfinder--editorial .wf-card-mini__body {
   padding: 16px;
   gap: 6px;
+  background: color-mix(in oklab, var(--color-surface) 74%, var(--color-bg) 26%);
 }
 
 .watchfinder--editorial .wf-card-mini__brand {
@@ -1247,21 +1322,40 @@
   flex-wrap: wrap;
 }
 .wf-results__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: clamp(12px, 2vw, 16px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  padding: 18px 16px 24px;
 }
+
+.wf-catalogCard {
+  flex: 0 0 clamp(225px, 22vw, 288px);
+  min-width: 225px;
+  scroll-snap-align: start;
+}
+
+.wf-catalogCard .product-card {
+  width: 100%;
+}
+
 .wf-card-mini {
+  flex: 0 0 clamp(206px, 23vw, 282px);
+  min-width: 0;
   border: 1px solid #e4e6eb;
   border-radius: 14px;
   overflow: hidden;
-  background: #ffffff;
+  background: #f1f2f4;
   box-shadow: 0 8px 20px rgba(17, 24, 39, 0.05);
   display: grid;
   grid-template-rows: auto 1fr;
   transition: transform var(--wf-duration-fast) var(--wf-ease),
     box-shadow var(--wf-duration-fast) var(--wf-ease),
     border-color var(--wf-duration-fast) var(--wf-ease);
+  scroll-snap-align: start;
 }
 .wf-card-mini:hover {
   transform: translateY(-2px);
@@ -1270,7 +1364,7 @@
 .wf-card-mini__img {
   display: block;
   aspect-ratio: 4 / 5;
-  background: #f6f7fb;
+  background: #ffffff;
 }
 .wf-card-mini__img img {
   width: 100%;
@@ -1282,6 +1376,7 @@
   padding: 12px;
   display: grid;
   gap: 4px;
+  background: #f1f2f4;
 }
 .wf-card-mini__brand {
   font-size: 0.8rem;
@@ -1365,9 +1460,6 @@
     max-width: none;
     font-size: clamp(2.6rem, 8vw, 4rem);
   }
-  .watchfinder--editorial .wf-results__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .watchfinder--editorial .wf-editorialNote--full {
     grid-template-columns: 1fr;
   }
@@ -1400,6 +1492,10 @@
 }
 
 @media (max-width: 720px) {
+  .wf-intro__title {
+    font-size: clamp(0.9rem, 9.1cqw, 1.48rem);
+    line-height: 1.08;
+  }
   .watchfinder--selection-only .wf-card {
     padding: 16px;
     border-radius: 16px;
@@ -1421,6 +1517,20 @@
   .watchfinder-home .wf-inner {
     width: 100%;
   }
+  .wf-selectionState--resultsOnly .wf-selectionHead {
+    justify-items: center;
+    text-align: center;
+  }
+  .wf-selectionState--resultsOnly .wf-selectionCopy {
+    max-width: 100%;
+  }
+  .wf-selectionCopy--split {
+    justify-content: center;
+  }
+  .wf-selectionActions {
+    width: 100%;
+    justify-content: center;
+  }
   .watchfinder--editorial .wf-card {
     padding: 18px;
     border-radius: 24px;
@@ -1432,9 +1542,6 @@
     gap: 10px;
     padding-top: 18px;
     margin-top: 18px;
-  }
-  .watchfinder--editorial .wf-results__grid {
-    grid-template-columns: 1fr;
   }
   .watchfinder--editorial .wf-actions {
     width: 100%;
@@ -1486,6 +1593,23 @@
   .wf-results__cta {
     width: 100%;
     justify-content: center;
+  }
+  .wf-results__grid {
+    padding: 14px 12px 20px;
+  }
+  .wf-catalogCard {
+    flex-basis: clamp(189px, 65vw, 252px);
+    min-width: 189px;
+  }
+  .wf-card-mini {
+    flex-basis: clamp(178px, 68vw, 232px);
+  }
+}
+
+@media (max-width: 430px) {
+  .wf-selectionState--resultsOnly .wf-selectionCopy {
+    font-size: clamp(0.78rem, 3.4vw, 0.9rem);
+    line-height: 1.45;
   }
 }
 
@@ -1562,6 +1686,10 @@
 }
 
 @media (max-width: 499px) {
+  .wf-intro__title {
+    font-size: clamp(0.8rem, 8.5cqw, 1.2rem);
+    line-height: 1.1;
+  }
   .watchfinder .wf-options {
     display: grid;
     grid-template-columns: 1fr;

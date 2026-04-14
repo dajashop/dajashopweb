@@ -3,6 +3,7 @@ import './WatchFinder.css';
 import { motion as Motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ArrowRight, ArrowLeft, RotateCcw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import ProductCard from './ProductCard.jsx';
 import useProducts from '../hooks/useProducts.js';
 import { money } from '../utils/currency.js';
 
@@ -589,7 +590,13 @@ export default function WatchFinder({
       return 'Predlozi po tvojim kriterijumima. Možeš ih otvoriti ili otići u katalog.';
     return '6 kratkih pitanja za brze predloge po stilu, budžetu i funkcijama.';
   })();
-  const asideTitle = isEditorial ? 'Zbunjuje te\nPreviše izbora?' : 'Pronađi sat koji ti stvarno leži.';
+  const twoLinePromptTitle = (
+    <>
+      <span>Zbunjuje te</span>
+      <span>Previše izbora?</span>
+    </>
+  );
+  const asideTitle = isEditorial ? twoLinePromptTitle : 'Pronađi sat koji ti stvarno leži.';
   const headingTitle =
     mode === 'quiz'
       ? current.title
@@ -659,7 +666,11 @@ export default function WatchFinder({
         ? 'Ako želiš širi pregled, otvori katalog i nastavi od već primenjenih kriterijuma.'
         : 'Ne tražimo savršen odgovor, već smer koji vodi do boljih preporuka.';
   const showPhoneIntroOnly = isPhoneViewport && mode === 'intro';
-  const showEditorialNote = isEditorial && !showPhoneIntroOnly && !(isIntroViewport && mode === 'intro');
+  const showEditorialNote =
+    isEditorial &&
+    mode !== 'results' &&
+    !showPhoneIntroOnly &&
+    !(isIntroViewport && mode === 'intro');
   const showSelectionScreen = mode === 'loading' || mode === 'results';
 
   const handleStart = () => {
@@ -783,47 +794,73 @@ export default function WatchFinder({
               </Motion.div>
             ) : (
               <Motion.div
-                key="selection-ready"
+                key="selection-results"
                 variants={sectionVariants}
                 initial="initial"
                 animate="animate"
                 exit="exit"
                 transition={sectionTransition}
-                className="wf-selectionState wf-selectionState--ready"
+                className="wf-selectionState wf-selectionState--resultsOnly"
               >
                 <div className="wf-selectionHead">
-                  <p className="eyebrow">Rezultati</p>
-                  <h3>Rezultati su spremni</h3>
+                  <p className="eyebrow">WATCH FINDER</p>
+                  <h3>Evo tvojih rezultata</h3>
+                  <p className="wf-selectionCopy wf-selectionCopy--split">
+                    <span className="wf-selectionCopy__line">
+                      Izdvojili smo modele koji najbolje prate tvoj stil i budžet.
+                    </span>
+                    <span className="wf-selectionCopy__line">
+                      Prelistaj predloge ili otvori celu kolekciju.
+                    </span>
+                  </p>
                 </div>
 
                 {results.length === 0 ? (
-                  <div className="wf-empty">Nismo našli dovoljno modela za ovu kombinaciju filtera.</div>
+                  <div className="wf-empty">Još uvek nema predloga — probaj druga pitanja.</div>
                 ) : (
-                  <div className="wf-selectionList" role="list">
+                  <Motion.div
+                    className="wf-results__grid"
+                    variants={resultsGridVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
                     {results.map((p) => (
-                      <article className="wf-selectionItem" role="listitem" key={p.id}>
-                        <div className="wf-selectionItem__img">
-                          <img src={p.thumbnailUrl || p.image} alt={p.name} loading="lazy" />
-                        </div>
-                        <div className="wf-selectionItem__meta">
-                          <div className="wf-selectionItem__brand">{p.brand}</div>
-                          <div className="wf-selectionItem__name">{p.name}</div>
-                        </div>
-                        <div className="wf-selectionItem__price">{money(p.price)}</div>
-                      </article>
+                      <Motion.div
+                        variants={resultItemVariants}
+                        key={p.id}
+                        className="wf-catalogCard"
+                        layout
+                        transition={cardMotionTransition}
+                      >
+                        <ProductCard p={p} />
+                      </Motion.div>
                     ))}
-                  </div>
+                  </Motion.div>
                 )}
 
-                <Motion.button
-                  className="btn btn--primary wf-selectionCta"
-                  onClick={goToCatalog}
-                  whileHover={buttonHoverAnimation}
-                  whileTap={buttonTapAnimation}
-                  transition={buttonMotionTransition}
-                >
-                  Pogledaj sve <ArrowRight size={16} />
-                </Motion.button>
+                <div className="wf-selectionActions">
+                  <Motion.button
+                    className="btn btn--primary"
+                    onClick={goToCatalog}
+                    whileHover={buttonHoverAnimation}
+                    whileTap={buttonTapAnimation}
+                    transition={buttonMotionTransition}
+                  >
+                    Pogledaj sve <ArrowRight size={16} />
+                  </Motion.button>
+                  <Motion.button
+                    className="btn btn--ghost wf-iconBtn wf-reset"
+                    onClick={handleReset}
+                    aria-label="Restart"
+                    title="Restart"
+                    whileHover={buttonHoverAnimation}
+                    whileTap={buttonTapAnimation}
+                    transition={buttonMotionTransition}
+                  >
+                    <RotateCcw size={18} />
+                  </Motion.button>
+                </div>
               </Motion.div>
             )}
           </AnimatePresence>
@@ -834,63 +871,10 @@ export default function WatchFinder({
 
   const resultsContent = (
     <>
-      <div className="wf-results__head">
-        <div>
-          <p className="eyebrow">Rezultati</p>
-          <h3>Predlozi na osnovu tvog izbora</h3>
-        </div>
-        <div className="wf-results__actions">
-          <Motion.button
-            className="btn btn--primary"
-            onClick={goToCatalog}
-            whileHover={buttonHoverAnimation}
-            whileTap={buttonTapAnimation}
-            transition={buttonMotionTransition}
-          >
-            Pogledaj sve <ArrowRight size={16} />
-          </Motion.button>
-          <Motion.button
-            className="btn btn--ghost wf-iconBtn wf-reset"
-            onClick={handleReset}
-            aria-label="Nova pitanja"
-            title="Nova pitanja"
-            whileHover={buttonHoverAnimation}
-            whileTap={buttonTapAnimation}
-            transition={buttonMotionTransition}
-          >
-            <RotateCcw size={18} />
-          </Motion.button>
-        </div>
-      </div>
-
       {loading && <div className="wf-skeleton">Učitavanje predloga…</div>}
 
       {!loading && results.length === 0 && (
-        <div className="wf-empty">
-          <div className="wf-empty__text">Još uvek nema predloga — probaj druga pitanja.</div>
-          <div className="wf-empty__actions">
-            <Motion.button
-              className="btn btn--ghost wf-iconBtn wf-reset"
-              onClick={handleReset}
-              aria-label="Pokreni ponovo"
-              title="Pokreni ponovo"
-              whileHover={buttonHoverAnimation}
-              whileTap={buttonTapAnimation}
-              transition={buttonMotionTransition}
-            >
-              <RotateCcw size={18} />
-            </Motion.button>
-            <Motion.button
-              className="btn btn--primary"
-              onClick={goToCatalog}
-              whileHover={buttonHoverAnimation}
-              whileTap={buttonTapAnimation}
-              transition={buttonMotionTransition}
-            >
-              Pogledaj sve <ArrowRight size={14} />
-            </Motion.button>
-          </div>
-        </div>
+        <div className="wf-empty">Još uvek nema predloga — probaj druga pitanja.</div>
       )}
 
       {!loading && results.length > 0 && (
@@ -925,17 +909,6 @@ export default function WatchFinder({
         </Motion.div>
       )}
 
-      <div className="wf-results__cta">
-        <Motion.button
-          className="btn btn--primary"
-          onClick={goToCatalog}
-          whileHover={buttonHoverAnimation}
-          whileTap={buttonTapAnimation}
-          transition={buttonMotionTransition}
-        >
-          Pogledaj sve <ArrowRight size={16} />
-        </Motion.button>
-      </div>
     </>
   );
 
@@ -958,7 +931,7 @@ export default function WatchFinder({
             className="wf-introSimple"
           >
             <p className="wf-intro__eyebrow">WATCH FINDER</p>
-            <h2 className="wf-intro__title">Zbunjuje te previše izbora?</h2>
+            <h2 className="wf-intro__title wf-twoLineTitle">{twoLinePromptTitle}</h2>
             <p className="wf-intro__copy">
               Odgovori na par kratkih pitanja i odmah dobijaš predloge koji su stvarno za tebe.
             </p>
@@ -977,7 +950,7 @@ export default function WatchFinder({
             <div className="wf-aside">
               <div>
                 <p className="eyebrow">Watch Finder</p>
-                <h2>{asideTitle}</h2>
+                <h2 className={isEditorial ? 'wf-twoLineTitle' : undefined}>{asideTitle}</h2>
                 <p className="lede wf-aside__lede">{modeDescription}</p>
               </div>
               <div className="wf-aside__actions">
@@ -1017,7 +990,7 @@ export default function WatchFinder({
                     className="wf-introSimple"
                   >
                     <p className="wf-intro__eyebrow">WATCH FINDER</p>
-                    <h3 className="wf-intro__title">Zbunjuje te previše izbora?</h3>
+                    <h3 className="wf-intro__title wf-twoLineTitle">{twoLinePromptTitle}</h3>
                     <p className="wf-intro__copy">
                       Odgovori na par kratkih pitanja i odmah dobijaš preporuke po stilu, budžetu
                       i detaljima koje tražiš.
@@ -1125,47 +1098,6 @@ export default function WatchFinder({
                   </Motion.div>
                 )}
 
-                {mode === 'results' && (
-                  <Motion.div
-                    key="results-card"
-                    variants={sectionVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    transition={{ duration: 0.25, ease: 'easeOut' }}
-                    className="wf-step wf-questionCard wf-questionCard--done"
-                  >
-                    <div className="wf-step__head">
-                      <span className="wf-pill wf-pill--success">Gotovo</span>
-                      <div className="wf-step__title">Rezultati su spremni ispod.</div>
-                      <p className="wf-step__hint">
-                        Otvori predloge ili idi u katalog, a možeš i da pokreneš kviz ponovo.
-                      </p>
-                    </div>
-                    <div className="wf-actions wf-actions--stack">
-                      <Motion.button
-                        className="btn btn--primary"
-                        onClick={goToCatalog}
-                        whileHover={buttonHoverAnimation}
-                        whileTap={buttonTapAnimation}
-                        transition={buttonMotionTransition}
-                      >
-                        Pogledaj sve <ArrowRight size={16} />
-                      </Motion.button>
-                      <Motion.button
-                        className="btn btn--ghost wf-iconBtn wf-reset"
-                        onClick={handleReset}
-                        aria-label="Nova pitanja"
-                        title="Nova pitanja"
-                        whileHover={buttonHoverAnimation}
-                        whileTap={buttonTapAnimation}
-                        transition={buttonMotionTransition}
-                      >
-                        <RotateCcw size={18} />
-                      </Motion.button>
-                    </div>
-                  </Motion.div>
-                )}
               </AnimatePresence>
             </Motion.div>
             {isDark && <div className="wf-illustration" aria-hidden="true" />}
@@ -1193,7 +1125,7 @@ export default function WatchFinder({
                     className="wf-introSimple"
                   >
                     <p className="wf-intro__eyebrow">WATCH FINDER</p>
-                    <h3 className="wf-intro__title">Zbunjuje te previše izbora?</h3>
+                    <h3 className="wf-intro__title wf-twoLineTitle">{twoLinePromptTitle}</h3>
                     <p className="wf-intro__copy">
                       Odgovori na par kratkih pitanja i odmah dobijaš preporuke po stilu, budžetu
                       i detaljima koje tražiš.

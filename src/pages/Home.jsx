@@ -37,6 +37,7 @@ const TOP_SLUGS = [
   'orient-diver',
   'daniel-klein-dk13965-4',
 ];
+const BEST_COUNT = 6;
 
 const CATEGORY_TILES = [
   {
@@ -97,13 +98,13 @@ export default function Home() {
   }, [items]);
 
   const bestProducts = useMemo(() => {
-    const curated = topProducts.slice(0, 4);
-    if (curated.length >= 4) return curated;
+    const curated = topProducts.slice(0, BEST_COUNT);
+    if (curated.length >= BEST_COUNT) return curated;
     const seen = new Set(curated.map((p) => p.id));
     const extras = (items || [])
       .filter((p) => !seen.has(p.id))
-      .slice(0, 4 - curated.length);
-    return [...curated, ...extras].slice(0, 4);
+      .slice(0, BEST_COUNT - curated.length);
+    return [...curated, ...extras].slice(0, BEST_COUNT);
   }, [topProducts, items]);
 
   return (
@@ -138,6 +139,30 @@ export default function Home() {
         brands={['CASIO', 'DANIEL KLEIN', 'Q&Q', 'ORIENT', 'G-SHOCK', 'EDIFICE', 'RETRO']}
       />
 
+      {/* NAJPRODAVANIJE - vitrina */}
+      <section className="section container best">
+        <div className="section__head">
+          <div className="section__titleRow">
+            <h2 className="section__title">Preporučujemo</h2>
+          </div>
+        </div>
+        <div className="best-grid">
+          {loading &&
+            Array.from({ length: BEST_COUNT }).map((_, i) => (
+              <div key={i} className="skeleton-card skeleton-card--best" />
+            ))}
+          {!loading &&
+            bestProducts.map((p, idx) => (
+              <BestProductItem key={p.id || p.slug || idx} product={p} />
+            ))}
+        </div>
+        <div className="best__cta">
+          <Link to="/catalog?sort=popular" className="btn btn--dark">
+            Pogledajte sve <ArrowRight size={16} />
+          </Link>
+        </div>
+      </section>
+
       {/* WATCH FINDER */}
       <section id="watchfinder" className="watchfinder-section watchfinder-section--light">
         <div className="watchfinder-section__inner">
@@ -166,30 +191,6 @@ export default function Home() {
               <div className="categoryTile__label">{tile.title}</div>
             </Link>
           ))}
-        </div>
-      </section>
-
-      {/* NAJPRODAVANIJE - vitrina */}
-      <section className="section container best">
-        <div className="section__head">
-          <div className="section__titleRow">
-            <h2 className="section__title">Preporučujemo</h2>
-          </div>
-        </div>
-      <div className="best-grid">
-          {loading &&
-            Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="skeleton-card skeleton-card--best" />
-            ))}
-          {!loading &&
-            bestProducts.map((p, idx) => (
-              <BestProductItem key={p.id || p.slug || idx} product={p} />
-            ))}
-        </div>
-        <div className="best__cta">
-          <Link to="/catalog?sort=popular" className="btn btn--dark">
-            Pogledajte sve <ArrowRight size={16} />
-          </Link>
         </div>
       </section>
 
