@@ -10,7 +10,7 @@ if (admin.apps.length === 0) {
 }
 
 // Definicije za resize
-const THUMBNAIL_SIZE = 256;
+const THUMBNAIL_SIZE = 512;
 const THUMBNAIL_PREFIX = `thumb_${THUMBNAIL_SIZE}_`;
 const ORIGINAL_PREFIX = "original_";
 const ADDITIONAL_PREFIX = "additional_";
@@ -394,7 +394,7 @@ const processMainImageWithResize = async (url: string, basePath: string) => {
   };
   results.push(originalUploadResult);
 
-  // 2. Resize i upload THUMBNAIL-a (256x256 za Catalog)
+  // 2. Resize i upload THUMBNAIL-a (512x512 za Catalog)
   let thumbnailUrl: string | null = null;
 
   try {
