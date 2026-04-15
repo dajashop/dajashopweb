@@ -190,8 +190,8 @@ export default {
 
     let response = await env.ASSETS.fetch(request);
 
-    // SPA fallback: ako statički asset ne postoji, serviraj index.html
-    if (response.status === 404) {
+    // SPA fallback: samo za HTML rute, ne za statičke assete (css, js, slike)
+    if (response.status === 404 && !url.pathname.match(/\.\w{1,5}$/)) {
       const indexRequest = new Request(
         `${url.protocol}//${url.host}/index.html`,
         request,
