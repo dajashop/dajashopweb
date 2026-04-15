@@ -1,9 +1,24 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useMemo, useEffect } from 'react';
 import { Box, Maximize2, Image as ImageIcon } from 'lucide-react';
-import Watch3DViewer from '../Watch3DViewer.jsx';
 import ImageGalleryModal from '../modals/ImageGalleryModal.jsx';
 import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import './ProductGallery.css';
+
+const Watch3DViewer = lazy(() => import('../Watch3DViewer.jsx'));
+
+function ViewerSpinner() {
+  return (
+    <div
+      className="flex items-center justify-center min-h-90"
+      role="status"
+      aria-live="polite"
+      aria-label="Ucitavanje 3D prikaza"
+    >
+      <span className="w-8 h-8 border-4 border-current border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
 export default function ProductGallery({ product }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -100,7 +115,9 @@ export default function ProductGallery({ product }) {
       <div className="product__main-view card relative group">
         {activeItem?.type === '3d' ? (
           <div className="view-3d-wrapper" data-lenis-prevent>
-            <Watch3DViewer modelUrl={activeItem.src} />
+            <Suspense fallback={<ViewerSpinner />}>
+              <Watch3DViewer modelUrl={activeItem.src} />
+            </Suspense>
           </div>
         ) : (
           <div

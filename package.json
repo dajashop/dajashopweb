@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "check:chunks": "node scripts/check-chunk-budgets.mjs",
+    "build:ci": "vite build && node scripts/check-chunk-budgets.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "migrate:images": "node scripts/migrate-images-to-r2.mjs",

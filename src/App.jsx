@@ -1,10 +1,13 @@
+import React, { Suspense, lazy, useEffect } from 'react';
 import AppRoutes from './router.jsx';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
-import AuthModal from './components/AuthModal.jsx';
 import { useLocation, useNavigationType } from 'react-router-dom';
-import NewsletterModal from './components/modals/NewsletterModal.jsx';
-import { useEffect } from 'react';
+
+const AuthModal = lazy(() => import('./components/AuthModal.jsx'));
+const NewsletterModal = lazy(
+  () => import('./components/modals/NewsletterModal.jsx'),
+);
 
 export default function App() {
   const { pathname } = useLocation(); // Hvatamo trenutnu putanju
@@ -29,8 +32,10 @@ export default function App() {
         className={isWidePage ? 'w-full' : 'container'}
         style={{ padding: '20px 0 48px' }}
       >
-        <AuthModal />
-        <NewsletterModal />
+        <Suspense fallback={null}>
+          <AuthModal />
+          <NewsletterModal />
+        </Suspense>
         <AppRoutes />
       </main>
       <Footer />

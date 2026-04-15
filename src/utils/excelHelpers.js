@@ -1,4 +1,11 @@
-import ExcelJS from 'exceljs';
+let excelModulePromise;
+
+const getExcelJS = async () => {
+  if (!excelModulePromise) {
+    excelModulePromise = import('exceljs').then((mod) => mod.default);
+  }
+  return excelModulePromise;
+};
 
 const getDateString = () => new Date().toISOString().split('T')[0];
 
@@ -16,6 +23,7 @@ const triggerDownload = (buffer, filename) => {
 
 // --- IZVOZ (EXPORT) ---
 export const exportToExcel = async (data, fileName = 'proizvodi') => {
+  const ExcelJS = await getExcelJS();
   const specKeys = new Set();
   const cleanData = data.map((item) => {
     const row = {
@@ -68,6 +76,7 @@ export const importFromExcel = (file) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
+        const ExcelJS = await getExcelJS();
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(e.target.result);
         const worksheet = workbook.worksheets[0];
@@ -96,6 +105,7 @@ export const downloadTemplate = async (
   existingBrands = [],
   existingCategories = [],
 ) => {
+  const ExcelJS = await getExcelJS();
   const workbook = new ExcelJS.Workbook();
 
   const templateWS = workbook.addWorksheet('Unos Proizvoda');
