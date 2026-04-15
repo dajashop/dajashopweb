@@ -1,4 +1,4 @@
-# 🛍️ DajaShop - Moderna E-Commerce Prodavnica Satova
+## 🛍️ DajaShop - Moderna E-Commerce Prodavnica Satova
 
 [![React](https://img.shields.io/badge/React-19.2.0-61DAFB?logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-7.2.2-646CFF?logo=vite)](https://vitejs.dev/)
@@ -10,6 +10,7 @@ DajaShop je moderna, responzivna React aplikacija za online prodavnicu satova sa
 ## ✨ Glavne Karakteristike
 
 ### 🔐 Autentifikacija
+
 - **Email/Password** autentifikacija
 - **Google OAuth** prijava
 - **Facebook OAuth** prijava
@@ -18,6 +19,7 @@ DajaShop je moderna, responzivna React aplikacija za online prodavnicu satova sa
 - Email verifikacija
 
 ### 🛒 E-Commerce Funkcionalnosti
+
 - Kompletan **shopping cart** sistem
 - Real-time ažuriranje korpe
 - **Promo kodovi** i popusti
@@ -26,6 +28,7 @@ DajaShop je moderna, responzivna React aplikacija za online prodavnicu satova sa
 - **Order history** i tracking
 
 ### 🎨 Korisničko Iskustvo
+
 - **Dark/Light mode** sa smooth prelaskom
 - **Smooth scrolling** sa Lenis bibliotekom
 - Profesionalne **animacije** sa Framer Motion
@@ -34,6 +37,7 @@ DajaShop je moderna, responzivna React aplikacija za online prodavnicu satova sa
 - **Lazy loading** slika za bolje performanse
 
 ### 📱 Stranice
+
 - **Home** - Landing page sa featured proizvodima
 - **Catalog** - Prikaz svih proizvoda sa filterima
 - **Product Details** - Detaljan prikaz proizvoda
@@ -45,6 +49,7 @@ DajaShop je moderna, responzivna React aplikacija za online prodavnicu satova sa
 - **Admin Panel** - Upravljanje proizvodima (admin only)
 
 ### 🔧 Admin Panel
+
 - CRUD operacije za proizvode
 - Upload slika
 - Upravljanje porudžbinama
@@ -56,6 +61,7 @@ DajaShop je moderna, responzivna React aplikacija za online prodavnicu satova sa
 ### Preduslovi
 
 Potrebno je da imate instaliran:
+
 - **Node.js** 18.x ili noviji
 - **npm** ili **yarn**
 - **Git**
@@ -63,22 +69,26 @@ Potrebno je da imate instaliran:
 ### Instalacija
 
 1. **Klonirajte repozitorijum:**
+
 ```bash
 git clone https://github.com/your-username/dajashopreact.git
 cd dajashopreact
 ```
 
 2. **Instalirajte zavisnosti:**
+
 ```bash
 npm install
 ```
 
 3. **Podesite environment varijable:**
+
 ```bash
 cp .env.example .env
 ```
 
 Otvorite `.env` i popunite Firebase konfiguraciju:
+
 ```env
 VITE_FIREBASE_API_KEY=your_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
@@ -87,6 +97,7 @@ VITE_FIREBASE_PROJECT_ID=your_project_id
 ```
 
 4. **Pokrenite development server:**
+
 ```bash
 npm run dev
 ```
@@ -118,6 +129,7 @@ npm run preview
 ## 🛠️ Tehnološki Stack
 
 ### Frontend
+
 - **React 19.2.0** - UI library
 - **Vite 7.2.2** - Build tool
 - **React Router DOM 7.9.5** - Rutiranje
@@ -127,6 +139,7 @@ npm run preview
 - **Lucide React 0.553.0** - Ikone
 
 ### Backend & Database
+
 - **Firebase 12.5.0**
   - Authentication (Multi-provider)
   - Firestore (NoSQL database)
@@ -135,6 +148,7 @@ npm run preview
   - App Check (Sigurnost)
 
 ### 3D & Graphics
+
 - **Three.js 0.181.1** - 3D rendering
 - **@react-three/fiber 9.4.0** - React renderer za Three.js
 - **@react-three/drei 10.7.7** - Three.js helpers
@@ -209,13 +223,7 @@ npm run lint
 
 ```css
 /* Mobile */
-@media (max-width: 640px)
-
-/* Tablet */
-@media (min-width: 641px) and (max-width: 1024px)
-
-/* Desktop */
-@media (min-width: 1025px)
+@media (max-width: 640px) /* Tablet */ @media (min-width: 641px) and (max-width: 1024px) /* Desktop */ @media (min-width: 1025px);
 ```
 
 ## 🤝 Doprinošenje
@@ -237,6 +245,7 @@ Sva prava zadržana © 2025 DajaShop
 ## 📞 Kontakt
 
 **DajaShop**
+
 - 📧 Email: cvelenis42@yahoo.com
 - 📱 Telefon: 064/1262425, 065/2408400
 - 📍 Adresa: Niš, TPC Gorča lokal C31
@@ -252,4 +261,4 @@ Sva prava zadržana © 2025 DajaShop
 
 ---
 
-**Izrađeno sa ❤️ u Nišu, Srbija** 
+**Izrađeno sa ❤️ u Nišu, Srbija**
