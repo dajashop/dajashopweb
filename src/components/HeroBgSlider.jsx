@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import "./HeroBgSlider.css";
 
 export default function HeroBgSlider({ slides = [], interval = 5000 }) {
@@ -82,8 +83,12 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
 
       {/* Kontrole */}
       <div className="heroBg__controls">
-        <button className="heroBg__btn prev" aria-label="Prethodni" onClick={() => go(-1)}>‹</button>
-        <button className="heroBg__btn next" aria-label="Sledeći" onClick={() => go(1)}>›</button>
+        <button className="heroBg__btn prev" aria-label="Prethodni" onClick={() => go(-1)}>
+          <ChevronLeft className="heroBg__btnIcon" size={18} strokeWidth={2.6} />
+        </button>
+        <button className="heroBg__btn next" aria-label="Sledeci" onClick={() => go(1)}>
+          <ChevronRight className="heroBg__btnIcon" size={18} strokeWidth={2.6} />
+        </button>
       </div>
 
       {/* Tačkice */}
@@ -101,3 +106,4 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
     </div>
   );
 }
+

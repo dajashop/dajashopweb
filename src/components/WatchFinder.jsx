@@ -1,7 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './WatchFinder.css';
 import { motion as Motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { ArrowRight, ArrowLeft, RotateCcw } from 'lucide-react';
+import {
+  ArrowRight,
+  ArrowLeft,
+  RotateCcw,
+  Mars,
+  Venus,
+  Users,
+  BriefcaseBusiness,
+  Sparkles,
+  Dumbbell,
+  CircleHelp,
+  Watch,
+  Gem,
+  Tag,
+} from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import ProductCard from './ProductCard.jsx';
 import useProducts from '../hooks/useProducts.js';
@@ -183,9 +197,9 @@ const QUESTIONS = [
     title: 'Budžet',
     paramKey: 'budget',
     options: [
-      { label: 'Do 10k', value: '0-10000', range: [0, 10000] },
-      { label: '10k–20k', value: '10000-20000', range: [10000, 20000] },
-      { label: '20k–40k', value: '20000-40000', range: [20000, 40000] },
+      { label: 'Do 10000', value: '0-10000', range: [0, 10000] },
+      { label: 'Do 20000', value: '0-20000', range: [0, 20000] },
+      { label: 'Do 40000', value: '0-40000', range: [0, 40000] },
       { label: 'Svejedno', value: '' },
     ],
   },
@@ -195,8 +209,8 @@ const QUESTIONS = [
     paramKey: 'brand',
     options: [
       { label: 'Casio', value: 'CASIO' },
-      { label: 'G‑Shock', value: 'G-SHOCK' },
-      { label: 'Orient', value: 'ORIENT' },
+      { label: 'Daniel Klein', value: 'DANIEL KLEIN' },
+      { label: 'Q&Q', value: 'Q&Q' },
       { label: 'Svejedno', value: '' },
     ],
   },
@@ -223,6 +237,33 @@ const QUESTIONS = [
     ],
   },
 ];
+
+const OPTION_VISUALS = {
+  gender: [
+    { icon: Mars },
+    { icon: Venus },
+    { icon: Users },
+    { icon: CircleHelp },
+  ],
+  stil: [
+    { icon: BriefcaseBusiness },
+    { icon: Sparkles },
+    { icon: Dumbbell },
+    { icon: CircleHelp },
+  ],
+  brand: [
+    { icon: Watch, logoSrc: '/images/casio-logo.png' },
+    { icon: Gem, logoSrc: '/images/151917.svg' },
+    { icon: Tag, logoSrc: '/images/Q&Q-Logo.png' },
+    { icon: CircleHelp },
+  ],
+  precnik: [
+    { sizeScale: 'small' },
+    { sizeScale: 'medium' },
+    { sizeScale: 'large' },
+    {},
+  ],
+};
 
 const BUDGET_RANGE_BY_VALUE = Object.fromEntries(
   QUESTIONS.find((q) => q.key === 'budzet')
@@ -322,6 +363,10 @@ const NOTE_CONTENT_VARIANTS_REDUCED = {
 };
 
 const RESULTS_PREP_DELAY_MS = 1500;
+
+function getOptionVisualKey(questionKey, optionIndex) {
+  return `${questionKey}::${optionIndex}`;
+}
 
 function getViewportWidth() {
   if (typeof window === 'undefined') return 1280;
@@ -577,6 +622,7 @@ export default function WatchFinder({
   const [answers, setAnswers] = useState({});
   const [results, setResults] = useState([]);
   const [submittedAnswers, setSubmittedAnswers] = useState({});
+  const [optionLogoFallbacks, setOptionLogoFallbacks] = useState({});
   const resultsDelayRef = useRef(null);
 
   const { items: products, loading } = useProducts({ order: 'name', limit: 200 });
@@ -722,8 +768,69 @@ export default function WatchFinder({
     setAnswers({});
     setSubmittedAnswers({});
     setResults([]);
+    setOptionLogoFallbacks({});
     setStep(0);
     setMode(initialMode);
+  };
+
+  const setOptionLogoFallback = (questionKey, optionIndex) => {
+    const optionKey = getOptionVisualKey(questionKey, optionIndex);
+    setOptionLogoFallbacks((prev) => {
+      if (prev[optionKey]) return prev;
+      return { ...prev, [optionKey]: true };
+    });
+  };
+
+  const renderOptionChip = (opt, optionIndex) => {
+    const active = answers[current.key] === opt.value;
+    const visual = OPTION_VISUALS[current.key]?.[optionIndex] || {};
+    const Icon = visual.icon || null;
+    const optionKey = getOptionVisualKey(current.key, optionIndex);
+    const showLogo = Boolean(visual.logoSrc) && !optionLogoFallbacks[optionKey];
+    const sizeScale = visual.sizeScale || null;
+    const hasVisual = showLogo || Boolean(Icon) || Boolean(sizeScale);
+    const isBrandLogoOnly = current.key === 'brand' && showLogo;
+
+    return (
+      <Motion.button
+        key={opt.value || opt.label}
+        type="button"
+        variants={chipItemVariants}
+        transition={chipMotionTransition}
+        whileHover={chipHoverAnimation}
+        whileTap={chipTapAnimation}
+        className={`wf-chip ${active ? 'is-active' : ''} ${
+          isBrandLogoOnly ? 'wf-chip--brand-logo-only' : ''
+        }`}
+        aria-label={opt.label}
+        onClick={() => handleSelect(current.key, opt.value)}
+      >
+        {hasVisual && (
+          <span className={`wf-chip__iconWrap ${showLogo ? 'is-logo' : 'is-icon'}`} aria-hidden="true">
+            {showLogo ? (
+              <img
+                className="wf-chip__logo"
+                src={visual.logoSrc}
+                alt=""
+                decoding="async"
+                onError={() => setOptionLogoFallback(current.key, optionIndex)}
+              />
+            ) : sizeScale ? (
+              <span className={`wf-chip__sizeScale wf-chip__sizeScale--${sizeScale}`}>
+                <span className="wf-chip__sizeDot wf-chip__sizeDot--sm" />
+                <span className="wf-chip__sizeDot wf-chip__sizeDot--md" />
+                <span className="wf-chip__sizeDot wf-chip__sizeDot--lg" />
+              </span>
+            ) : (
+              <Icon className="wf-chip__icon" />
+            )}
+          </span>
+        )}
+        <span className={`wf-chip__label ${isBrandLogoOnly ? 'wf-chip__label--srOnly' : ''}`}>
+          {opt.label}
+        </span>
+      </Motion.button>
+    );
   };
 
   const goToCatalog = () => {
@@ -785,7 +892,6 @@ export default function WatchFinder({
                 transition={sectionTransition}
                 className="wf-selectionState wf-selectionState--loading"
               >
-                <p className="wf-intro__eyebrow">WATCH FINDER</p>
                 <h3 className="wf-selectionTitle">Pravimo selekciju za tebe…</h3>
                 <p className="wf-selectionCopy">
                   Samo trenutak, proveravamo modele koji se najbolje poklapaju sa tvojim odgovorima.
@@ -803,7 +909,6 @@ export default function WatchFinder({
                 className="wf-selectionState wf-selectionState--resultsOnly"
               >
                 <div className="wf-selectionHead">
-                  <p className="eyebrow">WATCH FINDER</p>
                   <h3>Evo tvojih rezultata</h3>
                   <p className="wf-selectionCopy wf-selectionCopy--split">
                     <span className="wf-selectionCopy__line">
@@ -930,7 +1035,6 @@ export default function WatchFinder({
             transition={sectionTransition}
             className="wf-introSimple"
           >
-            <p className="wf-intro__eyebrow">WATCH FINDER</p>
             <h2 className="wf-intro__title wf-twoLineTitle">{twoLinePromptTitle}</h2>
             <p className="wf-intro__copy">
               Odgovori na par kratkih pitanja i odmah dobijaš predloge koji su stvarno za tebe.
@@ -949,7 +1053,6 @@ export default function WatchFinder({
           <div className="wf-grid">
             <div className="wf-aside">
               <div>
-                <p className="eyebrow">Watch Finder</p>
                 <h2 className={isEditorial ? 'wf-twoLineTitle' : undefined}>{asideTitle}</h2>
                 <p className="lede wf-aside__lede">{modeDescription}</p>
               </div>
@@ -989,7 +1092,6 @@ export default function WatchFinder({
                     transition={sectionTransition}
                     className="wf-introSimple"
                   >
-                    <p className="wf-intro__eyebrow">WATCH FINDER</p>
                     <h3 className="wf-intro__title wf-twoLineTitle">{twoLinePromptTitle}</h3>
                     <p className="wf-intro__copy">
                       Odgovori na par kratkih pitanja i odmah dobijaš preporuke po stilu, budžetu
@@ -1038,8 +1140,7 @@ export default function WatchFinder({
                         )}
                         {isEditorial && (
                           <p className="wf-step__hint">
-                            Odaberi opciju koja najbolje opisuje ono što tražiš. Sledeći korak se
-                            otvara odmah nakon izbora.
+                            Odaberi opciju koja najbolje opisuje ono što tražiš.
                           </p>
                         )}
                       </div>
@@ -1051,22 +1152,7 @@ export default function WatchFinder({
                       animate="animate"
                       exit="exit"
                     >
-                      {current.options.map((opt) => {
-                        const active = answers[current.key] === opt.value;
-                        return (
-                          <Motion.button
-                            key={opt.value || opt.label}
-                            variants={chipItemVariants}
-                            transition={chipMotionTransition}
-                            whileHover={chipHoverAnimation}
-                            whileTap={chipTapAnimation}
-                            className={`wf-chip ${active ? 'is-active' : ''}`}
-                            onClick={() => handleSelect(current.key, opt.value)}
-                          >
-                            {opt.label}
-                          </Motion.button>
-                        );
-                      })}
+                      {current.options.map(renderOptionChip)}
                     </Motion.div>
                     {!isEditorial && (
                       <div className="wf-help">
@@ -1106,7 +1192,6 @@ export default function WatchFinder({
           <div className="wf-inner">
             <div className="wf-head">
               <div>
-                <p className="eyebrow">Watch Finder</p>
                 <h2>{headingTitle}</h2>
                 <p className="lede">{modeDescription}</p>
               </div>
@@ -1124,7 +1209,6 @@ export default function WatchFinder({
                     transition={sectionTransition}
                     className="wf-introSimple"
                   >
-                    <p className="wf-intro__eyebrow">WATCH FINDER</p>
                     <h3 className="wf-intro__title wf-twoLineTitle">{twoLinePromptTitle}</h3>
                     <p className="wf-intro__copy">
                       Odgovori na par kratkih pitanja i odmah dobijaš preporuke po stilu, budžetu
@@ -1167,8 +1251,7 @@ export default function WatchFinder({
                         </div>
                         {isEditorial && (
                           <p className="wf-step__hint">
-                            Odaberi opciju koja najbolje opisuje ono što tražiš. Sledeći korak se
-                            otvara odmah nakon izbora.
+                            Odaberi opciju koja najbolje opisuje ono što tražiš.
                           </p>
                         )}
                       </div>
@@ -1180,22 +1263,7 @@ export default function WatchFinder({
                       animate="animate"
                       exit="exit"
                     >
-                      {current.options.map((opt) => {
-                        const active = answers[current.key] === opt.value;
-                        return (
-                          <Motion.button
-                            key={opt.value || opt.label}
-                            variants={chipItemVariants}
-                            transition={chipMotionTransition}
-                            whileHover={chipHoverAnimation}
-                            whileTap={chipTapAnimation}
-                            className={`wf-chip ${active ? 'is-active' : ''}`}
-                            onClick={() => handleSelect(current.key, opt.value)}
-                          >
-                            {opt.label}
-                          </Motion.button>
-                        );
-                      })}
+                      {current.options.map(renderOptionChip)}
                     </Motion.div>
                     {!isEditorial && (
                       <div className="wf-help">
