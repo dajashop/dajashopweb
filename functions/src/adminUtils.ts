@@ -1,7 +1,7 @@
 // functions/src/adminUtils.ts
 
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
-import { getTransporter } from "./transporter";
+import { getAdminTransporter } from "./transporter";
 import { formatMoney } from "./helpers";
 import * as admin from "firebase-admin";
 import { defineString } from "firebase-functions/params";
@@ -11,12 +11,10 @@ if (admin.apps.length === 0) {
   admin.initializeApp();
 }
 
-// 2.1 Lista Administratora koji primaju obaveštenja
-const ADMIN_EMAILS = [
-  "cvelenis42@yahoo.com",
-  "dajashopnis@gmail.com",
-  // "lakishadev@gmail.com", // Možeš dodati još admina ovde
-];
+// 2.1 Admin emailovi preko env parametra (comma-separated)
+const ADMIN_EMAILS_PARAM = defineString("ADMIN_EMAILS", {
+  default: "dajashopnis@gmail.com",
+});
 
 // 4. Admin Notifikacija (Nova Funkcija)
 export const sendNewOrderToAdmins = onDocumentCreated(
@@ -27,6 +25,16 @@ export const sendNewOrderToAdmins = onDocumentCreated(
   async (event: any) => {
     const snapshot = event.data;
     if (!snapshot) return;
+
+    const adminEmails = ADMIN_EMAILS_PARAM.value()
+      .split(",")
+      .map((email) => email.trim())
+      .filter(Boolean);
+
+    if (adminEmails.length === 0) {
+      console.log("Admin Email: Nema konfigurisanih ADMIN_EMAILS adresa.");
+      return;
+    }
 
     const order = snapshot.data();
     const orderId = event.params.orderId;
@@ -84,8 +92,8 @@ export const sendNewOrderToAdmins = onDocumentCreated(
     const adminLink = `${SITE_URL.value()}/admin/orders`;
 
     const mailOptions = {
-      from: '"Daja Shop Bot" <dajashopnis@gmail.com>',
-      to: ADMIN_EMAILS.join(","), // Šalje svima iz liste
+      from: '"Daja Shop Bot" <admin@dajashop.com>',
+      to: adminEmails.join(","), // Šalje svima iz env liste
       subject: `🔥 NOVA PORUDŽBINA: #${orderId} - ${formatMoney(
         order.finalTotal,
       )}`,
@@ -205,7 +213,7 @@ export const sendNewOrderToAdmins = onDocumentCreated(
     };
 
     try {
-      await getTransporter().sendMail(mailOptions);
+      await getAdminTransporter().sendMail(mailOptions);
       console.log("Admin notifikacija poslata.");
     } catch (error) {
       console.error("Greška pri slanju admin maila:", error);
