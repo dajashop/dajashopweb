@@ -4,7 +4,7 @@ import {
   onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
-import { getTransporter } from "./transporter";
+import { getOrdersTransporter } from "./transporter";
 import { formatMoney } from "./helpers";
 
 if (admin.apps.length === 0) {
@@ -16,7 +16,7 @@ const SHOP_DETAILS = {
   name: "Daja Shop",
   address: "Obrenovićeva bb, Podzemni prolaz", // Prilagodi tačnu adresu
   city: "18000 Niš",
-  email: "dajashopnis@gmail.com",
+  email: "porudzbine@dajashop.com",
   phone: "+381 64 126 24 25", // Ubaci pravi telefon
   website: "https://dajashop.rs",
 };
@@ -261,7 +261,7 @@ export const sendOrderConfirmation = onDocumentCreated(
     };
 
     try {
-      await getTransporter().sendMail(mailOptions);
+      await getOrdersTransporter().sendMail(mailOptions);
       console.log(`[Confirmation] Email poslat: ${order.customer.email}`);
     } catch (error) {
       console.error("[Confirmation] Greška pri slanju:", error);
@@ -452,7 +452,7 @@ export const sendOrderStatusUpdate = onDocumentUpdated(
     };
 
     try {
-      await getTransporter().sendMail(mailOptions);
+      await getOrdersTransporter().sendMail(mailOptions);
       console.log(`[Status Update] Poslato na: ${newData.customer.email}`);
     } catch (error) {
       console.error("[Status Update] Greška:", error);

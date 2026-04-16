@@ -1,24 +1,48 @@
 import * as nodemailer from "nodemailer";
 import { defineString } from "firebase-functions/params";
-// 1. Konfiguracija Transportera
-// UVEK koristi App Password, ne običnu šifru!
 
-const USER_EMAIL = defineString("USER_EMAIL", {
-  default: "prodaja@dajashop.com",
+const SMTP_HOST = "mail.dajashop.com";
+const SMTP_PORT = 587;
+const TLS_OPTIONS = { rejectUnauthorized: false };
+
+// --- Newsletter ---
+const NEWSLETTER_USER = defineString("SMTP_NEWSLETTER_USER", {
+  default: "newsletter@dajashop.com",
 });
-const USER_PASSWORD = defineString("USER_PASSWORD", {
-  default: "nekasifra123", // Postavi u .env fajlu
+const NEWSLETTER_PASS = defineString("SMTP_NEWSLETTER_PASS", {
+  default: "",
 });
 
-export const getTransporter = () =>
+// --- Porudžbine (potvrde kupcima) ---
+const ORDERS_USER = defineString("SMTP_ORDERS_USER", {
+  default: "porudzbine@dajashop.com",
+});
+const ORDERS_PASS = defineString("SMTP_ORDERS_PASS", {
+  default: "",
+});
+
+// --- Admin notifikacije ---
+const ADMIN_USER = defineString("SMTP_ADMIN_USER", {
+  default: "admin@dajashop.com",
+});
+const ADMIN_PASS = defineString("SMTP_ADMIN_PASS", {
+  default: "",
+});
+
+const makeTransporter = (user: string, pass: string) =>
   nodemailer.createTransport({
-    service: "gmail",
-    // auth: {
-    //   user: "dajashopnis@gmail.com", // ZAMENI
-    //   pass: "kgegneigjhgsrfnk", // ZAMENI (16 slova)
-    // },
-    auth: {
-      user: USER_EMAIL.value(),
-      pass: USER_PASSWORD.value(),
-    },
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: false,
+    auth: { user, pass },
+    tls: TLS_OPTIONS,
   });
+
+export const getNewsletterTransporter = () =>
+  makeTransporter(NEWSLETTER_USER.value(), NEWSLETTER_PASS.value());
+
+export const getOrdersTransporter = () =>
+  makeTransporter(ORDERS_USER.value(), ORDERS_PASS.value());
+
+export const getAdminTransporter = () =>
+  makeTransporter(ADMIN_USER.value(), ADMIN_PASS.value());
