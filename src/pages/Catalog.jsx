@@ -19,7 +19,7 @@ import useProducts from '../hooks/useProducts.js';
 
 // --- ADMIN IMPORTI (Potrebni da bismo znali da li da prikažemo skrivene satove) ---
 import { useAuth } from '../hooks/useAuth';
-import { isAdminEmail } from '../services/firebase';
+import { isAdminEmail } from '../services/dajaPlatform';
 
 const PER_PAGE = 32;
 

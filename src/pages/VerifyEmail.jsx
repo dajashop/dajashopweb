@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { auth } from '../services/firebase';
-import { applyActionCode } from 'firebase/auth';
+import { authApi } from '../services/dajaPlatform';
 import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.js';
@@ -28,7 +27,7 @@ export default function VerifyEmail() {
       return;
     }
 
-    applyActionCode(auth, actionCode)
+    authApi.verifyEmail(actionCode)
       .then(() => {
         setStatus('success');
         setMessage(

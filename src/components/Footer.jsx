@@ -13,9 +13,7 @@ import {
 } from 'lucide-react';
 import './Footer.css';
 import { useFlash } from '../hooks/useFlash';
-
-const API_URL =
-  'https://europe-west3-daja-shop-site.cloudfunctions.net/sendNewsletterPromo';
+import { newsletterApi } from '../services/dajaPlatform';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -34,19 +32,7 @@ export default function Footer() {
 
     setLoading(true);
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const serverMessage =
-          data.message || data.error || 'Došlo je do greške pri prijavi.';
-        throw new Error(serverMessage);
-      }
+      await newsletterApi.subscribe(email);
 
       setSuccess(true);
       flash(

@@ -10,38 +10,6 @@ function getSlugFromPath(pathname) {
   return parts[1] || '';
 }
 
-function toFirestoreNumber(field) {
-  if (!field || typeof field !== 'object') return null;
-
-  if (field.doubleValue !== undefined) {
-    const parsed = Number(field.doubleValue);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  if (field.integerValue !== undefined) {
-    const parsed = Number(field.integerValue);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  return null;
-}
-
-function toFirestoreImages(arrayValue) {
-  const values = arrayValue?.values;
-  if (!Array.isArray(values)) return [];
-
-  return values
-    .map((entry) => {
-      const fields = entry?.mapValue?.fields;
-      if (!fields) return null;
-      return {
-        url: fields.url?.stringValue || '',
-        thumb: fields.thumb?.stringValue || '',
-      };
-    })
-    .filter((img) => img?.url);
-}
-
 function buildMetaTags({ siteUrl, product }) {
   const baseTitle = `${product.brand || ''} ${product.name || ''}`.trim();
   const title = product.seo?.metaTitle || baseTitle || 'DajaShop';
@@ -92,8 +60,11 @@ function escapeHtml(value) {
 }
 
 async function fetchProductBySlug({ slug, env, request }) {
-  const projectId = env.FIREBASE_PROJECT_ID;
-  if (!projectId || !slug) return null;
+  const apiBase = (env.DAJA_API_BASE_URL || 'https://api.dajashop.rs/api/v1').replace(
+    /\/$/,
+    '',
+  );
+  if (!slug) return null;
 
   const cacheUrl = new URL(request.url);
   cacheUrl.pathname = `/__seo_cache/product/${slug}.json`;
@@ -103,52 +74,12 @@ async function fetchProductBySlug({ slug, env, request }) {
   const cached = await cache.match(cacheKey);
   if (cached) return cached.json();
 
-  const api = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
-  const queryBody = {
-    structuredQuery: {
-      from: [{ collectionId: 'products' }],
-      where: {
-        fieldFilter: {
-          field: { fieldPath: 'slug' },
-          op: 'EQUAL',
-          value: { stringValue: slug },
-        },
-      },
-      limit: 1,
-    },
-  };
-
-  const res = await fetch(api, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(queryBody),
-  });
+  const res = await fetch(`${apiBase}/public/catalog/products/${encodeURIComponent(slug)}`);
 
   if (!res.ok) return null;
 
-  const rows = await res.json();
-  const found = rows.find((row) => row.document?.fields);
-  if (!found) return null;
-
-  const fields = found.document.fields;
-  const seoFields = fields.seo?.mapValue?.fields || {};
-  const product = {
-    slug: fields.slug?.stringValue || slug,
-    name: fields.name?.stringValue || '',
-    brand: fields.brand?.stringValue || '',
-    description: fields.description?.stringValue || '',
-    image: fields.image?.stringValue || '',
-    mainImageUrl: fields.mainImageUrl?.stringValue || '',
-    price: toFirestoreNumber(fields.price),
-    images: toFirestoreImages(fields.images?.arrayValue),
-    seo: {
-      metaTitle: seoFields.metaTitle?.stringValue || '',
-      metaDescription: seoFields.metaDescription?.stringValue || '',
-      metaKeywords: seoFields.metaKeywords?.stringValue || '',
-      ogImage: seoFields.ogImage?.stringValue || '',
-      imageAltText: seoFields.imageAltText?.stringValue || '',
-    },
-  };
+  const data = await res.json();
+  const product = data.product || data;
 
   await cache.put(
     cacheKey,
@@ -169,23 +100,15 @@ export default {
     const userAgent = request.headers.get('user-agent') || '';
     const isBot = BOT_UA_REGEX.test(userAgent);
 
-    const functionsBase =
-      env.FUNCTIONS_BASE_URL ||
-      'https://europe-west1-daja-shop-site.cloudfunctions.net';
+    const apiBase = (env.DAJA_API_BASE_URL || 'https://api.dajashop.rs/api/v1').replace(
+      /\/$/,
+      '',
+    );
 
     if (url.pathname === '/sitemap.xml') {
-      return fetch(`${functionsBase}/generateSitemap`, {
+      return fetch(`${apiBase}/public/sitemap.xml`, {
         cf: { cacheEverything: true, cacheTtl: 3600 },
       });
-    }
-
-    if (url.pathname.startsWith('/firebase-web-authn-api')) {
-      const suffix =
-        url.pathname.slice('/firebase-web-authn-api'.length) + url.search;
-      return fetch(
-        `${functionsBase}/ext-firebase-web-authn-api${suffix}`,
-        new Request(request),
-      );
     }
 
     let response = await env.ASSETS.fetch(request);

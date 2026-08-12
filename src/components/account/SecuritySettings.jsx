@@ -1,7 +1,7 @@
 // src/components/account/SecuritySettings.jsx
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { GoogleAuthProvider, linkWithPopup } from 'firebase/auth';
+import { customerApi } from '../../services/dajaPlatform';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion'; // ⬅️ DODATO: Framer Motion
 // Uvozimo Lucide ikone
@@ -42,14 +42,12 @@ const SecuritySettings = () => {
 
   // Logika za povezivanje Google-a
   const handleGoogleLink = async () => {
-    const provider = new GoogleAuthProvider();
     try {
       if (!user) throw new Error('Morate biti ulogovani.');
-      await linkWithPopup(user, provider);
-      alert('Google nalog uspešno povezan!');
+      customerApi.linkOAuth('google');
     } catch (err) {
       console.error(err);
-      alert('Greška: ' + err.message);
+      alert('Greska: ' + err.message);
     }
   };
 
@@ -78,7 +76,7 @@ const SecuritySettings = () => {
 
   // Provera da li je Passkey povezan
   const isPasskeyLinked = user?.providerData.some(
-    (p) => p.providerId === 'passkey.firebase.google.com'
+    (p) => p.providerId === 'passkey.daja-platform'
   );
 
   // Stilizovani Google icon wrapper (koristi originalni SVG)

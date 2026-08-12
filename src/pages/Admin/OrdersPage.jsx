@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { isAdminEmail } from '../../services/firebase';
+import { isAdminEmail } from '../../services/dajaPlatform';
 import { useNavigate } from 'react-router-dom';
 import AdminOrders from './components/AdminOrders'; // Tvoja postojeća komponenta
 import SEOHead from '../../components/seo/SEOHead.jsx';

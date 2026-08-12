@@ -1,14 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PROMO_CODES } from '../data/promoCodes';
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { ordersApi } from '../services/dajaPlatform';
 
 export function usePromo() {
   // 1. INICIJALIZACIJA: Proveravamo da li već postoji sačuvan kod u localStorage
@@ -69,18 +61,14 @@ export function usePromo() {
           throw new Error('Morate biti ulogovani da biste koristili ovaj kod.');
 
         if (promo.rules.firstOrderOnly && user) {
-          const ordersRef = collection(db, 'orders');
-          const q = query(ordersRef, where('customer.uid', '==', user.uid));
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty)
-            throw new Error('Ovaj kod važi samo za Vašu prvu kupovinu.');
+          const previousOrders = await ordersApi.mine();
+          if (previousOrders.length) {
+            throw new Error('Ovaj kod vazi samo za Vasu prvu kupovinu.');
+          }
         }
 
         if (promo.rules.requiresNewsletter && user) {
-          const newsRef = doc(db, 'newsletter', user.email);
-          const newsSnap = await getDoc(newsRef);
-          if (!newsSnap.exists())
-            throw new Error('Ovaj kod je ekskluzivan za članove newsletter-a.');
+          // Server validates newsletter-only codes during checkout.
         }
       }
 

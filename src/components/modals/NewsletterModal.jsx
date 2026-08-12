@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import './NewsletterModal.css';
-
-// URL do tvoje funkcije (PROMENI OVO KAD URADIŠ DEPLOY)
-const API_URL =
-  'https://europe-west3-daja-shop-site.cloudfunctions.net/sendNewsletterPromo';
+import { newsletterApi } from '../../services/dajaPlatform';
 
 export default function NewsletterModal() {
   const [isVisible, setIsVisible] = useState(false);
@@ -43,38 +40,18 @@ export default function NewsletterModal() {
     setErrorMsg('');
 
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
+      await newsletterApi.subscribe(email);
+      setStatus('success');
+      localStorage.setItem('dajashop_newsletter_seen', 'true');
 
-      // --- LOGIKA ZA PROVERU DUPLIKATA ---
-      if (response.status === 409) {
-        // Pretpostavka: Backend vraća 409 Conflict status za duple adrese
+      setTimeout(() => {
+        setIsVisible(false);
+      }, 3500);
+    } catch (err) {
+      if (err.status === 409) {
         setStatus('duplicate');
-        // Ne zatvaramo modal, već prikazujemo poruku
         return;
       }
-
-      if (response.ok) {
-        // Standardna uspešna prijava
-        setStatus('success');
-        // Trajno beleži da je uspešno prijavljen
-        localStorage.setItem('dajashop_newsletter_seen', 'true');
-
-        setTimeout(() => {
-          setIsVisible(false);
-        }, 3500);
-      } else {
-        // Neuspešna prijava (npr. status 500)
-        // Probajte da pročitate poruku greške iz tela odgovora ako je dostupna
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Greška pri slanju prijave.');
-      }
-    } catch (err) {
       console.error(err);
       setStatus('error');
       setErrorMsg(err.message || 'Došlo je do neočekivane greške na serveru.');

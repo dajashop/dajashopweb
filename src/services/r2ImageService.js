@@ -1,20 +1,8 @@
-import { app } from './firebase';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { mediaApi } from './dajaPlatform';
 import {
   generateSeoFilename,
   generateVariants,
 } from '../utils/imageProcessing';
-
-const functions = getFunctions(app, 'europe-west3');
-
-const uploadProductImagesToR2Fn = httpsCallable(
-  functions,
-  'uploadProductImagesToR2',
-);
-const deleteProductImagesFromR2Fn = httpsCallable(
-  functions,
-  'deleteProductImagesFromR2',
-);
 
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -38,7 +26,7 @@ export async function uploadProductImage(slug, file, index = 0) {
   const thumbBase64 = await blobToBase64(thumb);
   const originalBase64 = await blobToBase64(original);
 
-  const result = await uploadProductImagesToR2Fn({
+  const result = await mediaApi.uploadProductImages({
     slug,
     index,
     thumbBase64,
@@ -48,9 +36,9 @@ export async function uploadProductImage(slug, file, index = 0) {
   });
 
   return {
-    url: result.data.original,
-    thumb: result.data.thumb,
-    path: result.data.path,
+    url: result.original || result.url || result.mainImageUrl,
+    thumb: result.thumb || result.thumbnailUrl || result.url,
+    path: result.path || result.storagePath,
   };
 }
 
@@ -60,17 +48,14 @@ export async function uploadProductImages(slug, files, onProgress) {
   const uploaded = [];
 
   for (let i = 0; i < total; i += 1) {
-    const file = list[i];
-    const item = await uploadProductImage(slug, file, i);
+    const item = await uploadProductImage(slug, list[i], i);
     uploaded.push(item);
-
-    const progress = Math.round(((i + 1) / total) * 100);
-    onProgress?.({ file, progress });
+    onProgress?.({ file: list[i], progress: Math.round(((i + 1) / total) * 100) });
   }
 
   return uploaded;
 }
 
 export async function deleteProductImages(slug) {
-  await deleteProductImagesFromR2Fn({ slug });
+  return mediaApi.deleteProductImages(slug);
 }

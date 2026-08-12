@@ -16,14 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 
-import { auth } from '../../services/firebase';
-import {
-  updatePassword,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  GoogleAuthProvider,
-  linkWithPopup,
-} from 'firebase/auth';
+import { customerApi } from '../../services/dajaPlatform';
 
 // Google Icon (Inline SVG)
 const GoogleIcon = () => (
@@ -71,13 +64,12 @@ export default function SecuritySection({ user }) {
 
   // --- HANDLER ZA GOOGLE ---
   const handleGoogleLink = async () => {
-    const provider = new GoogleAuthProvider();
     try {
-      await linkWithPopup(auth.currentUser, provider);
-      flash('Uspeh', 'Google nalog uspešno povezan!', 'success');
+      customerApi.linkOAuth('google');
+      flash('Info', 'Preusmeravamo vas na Google povezivanje naloga.', 'info');
     } catch (err) {
       console.error(err);
-      flash('Greška', err.message, 'error');
+      flash('Greska', err.message, 'error');
     }
   };
 
@@ -111,12 +103,7 @@ export default function SecuritySection({ user }) {
 
     setLoading(true);
     try {
-      const credential = EmailAuthProvider.credential(
-        user.email,
-        passForm.current
-      );
-      await reauthenticateWithCredential(auth.currentUser, credential);
-      await updatePassword(auth.currentUser, passForm.new);
+      await customerApi.updatePassword(passForm.current, passForm.new);
 
       flash('Uspeh', 'Lozinka je uspešno promenjena.', 'success');
       setIsEditingPassword(false);

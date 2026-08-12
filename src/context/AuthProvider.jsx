@@ -1,36 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  onAuthStateChanged,
-  signOut,
-  signInWithPopup,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-  signInWithPhoneNumber,
-  updateProfile,
-} from 'firebase/auth';
-import {
-  auth,
-  db,
-  googleProvider,
-  facebookProvider,
-  ensureRecaptcha,
-} from '../services/firebase';
-import {
-  doc,
-  getDoc,
-  setDoc,
-  serverTimestamp,
-  onSnapshot,
-} from 'firebase/firestore'; // <--- Dodat onSnapshot
 import { Ctx } from './AuthContext';
-import { functions } from '../services/firebase';
-
+import { authApi, customerApi } from '../services/dajaPlatform';
+import { getAccessToken, onAuthTokenChange } from '../services/apiClient';
 import {
-  createUserWithPasskey,
-  signInWithPasskey,
-  linkWithPasskey,
-} from '@firebase-web-authn/browser';
+  browserSupportsWebAuthn,
+  startAuthentication,
+  startRegistration,
+} from '@simplewebauthn/browser';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const PHONE_RE = /^\+?[0-9]{8,15}$/;
@@ -38,59 +14,42 @@ const USER_RE = /^[a-zA-Z0-9._-]{3,24}$/;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [userInfo, setUserInfo] = useState(null); // <--- Podaci iz baze (korpa, wishlist...)
+  const [userInfo, setUserInfo] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [mode, setMode] = useState('login');
-  const [phoneConf, setPhoneConf] = useState(null);
+  const [pendingPhone, setPendingPhone] = useState(null);
   const [pendingEmailVerify, setPendingEmailVerify] = useState(false);
 
-  useEffect(() => {
-    // Slušamo promene autentifikacije (Login/Logout)
-    const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
+  const loadMe = useCallback(async () => {
+    if (!getAccessToken()) {
+      setUser(null);
+      setUserInfo(null);
+      return null;
+    }
 
-      if (u) {
-        const userDocRef = doc(db, 'users', u.uid);
+    try {
+      const me = await authApi.me();
+      setUser(me);
 
-        // 1. Provera da li dokument postoji, ako ne - kreiraj ga
-        // Ovo radimo samo jednom pri loginu
-        const snap = await getDoc(userDocRef);
-        if (!snap.exists()) {
-          await setDoc(
-            userDocRef,
-            {
-              uid: u.uid,
-              email: u.email || null,
-              phoneNumber: u.phoneNumber || null,
-              displayName: u.displayName || null,
-              createdAt: serverTimestamp(),
-              cart: [],
-              wishlist: [],
-            },
-            { merge: true }
-          );
-        }
-
-        // 2. REAL-TIME LISTENER (Ovo rešava tvoj problem sinhronizacije)
-        // Sluša svaku promenu na user dokumentu (npr. kad dodaš u korpu na drugom uređaju)
-        const unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
-          if (docSnap.exists()) {
-            setUserInfo(docSnap.data());
-          }
-        });
-
-        // Cleanup snapshot listenera kad se user promeni
-        return () => {
-          unsubscribeSnapshot();
-        };
-      } else {
-        // Ako nema usera, nema ni userInfo podataka
-        setUserInfo(null);
+      try {
+        const customer = await customerApi.me();
+        setUserInfo(customer);
+      } catch {
+        setUserInfo(me);
       }
-    });
 
-    return () => unsubscribeAuth();
+      return me;
+    } catch (error) {
+      setUser(null);
+      setUserInfo(null);
+      return null;
+    }
   }, []);
+
+  useEffect(() => {
+    loadMe();
+    return onAuthTokenChange(loadMe);
+  }, [loadMe]);
 
   function showAuth(nextMode = 'login') {
     setMode(nextMode);
@@ -100,151 +59,138 @@ export function AuthProvider({ children }) {
   function hideAuth() {
     setAuthOpen(false);
     setPendingEmailVerify(false);
-    setPhoneConf(null);
-  }
-
-  // ... (Ostale helper funkcije ostaju iste: detectIdentity, login, register, itd.) ...
-  // Samo kopiraj ostatak funkcija iz prošlog fajla (usernameToEmail, login, register, oauth, logout...)
-  // Da ne pravim gužvu, pretpostavljam da su ti jasne, ključan je ovaj useEffect gore.
-
-  async function usernameToEmail(username) {
-    const snap = await getDoc(doc(db, 'usernames', username.toLowerCase()));
-    if (!snap.exists()) return null;
-    const data = snap.data();
-    return data.email || null;
+    setPendingPhone(null);
   }
 
   const detectIdentity = useCallback((id) => {
-    if (EMAIL_RE.test(id)) return { type: 'email', value: id };
-    if (PHONE_RE.test(id))
-      return { type: 'phone', value: id.startsWith('+') ? id : `+${id}` };
-    if (USER_RE.test(id)) return { type: 'username', value: id.toLowerCase() };
-    return { type: 'unknown', value: id };
+    const clean = String(id || '').replace(/\s/g, '');
+    if (EMAIL_RE.test(clean)) return { type: 'email', value: clean };
+    if (PHONE_RE.test(clean))
+      return { type: 'phone', value: clean.startsWith('+') ? clean : `+${clean}` };
+    if (USER_RE.test(clean)) return { type: 'username', value: clean.toLowerCase() };
+    return { type: 'unknown', value: clean };
   }, []);
 
   const login = useCallback(
     async ({ identity, password }) => {
       const id = detectIdentity(identity);
-      if (id.type === 'email') {
-        await signInWithEmailAndPassword(auth, id.value, password);
-        return;
-      }
-      if (id.type === 'username') {
-        const email = await usernameToEmail(id.value);
-        if (!email) throw new Error('Korisničko ime ne postoji.');
-        await signInWithEmailAndPassword(auth, email, password);
-        return;
-      }
       if (id.type === 'phone') {
-        const verifier = ensureRecaptcha();
-        const conf = await signInWithPhoneNumber(auth, id.value, verifier);
-        setPhoneConf(conf);
+        await authApi.requestPhoneOtp(id.value);
+        setPendingPhone(id.value);
         return 'phone-code';
       }
-      throw new Error('Unesite validan email/korisničko ime/broj telefona.');
+      if (id.type === 'unknown') {
+        throw new Error('Unesite validan email/korisnicko ime/broj telefona.');
+      }
+
+      const me = await authApi.login({
+        identity: id.value,
+        password,
+        type: id.type,
+      });
+      setUser(me);
+      await loadMe();
+      return me;
     },
-    [detectIdentity]
+    [detectIdentity, loadMe],
   );
 
   const confirmPhoneCode = useCallback(
     async (code) => {
-      if (!phoneConf) throw new Error('Nema aktivne telefonske sesije.');
-      const res = await phoneConf.confirm(code);
-      setPhoneConf(null);
-      return res;
+      if (!pendingPhone) throw new Error('Nema aktivne telefonske sesije.');
+      const me = await authApi.confirmPhoneOtp(pendingPhone, code);
+      setPendingPhone(null);
+      setUser(me);
+      await loadMe();
+      return me;
     },
-    [phoneConf]
+    [loadMe, pendingPhone],
   );
 
   const register = useCallback(
     async ({ identity, password, name }) => {
       const id = detectIdentity(identity);
-      if (id.type === 'email') {
-        const cred = await createUserWithEmailAndPassword(
-          auth,
-          id.value,
-          password
-        );
-        if (name) await updateProfile(cred.user, { displayName: name });
-        await sendEmailVerification(cred.user);
-        setPendingEmailVerify(true);
-        return 'email-verify';
-      }
       if (id.type === 'phone') {
-        const verifier = ensureRecaptcha();
-        const conf = await signInWithPhoneNumber(auth, id.value, verifier);
-        setPhoneConf(conf);
+        await authApi.requestPhoneOtp(id.value);
+        setPendingPhone(id.value);
         return 'phone-code';
       }
-      throw new Error('Za registraciju koristite email ili broj telefona.');
+      if (id.type !== 'email') {
+        throw new Error('Za registraciju koristite email ili broj telefona.');
+      }
+
+      const me = await authApi.register({
+        email: id.value,
+        password,
+        name,
+      });
+      setPendingEmailVerify(Boolean(me?.email && !me?.emailVerified));
+      setUser(me);
+      await loadMe();
+      return me?.emailVerified === false ? 'email-verify' : me;
     },
-    [detectIdentity]
+    [detectIdentity, loadMe],
   );
 
   const linkUsernameToEmail = useCallback(async (username, email) => {
-    if (!USER_RE.test(username)) throw new Error('Nevalidno korisničko ime.');
-    await setDoc(
-      doc(db, 'usernames', username.toLowerCase()),
-      { email },
-      { merge: true }
-    );
+    if (!USER_RE.test(username)) throw new Error('Nevalidno korisnicko ime.');
+    return authApi.register({ username, email, linkOnly: true });
   }, []);
 
   async function oauth(provider) {
-    let prov;
-    if (provider === 'google') {
-      prov = googleProvider;
-    } else if (provider === 'facebook') {
-      prov = facebookProvider;
-    } else {
-      throw new Error('Nepoznat provider.');
-    }
-    const res = await signInWithPopup(auth, prov);
-    return res.user;
+    authApi.oauthStart(provider);
   }
 
   async function logout() {
-    await signOut(auth);
-    setUserInfo(null); // Čistimo state
+    await authApi.logout();
+    setUser(null);
+    setUserInfo(null);
   }
 
   const passkeyLogin = useCallback(async () => {
-    try {
-      await signInWithPasskey(auth, functions);
-      return 'success';
-    } catch (error) {
-      console.error('Passkey login error:', error);
-      throw new Error('Prijava putem Passkey-a nije uspela ili je otkazana.');
+    if (!window.isSecureContext) {
+      throw new Error('Passkey radi samo na https domeni ili na http://localhost:5173.');
     }
-  }, []);
-
-  const passkeyRegister = useCallback(async (name) => {
-    try {
-      await createUserWithPasskey(auth, functions, name);
-      return 'success';
-    } catch (error) {
-      console.error('Passkey register error:', error);
-      throw new Error('Registracija Passkey-a nije uspela.');
+    if (!browserSupportsWebAuthn()) {
+      throw new Error('Ovaj browser ili uredjaj ne podrzava Passkey.');
     }
-  }, []);
+    const options = await authApi.passkeyLoginStart({});
+    const credential = await startAuthentication({ optionsJSON: options });
+    await authApi.passkeyLoginFinish({ credential });
+    await loadMe();
+    return 'success';
+  }, [loadMe]);
 
-  const linkPasskey = useCallback(async (passkeyName) => {
-    try {
-      if (!auth.currentUser) {
-        throw new Error('Morate biti ulogovani da biste dodali Passkey.');
+  const passkeyRegister = useCallback(
+    async (payload = {}) => {
+      if (!window.isSecureContext) {
+        throw new Error('Passkey radi samo na https domeni ili na http://localhost:5173.');
       }
-      await linkWithPasskey(auth, functions, passkeyName, 'first');
+      if (!browserSupportsWebAuthn()) {
+        throw new Error('Ovaj browser ili uredjaj ne podrzava Passkey.');
+      }
+      const data =
+        typeof payload === 'string'
+          ? { name: payload }
+          : payload;
+      const options = await authApi.passkeyRegisterStart(data);
+      const credential = await startRegistration({ optionsJSON: options });
+      await authApi.passkeyRegisterFinish({ credential });
+      await loadMe();
       return 'success';
-    } catch (error) {
-      console.error('Link Passkey error:', error);
-      throw error;
-    }
-  }, []);
+    },
+    [loadMe],
+  );
+
+  const linkPasskey = useCallback(
+    async (passkeyName) => passkeyRegister(passkeyName || user?.email),
+    [passkeyRegister, user],
+  );
 
   const value = useMemo(
     () => ({
       user,
-      userInfo, // <--- Ovo sada sadrži LIVE podatke korpe i wishlist-e
+      userInfo,
       authOpen,
       showAuth,
       hideAuth,
@@ -261,6 +207,7 @@ export function AuthProvider({ children }) {
       passkeyLogin,
       passkeyRegister,
       linkPasskey,
+      refreshUser: loadMe,
     }),
     [
       user,
@@ -276,7 +223,8 @@ export function AuthProvider({ children }) {
       passkeyLogin,
       passkeyRegister,
       linkPasskey,
-    ]
+      loadMe,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

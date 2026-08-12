@@ -16,18 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 
-import { db } from '../../services/firebase';
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  addDoc,
-  deleteDoc,
-  updateDoc,
-  doc,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { customerApi } from '../../services/dajaPlatform';
 
 import { FORM_RULES } from '../../data/validationRules';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
@@ -121,26 +110,23 @@ function AddressSection({ user }) {
     };
   }, []);
 
-  // --- REAL-TIME DATA FETCHING ---
+  // --- DATA FETCHING ---
   useEffect(() => {
     if (!user?.uid) return;
-    const q = query(
-      collection(db, 'users', user.uid, 'addresses'),
-      orderBy('createdAt', 'desc')
-    );
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+    let cancelled = false;
+    customerApi
+      .listAddresses()
+      .then((data) => {
+        if (cancelled) return;
         setAddresses(data);
         setLoading(false);
-      },
-      () => setLoading(false)
-    );
-    return () => unsubscribe();
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   // --- GOOGLE MAPS ---
@@ -292,18 +278,14 @@ function AddressSection({ user }) {
     const isEditing = !!editingId;
     try {
       if (isEditing) {
-        await updateDoc(doc(db, 'users', user.uid, 'addresses', editingId), {
-          ...dataToSave,
-          updatedAt: serverTimestamp(),
-        });
+        await customerApi.updateAddress(editingId, dataToSave);
         flash('Uspeh', 'Adresa izmenjena.', 'success');
       } else {
-        await addDoc(collection(db, 'users', user.uid, 'addresses'), {
-          ...dataToSave,
-          createdAt: serverTimestamp(),
-        });
+        await customerApi.addAddress(dataToSave);
         flash('Uspeh', 'Nova adresa dodata.', 'success');
       }
+      const refreshed = await customerApi.listAddresses();
+      setAddresses(refreshed);
       handleCancel();
     } catch (error) {
       console.error(error);
@@ -314,7 +296,8 @@ function AddressSection({ user }) {
   const handleConfirmDelete = async () => {
     if (!deleteId) return;
     try {
-      await deleteDoc(doc(db, 'users', user.uid, 'addresses', deleteId));
+      await customerApi.deleteAddress(deleteId);
+      setAddresses((prev) => prev.filter((address) => address.id !== deleteId));
       flash('Obrisano', 'Adresa uklonjena.', 'info');
     } catch (error) {
       flash('Greška', 'Greška pri brisanju.', 'error');

@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react';
 import { CartCtx } from './CartContext.jsx';
 import { useAuth } from '../hooks/useAuth';
-import { db } from '../services/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { customerApi } from '../services/dajaPlatform';
 
 const initial = () => {
   try {
@@ -27,7 +26,7 @@ function reducer(state, action) {
       return state.filter((x) => x.id !== action.id);
     case 'SET_QTY':
       return state.map((x) =>
-        x.id === action.id ? { ...x, qty: Math.max(1, action.qty) } : x
+        x.id === action.id ? { ...x, qty: Math.max(1, action.qty) } : x,
       );
     case 'CLEAR':
       return [];
@@ -40,79 +39,41 @@ function reducer(state, action) {
 
 export function CartProvider({ children }) {
   const [items, dispatch] = useReducer(reducer, [], initial);
-  const { user, userInfo } = useAuth();
-
+  const { user } = useAuth();
+  const loadedServerCart = useRef(false);
   const isServerUpdate = useRef(false);
 
-  // 1. LOGIKA PRIJAVE I ODJAVE
   useEffect(() => {
-    // --- SLUČAJ A: KORISNIK SE PRIJAVIO ---
-    if (user && items.length > 0) {
-      const mergeLocalToCloud = async () => {
-        try {
-          const docRef = doc(db, 'users', user.uid);
-          const snap = await getDoc(docRef);
-          let serverCart = [];
-          if (snap.exists() && snap.data().cart) {
-            serverCart = snap.data().cart;
-          }
+    loadedServerCart.current = false;
 
-          const finalCart = [...serverCart];
-          let hasChanges = false;
-
-          items.forEach((localItem) => {
-            const existsOnServer = finalCart.some(
-              (srvItem) => srvItem.id === localItem.id
-            );
-            if (!existsOnServer) {
-              finalCart.push(localItem);
-              hasChanges = true;
-            }
-          });
-
-          if (
-            hasChanges ||
-            (serverCart.length === 0 && items.length > 0 && !hasChanges)
-          ) {
-            await setDoc(docRef, { cart: finalCart }, { merge: true });
-          }
-        } catch (err) {
-          console.error('Merge cart error:', err);
-        }
-      };
-      mergeLocalToCloud();
-    }
-
-    // --- SLUČAJ B: KORISNIK SE ODJAVIO (Logout) ---
-    else if (!user) {
-      // OVO JE ONO ŠTO SI TRAŽIO:
-      // Čim user postane null, mi praznimo lokalnu korpu.
-      // Ovo NE briše podatke iz baze (jer user više nije setovan, pa saveToDb neće okinuti).
-      // Samo čisti ekran da sledeći gost ne vidi tuđe stvari.
+    if (!user) {
       dispatch({ type: 'CLEAR' });
-
-      // Opciono: Očisti i localStorage da bude skroz čisto za gosta
       localStorage.removeItem('cart');
+      return;
     }
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let cancelled = false;
+    customerApi
+      .getCart()
+      .then((serverCart) => {
+        if (cancelled) return;
+        const localItems = initial();
+        const merged = [...serverCart];
+        localItems.forEach((localItem) => {
+          if (!merged.some((item) => item.id === localItem.id)) merged.push(localItem);
+        });
+        isServerUpdate.current = true;
+        dispatch({ type: 'REPLACE', items: merged });
+        loadedServerCart.current = true;
+        if (merged.length !== serverCart.length) customerApi.setCart(merged);
+      })
+      .catch((error) => console.error('Cart load error:', error));
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
-  // 2. SINHRONIZACIJA SA SERVERA (Dok je ulogovan)
-  useEffect(() => {
-    if (user && userInfo && userInfo.cart) {
-      const currentCartStr = JSON.stringify(items);
-      const serverCartStr = JSON.stringify(userInfo.cart);
-
-      if (currentCartStr !== serverCartStr) {
-        isServerUpdate.current = true;
-        dispatch({ type: 'REPLACE', items: userInfo.cart });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, userInfo]);
-
-  // 3. ČUVANJE PROMENA
   useEffect(() => {
     if (isServerUpdate.current) {
       isServerUpdate.current = false;
@@ -120,29 +81,27 @@ export function CartProvider({ children }) {
     }
 
     if (user) {
-      // Čuvaj u bazu samo ako je user tu
-      const saveToDb = async () => {
-        try {
-          const docRef = doc(db, 'users', user.uid);
-          await setDoc(docRef, { cart: items }, { merge: true });
-        } catch (error) {
-          console.error('Cart save error:', error);
-        }
-      };
-      const t = setTimeout(saveToDb, 500);
+      if (!loadedServerCart.current) return;
+      const t = setTimeout(() => {
+        customerApi.setCart(items).catch((error) =>
+          console.error('Cart save error:', error),
+        );
+      }, 500);
       return () => clearTimeout(t);
-    } else {
-      // Ako je gost (ili se upravo izlogovao i korpa je prazna), ažuriraj localStorage
-      localStorage.setItem('cart', JSON.stringify(items));
     }
+
+    localStorage.setItem('cart', JSON.stringify(items));
   }, [items, user]);
 
   const total = useMemo(
-    () => items.reduce((s, x) => s + x.price * x.qty, 0),
-    [items]
+    () => items.reduce((sum, item) => sum + item.price * item.qty, 0),
+    [items],
   );
-  const count = useMemo(() => items.reduce((s, x) => s + x.qty, 0), [items]);
+  const count = useMemo(() => items.reduce((sum, item) => sum + item.qty, 0), [items]);
 
-  const value = { items, dispatch, total, count };
-  return <CartCtx.Provider value={value}>{children}</CartCtx.Provider>;
+  return (
+    <CartCtx.Provider value={{ items, dispatch, total, count }}>
+      {children}
+    </CartCtx.Provider>
+  );
 }

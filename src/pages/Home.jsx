@@ -10,7 +10,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useFlash } from '../hooks/useFlash.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import OrganizationJsonLd from '../components/seo/OrganizationJsonLd.jsx';
-import { isAdminEmail } from '../services/firebase';
+import { isAdminEmail } from '../services/dajaPlatform';
 import { saveProduct } from '../services/products';
 import {
   ArrowRight,
@@ -282,7 +282,7 @@ export default function Home() {
       flash(
         permissionDenied ? 'Nema dozvolu za upis' : 'Greska pri cuvanju',
         permissionDenied
-          ? 'Nemas Firestore admin prava za ovu akciju.'
+          ? 'Nemas DAJA admin prava za ovu akciju.'
           : 'Izbor nije sacuvan. Probaj ponovo.',
         'info',
       );

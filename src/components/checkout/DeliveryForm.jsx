@@ -29,16 +29,7 @@ import {
 } from 'lucide-react';
 import ErrorMessage from './ErrorMessage';
 
-// --- FIREBASE IMPORTI ---
-import { db } from '../../services/firebase';
-import {
-  collection,
-  query,
-  orderBy,
-  getDocs,
-  addDoc,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { customerApi } from '../../services/dajaPlatform';
 import {
   ADDRESS_ICONS,
   ADDRESS_ICON_ORDER,
@@ -225,15 +216,7 @@ export default function DeliveryForm({
     const fetchAddresses = async () => {
       if (!user) return;
       try {
-        const q = query(
-          collection(db, 'users', user.uid, 'addresses'),
-          orderBy('createdAt', 'desc')
-        );
-        const snapshot = await getDocs(q);
-        const addresses = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const addresses = await customerApi.listAddresses();
         setSavedAddresses(addresses);
       } catch (err) {
         console.error('Error fetching addresses', err);
@@ -389,7 +372,7 @@ export default function DeliveryForm({
             city: city || prev.city,
             postalCode: zip || prev.postalCode,
           }));
-          buildAddressSuggestions(fullAddress || prev.address || '');
+          buildAddressSuggestions(fullAddress || '');
         } else {
           if (fullAddress)
             handleChange({ target: { name: 'address', value: fullAddress } });
@@ -479,16 +462,12 @@ export default function DeliveryForm({
       city: formData.city,
       zip: formData.postalCode,
       phone: formData.phone,
-      createdAt: serverTimestamp(),
     };
 
     try {
       setIsSavingAddress(true);
-      const docRef = await addDoc(
-        collection(db, 'users', user.uid, 'addresses'),
-        payload
-      );
-      const fullAddress = { ...payload, id: docRef.id };
+      const savedAddress = await customerApi.addAddress(payload);
+      const fullAddress = { ...payload, ...savedAddress };
       setSavedAddresses((prev) => [fullAddress, ...prev]);
       selectAddress(fullAddress);
       setShowSaveModal(false);

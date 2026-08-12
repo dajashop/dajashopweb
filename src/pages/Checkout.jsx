@@ -7,19 +7,7 @@ import { useFlash } from '../hooks/useFlash.js';
 import { usePromo } from '../hooks/usePromo.js';
 import { money } from '../utils/currency.js';
 import { AnimatePresence } from 'framer-motion';
-
-// --- FIREBASE IMPORTI ---
-import { db } from '../services/firebase';
-import {
-  collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-  setDoc,
-  doc,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { customerApi, ordersApi } from '../services/dajaPlatform.js';
 
 // Uvoz komponenti
 import OrderConfirmationModal from '../components/checkout/OrderConfirmationModal';
@@ -28,12 +16,6 @@ import ShippingSection from '../components/checkout/ShippingSection';
 import PaymentSection from '../components/checkout/PaymentSection';
 import OrderSummary from '../components/checkout/OrderSummary';
 import SEOHead from '../components/seo/SEOHead.jsx';
-
-// Generiše DAJA-xxxxxx display ID.
-const generateDisplayId = () => {
-  const randomNumber = Math.floor(100000 + Math.random() * 900000);
-  return `DAJA-${randomNumber}`;
-};
 
 export default function Checkout() {
   const { items, total, dispatch } = useCart();
@@ -107,14 +89,9 @@ export default function Checkout() {
     const fetchLastAddress = async () => {
       if (user && !formData.address && !formData.phone) {
         try {
-          const q = query(
-            collection(db, 'users', user.uid, 'addresses'),
-            orderBy('createdAt', 'desc'),
-            limit(1),
-          );
-          const snapshot = await getDocs(q);
-          if (!snapshot.empty) {
-            const savedAddr = snapshot.docs[0].data();
+          const addresses = await customerApi.listAddresses();
+          if (addresses.length) {
+            const savedAddr = addresses[0];
             const parts = (savedAddr.name || '').trim().split(/\s+/);
             const fName = parts[0] || '';
             const lName = parts.slice(1).join(' ') || '';
@@ -212,68 +189,25 @@ export default function Checkout() {
       }
 
       try {
-        const maxCreateAttempts = 12;
-        let finalDocId = null;
-        let newOrder = null;
+        const newOrder = await ordersApi.create({
+          customer: {
+            ...formData,
+            uid: user ? user.uid : 'guest',
+          },
+          items,
+          subtotal: total,
+          promoCode: appliedPromo ? appliedPromo.code : null,
+          discountAmount,
+          subtotalAfterDiscount,
+          shippingCost: finalShipping,
+          shippingMethod,
+          paymentMethod: payMethod,
+          finalTotal,
+        });
 
-        // Pokušaj kreiranja sa nasumičnim displayId-em; ako postoji kolizija,
-        // setDoc će pokušati update i rules će to odbiti za običnog korisnika.
-        for (let attempt = 0; attempt < maxCreateAttempts; attempt++) {
-          const displayId = generateDisplayId();
-          const orderRef = doc(db, 'orders', displayId);
-
-          newOrder = {
-            displayId: displayId,
-            customer: {
-              ...formData,
-              uid: user ? user.uid : 'guest',
-            },
-            items: items,
-            subtotal: total,
-            promoCode: appliedPromo ? appliedPromo.code : null,
-            discountAmount: discountAmount,
-            subtotalAfterDiscount: subtotalAfterDiscount,
-            shippingCost: finalShipping,
-            shippingMethod: shippingMethod,
-            paymentMethod: payMethod,
-            finalTotal: finalTotal,
-            status: 'Na čekanju',
-            isRead: false,
-            date: new Date().toLocaleDateString('sr-RS'),
-            createdAt: serverTimestamp(),
-          };
-
-          try {
-            await setDoc(orderRef, newOrder);
-            finalDocId = displayId;
-            break;
-          } catch (err) {
-            const isPermissionDenied =
-              typeof err?.code === 'string' &&
-              (err.code === 'permission-denied' ||
-                err.code === 'firestore/permission-denied');
-
-            if (!isPermissionDenied || attempt === maxCreateAttempts - 1) {
-              throw err;
-            }
-          }
-        }
-
-        if (!finalDocId || !newOrder) {
-          throw new Error('Nije moguće kreirati jedinstven ID porudžbine.');
-        }
-
-        // 5. BRIŠEMO PROMO KOD I KORPU POSLE USPEŠNE KUPOVINE
         removePromo();
 
-        // ID i docId su isti jer displayId koristimo kao Firestore document ID.
-        const finalOrderData = {
-          ...newOrder,
-          id: finalDocId,
-          docId: finalDocId,
-        };
-
-        setOrderData(finalOrderData);
+        setOrderData(newOrder);
         setShowSuccessModal(true);
         dispatch({ type: 'CLEAR' });
       } catch (error) {

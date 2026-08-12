@@ -15,9 +15,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useCart } from '../hooks/useCart.js';
 import { useAuth } from '../hooks/useAuth.js';
 
-// --- FIREBASE IMPORTI ZA NOTIFIKACIJE ---
-import { isAdminEmail, db } from '../services/firebase.js';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { isAdminEmail, ordersApi, subscribeRealtime } from '../services/dajaPlatform.js';
 
 // Ikonice
 import {
@@ -54,24 +52,34 @@ export default function HamburgerMenu({
   const [unreadOrders, setUnreadOrders] = useState(0);
   const isAdmin = user && isAdminEmail(user.email);
 
-  // --- LISTENER ZA NEPROČITANE PORUDŽBINE ---
+  // --- LISTENER ZA NEPROCITANE PORUDZBINE ---
   useEffect(() => {
     if (!isAdmin) return;
 
-    // Slušamo samo porudžbine koje nisu pročitane (isRead == false)
-    const q = query(collection(db, 'orders'), where('isRead', '==', false));
+    let cancelled = false;
+    const refreshUnread = () => {
+      ordersApi
+        .adminList()
+        .then((orders) => {
+          if (!cancelled) {
+            setUnreadOrders(orders.filter((order) => !order.isRead).length);
+          }
+        })
+        .catch((error) => {
+          console.error('Greska pri slusanju notifikacija:', error);
+        });
+    };
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        setUnreadOrders(snapshot.size); // Ažuriramo broj
-      },
-      (error) => {
-        console.error('Greška pri slušanju notifikacija:', error);
-      }
+    refreshUnread();
+    const unsubscribe = subscribeRealtime(
+      ['orders.created', 'orders.updated'],
+      refreshUnread,
     );
 
-    return () => unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [isAdmin]);
 
   useEffect(() => {

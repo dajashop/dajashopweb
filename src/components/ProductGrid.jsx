@@ -1,9 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState } from 'react';
 import ProductCard from './ProductCard.jsx';
 import ProductModal from './modals/ProductModal.jsx';
 import useProducts from '../hooks/useProducts';
-import { Plus } from 'lucide-react';
-import { auth, ADMIN_EMAILS } from '../services/firebase'; // Proveri putanju do firebase.js
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import './ProductGrid.css';
@@ -13,17 +11,6 @@ export default function ProductGrid({ items: propItems }) {
   const { items: hookItems, loading, err } = useProducts();
   const displayItems = propItems || hookItems;
   const [isModalOpen, setModalOpen] = useState(false);
-
-  // --- Admin detekcija ---
-  const [userEmail, setUserEmail] = useState(
-    () => auth?.currentUser?.email ?? null
-  );
-  useEffect(() => {
-    const unsub = auth?.onAuthStateChanged?.((u) =>
-      setUserEmail(u?.email ?? null)
-    );
-    return () => unsub?.();
-  }, []);
 
   // Loading / Error stanja
   if (loading && !propItems) {

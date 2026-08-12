@@ -1,14 +1,7 @@
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  useContext,
-  useRef,
-} from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useFlash } from '../hooks/useFlash';
 import { useAuth } from '../hooks/useAuth';
-import { db } from '../services/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { customerApi } from '../services/dajaPlatform';
 
 const WishlistContext = createContext();
 
@@ -25,68 +18,46 @@ export const WishlistProvider = ({ children }) => {
   });
 
   const { flash } = useFlash();
-  const { user, userInfo } = useAuth();
+  const { user } = useAuth();
+  const loadedServerWishlist = useRef(false);
   const isServerUpdate = useRef(false);
 
-  // 1. LOGIKA PRIJAVE I ODJAVE
   useEffect(() => {
-    // A) Prijava - Merge
-    if (user && wishlist.length > 0) {
-      const mergeWishlist = async () => {
+    loadedServerWishlist.current = false;
+
+    if (!user) {
+      setWishlist([]);
+      localStorage.removeItem('daja_wishlist');
+      return;
+    }
+
+    let cancelled = false;
+    customerApi
+      .getWishlist()
+      .then((serverList) => {
+        if (cancelled) return;
+        let localList = [];
         try {
-          const docRef = doc(db, 'users', user.uid);
-          const snap = await getDoc(docRef);
-          let serverList = [];
-          if (snap.exists() && snap.data().wishlist) {
-            serverList = snap.data().wishlist;
-          }
-
-          const finalList = [...serverList];
-          let changed = false;
-
-          wishlist.forEach((localItem) => {
-            const exists = finalList.some(
-              (srvItem) => srvItem.id === localItem.id
-            );
-            if (!exists) {
-              finalList.push(localItem);
-              changed = true;
-            }
-          });
-
-          if (changed || (serverList.length === 0 && wishlist.length > 0)) {
-            await setDoc(docRef, { wishlist: finalList }, { merge: true });
-          }
-        } catch (err) {
-          console.error('Wishlist merge error:', err);
+          localList = JSON.parse(localStorage.getItem('daja_wishlist') || '[]');
+        } catch {
+          localList = [];
         }
-      };
-      mergeWishlist();
-    }
-    // B) Odjava - Resetuj lokalno stanje
-    else if (!user) {
-      setWishlist([]); // Skloni sve sa ekrana
-      localStorage.removeItem('daja_wishlist'); // Očisti keš
-    }
+        const merged = [...serverList];
+        localList.forEach((localItem) => {
+          if (!merged.some((item) => item.id === localItem.id)) merged.push(localItem);
+        });
+        isServerUpdate.current = true;
+        setWishlist(merged);
+        loadedServerWishlist.current = true;
+        if (merged.length !== serverList.length) customerApi.setWishlist(merged);
+      })
+      .catch((error) => console.error('Wishlist load error:', error));
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
-  // 2. SINHRONIZACIJA SA SERVEROM
-  useEffect(() => {
-    if (user && userInfo && userInfo.wishlist) {
-      const currentStr = JSON.stringify(wishlist);
-      const serverStr = JSON.stringify(userInfo.wishlist);
-
-      if (currentStr !== serverStr) {
-        isServerUpdate.current = true;
-        setWishlist(userInfo.wishlist);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, userInfo]);
-
-  // 3. ČUVANJE
   useEffect(() => {
     if (isServerUpdate.current) {
       isServerUpdate.current = false;
@@ -94,58 +65,55 @@ export const WishlistProvider = ({ children }) => {
     }
 
     if (user) {
-      const saveToDb = async () => {
-        try {
-          const docRef = doc(db, 'users', user.uid);
-          await setDoc(docRef, { wishlist: wishlist }, { merge: true });
-        } catch (error) {
-          console.error('Wishlist save error:', error);
-        }
-      };
-      const t = setTimeout(saveToDb, 500);
+      if (!loadedServerWishlist.current) return;
+      const t = setTimeout(() => {
+        customerApi.setWishlist(wishlist).catch((error) =>
+          console.error('Wishlist save error:', error),
+        );
+      }, 500);
       return () => clearTimeout(t);
-    } else {
-      localStorage.setItem('daja_wishlist', JSON.stringify(wishlist));
     }
+
+    localStorage.setItem('daja_wishlist', JSON.stringify(wishlist));
   }, [wishlist, user]);
 
-  // --- Funkcije ostaju iste ---
   const toggleWishlist = (product) => {
     const exists = wishlist.find((item) => item.id === product.id);
 
     if (exists) {
       setWishlist((prev) => prev.filter((item) => item.id !== product.id));
-      flash('Uklonjeno', 'Proizvod uklonjen iz liste želja.', 'info');
-    } else {
-      const itemToAdd = {
+      flash('Uklonjeno', 'Proizvod uklonjen iz liste zelja.', 'info');
+      return;
+    }
+
+    setWishlist((prev) => [
+      ...prev,
+      {
         id: product.id,
         name: product.name,
         price: product.price,
         image: product.image,
         brand: product.brand,
         slug: product.slug,
-      };
-      setWishlist((prev) => [...prev, itemToAdd]);
-      flash('Sačuvano', 'Proizvod dodat u listu želja.', 'success');
-    }
+      },
+    ]);
+    flash('Sacuvano', 'Proizvod dodat u listu zelja.', 'success');
   };
 
   const removeFromWishlist = (id) => {
     setWishlist((prev) => prev.filter((item) => item.id !== id));
-    flash('Uklonjeno', 'Proizvod uklonjen iz liste želja.', 'info');
+    flash('Uklonjeno', 'Proizvod uklonjen iz liste zelja.', 'info');
   };
 
   const addToWishlist = (product) => {
     setWishlist((prev) => {
-      if (prev.some((i) => i.id === product.id)) return prev;
+      if (prev.some((item) => item.id === product.id)) return prev;
       return [...prev, product];
     });
-    flash('Vraćeno', 'Proizvod vraćen u listu želja.', 'success');
+    flash('Vraceno', 'Proizvod vracen u listu zelja.', 'success');
   };
 
-  const isInWishlist = (id) => {
-    return wishlist.some((item) => item.id === id);
-  };
+  const isInWishlist = (id) => wishlist.some((item) => item.id === id);
 
   return (
     <WishlistContext.Provider

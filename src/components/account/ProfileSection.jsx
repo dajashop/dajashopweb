@@ -22,15 +22,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
-import { db, auth, storage } from '../../services/firebase';
-import {
-  updateProfile,
-  linkWithPhoneNumber,
-  RecaptchaVerifier,
-  sendEmailVerification,
-} from 'firebase/auth';
-import { updateDoc, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { customerApi, mediaApi } from '../../services/dajaPlatform';
 
 import {
   COUNTRY_CODES,
@@ -93,7 +85,7 @@ function ProfileSection({ user }) {
   const handleSendVerification = async () => {
     setLoading(true);
     try {
-      await sendEmailVerification(auth.currentUser);
+      await customerApi.requestEmailVerification();
       flash('Uspeh', 'Verifikacioni link je poslat na vaš email.', 'info');
     } catch (error) {
       console.error(error);
@@ -114,12 +106,9 @@ function ProfileSection({ user }) {
 
     setLoading(true);
     try {
-      const storageRef = ref(storage, `avatars/${user.uid}_${Date.now()}`);
-      await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(storageRef);
-
-      await updateProfile(auth.currentUser, { photoURL: downloadUrl });
-      await updateDoc(doc(db, 'users', user.uid), { photoURL: downloadUrl });
+      const uploaded = await mediaApi.uploadProductImageFile('avatars', file, Date.now());
+      const downloadUrl = uploaded.url || uploaded.original || uploaded.mainImageUrl;
+      await customerApi.updateProfile({ photoURL: downloadUrl });
 
       flash('Uspeh', 'Profilna slika ažurirana.', 'success');
     } catch (error) {
@@ -137,8 +126,7 @@ function ProfileSection({ user }) {
     }
     setLoading(true);
     try {
-      await updateProfile(auth.currentUser, { displayName: newName });
-      await updateDoc(doc(db, 'users', user.uid), { displayName: newName });
+      await customerApi.updateProfile({ displayName: newName });
       flash('Uspeh', 'Ime je ažurirano.', 'success');
       setIsEditingName(false);
     } catch (error) {
@@ -157,19 +145,8 @@ function ProfileSection({ user }) {
     }
     setLoading(true);
     try {
-      if (!window.recaptchaVerifier)
-        window.recaptchaVerifier = new RecaptchaVerifier(
-          auth,
-          'recaptcha-phone-container',
-          { size: 'invisible', callback: () => {} }
-        );
-      const appVerifier = window.recaptchaVerifier;
-      const confirmationResult = await linkWithPhoneNumber(
-        auth.currentUser,
-        fullNumber,
-        appVerifier
-      );
-      setVerificationId(confirmationResult);
+      await customerApi.requestPhoneLinkOtp(fullNumber);
+      setVerificationId(fullNumber);
       setPhoneStep('verify');
       flash('SMS Poslat', `Kod poslat na ${fullNumber}`, 'info');
     } catch (error) {
@@ -197,9 +174,8 @@ function ProfileSection({ user }) {
     }
     setLoading(true);
     try {
-      await verificationId.confirm(smsCode);
       const fullNumber = selectedCountry.dial + localPhone.replace(/^0+/, '');
-      await updateDoc(doc(db, 'users', user.uid), { phoneNumber: fullNumber });
+      await customerApi.verifyPhoneLinkOtp(fullNumber, smsCode);
       flash('Uspeh', 'Broj telefona povezan!', 'success');
       setIsEditingPhone(false);
       setPhoneStep('input');
@@ -228,10 +204,6 @@ function ProfileSection({ user }) {
       }
     } else {
       setLocalPhone('');
-    }
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-      window.recaptchaVerifier = null;
     }
   };
 

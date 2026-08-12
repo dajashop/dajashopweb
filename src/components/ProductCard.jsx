@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import './ProductCard.css';
 import { Link } from 'react-router-dom';
 import { money } from '../utils/currency.js';
@@ -7,9 +7,10 @@ import { useFlash } from '../hooks/useFlash.js';
 import { useWishlist } from '../context/WishlistProvider.jsx';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { Edit3, Heart, Trash2, Star, Eye, EyeOff } from 'lucide-react'; // Dodate ikonice
-import { auth, ADMIN_EMAILS } from '../services/firebase';
+import { isAdminEmail } from '../services/dajaPlatform';
 import { deleteProduct, saveProduct } from '../services/products';
 import ProgressiveImage from './ui/ProgressiveImage.jsx';
+import { useAuth } from '../hooks/useAuth.js';
 
 // Uvozimo Modal
 import AdminProductModal from '../pages/Admin/components/AdminProductModal.jsx';
@@ -32,6 +33,7 @@ export default function ProductCard({ p }) {
   const { dispatch } = useCart();
   const { flash } = useFlash();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { user } = useAuth();
 
   const isLiked = isInWishlist(p.id);
 
@@ -86,20 +88,7 @@ export default function ProductCard({ p }) {
       : activeImage?.url || p.mainImageUrl || p.image;
 
   // Admin check
-  const [userEmail, setUserEmail] = useState(
-    () => auth?.currentUser?.email ?? null,
-  );
-  useEffect(() => {
-    const unsub = auth?.onAuthStateChanged?.((u) =>
-      setUserEmail(u?.email ?? null),
-    );
-    return () => unsub?.();
-  }, []);
-
-  const isAdmin = useMemo(
-    () => !!userEmail && ADMIN_EMAILS.includes(userEmail.toLowerCase()),
-    [userEmail],
-  );
+  const isAdmin = useMemo(() => isAdminEmail(user?.email), [user?.email]);
 
   // Handleri
   const addToCart = () => {

@@ -450,7 +450,7 @@ export default function AuthModal() {
           setLoading(false);
           return;
         }
-        await passkeyRegister(name || identity); // Koristi ime ili email kao identifikator
+        await passkeyRegister({ name, identity }); // Kreira nalog i passkey
         hideAuth();
         openFlash('Uspeh', 'Passkey kreiran! 🛡️');
       }

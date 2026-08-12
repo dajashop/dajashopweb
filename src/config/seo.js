@@ -10,7 +10,6 @@ export const seoConfig = {
   facebookAppId: import.meta.env.VITE_FACEBOOK_APP_ID || '',
   siteLogoUrl: import.meta.env.VITE_SITE_LOGO_URL || '',
   googleSiteVerification: import.meta.env.VITE_GOOGLE_SITE_VERIFICATION || '',
-  functionsBaseUrl: import.meta.env.VITE_FUNCTIONS_BASE_URL || '',
   business: {
     name: import.meta.env.VITE_BUSINESS_NAME || '',
     street: import.meta.env.VITE_BUSINESS_STREET || '',
