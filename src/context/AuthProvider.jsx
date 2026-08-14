@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Ctx } from './AuthContext';
 import { authApi, customerApi } from '../services/dajaPlatform';
-import { getAccessToken, onAuthTokenChange } from '../services/apiClient';
+import { getAccessToken, onAuthTokenChange, setAuthTokens } from '../services/apiClient';
 import {
   browserSupportsWebAuthn,
   startAuthentication,
@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
       }
 
       return me;
-    } catch (error) {
+    } catch {
       setUser(null);
       setUserInfo(null);
       return null;
@@ -50,6 +50,21 @@ export function AuthProvider({ children }) {
     loadMe();
     return onAuthTokenChange(loadMe);
   }, [loadMe]);
+
+  useEffect(() => {
+    const hash = window.location.hash.startsWith('#')
+      ? window.location.hash.slice(1)
+      : window.location.hash;
+    if (!hash) return;
+
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get('accessToken');
+    const refreshToken = params.get('refreshToken');
+    if (params.get('oauth') !== 'success' || !accessToken || !refreshToken) return;
+
+    setAuthTokens({ accessToken, refreshToken });
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+  }, []);
 
   function showAuth(nextMode = 'login') {
     setMode(nextMode);

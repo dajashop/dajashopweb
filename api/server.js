@@ -30,6 +30,8 @@ const organizationId =
 const webauthnRpID = process.env.WEBAUTHN_RP_ID || 'localhost';
 const webauthnRpName = process.env.WEBAUTHN_RP_NAME || 'DajaShop';
 const webauthnOrigin = process.env.WEBAUTHN_ORIGIN || process.env.VITE_APP_URL || 'http://localhost:5173';
+const appUrl = (process.env.VITE_APP_URL || 'http://localhost:5173').replace(/\/+$/, '');
+const oauthBaseUrl = (process.env.OAUTH_BASE_URL || `http://localhost:${port}`).replace(/\/+$/, '');
 const passkeyChallenges = new Map();
 const adminEmails = (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || '')
   .split(',')
@@ -337,7 +339,7 @@ function publicKeyFromBase64Url(publicKey) {
   return Buffer.from(publicKey, 'base64url');
 }
 
-async function createCustomerRecord(client, { email, phone, displayName }) {
+async function createCustomerRecord(client, { email, phone, displayName, emailVerified = false }) {
   const { firstName, lastName } = splitDisplayName(displayName);
   const { rows } = await client.query(
     `INSERT INTO customers (
@@ -359,11 +361,74 @@ async function createCustomerRecord(client, { email, phone, displayName }) {
       displayName,
       firstName,
       lastName,
-      false,
+      Boolean(emailVerified),
       Boolean(phone),
     ],
   );
   return rows[0];
+}
+
+function oauthRedirectUri(provider) {
+  return `${oauthBaseUrl}${apiPrefix}/customer-auth/oauth/${provider}/callback`;
+}
+
+function oauthState(provider) {
+  return jwt.sign({ provider, nonce: randomUUID() }, jwtSecret, { expiresIn: '10m' });
+}
+
+function verifyOauthState(state, provider) {
+  const decoded = jwt.verify(state || '', jwtSecret);
+  if (decoded.provider !== provider) throw new Error('Nevalidan OAuth state.');
+}
+
+function redirectWithAuth(res, tokens) {
+  const url = new URL(appUrl);
+  url.hash = new URLSearchParams({
+    oauth: 'success',
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+  }).toString();
+  return res.redirect(url.toString());
+}
+
+function redirectWithOauthError(res, message) {
+  const url = new URL(appUrl);
+  url.searchParams.set('oauth_error', message || 'OAuth prijava nije uspela.');
+  return res.redirect(url.toString());
+}
+
+async function findCustomerByOAuthIdentity(provider, providerSubject) {
+  const { rows } = await pool.query(
+    `SELECT c.*
+     FROM customers c
+     JOIN customer_identities ci ON ci.customer_id = c.id
+     WHERE ci.organization_id = $1
+       AND ci.provider = $2
+       AND ci.provider_subject = $3
+       AND ci.active = TRUE
+       AND c.deleted_at IS NULL
+       AND c.active = TRUE
+     LIMIT 1`,
+    [organizationId, provider, providerSubject],
+  );
+  return rows[0] || null;
+}
+
+async function upsertOAuthIdentity(client, { customerId, provider, providerSubject }) {
+  await client.query(
+    `INSERT INTO customer_identities (
+       organization_id,
+       customer_id,
+       provider,
+       provider_subject
+     )
+     VALUES ($1,$2,$3,$4)
+     ON CONFLICT (organization_id, provider, provider_subject) DO UPDATE
+     SET customer_id = EXCLUDED.customer_id,
+         active = TRUE,
+         updated_at = now()`,
+    [organizationId, customerId, provider, providerSubject],
+  );
 }
 
 app.get(`${apiPrefix}/health`, (_req, res) => {
@@ -491,11 +556,112 @@ app.get(`${apiPrefix}/customer-auth/oauth/:provider/start`, (req, res) => {
   if (!['google', 'facebook'].includes(provider)) {
     return res.status(404).json({ message: 'OAuth provider nije podrzan.' });
   }
+  if (provider !== 'google') {
+    return res.status(501).json({
+      message:
+        `${provider} login nije jos povezan. Potrebni su OAuth client id/secret, callback URL i verify callback implementacija.`,
+    });
+  }
 
-  return res.status(501).json({
-    message:
-      `${provider} login nije jos povezan. Potrebni su OAuth client id/secret, callback URL i verify callback implementacija.`,
-  });
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  if (!clientId) {
+    return res.status(500).json({ message: 'GOOGLE_OAUTH_CLIENT_ID nije podesen.' });
+  }
+
+  const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+  url.searchParams.set('client_id', clientId);
+  url.searchParams.set('redirect_uri', oauthRedirectUri('google'));
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('scope', 'openid email profile');
+  url.searchParams.set('state', oauthState('google'));
+  url.searchParams.set('prompt', 'select_account');
+  return res.redirect(url.toString());
+});
+
+app.get(`${apiPrefix}/customer-auth/oauth/google/callback`, async (req, res, next) => {
+  const client = await pool.connect();
+  try {
+    if (req.query.error) {
+      return redirectWithOauthError(res, String(req.query.error));
+    }
+    verifyOauthState(req.query.state, 'google');
+
+    const code = String(req.query.code || '');
+    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+    if (!code || !clientId || !clientSecret) {
+      return redirectWithOauthError(res, 'Google OAuth konfiguracija nije potpuna.');
+    }
+
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: oauthRedirectUri('google'),
+        grant_type: 'authorization_code',
+      }),
+    });
+    const tokenData = await tokenResponse.json();
+    if (!tokenResponse.ok) {
+      return redirectWithOauthError(res, tokenData?.error_description || 'Google token zahtev nije uspeo.');
+    }
+
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const profile = await userInfoResponse.json();
+    if (!userInfoResponse.ok || !profile?.sub) {
+      return redirectWithOauthError(res, 'Google profil nije dostupan.');
+    }
+
+    const email = profile.email ? String(profile.email).trim().toLowerCase() : null;
+    const displayName = profile.name || email || 'DajaShop korisnik';
+    let customer = await findCustomerByOAuthIdentity('google', profile.sub);
+
+    await client.query('BEGIN');
+    if (!customer && email) {
+      customer = await findCustomerByIdentity(email);
+    }
+    if (!customer) {
+      customer = await createCustomerRecord(client, {
+        email,
+        phone: null,
+        displayName,
+        emailVerified: Boolean(profile.email_verified),
+      });
+    } else {
+      const { rows } = await client.query(
+        `UPDATE customers
+         SET email_verified = email_verified OR $1,
+             photo_url = COALESCE(photo_url, $2),
+             updated_at = now()
+         WHERE id = $3
+         RETURNING *`,
+        [Boolean(profile.email_verified), profile.picture || null, customer.id],
+      );
+      customer = rows[0] || customer;
+    }
+
+    await upsertOAuthIdentity(client, {
+      customerId: customer.id,
+      provider: 'google',
+      providerSubject: profile.sub,
+    });
+    await client.query('COMMIT');
+
+    return redirectWithAuth(res, signCustomer(customer));
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return redirectWithOauthError(res, 'OAuth sesija je istekla. Pokusajte ponovo.');
+    }
+    return next(error);
+  } finally {
+    client.release();
+  }
 });
 
 app.post(`${apiPrefix}/customer-auth/passkeys/register-challenge`, optionalAuth, async (req, res, next) => {
