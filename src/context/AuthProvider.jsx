@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Ctx } from './AuthContext';
-import { authApi, customerApi } from '../services/dajaPlatform';
+import { authApi, customerApi, isAdminEmail } from '../services/dajaPlatform';
 import { getAccessToken, onAuthTokenChange, setAuthTokens } from '../services/apiClient';
 import {
   browserSupportsWebAuthn,
@@ -30,6 +30,12 @@ export function AuthProvider({ children }) {
     try {
       const me = await authApi.me();
       setUser(me);
+
+      if (isAdminEmail(me?.email)) {
+        // The API is authoritative; a failed staff exchange must not log the
+        // customer out of their normal storefront session.
+        await authApi.createAdminSession().catch(() => null);
+      }
 
       try {
         const customer = await customerApi.me();

@@ -49,9 +49,14 @@ export function setAuthTokens(tokens = {}) {
   emitAuthChange();
 }
 
+export function setStaffAccessToken(accessToken) {
+  writeStorage(STAFF_ACCESS_KEY, accessToken || null);
+}
+
 export function clearAuthTokens() {
   writeStorage(ACCESS_KEY, null);
   writeStorage(REFRESH_KEY, null);
+  writeStorage(STAFF_ACCESS_KEY, null);
   emitAuthChange();
 }
 

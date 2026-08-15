@@ -2,6 +2,7 @@ import {
   API_BASE_URL,
   apiRequest,
   setAuthTokens,
+  setStaffAccessToken,
   clearAuthTokens,
   toArrayPayload,
 } from './apiClient';
@@ -123,6 +124,19 @@ export const authApi = {
       clearAuthTokens();
     }
   },
+  async createAdminSession() {
+    const storageKey = 'daja_staff_device_id';
+    let deviceId = localStorage.getItem(storageKey);
+    if (!deviceId) {
+      deviceId = crypto.randomUUID();
+      localStorage.setItem(storageKey, deviceId);
+    }
+    const data = await apiRequest('/customer-auth/admin/session', {
+      method: 'POST', body: { deviceId },
+    });
+    setStaffAccessToken(data?.accessToken || data?.access_token || null);
+    return data;
+  },
   async requestPhoneOtp(phone) {
     return apiRequest('/customer-auth/phone/start', {
       method: 'POST',
@@ -185,11 +199,26 @@ export const authApi = {
 
 export const catalogApi = {
   async listProducts(params = {}) {
-    const data = await apiRequest('/public/catalog/products', { query: params, auth: false });
-    if (typeof data === 'string') {
-      throw new Error('DAJA catalog API je vratio tekst/HTML umesto JSON-a.');
-    }
-    return toArrayPayload(data).map(normalizeProduct);
+    const requestedLimit = Math.max(1, Number(params.limit) || 20);
+    const pageSize = Math.min(requestedLimit, 50);
+    const { cursor: initialCursor, limit: _limit, ...filters } = params;
+    const products = [];
+    let cursor = initialCursor;
+
+    do {
+      const data = await apiRequest('/public/catalog/products', {
+        query: { ...filters, limit: pageSize, cursor },
+        auth: false,
+      });
+      if (typeof data === 'string') {
+        throw new Error('DAJA catalog API je vratio tekst/HTML umesto JSON-a.');
+      }
+
+      products.push(...toArrayPayload(data).map(normalizeProduct));
+      cursor = data?.nextCursor || null;
+    } while (cursor && products.length < requestedLimit);
+
+    return products.slice(0, requestedLimit);
   },
   async getProductBySlug(slug) {
     const data = await apiRequest(`/public/catalog/products/${encodeURIComponent(slug)}`, {
