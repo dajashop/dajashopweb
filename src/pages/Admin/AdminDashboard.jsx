@@ -163,7 +163,6 @@ export default function AdminDashboard() {
         id: product.id,
         isVisible: !currentStatus, // Menjamo u suprotno
       });
-      refreshProducts();
     } catch (error) {
       console.error('Greška pri menjanju vidljivosti:', error);
       alert('Došlo je do greške.');
@@ -314,7 +313,6 @@ export default function AdminDashboard() {
   const handleDeleteProduct = async () => {
     if (deleteId) {
       await deleteProduct(deleteId);
-      refreshProducts();
       setDeleteId(null);
     }
   };
@@ -1288,7 +1286,7 @@ export default function AdminDashboard() {
           <AdminProductModal
             product={editProduct}
             onClose={() => setModalOpen(false)}
-            onSuccess={refreshProducts}
+            onSuccess={() => setModalOpen(false)}
           />
         )}
       </AnimatePresence>

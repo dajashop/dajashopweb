@@ -18,9 +18,9 @@ function isInvalidCatalogPayload(items) {
   return !Array.isArray(items) || items.some((item) => !item || !item.id);
 }
 
-function notifyProductsChanged() {
+function notifyProductsChanged(detail) {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event('daja:products-changed'));
+    window.dispatchEvent(new CustomEvent('daja:products-changed', { detail }));
   }
 }
 
@@ -49,9 +49,15 @@ export function subscribeProducts({ onData, onError, order = 'name', admin = fal
 }
 
 export async function saveProduct(partial) {
-  const result = await adminCatalogApi.saveProduct(partial);
-  notifyProductsChanged();
-  return result;
+  const productId = await adminCatalogApi.saveProduct(partial);
+  // Do not refetch the whole catalog after a one-product change. Every list
+  // updates just its matching item from this small event payload.
+  notifyProductsChanged({
+    type: 'upsert',
+    product: { ...partial, id: productId || partial.id },
+    created: !partial.id,
+  });
+  return productId;
 }
 
 export async function uploadImages(productId, files, onProgress) {
@@ -79,6 +85,6 @@ export async function fetchProductBySlug(slug) {
 export async function deleteProduct(id) {
   if (!id) throw new Error('ID proizvoda je obavezan');
   const result = await adminCatalogApi.deleteProduct(id);
-  notifyProductsChanged();
+  notifyProductsChanged({ type: 'delete', id });
   return result;
 }

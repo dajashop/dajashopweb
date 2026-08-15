@@ -34,9 +34,34 @@ export default function useProducts(params = {}) {
   }, [memoizedParams, refreshKey]);
 
   useEffect(() => {
-    const refreshFromAdminChange = () => setRefreshKey((key) => key + 1);
-    window.addEventListener('daja:products-changed', refreshFromAdminChange);
-    return () => window.removeEventListener('daja:products-changed', refreshFromAdminChange);
+    const applyProductChange = (event) => {
+      const change = event.detail;
+      // Compatibility with events from an older bundle. Only those events
+      // require a complete refresh because they do not identify a product.
+      if (!change?.type) {
+        setRefreshKey((key) => key + 1);
+        return;
+      }
+      if (change.type === 'delete' && change.id) {
+        setItems((current) => current.filter((item) => item.id !== change.id));
+        return;
+      }
+      if (change.type === 'upsert' && change.product?.id) {
+        setItems((current) => {
+          const index = current.findIndex((item) => item.id === change.product.id);
+          if (index === -1) {
+            // A newly created product can be shown immediately without
+            // downloading every other product again.
+            return change.created ? [change.product, ...current] : current;
+          }
+          const next = [...current];
+          next[index] = { ...next[index], ...change.product };
+          return next;
+        });
+      }
+    };
+    window.addEventListener('daja:products-changed', applyProductChange);
+    return () => window.removeEventListener('daja:products-changed', applyProductChange);
   }, []);
 
   const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
