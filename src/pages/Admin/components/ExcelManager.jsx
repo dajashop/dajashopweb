@@ -65,11 +65,7 @@ const ExcelManager = ({ products, brands, categories, onImport }) => {
 
     try {
       const rawData = await importFromExcel(file);
-
-      if (!rawData || rawData.length === 0) {
-        throw new Error('Fajl je prazan.');
-      }
-
+      if (!rawData || rawData.length === 0) throw new Error('Fajl je prazan.');
       const formattedData = rawData.map((row) => {
         // 1. Specifikacije
         const specs = {};
@@ -105,7 +101,7 @@ const ExcelManager = ({ products, brands, categories, onImport }) => {
         };
       });
 
-      await onImport(formattedData);
+      await onImport({ file, rows: formattedData });
 
       setStatus({
         type: 'success',

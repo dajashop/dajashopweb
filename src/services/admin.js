@@ -33,9 +33,15 @@ export const ordersService = {
       },
       onError,
     );
+    const fallbackRefresh = window.setInterval(() => {
+      ordersApi.adminList().then((items) => {
+        if (!cancelled) onData(items);
+      }).catch(() => {});
+    }, 30_000);
 
     return () => {
       cancelled = true;
+      window.clearInterval(fallbackRefresh);
       stopRealtime?.();
     };
   },
@@ -65,5 +71,6 @@ export const deleteProductImagesFromR2 = (slug) =>
   mediaApi.deleteProductImages(slug);
 
 export const brandService = createCollectionService('brands');
+export const departmentService = createCollectionService('departments');
 export const categoryService = createCollectionService('categories');
 export const specKeyService = createCollectionService('spec_keys');

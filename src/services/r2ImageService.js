@@ -1,45 +1,27 @@
 import { mediaApi } from './dajaPlatform';
-import {
-  generateSeoFilename,
-  generateVariants,
-} from '../utils/imageProcessing';
-
-function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = String(reader.result || '');
-      const [, base64] = result.split(',');
-      if (!base64) {
-        reject(new Error('Neuspesna base64 konverzija.'));
-        return;
-      }
-      resolve(base64);
-    };
-    reader.onerror = () => reject(new Error('Neuspesno citanje blob-a.'));
-    reader.readAsDataURL(blob);
-  });
+async function checksumSha256(file) {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return [...new Uint8Array(digest)].map((part) => part.toString(16).padStart(2, '0')).join('');
 }
 
-export async function uploadProductImage(slug, file, index = 0) {
-  const { thumb, original } = await generateVariants(file);
-  const thumbBase64 = await blobToBase64(thumb);
-  const originalBase64 = await blobToBase64(original);
-
-  const result = await mediaApi.uploadProductImages({
-    slug,
-    index,
-    thumbBase64,
-    originalBase64,
-    thumbFilename: generateSeoFilename(slug, index, 'thumb'),
-    originalFilename: generateSeoFilename(slug, index, 'original'),
+export async function uploadProductImage(_slug, file, _index = 0) {
+  const upload = await mediaApi.createUpload({
+    mimeType: file.type || 'application/octet-stream',
+    sizeBytes: file.size,
+    checksumSha256: await checksumSha256(file),
+    originalFilename: file.name || 'product-image',
   });
-
-  return {
-    url: result.original || result.url || result.mainImageUrl,
-    thumb: result.thumb || result.thumbnailUrl || result.url,
-    path: result.path || result.storagePath,
-  };
+  const uploadUrl = upload.uploadUrl || upload.url;
+  const mediaId = upload.mediaId || upload.id;
+  if (!uploadUrl || !mediaId) throw new Error('API nije vratio R2 upload podatke.');
+  const response = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    body: file,
+  });
+  if (!response.ok) throw new Error(`R2 upload nije uspeo (${response.status}).`);
+  await mediaApi.completeUpload(mediaId);
+  return { mediaId, url: upload.publicUrl || '', thumb: upload.thumbnailUrl || upload.publicUrl || '' };
 }
 
 export async function uploadProductImages(slug, files, onProgress) {
@@ -56,6 +38,6 @@ export async function uploadProductImages(slug, files, onProgress) {
   return uploaded;
 }
 
-export async function deleteProductImages(slug) {
-  return mediaApi.deleteProductImages(slug);
+export async function deleteProductImages() {
+  throw new Error('Slike se uklanjaju preko product-media veze.');
 }

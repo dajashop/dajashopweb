@@ -11,6 +11,7 @@ import {
   specKeyService,
 } from '../../../services/admin';
 import { saveProduct } from '../../../services/products';
+import { mediaApi } from '../../../services/dajaPlatform';
 import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
 import ImageGalleryModal from '../../../components/modals/ImageGalleryModal.jsx';
@@ -65,6 +66,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     gender: '',
     department: 'satovi',
     specs: {},
+    variants: [],
     // [NOVO] Niz za custom kartice (naslov + podnaslov)
     features: [],
     model3DUrl: '',
@@ -115,6 +117,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         ...product,
         images: loadedImages,
         specs: product.specs || {},
+        variants: Array.isArray(product.variants) ? product.variants.map((variant) => ({
+          ...variant,
+          price: variant.price ?? (variant.currentPriceAmount ? variant.currentPriceAmount / 100 : ''),
+        })) : [],
         // [NOVO] Učitavamo postojeće features ili postavljamo jedan prazan red
         features:
           product.features && product.features.length > 0
@@ -153,12 +159,12 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const handleChange = (field, value) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === 'department') {
-        next.brand = '';
-        next.category = '';
-      }
       if (field === 'brand') {
-        next.category = '';
+        next.brandId = brands.find((brand) => brand.name === value)?.id || prev.brandId;
+      }
+      if (field === 'category') {
+        next.primaryCategoryId =
+          cats.find((category) => category.name === value)?.id || prev.primaryCategoryId;
       }
       return next;
     });
@@ -206,6 +212,21 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     setForm((prev) => ({ ...prev, specs: newSpecs }));
   };
 
+  const addVariant = () => setForm((prev) => ({
+    ...prev,
+    variants: [...(prev.variants || []), { sku: '', name: '', price: prev.price || '', gender: prev.gender || '', active: true, published: true, attributes: {} }],
+  }));
+
+  const updateVariant = (index, field, value) => setForm((prev) => ({
+    ...prev,
+    variants: prev.variants.map((variant, currentIndex) => currentIndex === index ? { ...variant, [field]: value } : variant),
+  }));
+
+  const removeVariant = (index) => setForm((prev) => ({
+    ...prev,
+    variants: prev.variants.filter((_, currentIndex) => currentIndex !== index),
+  }));
+
   const handleSubmit = async () => {
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
     setLoading(true);
@@ -224,22 +245,56 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         slug: finalSlug,
         features: cleanFeatures, // [NOVO] Dodajemo u payload
         seo: cleanSeoPayload(form.seo),
+        variants: (form.variants || []).filter((variant) => variant.sku && Number(variant.price) >= 0),
       };
 
       if (!Object.keys(payload.seo).length) {
         delete payload.seo;
       }
 
+      // Preserve relations from older catalogue responses that contained the
+      // display name but not the canonical relation IDs.
+      const selectedBrand = brands.find((brand) => brand.name === form.brand);
+      const selectedCategory = cats.find((category) => category.name === form.category);
+      if (selectedBrand?.id) {
+        payload.brandId = selectedBrand.id;
+        payload.departmentId = selectedBrand.departmentId;
+      }
+      else if (!form.brandId) delete payload.brandId;
+      if (selectedCategory?.id) {
+        payload.primaryCategoryId = selectedCategory.id;
+        payload.departmentId = selectedCategory.departmentId || payload.departmentId;
+      }
+      else if (!form.primaryCategoryId) delete payload.primaryCategoryId;
+
       if (!product) delete payload.id;
       else payload.id = product.id;
 
-      await saveProduct(payload);
+      const savedProductId = await saveProduct(payload);
+      const pendingMedia = (form.images || []).filter((image) => image.mediaId && !image.linkId);
+      if (savedProductId && pendingMedia.length) {
+        const linked = await Promise.all(
+          pendingMedia.map((image, index) =>
+            mediaApi.attachToProduct(savedProductId, image.mediaId, {
+              position: index,
+              isPrimary: index === 0,
+            }),
+          ),
+        );
+        setForm((previous) => ({
+          ...previous,
+          images: previous.images.map((image) => {
+            const link = linked.find((item) => item.mediaId === image.mediaId);
+            return link ? { ...image, linkId: link.id } : image;
+          }),
+        }));
+      }
+      await onSuccess?.();
 
       setFlash({ open: true, title: 'Uspešno sačuvano!', ok: true });
       setTimeout(() => {
-        onSuccess?.();
         onClose();
-      }, 1200);
+      }, 500);
     } catch (err) {
       console.error(err);
       setFlash({ open: true, title: 'Greška', ok: false });
@@ -329,8 +384,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   // Filteri
   const filteredBrands = useMemo(() => {
-    return brands.filter((b) => (b.department || 'satovi') === form.department);
-  }, [brands, form.department]);
+    // DAJA Platform brands do not have the old Firestore `department` field.
+    // Do not hide existing choices when the storefront department changes.
+    return brands;
+  }, [brands]);
 
   const brandOptions = filteredBrands.map((b) => ({
     value: b.name,
@@ -339,14 +396,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   }));
 
   const filteredCats = useMemo(() => {
-    let c = cats.filter(
-      (cat) => (cat.department || 'satovi') === form.department,
-    );
-    if (form.brand) {
-      c = c.filter((cat) => cat.brand === form.brand);
-    }
-    return c;
-  }, [cats, form.department, form.brand]);
+    return cats;
+  }, [cats]);
 
   const catOptions = filteredCats.map((c) => ({
     value: c.name,
@@ -355,10 +406,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   }));
 
   const filteredSpecs = useMemo(() => {
-    return specKeys.filter(
-      (s) => (s.department || 'satovi') === form.department,
-    );
-  }, [specKeys, form.department]);
+    return specKeys;
+  }, [specKeys]);
 
   const specOptions = filteredSpecs.map((k) => ({
     value: k.name,
@@ -554,6 +603,30 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                       placeholder="/models/moj-sat.glb (iz Storage-a)"
                     />
                   </label>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">Varijante</h3>
+                    <p className="text-xs text-neutral-500 mt-1">SKU, cena, pol i status se čuvaju zasebno za svaku varijantu.</p>
+                  </div>
+                  <button type="button" onClick={addVariant} className="flex items-center gap-2 text-xs font-bold bg-neutral-900 text-white px-3 py-2 rounded-lg hover:bg-neutral-800"><Plus size={14} /> Dodaj varijantu</button>
+                </div>
+                {(form.variants || []).length === 0 && <p className="text-sm text-neutral-400">Nema dodatnih varijanti. Cena iznad ostaje glavna varijanta proizvoda.</p>}
+                <div className="space-y-3">
+                  {(form.variants || []).map((variant, index) => (
+                    <div key={variant.id || index} className="grid grid-cols-1 md:grid-cols-5 gap-3 p-3 bg-neutral-50 border border-neutral-100 rounded-xl">
+                      <input value={variant.sku || ''} onChange={(e) => updateVariant(index, 'sku', e.target.value)} placeholder="SKU" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
+                      <input value={variant.name || ''} onChange={(e) => updateVariant(index, 'name', e.target.value)} placeholder="Naziv varijante" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
+                      <input type="number" value={variant.price ?? ''} onChange={(e) => updateVariant(index, 'price', e.target.value)} placeholder="Cena RSD" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
+                      <select value={variant.gender || ''} onChange={(e) => updateVariant(index, 'gender', e.target.value)} className="rounded-lg border border-neutral-200 px-3 py-2 text-sm">
+                        {genderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                      <div className="flex items-center justify-between gap-2"><label className="text-xs flex items-center gap-1"><input type="checkbox" checked={variant.active !== false} onChange={(e) => updateVariant(index, 'active', e.target.checked)} /> Aktivna</label><button type="button" onClick={() => removeVariant(index)} className="p-2 text-neutral-400 hover:text-red-500"><Trash2 size={17} /></button></div>
+                    </div>
+                  ))}
                 </div>
               </div>
 

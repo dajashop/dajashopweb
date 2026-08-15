@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { isAdminEmail } from '../../services/dajaPlatform';
+import { isAdminEmail, importsApi } from '../../services/dajaPlatform';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -27,6 +27,7 @@ import ConfirmModal from '../../components/modals/ConfirmModal.jsx';
 import ExcelManager from './components/ExcelManager';
 import {
   brandService,
+  departmentService,
   categoryService,
   specKeyService,
   repairProductImageUrls,
@@ -65,7 +66,7 @@ const generateSlug = (text) => {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const nav = useNavigate();
-  const { items: products } = useProducts();
+  const { items: products, refresh: refreshProducts } = useProducts();
 
   // ... (State varijable ostaju iste: activeTab, searchTerm, filters...)
   const [activeTab, setActiveTab] = useState('products');
@@ -81,6 +82,7 @@ export default function AdminDashboard() {
 
   // ... (Ostali state-ovi za brendove, kategorije...)
   const [brands, setBrands] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [brandFilters, setBrandFilters] = useState([]);
   const [newBrandName, setNewBrandName] = useState('');
   const [newBrandDept, setNewBrandDept] = useState('');
@@ -121,15 +123,19 @@ export default function AdminDashboard() {
 
   // Fetch Data useEffects (Ostaju isti...)
   useEffect(() => {
+    const unsub0 = departmentService.subscribe(setDepartments, console.error);
     const unsub1 = brandService.subscribe(setBrands, console.error);
     const unsub2 = categoryService.subscribe(setCategories, console.error);
     const unsub3 = specKeyService.subscribe(setSpecs, console.error);
     return () => {
+      unsub0();
       unsub1();
       unsub2();
       unsub3();
     };
   }, []);
+
+  const departmentIdFor = (slug) => departments.find((department) => department.slug === slug)?.id;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -156,6 +162,7 @@ export default function AdminDashboard() {
         id: product.id,
         isVisible: !currentStatus, // Menjamo u suprotno
       });
+      refreshProducts();
     } catch (error) {
       console.error('Greška pri menjanju vidljivosti:', error);
       alert('Došlo je do greške.');
@@ -176,9 +183,7 @@ export default function AdminDashboard() {
     if (!newBrandName.trim()) return;
     try {
       await brandService.add(newBrandName, {
-        department:
-          (brandFilters.length === 1 ? brandFilters[0] : newBrandDept) ||
-          'satovi',
+        departmentId: departmentIdFor((brandFilters.length === 1 ? brandFilters[0] : newBrandDept) || 'satovi'),
       });
       setNewBrandName('');
     } catch (err) {
@@ -213,14 +218,11 @@ export default function AdminDashboard() {
     const brandToUse = catBrandFilter || newCatBrand;
     if (!brandToUse) return alert('Brend?');
     const brandObj = brands.find((b) => b.name === brandToUse);
-    const dept =
-      brandObj?.department ||
-      (catFilters.length === 1 ? catFilters[0] : newCatDept) ||
-      'satovi';
+    const dept = brandObj?.departmentId || departmentIdFor((catFilters.length === 1 ? catFilters[0] : newCatDept) || 'satovi');
     try {
       await categoryService.add(newCatName, {
-        department: dept,
-        brand: brandToUse,
+        departmentId: dept,
+        brandId: brandObj?.id,
       });
       setNewCatName('');
     } catch (err) {
@@ -251,8 +253,7 @@ export default function AdminDashboard() {
     if (!newSpecName.trim()) return;
     try {
       await specKeyService.add(newSpecName, {
-        department:
-          (specFilters.length === 1 ? specFilters[0] : newSpecDept) || 'satovi',
+        departmentId: departmentIdFor((specFilters.length === 1 ? specFilters[0] : newSpecDept) || 'satovi'),
         unit: newSpecUnit.trim(),
       });
       setNewSpecName('');
@@ -293,6 +294,7 @@ export default function AdminDashboard() {
   const handleDeleteProduct = async () => {
     if (deleteId) {
       await deleteProduct(deleteId);
+      refreshProducts();
       setDeleteId(null);
     }
   };
@@ -314,8 +316,20 @@ export default function AdminDashboard() {
   };
 
   // --- Import logika (handleBulkImport) ostaje ista... ---
-  const handleBulkImport = async (importedData) => {
-    /* ... (stari kod) ... */
+  const handleBulkImport = async ({ file }) => {
+    const base64Xlsx = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const draft = await importsApi.createXlsx({ sourceName: file.name, base64Xlsx, dryRun: true });
+    const jobId = draft?.id || draft?.jobId;
+    if (!jobId) throw new Error('API nije vratio ID posla za uvoz.');
+    const report = await importsApi.reconciliation(jobId);
+    if (!window.confirm(`Provera je gotova. Nastaviti sa uvozom?\n${JSON.stringify(report).slice(0, 400)}`)) return;
+    await importsApi.execute(jobId);
+    refreshProducts();
   };
 
   // --- Filtriranje Proizvoda ---
@@ -1232,7 +1246,7 @@ export default function AdminDashboard() {
           <AdminProductModal
             product={editProduct}
             onClose={() => setModalOpen(false)}
-            onSuccess={() => {}}
+            onSuccess={refreshProducts}
           />
         )}
       </AnimatePresence>

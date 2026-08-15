@@ -6,6 +6,8 @@ import {
   clearAuthTokens,
   toArrayPayload,
 } from './apiClient';
+import { io } from 'socket.io-client';
+import { getStaffAccessToken } from './apiClient';
 
 function normalizeUser(data) {
   const user = data?.user || data?.customer || data;
@@ -43,6 +45,9 @@ function normalizeProduct(product) {
     id: product.id || product.productId || product.product_id,
     productId: product.productId || product.product_id || product.id,
     variantId: product.variantId || product.variant_id || firstVariant?.id,
+    brandId: product.brandId || product.brand_id || null,
+    primaryCategoryId:
+      product.primaryCategoryId || product.primary_category_id || product.categoryId || null,
     brand: product.brand || product.brand_name || null,
     category: product.category || product.category_name || null,
     price:
@@ -76,6 +81,7 @@ function normalizeOrder(order) {
 
 function collectionEndpoint(collectionName) {
   const map = {
+    departments: '/departments',
     brands: '/brands',
     categories: '/categories',
     spec_keys: '/spec_keys',
@@ -230,34 +236,28 @@ export const catalogApi = {
 
 export const adminCatalogApi = {
   async saveProduct(product) {
-    const productPayload = {
-      name: product.name,
-      slug: product.slug,
-      description: product.description || '',
-      brand: product.brand || null,
-      category: product.category || null,
-      department: product.department || 'satovi',
-      gender: product.gender || null,
-      price: product.price,
-      image: product.image || product.mainImageUrl || product.images?.[0]?.url || '',
-      mainImageUrl: product.mainImageUrl || product.images?.[0]?.url || '',
-      thumbnailUrl: product.thumbnailUrl || product.images?.[0]?.thumb || product.images?.[0]?.url || '',
-      images: product.images || [],
-      specs: product.specs || {},
-      features: product.features || [],
-      seo: product.seo || {},
-      model3DUrl: product.model3DUrl || '',
-      brandId: product.brandId || product.brand_id || null,
-      primaryCategoryId:
-        product.primaryCategoryId || product.primary_category_id || product.categoryId || null,
-      active: product.isVisible !== false && product.active !== false,
-      published: product.published !== false,
-    };
+    const has = (key) => Object.prototype.hasOwnProperty.call(product, key);
+    const productPayload = {};
+    if (has('name')) productPayload.name = product.name;
+    if (has('slug')) productPayload.slug = product.slug;
+    if (has('description')) productPayload.description = product.description || '';
+    if (has('departmentId')) productPayload.departmentId = product.departmentId;
+    if (has('seo')) productPayload.seo = product.seo;
+    if (has('features')) productPayload.features = product.features;
+    if (has('model3DUrl')) productPayload.model3DUrl = product.model3DUrl || null;
+    if (has('brandId')) productPayload.brandId = product.brandId;
+    else if (has('brand_id')) productPayload.brandId = product.brand_id;
+    if (has('primaryCategoryId')) productPayload.primaryCategoryId = product.primaryCategoryId;
+    else if (has('primary_category_id')) productPayload.primaryCategoryId = product.primary_category_id;
+    else if (has('categoryId')) productPayload.primaryCategoryId = product.categoryId;
+    if (has('isVisible')) productPayload.active = product.isVisible !== false;
+    else if (has('active')) productPayload.active = product.active !== false;
+    if (has('published')) productPayload.published = product.published !== false;
     const method = product.id ? 'PATCH' : 'POST';
     const path = product.id ? `/products/${encodeURIComponent(product.id)}` : '/products';
     const data = await apiRequest(path, { method, body: productPayload, staff: true });
     const productId = data?.id || data?.product?.id || product.id;
-    if (!product.id && productId && product.price !== undefined) {
+    if (!product.id && productId && product.price !== undefined && !product.variants?.length) {
       await apiRequest(`/products/${encodeURIComponent(productId)}/variants`, {
         method: 'POST',
         staff: true,
@@ -281,6 +281,27 @@ export const adminCatalogApi = {
           attributes: product.specs || {},
         },
       }).catch(() => null);
+    }
+    if (productId && Array.isArray(product.variants)) {
+      for (const variant of product.variants) {
+        const currentPriceAmount =
+          variant.currentPriceAmount ?? Math.round(Number(variant.price || 0) * 100);
+        const body = {
+          sku: variant.sku,
+          barcode: variant.barcode || null,
+          name: variant.name || null,
+          gender: variant.gender || null,
+          currentPriceAmount,
+          currency: variant.currency || 'RSD',
+          attributes: variant.attributes || {},
+          active: variant.active !== false,
+          published: variant.published !== false,
+        };
+        const variantPath = variant.id
+          ? `/variants/${encodeURIComponent(variant.id)}`
+          : `/products/${encodeURIComponent(productId)}/variants`;
+        await apiRequest(variantPath, { method: variant.id ? 'PATCH' : 'POST', staff: true, body });
+      }
     }
     return productId;
   },
@@ -461,12 +482,27 @@ export const ordersApi = {
 };
 
 export const mediaApi = {
-  uploadProductImages(payload) {
+  createUpload(payload) {
     return apiRequest('/media/uploads', {
       method: 'POST',
       staff: true,
       body: payload,
     });
+  },
+  completeUpload(mediaId) {
+    return apiRequest(`/media/uploads/${encodeURIComponent(mediaId)}/complete`, { method: 'POST', staff: true });
+  },
+  attachToProduct(productId, mediaId, options = {}) {
+    return apiRequest(`/products/${encodeURIComponent(productId)}/media`, { method: 'POST', staff: true, body: { mediaId, ...options } });
+  },
+  updateProductMedia(productId, linkId, options) {
+    return apiRequest(`/products/${encodeURIComponent(productId)}/media/${encodeURIComponent(linkId)}`, { method: 'PATCH', staff: true, body: options });
+  },
+  detachFromProduct(productId, linkId) {
+    return apiRequest(`/products/${encodeURIComponent(productId)}/media/${encodeURIComponent(linkId)}`, { method: 'DELETE', staff: true });
+  },
+  listProductMedia(productId) {
+    return apiRequest(`/products/${encodeURIComponent(productId)}/media`, { staff: true });
   },
   uploadProductImageFile(slug, file, index = 0) {
     return import('./r2ImageService').then(({ uploadProductImage }) =>
@@ -482,6 +518,18 @@ export const mediaApi = {
   },
   deleteProductImages(slug) {
     return Promise.resolve({ deleted: true, slug });
+  },
+};
+
+export const importsApi = {
+  createXlsx({ sourceName, base64Xlsx, dryRun = true }) {
+    return apiRequest('/imports/xlsx', { method: 'POST', staff: true, body: { sourceName, base64Xlsx, dryRun } });
+  },
+  execute(jobId) {
+    return apiRequest(`/imports/${encodeURIComponent(jobId)}/execute`, { method: 'POST', staff: true });
+  },
+  reconciliation(jobId) {
+    return apiRequest(`/imports/${encodeURIComponent(jobId)}/reconciliation`, { staff: true });
   },
 };
 
@@ -518,18 +566,23 @@ export function subscribeRealtime(channels, onEvent, onError) {
   const base = new URL(apiBase).origin;
   const wsBase =
     import.meta.env.VITE_DAJA_WS_URL ||
-    (base ? base.replace(/^http/, 'ws') : 'wss://api-staging.dajashop.rs');
-  const url = new URL('/api/v1/realtime', wsBase);
-  channels.forEach((channel) => url.searchParams.append('channel', channel));
-
-  const socket = new WebSocket(url.toString());
-  socket.onmessage = (event) => {
-    try {
-      onEvent(JSON.parse(event.data));
-    } catch {
-      onEvent(event.data);
-    }
+    base;
+  const token = getStaffAccessToken();
+  if (!token) {
+    onError?.(new Error('Staff token nije dostupan za real-time vezu.'));
+    return () => {};
+  }
+  const socket = io(`${wsBase}/realtime`, {
+    path: '/socket.io',
+    transports: ['websocket'],
+    auth: { token: `Bearer ${token}` },
+    reconnection: true,
+    reconnectionAttempts: 3,
+  });
+  channels.forEach((channel) => socket.on(channel, onEvent));
+  socket.on('connect_error', onError || (() => {}));
+  return () => {
+    channels.forEach((channel) => socket.off(channel, onEvent));
+    socket.close();
   };
-  socket.onerror = onError || (() => {});
-  return () => socket.close();
 }

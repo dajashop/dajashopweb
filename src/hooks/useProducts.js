@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { subscribeProducts } from '../services/products';
 
 export default function useProducts(params = {}) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Stabilizujemo parametre da ne bi izazivali re-render petlju
   // Mentor napomena: Ovo je odlično rešeno sa JSON.stringify
@@ -30,7 +31,8 @@ export default function useProducts(params = {}) {
     });
 
     return () => unsub?.();
-  }, [memoizedParams]);
+  }, [memoizedParams, refreshKey]);
 
-  return { items, loading, err };
+  const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
+  return { items, loading, err, refresh };
 }
