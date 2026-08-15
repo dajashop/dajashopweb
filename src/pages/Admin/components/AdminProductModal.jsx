@@ -401,7 +401,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const filteredCats = useMemo(() => {
     const selectedBrand = brands.find((brand) => brand.name === form.brand);
     if (!selectedBrand?.id) return [];
-    return cats.filter((category) => !category.brandId || category.brandId === selectedBrand.id);
+    return cats.filter((category) => category.brandId === selectedBrand.id);
   }, [cats, brands, form.brand]);
 
   const catOptions = filteredCats.map((c) => ({

@@ -216,13 +216,13 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (!newCatName.trim()) return;
     const brandToUse = catBrandFilter || newCatBrand;
-    if (!brandToUse) return alert('Brend?');
     const brandObj = brands.find((b) => b.name === brandToUse);
     const dept = brandObj?.departmentId || departmentIdFor((catFilters.length === 1 ? catFilters[0] : newCatDept) || 'satovi');
+    if (!dept) return alert('Izaberi odeljenje.');
     try {
       await categoryService.add(newCatName, {
         departmentId: dept,
-        brandId: brandObj?.id,
+        brandId: brandObj?.id || null,
       });
       setNewCatName('');
     } catch (err) {
@@ -366,18 +366,19 @@ export default function AdminDashboard() {
     return categories.filter((c) => {
       const deptMatch =
         catFilters.length === 0 ||
-        catFilters.includes(c.department || 'satovi');
-      const brandMatch = !catBrandFilter || c.brand === catBrandFilter;
+        catFilters.some((slug) => c.departmentId === departmentIdFor(slug));
+      const selectedBrandId = brands.find((brand) => brand.name === catBrandFilter)?.id;
+      const brandMatch = !catBrandFilter || c.brandId === selectedBrandId;
       return deptMatch && brandMatch;
     });
-  }, [categories, catFilters, catBrandFilter]);
+  }, [categories, catFilters, catBrandFilter, brands, departments]);
   const availableBrandsForCat = useMemo(() => {
     if (catFilters.length === 1)
-      return brands.filter((b) => (b.department || 'satovi') === catFilters[0]);
+      return brands.filter((b) => b.departmentId === departmentIdFor(catFilters[0]));
     if (newCatDept)
-      return brands.filter((b) => (b.department || 'satovi') === newCatDept);
+      return brands.filter((b) => b.departmentId === departmentIdFor(newCatDept));
     return brands;
-  }, [brands, catFilters, newCatDept]);
+  }, [brands, catFilters, newCatDept, departments]);
   const visibleSpecs = useMemo(() => {
     if (specFilters.length === 0) return specs;
     return specs.filter((s) => specFilters.includes(s.department || 'satovi'));
@@ -921,7 +922,7 @@ export default function AdminDashboard() {
                     onChange={(e) => setNewCatBrand(e.target.value)}
                   >
                     {' '}
-                    <option value="">- Izaberi Brend -</option>{' '}
+                      <option value="">- Bez brenda (opšta kategorija) -</option>{' '}
                     {availableBrandsForCat.map((b) => (
                       <option key={b.id} value={b.name}>
                         {' '}
@@ -946,7 +947,7 @@ export default function AdminDashboard() {
                 <button
                   type="submit"
                   disabled={
-                    !newCatName.trim() || (!newCatBrand && !catBrandFilter)
+                    !newCatName.trim() || !(catFilters.length === 1 || newCatDept || catBrandFilter || newCatBrand)
                   }
                   className="btn btn--primary rounded-xl px-3 py-2 mb-[1px]"
                 >
