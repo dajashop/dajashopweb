@@ -7,7 +7,8 @@ const allowMockFallback =
 function getMockProducts(params = {}) {
   const order = params.order || 'name';
   return [...mockProducts].sort((a, b) => {
-    if (order === 'price') return (Number(a.price) || 0) - (Number(b.price) || 0);
+    if (order === 'price')
+      return (Number(a.price) || 0) - (Number(b.price) || 0);
     return String(a.name || '').localeCompare(String(b.name || ''), 'sr-RS', {
       sensitivity: 'base',
     });
@@ -24,13 +25,24 @@ function notifyProductsChanged(detail) {
   }
 }
 
-export function subscribeProducts({ onData, onError, order = 'name', admin = false, ...params } = {}) {
+export function subscribeProducts({
+  onData,
+  onError,
+  order = 'name',
+  admin = false,
+  ...params
+} = {}) {
   let cancelled = false;
 
-  (admin ? adminCatalogApi.listProducts() : catalogApi.listProducts({ order, ...params }))
+  (admin
+    ? adminCatalogApi.listProducts()
+    : catalogApi.listProducts({ order, ...params })
+  )
     .then((items) => {
       if (isInvalidCatalogPayload(items)) {
-        throw new Error('DAJA catalog API nije vratio validan product payload.');
+        throw new Error(
+          'DAJA catalog API nije vratio validan product payload.',
+        );
       }
       if (!cancelled) onData?.(items);
     })
@@ -87,16 +99,14 @@ export async function applyPublicProductRealtimeEvent(event) {
   if (!slug) return;
   try {
     const product = await catalogApi.getProductBySlug(slug);
-    // The public API intentionally returns 200 + null for a hidden,
-    // unpublished or deleted slug. Treat that exactly like a 404.
+    // The public API returns 200 + null for a hidden, unpublished or deleted
+    // slug. Treat that exactly like a missing product.
     if (!product?.id) {
       notifyProductsChanged({ type: 'deleteBySlug', slug });
       return;
     }
     notifyProductsChanged({ type: 'upsert', product, created: true });
   } catch (error) {
-    // A product that was hidden, unpublished, deleted or renamed is no longer
-    // returned by the public endpoint. Remove just that old card by slug.
     if (error?.status === 404) {
       notifyProductsChanged({ type: 'deleteBySlug', slug });
       return;
