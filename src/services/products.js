@@ -82,6 +82,29 @@ export async function fetchProductBySlug(slug) {
   }
 }
 
+export async function applyPublicProductRealtimeEvent(event) {
+  const slug = event?.data?.slug || event?.slug;
+  if (!slug) return;
+  try {
+    const product = await catalogApi.getProductBySlug(slug);
+    // The public API intentionally returns 200 + null for a hidden,
+    // unpublished or deleted slug. Treat that exactly like a 404.
+    if (!product?.id) {
+      notifyProductsChanged({ type: 'deleteBySlug', slug });
+      return;
+    }
+    notifyProductsChanged({ type: 'upsert', product, created: true });
+  } catch (error) {
+    // A product that was hidden, unpublished, deleted or renamed is no longer
+    // returned by the public endpoint. Remove just that old card by slug.
+    if (error?.status === 404) {
+      notifyProductsChanged({ type: 'deleteBySlug', slug });
+      return;
+    }
+    console.warn('Realtime ažuriranje proizvoda nije uspelo:', error);
+  }
+}
+
 export async function deleteProduct(id) {
   if (!id) throw new Error('ID proizvoda je obavezan');
   const result = await adminCatalogApi.deleteProduct(id);

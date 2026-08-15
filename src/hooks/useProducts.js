@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
-import { subscribeProducts } from '../services/products';
+import { applyPublicProductRealtimeEvent, subscribeProducts } from '../services/products';
+import { subscribePublicCatalogRealtime } from '../services/dajaPlatform';
 
 export default function useProducts(params = {}) {
   const [items, setItems] = useState([]);
@@ -46,6 +47,10 @@ export default function useProducts(params = {}) {
         setItems((current) => current.filter((item) => item.id !== change.id));
         return;
       }
+      if (change.type === 'deleteBySlug' && change.slug) {
+        setItems((current) => current.filter((item) => item.slug !== change.slug));
+        return;
+      }
       if (change.type === 'upsert' && change.product?.id) {
         setItems((current) => {
           const index = current.findIndex((item) => item.id === change.product.id);
@@ -63,6 +68,14 @@ export default function useProducts(params = {}) {
     window.addEventListener('daja:products-changed', applyProductChange);
     return () => window.removeEventListener('daja:products-changed', applyProductChange);
   }, []);
+
+  useEffect(() => {
+    if (memoizedParams.admin) return undefined;
+    return subscribePublicCatalogRealtime(
+      (event) => { void applyPublicProductRealtimeEvent(event); },
+      () => {},
+    );
+  }, [memoizedParams.admin]);
 
   const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
   return { items, loading, err, refresh };

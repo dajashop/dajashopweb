@@ -64,8 +64,16 @@ export default function NavBar() {
     // Na desktopu se ovo ne dešava na klik (koristi se hover)
   };
 
+  const selectedBrand = new URLSearchParams(location.search)
+    .get('brand')
+    ?.trim()
+    .toUpperCase();
   const isActive = (path) =>
-    location.pathname === path ? 'navbar__all active' : 'navbar__all';
+    location.pathname === path && !selectedBrand
+      ? 'navbar__all active'
+      : 'navbar__all';
+  const isBrandActive = (label) =>
+    location.pathname === '/catalog' && selectedBrand === label.toUpperCase();
 
   return (
     <nav className="navbar" aria-label="Glavna navigacija">
@@ -84,7 +92,9 @@ export default function NavBar() {
               data-open={isMobile && openIdx === i ? 'true' : 'false'}
             >
               <button
-                className={`navbar__label ${isMobile ? 'navbar__chip' : ''}`}
+                className={`navbar__label ${isMobile ? 'navbar__chip' : ''} ${
+                  isBrandActive(g.label) ? 'active' : ''
+                }`}
                 onClick={() => handleGroupClick(i, g.label)}
               >
                 {g.label}

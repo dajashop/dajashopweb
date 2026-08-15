@@ -9,6 +9,9 @@ import {
 import { io } from 'socket.io-client';
 import { getStaffAccessToken } from './apiClient';
 
+let publicCatalogSocket = null;
+const publicCatalogListeners = new Set();
+
 function normalizeUser(data) {
   const user = data?.user || data?.customer || data;
   if (!user) return null;
@@ -630,5 +633,38 @@ export function subscribeRealtime(channels, onEvent, onError) {
   return () => {
     channels.forEach((channel) => socket.off(channel, onEvent));
     socket.close();
+  };
+}
+
+export function subscribePublicCatalogRealtime(onEvent, onError) {
+  publicCatalogListeners.add(onEvent);
+  if (!publicCatalogSocket) {
+    const apiBase =
+      API_BASE_URL.startsWith('http')
+        ? API_BASE_URL
+        : `${window.location.origin}${API_BASE_URL}`;
+    const wsBase = import.meta.env.VITE_DAJA_WS_URL || new URL(apiBase).origin;
+    publicCatalogSocket = io(`${wsBase}/realtime`, {
+      path: '/socket.io',
+      transports: ['websocket'],
+      auth: { publicCatalog: true },
+      reconnection: true,
+      reconnectionAttempts: 5,
+    });
+    publicCatalogSocket.on('product.updated', (event) => {
+      publicCatalogListeners.forEach((listener) => listener(event));
+    });
+    publicCatalogSocket.on('connect_error', (error) => {
+      // A transient realtime issue must not break ordinary catalog browsing.
+      onError?.(error);
+    });
+  }
+
+  return () => {
+    publicCatalogListeners.delete(onEvent);
+    if (publicCatalogListeners.size === 0 && publicCatalogSocket) {
+      publicCatalogSocket.close();
+      publicCatalogSocket = null;
+    }
   };
 }
