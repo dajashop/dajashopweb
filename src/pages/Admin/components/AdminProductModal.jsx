@@ -163,12 +163,24 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const handleChange = (field, value) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
+      if (field === 'department') {
+        // A department change must never keep relations from the previous one.
+        next.brand = '';
+        next.brandId = null;
+        next.category = '';
+        next.primaryCategoryId = null;
+      }
       if (field === 'brand') {
-        next.brandId = brands.find((brand) => brand.name === value)?.id || prev.brandId;
+        next.brandId = value
+          ? brands.find((brand) => brand.name === value)?.id || null
+          : null;
+        next.category = '';
+        next.primaryCategoryId = null;
       }
       if (field === 'category') {
-        next.primaryCategoryId =
-          cats.find((category) => category.name === value)?.id || prev.primaryCategoryId;
+        next.primaryCategoryId = value
+          ? cats.find((category) => category.name === value)?.id || null
+          : null;
       }
       return next;
     });
@@ -258,18 +270,25 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
       // Preserve relations from older catalogue responses that contained the
       // display name but not the canonical relation IDs.
+      const selectedDepartment = departments.find(
+        (department) => department.slug === form.department,
+      );
       const selectedBrand = brands.find((brand) => brand.name === form.brand);
       const selectedCategory = cats.find((category) => category.name === form.category);
+      if (!selectedDepartment?.id) {
+        throw new Error('Izaberi važeće odeljenje pre čuvanja proizvoda.');
+      }
+      // Department is independent from brand. This is essential for products
+      // such as batteries that deliberately do not have a brand.
+      payload.departmentId = selectedDepartment.id;
       if (selectedBrand?.id) {
         payload.brandId = selectedBrand.id;
-        payload.departmentId = selectedBrand.departmentId;
       }
-      else delete payload.brandId;
+      else payload.brandId = null;
       if (selectedCategory?.id) {
         payload.primaryCategoryId = selectedCategory.id;
-        payload.departmentId = selectedCategory.departmentId || payload.departmentId;
       }
-      else delete payload.primaryCategoryId;
+      else payload.primaryCategoryId = null;
 
       if (!product) delete payload.id;
       else payload.id = product.id;
@@ -392,17 +411,25 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     return departmentId ? brands.filter((brand) => brand.departmentId === departmentId) : brands;
   }, [brands, departments, form.department]);
 
-  const brandOptions = filteredBrands.map((b) => ({
+  const brandOptions = [
+    { value: '', label: 'Bez brenda' },
+    ...filteredBrands.map((b) => ({
     value: b.name,
     label: b.name,
     id: b.id,
-  }));
+    })),
+  ];
 
   const filteredCats = useMemo(() => {
     const selectedBrand = brands.find((brand) => brand.name === form.brand);
-    if (!selectedBrand?.id) return [];
-    return cats.filter((category) => category.brandId === selectedBrand.id);
-  }, [cats, brands, form.brand]);
+    const departmentId = departments.find((department) => department.slug === form.department)?.id;
+    return cats.filter((category) => {
+      if (departmentId && category.departmentId !== departmentId) return false;
+      return selectedBrand?.id
+        ? category.brandId === selectedBrand.id
+        : !category.brandId;
+    });
+  }, [cats, brands, departments, form.brand, form.department]);
 
   const catOptions = filteredCats.map((c) => ({
     value: c.name,
@@ -568,11 +595,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   options={brandOptions}
                   onChange={(v) => handleChange('brand', v)}
                   placeholder={
-                    brandOptions.length === 0
+                    brandOptions.length === 1
                       ? 'Nema brendova'
-                      : 'Izaberi brend'
+                      : 'Izaberi brend (opciono)'
                   }
-                  disabled={brandOptions.length === 0}
                 />
                 <CustomSelect
                   label="Kategorija"
@@ -580,13 +606,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   options={catOptions}
                   onChange={(v) => handleChange('category', v)}
                   placeholder={
-                    !form.brand
-                      ? 'Prvo izaberi brend'
-                      : catOptions.length === 0
-                        ? 'Nema kategorija'
-                        : 'Izaberi kategoriju'
+                    catOptions.length === 0
+                      ? form.brand
+                        ? 'Nema kategorija za ovaj brend'
+                        : 'Nema opštih kategorija'
+                      : 'Izaberi kategoriju (opciono)'
                   }
-                  disabled={!form.brand || catOptions.length === 0}
+                  disabled={catOptions.length === 0}
                 />
                 <CustomSelect
                   label="Pol"
