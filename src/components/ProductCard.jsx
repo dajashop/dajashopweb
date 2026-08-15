@@ -41,7 +41,6 @@ export default function ProductCard({ p }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [isFlagMenuOpen, setIsFlagMenuOpen] = useState(false);
-  const [pendingFlag, setPendingFlag] = useState(null);
 
   // Slider
   const [[page, direction], setPage] = useState([0, 0]);
@@ -94,15 +93,13 @@ export default function ProductCard({ p }) {
   const marketingFlags = Array.isArray(p.marketingFlags) ? p.marketingFlags : [];
   const flagLabels = { new: 'Novo', popular: 'Popularno', recommended: 'Preporučeno' };
 
-  const confirmMarketingFlag = async () => {
-    if (!pendingFlag) return;
+  const toggleMarketingFlag = async (flag) => {
     try {
-      const nextFlags = marketingFlags.includes(pendingFlag)
-        ? marketingFlags.filter((flag) => flag !== pendingFlag)
-        : [...marketingFlags, pendingFlag];
+      const nextFlags = marketingFlags.includes(flag)
+        ? marketingFlags.filter((currentFlag) => currentFlag !== flag)
+        : [...marketingFlags, flag];
       await saveProduct({ id: p.id, marketingFlags: nextFlags });
-      flash('Uspeh', `Oznaka ${flagLabels[pendingFlag]} je sačuvana.`, 'success');
-      setPendingFlag(null);
+      flash('Uspeh', `Oznaka ${flagLabels[flag]} je sačuvana.`, 'success');
       setIsFlagMenuOpen(false);
     } catch (error) {
       console.error(error);
@@ -367,12 +364,31 @@ export default function ProductCard({ p }) {
 
           {/* --- ADMIN KONTROLE NA KARTICI --- */}
           {isAdmin && (
-            // Izmenjeno u grid-cols-4 da stane i dugme za hide
-            <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700 grid grid-cols-4 gap-2">
-              {/* 1. Toggle Novo */}
+            <div className={`mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700 grid gap-2 ${isFlagMenuOpen ? 'grid-cols-3' : 'grid-cols-4'}`}>
+              {isFlagMenuOpen ? (
+                <>
+                  {Object.entries(flagLabels).map(([flag, label]) => (
+                    <button
+                      key={flag}
+                      onClick={() => toggleMarketingFlag(flag)}
+                      className={`rounded-lg px-2 py-2 text-xs font-semibold transition-colors ${
+                        marketingFlags.includes(flag)
+                          ? flag === 'new'
+                            ? 'bg-red-600 text-white'
+                            : 'bg-zinc-800 text-white'
+                          : 'border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
+                      }`}
+                      title={`${marketingFlags.includes(flag) ? 'Ukloni' : 'Dodaj'} oznaku ${label}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </>
+              ) : (
+                <>
+              {/* 1. Oznake proizvoda */}
               <button
                 onClick={() => {
-                  setPendingFlag(null);
                   setIsFlagMenuOpen((open) => !open);
                 }}
                 className={`flex items-center justify-center p-2 rounded-lg transition-colors ${
@@ -421,31 +437,12 @@ export default function ProductCard({ p }) {
               >
                 <Trash2 size={16} />
               </button>
+                </>
+              )}
             </div>
           )}
         </div>
       </motion.div>
-
-      {isAdmin && isFlagMenuOpen && (
-        <div className="absolute left-4 right-4 bottom-16 z-30 rounded-xl border border-zinc-200 bg-white p-2 shadow-lg">
-          {pendingFlag ? (
-            <div className="flex items-center justify-between gap-2 text-xs text-zinc-700">
-              <span>Da li želiš da {marketingFlags.includes(pendingFlag) ? 'ukloniš' : 'dodaš'} oznaku <b>{flagLabels[pendingFlag]}</b>?</span>
-              <div className="flex gap-1">
-                <button onClick={confirmMarketingFlag} className="rounded-md bg-zinc-900 px-2 py-1 text-white">Da</button>
-                <button onClick={() => setPendingFlag(null)} className="rounded-md bg-zinc-100 px-2 py-1">Ne</button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-1">
-              {Object.entries(flagLabels).map(([flag, label]) => (
-                <button key={flag} onClick={() => setPendingFlag(flag)} className={`rounded-md px-2 py-1.5 text-xs ${marketingFlags.includes(flag) ? 'bg-yellow-100 text-yellow-800' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}>{label}</button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Modali */}
       <AnimatePresence>
         {isEditModalOpen && (
