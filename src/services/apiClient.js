@@ -1,4 +1,4 @@
-const DEFAULT_BASE_URL = '/api/v1';
+const DEFAULT_BASE_URL = 'https://daja-platform-api.onrender.com/api/v1';
 const API_BASE_URL = (
   import.meta.env.VITE_DAJA_API_BASE_URL || DEFAULT_BASE_URL
 ).replace(/\/+$/, '');
@@ -84,6 +84,19 @@ async function parseResponse(response) {
   return response.text();
 }
 
+function unwrapEnvelope(data) {
+  if (
+    data &&
+    typeof data === 'object' &&
+    !Array.isArray(data) &&
+    Object.prototype.hasOwnProperty.call(data, 'data') &&
+    Object.prototype.hasOwnProperty.call(data, 'meta')
+  ) {
+    return data.data;
+  }
+  return data;
+}
+
 async function refreshAccessToken() {
   const refreshToken = getRefreshToken();
   if (!refreshToken) throw new Error('Refresh token nije dostupan.');
@@ -97,8 +110,9 @@ async function refreshAccessToken() {
       .then(async (response) => {
         const data = await parseResponse(response);
         if (!response.ok) throw new Error(data?.message || 'Sesija je istekla.');
-        setAuthTokens(data);
-        return data.accessToken || data.access_token;
+        const tokens = unwrapEnvelope(data);
+        setAuthTokens(tokens);
+        return tokens?.accessToken || tokens?.access_token;
       })
       .finally(() => {
         refreshPromise = null;
@@ -157,20 +171,21 @@ export async function apiRequest(path, options = {}) {
     }
   }
 
-  const data = await parseResponse(response);
+  const rawData = await parseResponse(response);
   if (!response.ok) {
     const message =
-      data?.message ||
-      data?.error ||
-      (typeof data === 'string' && data.trim()
-        ? data.trim().slice(0, 300)
+      rawData?.message ||
+      rawData?.error?.message ||
+      rawData?.error ||
+      (typeof rawData === 'string' && rawData.trim()
+        ? rawData.trim().slice(0, 300)
         : 'API zahtev nije uspeo.');
     const error = new Error(message);
     error.status = response.status;
-    error.data = data;
+    error.data = rawData;
     throw error;
   }
-  return data;
+  return unwrapEnvelope(rawData);
 }
 
 export function toArrayPayload(data, keys = ['items', 'data', 'results']) {

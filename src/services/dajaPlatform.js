@@ -176,12 +176,10 @@ export const authApi = {
     setAuthTokens(data);
     return normalizeUser(data);
   },
-  verifyEmail(code) {
-    return apiRequest('/customer-auth/verify-email', {
-      method: 'POST',
-      auth: false,
-      body: { code },
-    });
+  verifyEmail() {
+    return Promise.reject(
+      new Error('Verifikacija e-maila još nije dostupna u DAJA Platform API-ju.'),
+    );
   },
 };
 
@@ -370,7 +368,9 @@ export const customerApi = {
     return apiRequest('/customers/me', { method: 'PATCH', body: payload });
   },
   requestEmailVerification() {
-    return apiRequest('/customer-auth/email/verification', { method: 'POST' });
+    return Promise.reject(
+      new Error('Slanje verifikacionog e-maila još nije dostupno u DAJA Platform API-ju.'),
+    );
   },
   requestPhoneLinkOtp(phone) {
     return apiRequest('/customer-auth/phone/start', {
@@ -384,11 +384,10 @@ export const customerApi = {
       body: { phone, code, purpose: 'link' },
     });
   },
-  updatePassword(currentPassword, newPassword) {
-    return apiRequest('/customer-auth/password', {
-      method: 'PATCH',
-      body: { currentPassword, newPassword },
-    });
+  updatePassword() {
+    return Promise.reject(
+      new Error('Izmena lozinke još nije dostupna u DAJA Platform API-ju.'),
+    );
   },
   linkOAuth(provider) {
     window.location.assign(
