@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PROMO_CODES } from '../data/promoCodes';
-import { ordersApi } from '../services/dajaPlatform';
+import { ordersApi, promotionsApi } from '../services/dajaPlatform';
 
 export function usePromo() {
   // 1. INICIJALIZACIJA: Proveravamo da li već postoji sačuvan kod u localStorage
@@ -67,8 +67,19 @@ export function usePromo() {
           }
         }
 
-        if (promo.rules.requiresNewsletter && user) {
-          // Server validates newsletter-only codes during checkout.
+        if (promo.rules.requiresNewsletter) {
+          const verified = await promotionsApi.validate(promo.code, cartTotal);
+          const verifiedAmount = Number(verified?.discountAmount ?? verified?.amount ?? 0);
+          if (!verifiedAmount) throw new Error('Newsletter popust nije dostupan za ovu kupovinu.');
+          const promoData = {
+            code: verified.code || promo.code,
+            percent: promo.discountPercent,
+            amount: verifiedAmount,
+            isBrandSpecific: false,
+          };
+          setAppliedPromo(promoData);
+          if (!isAuto) setSuccessMsg('Newsletter popust je primenjen.');
+          return;
         }
       }
 

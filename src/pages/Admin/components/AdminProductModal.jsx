@@ -8,6 +8,7 @@ import { X, Save, Plus, Trash2 } from 'lucide-react';
 import {
   brandService,
   categoryService,
+  departmentService,
   specKeyService,
 } from '../../../services/admin';
 import { saveProduct } from '../../../services/products';
@@ -52,6 +53,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   };
 
   const [brands, setBrands] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [cats, setCats] = useState([]);
   const [specKeys, setSpecKeys] = useState([]);
   const [isSeoOpen, setIsSeoOpen] = useState(true);
@@ -88,6 +90,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     const sub1 = brandService.subscribe(setBrands);
     const sub2 = categoryService.subscribe(setCats);
     const sub3 = specKeyService.subscribe(setSpecKeys);
+    const sub4 = departmentService.subscribe(setDepartments);
 
     if (product) {
       let loadedImages = [];
@@ -153,6 +156,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       sub1();
       sub2();
       sub3();
+      sub4();
     };
   }, [product]);
 
@@ -260,12 +264,12 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         payload.brandId = selectedBrand.id;
         payload.departmentId = selectedBrand.departmentId;
       }
-      else if (!form.brandId) delete payload.brandId;
+      else delete payload.brandId;
       if (selectedCategory?.id) {
         payload.primaryCategoryId = selectedCategory.id;
         payload.departmentId = selectedCategory.departmentId || payload.departmentId;
       }
-      else if (!form.primaryCategoryId) delete payload.primaryCategoryId;
+      else delete payload.primaryCategoryId;
 
       if (!product) delete payload.id;
       else payload.id = product.id;
@@ -384,10 +388,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   // Filteri
   const filteredBrands = useMemo(() => {
-    // DAJA Platform brands do not have the old Firestore `department` field.
-    // Do not hide existing choices when the storefront department changes.
-    return brands;
-  }, [brands]);
+    const departmentId = departments.find((department) => department.slug === form.department)?.id;
+    return departmentId ? brands.filter((brand) => brand.departmentId === departmentId) : brands;
+  }, [brands, departments, form.department]);
 
   const brandOptions = filteredBrands.map((b) => ({
     value: b.name,
@@ -396,8 +399,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   }));
 
   const filteredCats = useMemo(() => {
-    return cats;
-  }, [cats]);
+    const selectedBrand = brands.find((brand) => brand.name === form.brand);
+    if (!selectedBrand?.id) return [];
+    return cats.filter((category) => !category.brandId || category.brandId === selectedBrand.id);
+  }, [cats, brands, form.brand]);
 
   const catOptions = filteredCats.map((c) => ({
     value: c.name,

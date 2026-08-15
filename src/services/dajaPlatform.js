@@ -558,6 +558,15 @@ export const newsletterApi = {
   },
 };
 
+export const promotionsApi = {
+  validate(code, subtotal) {
+    return apiRequest('/promotions/validate', {
+      method: 'POST',
+      body: { code, subtotal },
+    });
+  },
+};
+
 export function subscribeRealtime(channels, onEvent, onError) {
   const apiBase =
     API_BASE_URL.startsWith('http')
