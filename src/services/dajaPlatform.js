@@ -58,6 +58,9 @@ function normalizeProduct(product) {
     mainImageUrl: primaryImage,
     thumbnailUrl: product.thumbnailUrl || product.thumbnail_url || primaryImage,
     specs: product.specs || firstVariant?.attributes || {},
+    marketingFlags: product.marketingFlags || product.marketing_flags || [],
+    isVisible: product.isVisible ?? product.active ?? true,
+    published: product.published ?? true,
     createdAt: product.createdAt || product.created_at,
     updatedAt: product.updatedAt || product.updated_at,
   };
@@ -235,6 +238,10 @@ export const catalogApi = {
 };
 
 export const adminCatalogApi = {
+  async listProducts() {
+    const data = await apiRequest('/products', { staff: true });
+    return toArrayPayload(data).map(normalizeProduct);
+  },
   async saveProduct(product) {
     const has = (key) => Object.prototype.hasOwnProperty.call(product, key);
     const productPayload = {};
@@ -245,6 +252,7 @@ export const adminCatalogApi = {
     if (has('seo')) productPayload.seo = product.seo;
     if (has('features')) productPayload.features = product.features;
     if (has('model3DUrl')) productPayload.model3DUrl = product.model3DUrl || null;
+    if (has('marketingFlags')) productPayload.marketingFlags = product.marketingFlags;
     if (has('brandId')) productPayload.brandId = product.brandId;
     else if (has('brand_id')) productPayload.brandId = product.brand_id;
     if (has('primaryCategoryId')) productPayload.primaryCategoryId = product.primaryCategoryId;
@@ -253,6 +261,7 @@ export const adminCatalogApi = {
     if (has('isVisible')) productPayload.active = product.isVisible !== false;
     else if (has('active')) productPayload.active = product.active !== false;
     if (has('published')) productPayload.published = product.published !== false;
+    else if (!product.id) productPayload.published = true;
     const method = product.id ? 'PATCH' : 'POST';
     const path = product.id ? `/products/${encodeURIComponent(product.id)}` : '/products';
     const data = await apiRequest(path, { method, body: productPayload, staff: true });

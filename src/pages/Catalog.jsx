@@ -107,6 +107,7 @@ export default function Catalog({ department = 'satovi' }) {
     err,
   } = useProducts({
     order: backendOrderField,
+    admin: Boolean(isAdmin),
   });
 
   // --- FILTRIRANJE ---
@@ -271,8 +272,14 @@ export default function Catalog({ department = 'satovi' }) {
       }
     });
 
-    return sorted;
-  }, [departmentItems, sp]);
+    if (!isAdmin) return sorted;
+    // Admin can still inspect hidden products; after a fresh load they are
+    // deliberately placed below every product visible to customers.
+    return [
+      ...sorted.filter((product) => product.isVisible !== false),
+      ...sorted.filter((product) => product.isVisible === false),
+    ];
+  }, [departmentItems, sp, isAdmin]);
 
   const [page, setPage] = useState(1);
   const totalCount = filteredData.length;

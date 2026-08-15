@@ -33,6 +33,12 @@ export default function useProducts(params = {}) {
     return () => unsub?.();
   }, [memoizedParams, refreshKey]);
 
+  useEffect(() => {
+    const refreshFromAdminChange = () => setRefreshKey((key) => key + 1);
+    window.addEventListener('daja:products-changed', refreshFromAdminChange);
+    return () => window.removeEventListener('daja:products-changed', refreshFromAdminChange);
+  }, []);
+
   const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
   return { items, loading, err, refresh };
 }

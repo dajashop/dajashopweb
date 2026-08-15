@@ -66,7 +66,7 @@ const generateSlug = (text) => {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const nav = useNavigate();
-  const { items: products, refresh: refreshProducts } = useProducts();
+  const { items: products, refresh: refreshProducts } = useProducts({ admin: true });
 
   // ... (State varijable ostaju iste: activeTab, searchTerm, filters...)
   const [activeTab, setActiveTab] = useState('products');

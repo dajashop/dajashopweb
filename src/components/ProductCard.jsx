@@ -40,6 +40,8 @@ export default function ProductCard({ p }) {
   // Stanja za modale
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [isFlagMenuOpen, setIsFlagMenuOpen] = useState(false);
+  const [pendingFlag, setPendingFlag] = useState(null);
 
   // Slider
   const [[page, direction], setPage] = useState([0, 0]);
@@ -89,6 +91,24 @@ export default function ProductCard({ p }) {
 
   // Admin check
   const isAdmin = useMemo(() => isAdminEmail(user?.email), [user?.email]);
+  const marketingFlags = Array.isArray(p.marketingFlags) ? p.marketingFlags : [];
+  const flagLabels = { new: 'Novo', popular: 'Popularno', recommended: 'Preporučeno' };
+
+  const confirmMarketingFlag = async () => {
+    if (!pendingFlag) return;
+    try {
+      const nextFlags = marketingFlags.includes(pendingFlag)
+        ? marketingFlags.filter((flag) => flag !== pendingFlag)
+        : [...marketingFlags, pendingFlag];
+      await saveProduct({ id: p.id, marketingFlags: nextFlags });
+      flash('Uspeh', `Oznaka ${flagLabels[pendingFlag]} je sačuvana.`, 'success');
+      setPendingFlag(null);
+      setIsFlagMenuOpen(false);
+    } catch (error) {
+      console.error(error);
+      flash('Greška', 'Nije uspelo menjanje oznake.', 'error');
+    }
+  };
 
   // Handleri
   const addToCart = () => {
@@ -167,7 +187,7 @@ export default function ProductCard({ p }) {
         transition={{ duration: 0.35, ease: 'easeOut' }}
       >
         {/* Bedž NOVO */}
-        {(p.novo ?? false) && (
+        {marketingFlags.includes('new') && (
           <div className="pointer-events-none absolute left-2 top-2 z-20">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
@@ -332,15 +352,18 @@ export default function ProductCard({ p }) {
             <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700 grid grid-cols-4 gap-2">
               {/* 1. Toggle Novo */}
               <button
-                onClick={toggleNovo}
+                onClick={() => {
+                  setPendingFlag(null);
+                  setIsFlagMenuOpen((open) => !open);
+                }}
                 className={`flex items-center justify-center p-2 rounded-lg transition-colors ${
-                  p.novo
+                  marketingFlags.length > 0
                     ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
                     : 'bg-zinc-100 text-zinc-500 border border-zinc-200 hover:bg-yellow-50 hover:text-yellow-600'
                 }`}
                 title="Označi kao Novo"
               >
-                <Star size={16} fill={p.novo ? 'currentColor' : 'none'} />
+                <Star size={16} fill={marketingFlags.length ? 'currentColor' : 'none'} />
               </button>
 
               {/* 2. Toggle Vidljivosti (NOVO DUGME) */}
@@ -383,6 +406,26 @@ export default function ProductCard({ p }) {
           )}
         </div>
       </motion.div>
+
+      {isAdmin && isFlagMenuOpen && (
+        <div className="absolute left-4 right-4 bottom-16 z-30 rounded-xl border border-zinc-200 bg-white p-2 shadow-lg">
+          {pendingFlag ? (
+            <div className="flex items-center justify-between gap-2 text-xs text-zinc-700">
+              <span>Da li želiš da {marketingFlags.includes(pendingFlag) ? 'ukloniš' : 'dodaš'} oznaku <b>{flagLabels[pendingFlag]}</b>?</span>
+              <div className="flex gap-1">
+                <button onClick={confirmMarketingFlag} className="rounded-md bg-zinc-900 px-2 py-1 text-white">Da</button>
+                <button onClick={() => setPendingFlag(null)} className="rounded-md bg-zinc-100 px-2 py-1">Ne</button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-1">
+              {Object.entries(flagLabels).map(([flag, label]) => (
+                <button key={flag} onClick={() => setPendingFlag(flag)} className={`rounded-md px-2 py-1.5 text-xs ${marketingFlags.includes(flag) ? 'bg-yellow-100 text-yellow-800' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'}`}>{label}</button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modali */}
       <AnimatePresence>

@@ -18,11 +18,16 @@ function isInvalidCatalogPayload(items) {
   return !Array.isArray(items) || items.some((item) => !item || !item.id);
 }
 
-export function subscribeProducts({ onData, onError, order = 'name', ...params } = {}) {
+function notifyProductsChanged() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('daja:products-changed'));
+  }
+}
+
+export function subscribeProducts({ onData, onError, order = 'name', admin = false, ...params } = {}) {
   let cancelled = false;
 
-  catalogApi
-    .listProducts({ order, ...params })
+  (admin ? adminCatalogApi.listProducts() : catalogApi.listProducts({ order, ...params }))
     .then((items) => {
       if (isInvalidCatalogPayload(items)) {
         throw new Error('DAJA catalog API nije vratio validan product payload.');
@@ -31,7 +36,7 @@ export function subscribeProducts({ onData, onError, order = 'name', ...params }
     })
     .catch((error) => {
       console.error('DAJA catalog error:', error);
-      if (allowMockFallback) {
+      if (allowMockFallback && !admin) {
         if (!cancelled) onData?.(getMockProducts({ order, ...params }));
         return;
       }
@@ -44,7 +49,9 @@ export function subscribeProducts({ onData, onError, order = 'name', ...params }
 }
 
 export async function saveProduct(partial) {
-  return adminCatalogApi.saveProduct(partial);
+  const result = await adminCatalogApi.saveProduct(partial);
+  notifyProductsChanged();
+  return result;
 }
 
 export async function uploadImages(productId, files, onProgress) {
@@ -71,5 +78,7 @@ export async function fetchProductBySlug(slug) {
 
 export async function deleteProduct(id) {
   if (!id) throw new Error('ID proizvoda je obavezan');
-  return adminCatalogApi.deleteProduct(id);
+  const result = await adminCatalogApi.deleteProduct(id);
+  notifyProductsChanged();
+  return result;
 }
