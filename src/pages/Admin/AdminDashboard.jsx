@@ -96,6 +96,7 @@ export default function AdminDashboard() {
   const [newCatBrand, setNewCatBrand] = useState('');
   const [editingCatId, setEditingCatId] = useState(null);
   const [editingCatName, setEditingCatName] = useState('');
+  const [editingCatBrandId, setEditingCatBrandId] = useState('');
   const [catBrandFilter, setCatBrandFilter] = useState('');
 
   const [specs, setSpecs] = useState([]);
@@ -181,9 +182,12 @@ export default function AdminDashboard() {
   const handleAddBrand = async (e) => {
     e.preventDefault();
     if (!newBrandName.trim()) return;
+    const departmentSlug = brandFilters.length === 1 ? brandFilters[0] : newBrandDept;
+    const departmentId = departmentIdFor(departmentSlug);
+    if (!departmentId) return alert('Izaberi odeljenje za novi brend.');
     try {
       await brandService.add(newBrandName, {
-        departmentId: departmentIdFor((brandFilters.length === 1 ? brandFilters[0] : newBrandDept) || 'satovi'),
+        departmentId,
       });
       setNewBrandName('');
     } catch (err) {
@@ -209,6 +213,7 @@ export default function AdminDashboard() {
         ? prev.filter((d) => d !== deptId)
         : [...prev, deptId],
     );
+    setNewCatDept((current) => (current === deptId ? '' : deptId));
     setCatBrandFilter('');
     setNewCatBrand('');
   };
@@ -217,8 +222,13 @@ export default function AdminDashboard() {
     if (!newCatName.trim()) return;
     const brandToUse = catBrandFilter || newCatBrand;
     const brandObj = brands.find((b) => b.name === brandToUse);
-    const dept = brandObj?.departmentId || departmentIdFor((catFilters.length === 1 ? catFilters[0] : newCatDept) || 'satovi');
+    const selectedDepartmentSlug = catFilters.length === 1 ? catFilters[0] : newCatDept;
+    const selectedDepartmentId = departmentIdFor(selectedDepartmentSlug);
+    const dept = selectedDepartmentId || brandObj?.departmentId;
     if (!dept) return alert('Izaberi odeljenje.');
+    if (brandObj?.departmentId && brandObj.departmentId !== dept) {
+      return alert('Izabrani brend ne pripada izabranom odeljenju.');
+    }
     try {
       await categoryService.add(newCatName, {
         departmentId: dept,
@@ -232,8 +242,11 @@ export default function AdminDashboard() {
   const handleUpdateCategory = async () => {
     if (!editingCatName.trim()) return;
     try {
-      await categoryService.update(editingCatId, editingCatName);
+      await categoryService.update(editingCatId, editingCatName, {
+        brandId: editingCatBrandId || null,
+      });
       setEditingCatId(null);
+      setEditingCatBrandId('');
     } catch (err) {
       alert('Greška.');
     }
@@ -242,18 +255,23 @@ export default function AdminDashboard() {
     if (window.confirm('Obriši?')) await categoryService.remove(id);
   };
 
-  const toggleSpecFilter = (deptId) =>
+  const toggleSpecFilter = (deptId) => {
     setSpecFilters((prev) =>
       prev.includes(deptId)
         ? prev.filter((d) => d !== deptId)
         : [...prev, deptId],
     );
+    setNewSpecDept((current) => (current === deptId ? '' : deptId));
+  };
   const handleAddSpec = async (e) => {
     e.preventDefault();
     if (!newSpecName.trim()) return;
+    const departmentSlug = specFilters.length === 1 ? specFilters[0] : newSpecDept;
+    const departmentId = departmentIdFor(departmentSlug);
+    if (!departmentId) return alert('Izaberi odeljenje za karakteristiku.');
     try {
       await specKeyService.add(newSpecName, {
-        departmentId: departmentIdFor((specFilters.length === 1 ? specFilters[0] : newSpecDept) || 'satovi'),
+        departmentId,
         unit: newSpecUnit.trim(),
       });
       setNewSpecName('');
@@ -275,12 +293,14 @@ export default function AdminDashboard() {
     if (window.confirm('Obriši?')) await specKeyService.remove(id);
   };
 
-  const toggleBrandFilter = (deptId) =>
+  const toggleBrandFilter = (deptId) => {
     setBrandFilters((prev) =>
       prev.includes(deptId)
         ? prev.filter((d) => d !== deptId)
         : [...prev, deptId],
     );
+    setNewBrandDept((current) => (current === deptId ? '' : deptId));
+  };
 
   const openNew = () => {
     setEditProduct(null);
@@ -355,9 +375,9 @@ export default function AdminDashboard() {
   const visibleBrands = useMemo(() => {
     if (brandFilters.length === 0) return brands;
     return brands.filter((b) =>
-      brandFilters.includes(b.department || 'satovi'),
+      brandFilters.some((slug) => b.departmentId === departmentIdFor(slug)),
     );
-  }, [brands, brandFilters]);
+  }, [brands, brandFilters, departments]);
   const availableBrandsForFilter = useMemo(() => {
     if (catFilters.length === 0) return brands;
     return brands.filter((b) => catFilters.includes(b.department || 'satovi'));
@@ -682,7 +702,10 @@ export default function AdminDashboard() {
                   ))}{' '}
                   {brandFilters.length > 0 && (
                     <button
-                      onClick={() => setBrandFilters([])}
+                    onClick={() => {
+                      setBrandFilters([]);
+                      setNewBrandDept('');
+                    }}
                       className="px-2 text-xs font-bold text-red-400 hover:text-red-600"
                     >
                       {' '}
@@ -776,7 +799,7 @@ export default function AdminDashboard() {
                             {brandFilters.length !== 1 && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-neutral-400 border border-white/5 uppercase tracking-wider">
                                 {' '}
-                                {item.department || 'satovi'}{' '}
+                                {departments.find((department) => department.id === item.departmentId)?.name || 'Nepoznato'}{' '}
                               </span>
                             )}{' '}
                           </div>{' '}
@@ -851,6 +874,8 @@ export default function AdminDashboard() {
                         onClick={() => {
                           setCatFilters([]);
                           setCatBrandFilter('');
+                          setNewCatDept('');
+                          setNewCatBrand('');
                         }}
                         className="px-2 text-xs font-bold text-red-400 hover:text-red-600"
                       >
@@ -978,6 +1003,18 @@ export default function AdminDashboard() {
                             onChange={(e) => setEditingCatName(e.target.value)}
                             autoFocus
                           />{' '}
+                          <select
+                            className="bg-black/20 rounded-lg px-2 py-1 text-sm outline-none border border-primary/50"
+                            value={editingCatBrandId}
+                            onChange={(e) => setEditingCatBrandId(e.target.value)}
+                          >
+                            <option value="">Bez brenda</option>
+                            {brands
+                              .filter((brand) => brand.departmentId === item.departmentId)
+                              .map((brand) => (
+                                <option key={brand.id} value={brand.id}>{brand.name}</option>
+                              ))}
+                          </select>
                           <button
                             onClick={handleUpdateCategory}
                             className="text-emerald-500 p-1 hover:bg-white/10 rounded-lg"
@@ -1004,12 +1041,12 @@ export default function AdminDashboard() {
                             </span>{' '}
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-white border border-white/10">
                               {' '}
-                              {item.brand}{' '}
+                              {brands.find((brand) => brand.id === item.brandId)?.name || 'Bez brenda'}{' '}
                             </span>{' '}
                             {catFilters.length !== 1 && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-neutral-400 border border-white/5 uppercase tracking-wider">
                                 {' '}
-                                {item.department || 'satovi'}{' '}
+                                {departments.find((department) => department.id === item.departmentId)?.name || 'Satovi'}{' '}
                               </span>
                             )}{' '}
                           </div>{' '}
@@ -1019,6 +1056,7 @@ export default function AdminDashboard() {
                               onClick={() => {
                                 setEditingCatId(item.id);
                                 setEditingCatName(item.name);
+                                setEditingCatBrandId(item.brandId || '');
                               }}
                               className="p-1.5 hover:bg-white/10 rounded-lg text-muted hover:text-primary transition-colors"
                             >
@@ -1079,7 +1117,10 @@ export default function AdminDashboard() {
                   ))}{' '}
                   {specFilters.length > 0 && (
                     <button
-                      onClick={() => setSpecFilters([])}
+                      onClick={() => {
+                        setSpecFilters([]);
+                        setNewSpecDept('');
+                      }}
                       className="px-2 text-xs font-bold text-red-400 hover:text-red-600"
                     >
                       {' '}

@@ -100,9 +100,12 @@ export default function AdminOrders() {
 
     // Ako otvaramo porudžbinu koja NIJE pročitana, označi je u bazi kao pročitanu
     if (isExpanding && !order.isRead) {
+      const previousOrders = orders;
+      setOrders((current) => current.map((item) => item.docId === order.docId ? { ...item, isRead: true } : item));
       try {
         await ordersService.markAsRead(order.docId);
       } catch (error) {
+        setOrders(previousOrders);
         console.error('Failed to mark as read', error);
       }
     }

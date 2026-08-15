@@ -318,43 +318,65 @@ export const adminCatalogApi = {
 
 export function createCollectionService(collectionName) {
   const endpoint = collectionEndpoint(collectionName);
+  const subscribers = new Set();
+  let cachedItems = [];
+  const notify = (items) => {
+    cachedItems = items;
+    subscribers.forEach((subscriber) => subscriber.onData(items));
+  };
+  const refresh = async () => {
+    try {
+      const data = await apiRequest(endpoint, { staff: true });
+      const items = toArrayPayload(data);
+      notify(items);
+      return items;
+    } catch (error) {
+      subscribers.forEach((subscriber) => subscriber.onError?.(error));
+      throw error;
+    }
+  };
   return {
     async list() {
-      const data = await apiRequest(endpoint, { staff: true });
-      return toArrayPayload(data);
+      return refresh();
+    },
+    refresh,
+    optimistic(items) {
+      notify(items);
     },
     subscribe(onData, onError) {
-      let cancelled = false;
-      this.list()
-        .then((data) => {
-          if (!cancelled) onData(data);
-        })
-        .catch((error) => {
-          if (!cancelled) onError?.(error);
-        });
+      const subscriber = { onData, onError };
+      subscribers.add(subscriber);
+      if (cachedItems.length) onData(cachedItems);
+      else void refresh();
       return () => {
-        cancelled = true;
+        subscribers.delete(subscriber);
       };
     },
-    add(name, extraData = {}) {
-      return apiRequest(endpoint, {
+    async add(name, extraData = {}) {
+      const created = await apiRequest(endpoint, {
         method: 'POST',
         staff: true,
         body: { name: name.trim(), ...extraData },
       });
+      await refresh();
+      return created;
     },
-    update(id, name, extraData = {}) {
-      return apiRequest(`${endpoint}/${encodeURIComponent(id)}`, {
+    async update(id, name, extraData = {}) {
+      const updated = await apiRequest(`${endpoint}/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         staff: true,
         body: { name: name.trim(), ...extraData },
       });
+      await refresh();
+      return updated;
     },
-    remove(id) {
-      return apiRequest(`${endpoint}/${encodeURIComponent(id)}`, {
+    async remove(id) {
+      const result = await apiRequest(`${endpoint}/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         staff: true,
       });
+      await refresh();
+      return result;
     },
   };
 }
