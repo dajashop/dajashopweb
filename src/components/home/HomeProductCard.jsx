@@ -32,7 +32,7 @@ export default function HomeProductCard({ product }) {
     thumbnailUrl ||
     images?.[0]?.url ||
     image ||
-    'https://via.placeholder.com/640x640.png?text=Watch';
+    '/images/product-placeholder.svg';
 
   const handleAdd = () => {
     dispatch({

@@ -29,13 +29,17 @@ export function AuthProvider({ children }) {
 
     try {
       const me = await authApi.me();
-      setUser(me);
 
       if (isAdminEmail(me?.email)) {
         // The API is authoritative; a failed staff exchange must not log the
         // customer out of their normal storefront session.
         await authApi.createAdminSession().catch(() => null);
       }
+
+      // Publish the admin user only after the staff-session exchange. This
+      // prevents admin widgets from sending their first request with a normal
+      // customer token while the staff token is still being created.
+      setUser(me);
 
       try {
         const customer = await customerApi.me();

@@ -16,6 +16,7 @@ import { useCart } from '../hooks/useCart.js';
 import { useAuth } from '../hooks/useAuth.js';
 
 import { isAdminEmail, ordersApi, subscribeRealtime } from '../services/dajaPlatform.js';
+import { getStaffAccessToken } from '../services/apiClient.js';
 
 // Ikonice
 import {
@@ -58,6 +59,10 @@ export default function HamburgerMenu({
 
     let cancelled = false;
     const refreshUnread = () => {
+      // The staff session is created immediately after customer login. Until
+      // then there is nothing to load, and using a customer token here causes
+      // a misleading 401 in the browser console.
+      if (!getStaffAccessToken()) return;
       ordersApi
         .adminList()
         .then((orders) => {

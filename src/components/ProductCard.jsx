@@ -186,17 +186,36 @@ export default function ProductCard({ p }) {
         exit={{ opacity: 0 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
       >
-        {/* Bedž NOVO */}
-        {marketingFlags.includes('new') && (
-          <div className="pointer-events-none absolute left-2 top-2 z-20">
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-xl 
-              bg-white/70 dark:bg-black/50 border border-white/40 shadow-sm text-zinc-800 dark:text-white"
-            >
-              ✨ NOVO
-            </motion.div>
+        {/* Marketinške oznake proizvoda */}
+        {marketingFlags.length > 0 && (
+          <div className="pointer-events-none absolute left-2 top-2 z-20 flex flex-wrap gap-1.5">
+            {marketingFlags.includes('new') && (
+              <motion.span
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="rounded-full bg-red-600 px-3 py-1 text-xs font-bold tracking-wide text-white shadow-sm"
+              >
+                NOVO
+              </motion.span>
+            )}
+            {marketingFlags.includes('popular') && (
+              <motion.span
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-zinc-800 shadow-sm"
+              >
+                POPULARNO
+              </motion.span>
+            )}
+            {marketingFlags.includes('recommended') && (
+              <motion.span
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-zinc-800 shadow-sm"
+              >
+                PREPORUČENO
+              </motion.span>
+            )}
           </div>
         )}
 

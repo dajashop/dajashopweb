@@ -127,6 +127,38 @@ async function refreshAccessToken() {
   return refreshPromise;
 }
 
+async function refreshStaffAccessToken() {
+  const customerToken = getAccessToken();
+  if (!customerToken) throw new Error('Customer token nije dostupan.');
+
+  const storageKey = 'daja_staff_device_id';
+  let deviceId = readStorage(storageKey);
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    writeStorage(storageKey, deviceId);
+  }
+
+  const response = await fetch(buildUrl('/customer-auth/admin/session'), {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${customerToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ deviceId }),
+    credentials: 'include',
+  });
+  const data = unwrapEnvelope(await parseResponse(response));
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.error?.message || 'Staff sesija nije dostupna.');
+    error.status = response.status;
+    throw error;
+  }
+  const accessToken = data?.accessToken || data?.access_token;
+  if (!accessToken) throw new Error('Staff sesija nije vratila token.');
+  setStaffAccessToken(accessToken);
+  return accessToken;
+}
+
 export async function apiRequest(path, options = {}) {
   const {
     method = 'GET',
@@ -173,6 +205,16 @@ export async function apiRequest(path, options = {}) {
       return apiRequest(path, { ...options, retry: false });
     } catch {
       clearAuthTokens();
+    }
+  }
+
+  if (response.status === 401 && auth && retry && staff) {
+    try {
+      await refreshStaffAccessToken();
+      return apiRequest(path, { ...options, retry: false });
+    } catch {
+      // Do not clear the customer session: only the separate staff session
+      // failed or the user is no longer authorized as staff.
     }
   }
 

@@ -128,7 +128,13 @@ export const authApi = {
   },
   async logout() {
     try {
-      await apiRequest('/customer-auth/logout', { method: 'POST' });
+      await apiRequest('/customer-auth/logout', { method: 'POST', retry: false });
+    } catch (error) {
+      // Logout must always finish locally. A 401 only means that the session
+      // was already expired/revoked, which is a normal state for this action.
+      if (error?.status && error.status !== 401) {
+        console.warn('Odjava na serveru nije uspela:', error);
+      }
     } finally {
       clearAuthTokens();
     }

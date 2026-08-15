@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="Slika proizvoda nije dostupna">
+  <rect width="640" height="640" fill="#f4f4f5"/>
+  <circle cx="320" cy="320" r="132" fill="none" stroke="#a1a1aa" stroke-width="24"/>
+  <path d="M320 230v90l62 38" fill="none" stroke="#52525b" stroke-linecap="round" stroke-linejoin="round" stroke-width="24"/>
+  <path d="M250 124h140M250 516h140" stroke="#a1a1aa" stroke-linecap="round" stroke-width="40"/>
+  <text x="320" y="590" fill="#71717a" font-family="Arial, sans-serif" font-size="24" text-anchor="middle">Slika nije dostupna</text>
+</svg>

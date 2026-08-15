@@ -79,7 +79,7 @@ function getPrimaryImage(product) {
     product?.thumbnailUrl ||
     product?.images?.[0]?.url ||
     product?.image ||
-    'https://via.placeholder.com/640x640.png?text=Watch'
+    '/images/product-placeholder.svg'
   );
 }
 

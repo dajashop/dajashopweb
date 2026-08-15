@@ -15,7 +15,7 @@ function WishlistSection() {
   const { dispatch } = useCart();
   const { flash } = useFlash();
   const { showUndo } = useUndo();
-  const placeholderImage = 'https://via.placeholder.com/300?text=Watch';
+  const placeholderImage = '/images/product-placeholder.svg';
 
   const [deleteId, setDeleteId] = useState(null);
 
