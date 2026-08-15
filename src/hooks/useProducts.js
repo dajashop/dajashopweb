@@ -48,6 +48,9 @@ export default function useProducts(params = {}) {
         return;
       }
       if (change.type === 'deleteBySlug' && change.slug) {
+        // This event comes from the public endpoint returning null for a
+        // hidden product. Staff lists are allowed to keep hidden products.
+        if (memoizedParams.admin) return;
         setItems((current) => current.filter((item) => item.slug !== change.slug));
         return;
       }
@@ -67,7 +70,7 @@ export default function useProducts(params = {}) {
     };
     window.addEventListener('daja:products-changed', applyProductChange);
     return () => window.removeEventListener('daja:products-changed', applyProductChange);
-  }, []);
+  }, [memoizedParams.admin]);
 
   useEffect(() => {
     if (memoizedParams.admin) return undefined;

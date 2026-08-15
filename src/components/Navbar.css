@@ -337,7 +337,8 @@
 
 /* Dodatak za aktivni link */
 .navbar__all.active,
-.navbar__label.active {
+.navbar__label.active,
+.navbar__group:not([data-open="true"]) > .navbar__label.active {
   background: var(--color-text, #111);
   color: var(--color-bg, #fff);
   border-color: var(--color-text, #111);
