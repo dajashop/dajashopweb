@@ -12,6 +12,17 @@ import { getStaffAccessToken } from './apiClient';
 let publicCatalogSocket = null;
 const publicCatalogListeners = new Set();
 
+function realtimeNamespaceUrl() {
+  const apiBase =
+    API_BASE_URL.startsWith('http')
+      ? API_BASE_URL
+      : `${window.location.origin}${API_BASE_URL}`;
+  // VITE_DAJA_WS_URL may be either an origin or the complete `/realtime`
+  // namespace. Normalize both forms so it can never become `/realtime/realtime`.
+  const configured = import.meta.env.VITE_DAJA_WS_URL || apiBase;
+  return `${new URL(configured).origin}/realtime`;
+}
+
 function normalizeUser(data) {
   const user = data?.user || data?.customer || data;
   if (!user) return null;
@@ -608,20 +619,12 @@ export const promotionsApi = {
 };
 
 export function subscribeRealtime(channels, onEvent, onError) {
-  const apiBase =
-    API_BASE_URL.startsWith('http')
-      ? API_BASE_URL
-      : `${window.location.origin}${API_BASE_URL}`;
-  const base = new URL(apiBase).origin;
-  const wsBase =
-    import.meta.env.VITE_DAJA_WS_URL ||
-    base;
   const token = getStaffAccessToken();
   if (!token) {
     onError?.(new Error('Staff token nije dostupan za real-time vezu.'));
     return () => {};
   }
-  const socket = io(`${wsBase}/realtime`, {
+  const socket = io(realtimeNamespaceUrl(), {
     path: '/socket.io',
     transports: ['websocket'],
     auth: { token: `Bearer ${token}` },
@@ -639,12 +642,7 @@ export function subscribeRealtime(channels, onEvent, onError) {
 export function subscribePublicCatalogRealtime(onEvent, onError) {
   publicCatalogListeners.add(onEvent);
   if (!publicCatalogSocket) {
-    const apiBase =
-      API_BASE_URL.startsWith('http')
-        ? API_BASE_URL
-        : `${window.location.origin}${API_BASE_URL}`;
-    const wsBase = import.meta.env.VITE_DAJA_WS_URL || new URL(apiBase).origin;
-    publicCatalogSocket = io(`${wsBase}/realtime`, {
+    publicCatalogSocket = io(realtimeNamespaceUrl(), {
       path: '/socket.io',
       transports: ['websocket'],
       auth: { publicCatalog: true },
