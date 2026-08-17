@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { isAdminEmail, importsApi } from '../../services/dajaPlatform';
 import { useNavigate } from 'react-router-dom';
@@ -106,6 +106,7 @@ export default function AdminDashboard() {
   const [newSpecDept, setNewSpecDept] = useState('');
   const [editingSpecId, setEditingSpecId] = useState(null);
   const [editingSpecName, setEditingSpecName] = useState('');
+  const [editingSpecUnit, setEditingSpecUnit] = useState('');
 
   const filterOptions = [
     { id: 'name', label: 'Naziv' },
@@ -115,12 +116,21 @@ export default function AdminDashboard() {
     { id: 'price', label: 'Cena' },
   ];
 
-  const departmentOptions = [
-    { id: 'satovi', label: 'Satovi' },
-    { id: 'daljinski', label: 'Daljinski' },
-    { id: 'baterije', label: 'Baterije' },
-    { id: 'naocare', label: 'Naočare' },
-  ];
+  // Use the same department source as brands and categories. The fallback
+  // keeps the controls usable during the initial API request.
+  const departmentOptions = useMemo(() => {
+    if (departments.length) {
+      return departments
+        .filter((department) => department.slug)
+        .map((department) => ({ id: department.slug, label: department.name }));
+    }
+    return [
+      { id: 'satovi', label: 'Satovi' },
+      { id: 'daljinski', label: 'Daljinski' },
+      { id: 'baterije', label: 'Baterije' },
+      { id: 'naocare', label: 'Naočare' },
+    ];
+  }, [departments]);
 
   // Fetch Data useEffects (Ostaju isti...)
   useEffect(() => {
@@ -136,7 +146,24 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  const departmentIdFor = (slug) => departments.find((department) => department.slug === slug)?.id;
+  const departmentIdFor = useCallback(
+    (slug) => departments.find((department) => department.slug === slug)?.id,
+    [departments],
+  );
+  const departmentNameFor = (departmentId, fallbackSlug = '') =>
+    departments.find((department) => String(department.id) === String(departmentId))?.name ||
+    departmentOptions.find((department) => department.id === fallbackSlug)?.label ||
+    fallbackSlug ||
+    'Nepoznato';
+  const belongsToDepartment = useCallback(
+    (item, slug) => {
+      const departmentId = departmentIdFor(slug);
+      return departmentId
+        ? String(item.departmentId) === String(departmentId)
+        : item.department === slug;
+    },
+    [departmentIdFor],
+  );
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -282,8 +309,11 @@ export default function AdminDashboard() {
   const handleUpdateSpec = async () => {
     if (!editingSpecName.trim()) return;
     try {
-      await specKeyService.update(editingSpecId, editingSpecName);
+      await specKeyService.update(editingSpecId, editingSpecName, {
+        unit: editingSpecUnit.trim(),
+      });
       setEditingSpecId(null);
+      setEditingSpecUnit('');
     } catch (err) {
       alert('Greška.');
     }
@@ -375,11 +405,13 @@ export default function AdminDashboard() {
     return brands.filter((b) =>
       brandFilters.some((slug) => b.departmentId === departmentIdFor(slug)),
     );
-  }, [brands, brandFilters, departments]);
+  }, [brands, brandFilters, departmentIdFor]);
   const availableBrandsForFilter = useMemo(() => {
     if (catFilters.length === 0) return brands;
-    return brands.filter((b) => catFilters.includes(b.department || 'satovi'));
-  }, [brands, catFilters]);
+    return brands.filter((brand) =>
+      catFilters.some((slug) => belongsToDepartment(brand, slug)),
+    );
+  }, [brands, catFilters, belongsToDepartment]);
   const visibleCategories = useMemo(() => {
     return categories.filter((c) => {
       const deptMatch =
@@ -389,18 +421,20 @@ export default function AdminDashboard() {
       const brandMatch = !catBrandFilter || c.brandId === selectedBrandId;
       return deptMatch && brandMatch;
     });
-  }, [categories, catFilters, catBrandFilter, brands, departments]);
+  }, [categories, catFilters, catBrandFilter, brands, departmentIdFor]);
   const availableBrandsForCat = useMemo(() => {
     if (catFilters.length === 1)
       return brands.filter((b) => b.departmentId === departmentIdFor(catFilters[0]));
     if (newCatDept)
       return brands.filter((b) => b.departmentId === departmentIdFor(newCatDept));
     return brands;
-  }, [brands, catFilters, newCatDept, departments]);
+  }, [brands, catFilters, newCatDept, departmentIdFor]);
   const visibleSpecs = useMemo(() => {
     if (specFilters.length === 0) return specs;
-    return specs.filter((s) => specFilters.includes(s.department || 'satovi'));
-  }, [specs, specFilters]);
+    return specs.filter((spec) =>
+      specFilters.some((slug) => belongsToDepartment(spec, slug)),
+    );
+  }, [specs, specFilters, belongsToDepartment]);
 
   if (!user) return null;
 
@@ -1213,6 +1247,13 @@ export default function AdminDashboard() {
                             onChange={(e) => setEditingSpecName(e.target.value)}
                             autoFocus
                           />{' '}
+                          <input
+                            className="w-20 bg-black/20 rounded-lg px-2 py-1 text-sm outline-none border border-primary/50"
+                            value={editingSpecUnit}
+                            onChange={(e) => setEditingSpecUnit(e.target.value)}
+                            placeholder="Jedinica"
+                            aria-label="Jedinica specifikacije"
+                          />{' '}
                           <button
                             onClick={handleUpdateSpec}
                             className="text-emerald-500 p-1 hover:bg-white/10 rounded-lg"
@@ -1246,7 +1287,7 @@ export default function AdminDashboard() {
                             {specFilters.length !== 1 && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-neutral-400 border border-white/5 uppercase tracking-wider">
                                 {' '}
-                                {item.department || 'satovi'}{' '}
+                                {departmentNameFor(item.departmentId, item.department)}{' '}
                               </span>
                             )}{' '}
                           </div>{' '}
@@ -1256,6 +1297,7 @@ export default function AdminDashboard() {
                               onClick={() => {
                                 setEditingSpecId(item.id);
                                 setEditingSpecName(item.name);
+                                setEditingSpecUnit(item.unit || '');
                               }}
                               className="p-1.5 hover:bg-white/10 rounded-lg text-muted hover:text-primary transition-colors"
                             >

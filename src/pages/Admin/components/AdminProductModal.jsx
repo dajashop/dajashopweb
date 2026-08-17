@@ -438,8 +438,18 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   }));
 
   const filteredSpecs = useMemo(() => {
-    return specKeys;
-  }, [specKeys]);
+    const departmentId = departments.find(
+      (department) => department.slug === form.department,
+    )?.id;
+
+    // New records are related through departmentId; the fallback preserves
+    // support for older records that stored the department slug directly.
+    return specKeys.filter((specKey) =>
+      departmentId
+        ? String(specKey.departmentId) === String(departmentId)
+        : specKey.department === form.department,
+    );
+  }, [specKeys, departments, form.department]);
 
   const specOptions = filteredSpecs.map((k) => ({
     value: k.name,
@@ -448,12 +458,19 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     unit: k.unit,
   }));
 
-  const departmentOptions = [
-    { value: 'satovi', label: 'Satovi' },
-    { value: 'daljinski', label: 'Daljinski' },
-    { value: 'baterije', label: 'Baterije' },
-    { value: 'naocare', label: 'Naočare' },
-  ];
+  const departmentOptions = useMemo(() => {
+    if (departments.length) {
+      return departments
+        .filter((department) => department.slug)
+        .map((department) => ({ value: department.slug, label: department.name }));
+    }
+    return [
+      { value: 'satovi', label: 'Satovi' },
+      { value: 'daljinski', label: 'Daljinski' },
+      { value: 'baterije', label: 'Baterije' },
+      { value: 'naocare', label: 'Naočare' },
+    ];
+  }, [departments]);
 
   const genderOptions = [
     { value: '', label: 'Unisex' },
