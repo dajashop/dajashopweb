@@ -11,11 +11,15 @@ export default function useProducts(params = {}) {
   // Stabilizujemo parametre da ne bi izazivali re-render petlju
   // Mentor napomena: Ovo je odlično rešeno sa JSON.stringify
   const memoizedParams = useMemo(() => params, [JSON.stringify(params)]);
+  // A public page can be viewed by an administrator, but that must not turn
+  // off the storefront's live catalog updates.
+  const usePublicRealtime = memoizedParams.publicRealtime ?? !memoizedParams.admin;
 
   useEffect(() => {
     setLoading(true);
     setErr(null);
 
+    const { publicRealtime: _publicRealtime, ...requestParams } = memoizedParams;
     const unsub = subscribeProducts({
       onData: (arr) => {
         setItems(arr);
@@ -26,9 +30,9 @@ export default function useProducts(params = {}) {
         setLoading(false);
       },
       // Prosleđujemo SVE parametre servisu (limit, category, itd.), a ne samo order
-      order: memoizedParams.order || 'name',
-      limit: memoizedParams.limit || 32, // Default limit ako nije naveden
-      ...memoizedParams,
+      order: requestParams.order || 'name',
+      limit: requestParams.limit || 32, // Default limit ako nije naveden
+      ...requestParams,
     });
 
     return () => unsub?.();
@@ -73,12 +77,12 @@ export default function useProducts(params = {}) {
   }, [memoizedParams.admin]);
 
   useEffect(() => {
-    if (memoizedParams.admin) return undefined;
+    if (!usePublicRealtime) return undefined;
     return subscribePublicCatalogRealtime(
       (event) => { void applyPublicProductRealtimeEvent(event); },
       () => {},
     );
-  }, [memoizedParams.admin]);
+  }, [usePublicRealtime]);
 
   const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
   return { items, loading, err, refresh };
