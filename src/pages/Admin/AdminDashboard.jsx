@@ -66,7 +66,13 @@ const generateSlug = (text) => {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const nav = useNavigate();
-  const { items: products, refresh: refreshProducts } = useProducts({ admin: true });
+  // RFID changes are published on the safe public catalog channel. Subscribe
+  // here too so the admin product list follows desktop creates/updates/deletes
+  // without a manual browser refresh.
+  const { items: products, refresh: refreshProducts } = useProducts({
+    admin: true,
+    publicRealtime: true,
+  });
 
   // ... (State varijable ostaju iste: activeTab, searchTerm, filters...)
   const [activeTab, setActiveTab] = useState('products');

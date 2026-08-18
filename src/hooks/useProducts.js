@@ -53,8 +53,10 @@ export default function useProducts(params = {}) {
       }
       if (change.type === 'deleteBySlug' && change.slug) {
         // This event comes from the public endpoint returning null for a
-        // hidden product. Staff lists are allowed to keep hidden products.
-        if (memoizedParams.admin) return;
+        // hidden product. A staff-only list may keep hidden products, but an
+        // admin view that explicitly opted into public realtime must mirror
+        // the published catalog deletion as well.
+        if (memoizedParams.admin && !usePublicRealtime) return;
         setItems((current) => current.filter((item) => item.slug !== change.slug));
         return;
       }
@@ -74,7 +76,7 @@ export default function useProducts(params = {}) {
     };
     window.addEventListener('daja:products-changed', applyProductChange);
     return () => window.removeEventListener('daja:products-changed', applyProductChange);
-  }, [memoizedParams.admin]);
+  }, [memoizedParams.admin, usePublicRealtime]);
 
   useEffect(() => {
     if (!usePublicRealtime) return undefined;
