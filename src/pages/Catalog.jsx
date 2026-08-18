@@ -111,6 +111,7 @@ export default function Catalog({ department = 'satovi' }) {
     // storefront API and RFID sync. Admin-only drafts belong in the admin
     // dashboard, not in the customer-facing catalog.
     admin: false,
+    publicRealtime: true,
   });
 
   // --- FILTRIRANJE ---
