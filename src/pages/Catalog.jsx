@@ -107,7 +107,10 @@ export default function Catalog({ department = 'satovi' }) {
     err,
   } = useProducts({
     order: backendOrderField,
-    admin: Boolean(isAdmin),
+    // The public catalog must always use the same published dataset as the
+    // storefront API and RFID sync. Admin-only drafts belong in the admin
+    // dashboard, not in the customer-facing catalog.
+    admin: false,
   });
 
   // --- FILTRIRANJE ---
