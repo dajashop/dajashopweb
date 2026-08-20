@@ -388,10 +388,14 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           if (form.epc) {
             let tag;
             try {
-              tag = await rfidApi.byEpc(form.epc);
-            } catch (error) {
-              if (error?.status !== 404) throw error;
+              // A new EPC normally does not exist yet. Creating first avoids a
+              // noisy, expected 404 from the lookup endpoint for every new tag.
               tag = await rfidApi.createTag({ epc: form.epc, variantId: primaryVariant.id });
+            } catch (error) {
+              // The only recoverable case is an EPC already registered in this
+              // organization. Reuse it; all other errors must remain visible.
+              if (error?.status !== 409) throw error;
+              tag = await rfidApi.byEpc(form.epc);
             }
             if (!tag.inventoryItemId && form.locationId) {
               taggedItem = await inventoryApi.createItem({
