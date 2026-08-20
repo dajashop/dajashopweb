@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
 import { adminCatalogApi } from '../../../services/dajaPlatform';
 
+function formatBelgradeDateTime(value) {
+  if (!value) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Belgrade',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(value));
+  const fields = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${fields.year}-${fields.month}-${fields.day}T${fields.hour}:${fields.minute}`;
+}
+
 export default function ProductOperationsPanel({ productId, variants = [], basePrice = '', onBasePriceChange, onPendingPrice }) {
   const [price, setPrice] = useState({ amount: '', type: 'sale', from: '', until: '' });
   const [priceChanged, setPriceChanged] = useState(false);
@@ -16,8 +27,8 @@ export default function ProductOperationsPanel({ productId, variants = [], baseP
         setPrice({
           amount: String(Number(latestSale.amountMinor) / 100),
           type: 'sale',
-          from: latestSale.validFrom ? new Date(latestSale.validFrom).toISOString().slice(0, 16) : '',
-          until: latestSale.validUntil ? new Date(latestSale.validUntil).toISOString().slice(0, 16) : '',
+          from: formatBelgradeDateTime(latestSale.validFrom),
+          until: formatBelgradeDateTime(latestSale.validUntil),
         });
       })
       .catch((error) => console.error('Učitavanje akcijske cene nije uspelo:', error));
@@ -29,5 +40,5 @@ export default function ProductOperationsPanel({ productId, variants = [], baseP
     setPriceChanged(true);
     setPrice((current) => ({ ...current, [field]: value, type: 'sale' }));
   };
-  return <div className="space-y-4"><div className="bg-white p-5 rounded-2xl border border-neutral-100 space-y-3"><h3 className="font-bold text-neutral-900">Cene i inventar</h3><label className="block text-xs font-bold uppercase tracking-wider text-neutral-500">Cena (RSD)<input type="number" value={basePrice} onChange={(e)=>onBasePriceChange?.(e.target.value)} className={inputClass}/></label><label className="block text-xs font-bold uppercase tracking-wider text-neutral-500">Akcijska cena (RSD)<input type="number" value={price.amount} onChange={(e)=>changeSale('amount',e.target.value)} className={inputClass}/></label><div className="grid grid-cols-2 gap-3"><label className="block text-xs font-bold uppercase tracking-wider text-neutral-500">Početak akcije<input type="datetime-local" value={price.from} onChange={(e)=>changeSale('from',e.target.value)} className={inputClass}/></label><label className="block text-xs font-bold uppercase tracking-wider text-neutral-500">Kraj akcije<input type="datetime-local" value={price.until} onChange={(e)=>changeSale('until',e.target.value)} className={inputClass}/></label></div></div></div>;
+  return <div className="space-y-4"><div className="bg-white p-5 rounded-2xl border border-neutral-100 space-y-3"><div><h3 className="font-bold text-neutral-900">Cene i inventar</h3><p className="text-xs text-neutral-500 mt-1">Vreme akcije je po vremenskoj zoni Srbije.</p></div><label className="block text-xs font-bold uppercase tracking-wider text-neutral-500">Cena (RSD)<input type="number" value={basePrice} onChange={(e)=>onBasePriceChange?.(e.target.value)} className={inputClass}/></label><label className="block text-xs font-bold uppercase tracking-wider text-neutral-500">Akcijska cena (RSD)<input type="number" value={price.amount} onChange={(e)=>changeSale('amount',e.target.value)} className={inputClass}/></label><div className="grid grid-cols-2 gap-3"><label className="block text-xs font-bold uppercase tracking-wider text-neutral-500">Početak akcije<input type="datetime-local" value={price.from} onChange={(e)=>changeSale('from',e.target.value)} className={inputClass}/></label><label className="block text-xs font-bold uppercase tracking-wider text-neutral-500">Kraj akcije<input type="datetime-local" value={price.until} onChange={(e)=>changeSale('until',e.target.value)} className={inputClass}/></label></div></div></div>;
 }
