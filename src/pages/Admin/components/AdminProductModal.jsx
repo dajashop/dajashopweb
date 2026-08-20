@@ -1053,7 +1053,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   </p>
                 </div>
               </div>
-              <ProductOperationsPanel productId={product?.id} variants={form.variants || []} basePrice={form.price} onPendingPrice={setPendingPrice} />
+              <ProductOperationsPanel productId={product?.id} variants={form.variants || []} basePrice={form.price} onBasePriceChange={(value) => handleChange('price', value)} onPendingPrice={setPendingPrice} />
             </div>
           </div>
         </div>
