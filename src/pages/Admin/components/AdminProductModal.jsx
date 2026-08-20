@@ -73,6 +73,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     variants: [],
     sku: '',
     barcode: '',
+    epc: '',
+    locationId: '',
+    quantity: '',
     currency: 'RSD',
     // [NOVO] Niz za custom kartice (naslov + podnaslov)
     features: [],
@@ -579,19 +582,25 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 <div className="md:col-span-2">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      URL Slug (Opciono)
+                      Šifra proizvoda
                     </span>
                     <input
-                      value={form.slug || generateSlug(form.name)}
-                      onChange={(e) => handleChange('slug', e.target.value)}
+                      value={form.sku || ''}
+                      onChange={(e) => handleChange('sku', e.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2 text-sm text-neutral-600 font-mono outline-none focus:ring-2 focus:ring-neutral-200"
-                      placeholder="auto-generisano"
+                      placeholder="npr. ECB-900DB-1BER"
                     />
                     <span className="text-[10px] text-neutral-400 ml-1">
                       Ovo je link proizvoda. Ako je prazno, generiše se iz
                       naziva.
                     </span>
                   </label>
+                </div>
+                <div>
+                  <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Barkod</span><input value={form.barcode || ''} onChange={(e) => handleChange('barcode', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3" placeholder="Barkod" /></label>
+                </div>
+                <div>
+                  <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">EPC</span><input value={form.epc || ''} onChange={(e) => handleChange('epc', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 font-mono" placeholder="RFID EPC" /></label>
                 </div>
                 <div className="md:col-span-1">
                   <label className="block">
@@ -662,6 +671,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   options={genderOptions}
                   onChange={(v) => handleChange('gender', v)}
                 />
+                <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Lokacija</span><input value={form.locationId || ''} onChange={(e) => handleChange('locationId', e.target.value)} placeholder="Lokacija / magacin" className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3" /></label>
+                <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Količina</span><input type="number" value={form.quantity || ''} onChange={(e) => handleChange('quantity', e.target.value)} placeholder="0" className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3" /></label>
                 <div className="md:col-span-3">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
@@ -679,7 +690,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
+              {false && <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">SKU i prodajni podaci</h3>
@@ -706,7 +717,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div>}
 
               <ProductOperationsPanel productId={product?.id} variants={form.variants || []} />
 
@@ -732,6 +743,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
                 {isSeoOpen && (
                   <div className="space-y-5">
+                    <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">URL slug</span><input value={form.slug || generateSlug(form.name)} onChange={(e) => handleChange('slug', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm font-mono" placeholder="automatski iz naziva" /></label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <label className="block md:col-span-2">
                         <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
