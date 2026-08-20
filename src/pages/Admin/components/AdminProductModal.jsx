@@ -197,6 +197,14 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     inventoryApi.locations().then(setLocations).catch((error) => console.error('Učitavanje lokacija nije uspelo:', error));
   }, []);
 
+  useEffect(() => {
+    inventoryApi.locations().then((items) => {
+      if (items.length === 1) {
+        setForm((previous) => previous.locationId ? previous : { ...previous, locationId: items[0].id });
+      }
+    }).catch(() => undefined);
+  }, []);
+
   const handleChange = (field, value) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
@@ -385,13 +393,21 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
               });
             }
           }
-          if (form.locationId && quantity > (taggedItem ? 1 : 0)) {
-            await inventoryApi.adjust({
-              variantId: primaryVariant.id,
-              locationId: form.locationId,
-              quantityDelta: quantity - (taggedItem ? 1 : 0),
-              sourceType: 'admin_product_save',
-            });
+          if (form.locationId && Number.isFinite(quantity)) {
+            const balances = await inventoryApi.balances(primaryVariant.id);
+            const balanceRows = Array.isArray(balances) ? balances : balances?.items || balances?.data || [];
+            const currentQuantity = balanceRows
+              .filter((balance) => balance.locationId === form.locationId || balance.location_id === form.locationId)
+              .reduce((total, balance) => total + Number(balance.quantity ?? balance.quantityOnHand ?? balance.quantity_on_hand ?? 0), 0);
+            const quantityDelta = quantity - currentQuantity;
+            if (quantityDelta !== 0) {
+              await inventoryApi.adjust({
+                variantId: primaryVariant.id,
+                locationId: form.locationId,
+                quantityDelta,
+                sourceType: 'admin_product_save',
+              });
+            }
           }
           // Publish a new catalog snapshot after inventory/EPC changes so the
           // RFID desktop app receives the current quantity and tag data.

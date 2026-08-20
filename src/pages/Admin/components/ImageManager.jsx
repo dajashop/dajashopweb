@@ -16,7 +16,7 @@ import { generateSlug } from '../utils/generators';
 import UploadProgressBar from '../../../components/UploadProgressBar';
 import { uploadProductImages } from '../../../services/r2ImageService';
 
-import { uploadRemoteImage } from '../../../services/admin';
+import { mediaApi } from '../../../services/dajaPlatform';
 
 // --- 2. Image Manager (SA CLICK EVENTOM) ---
 // --- 2. Image Manager (SA URL UPLOADOM) ---
@@ -109,9 +109,18 @@ function ImageManager({
 
     setUrlLoading(true);
     try {
-      const res = await uploadRemoteImage(sanitizedUrlInput, storageFolderName);
+      const asset = await mediaApi.registerExternal(sanitizedUrlInput);
+      const image = {
+        mediaId: asset.id || asset.mediaId,
+        url: asset.publicUrl || asset.public_url || sanitizedUrlInput,
+        thumb: asset.thumbnailUrl || asset.thumbnail_url || asset.publicUrl || sanitizedUrlInput,
+      };
+      if (!image.mediaId) throw new Error('Server nije vratio identifikator slike.');
+      onChange([...images, image]);
+      setUrlInput('');
+      onRemoteUploadSuccess?.({ thumbnailUrl: image.thumb, mainImageUrl: image.url });
 
-      if (res.success) {
+      /*if (res.success) {
         const additionalImages = (res.results || [])
           .filter((r) => r.success && !r.isThumbnail)
           .map((r) => ({
@@ -130,7 +139,7 @@ function ImageManager({
         }
       } else {
         alert('Došlo je do greške pri preuzimanju slike.');
-      }
+      }*/
     } catch (error) {
       console.error('Greška na serveru prilikom preuzimanja:', error);
       alert('Greška na serveru prilikom preuzimanja.');
