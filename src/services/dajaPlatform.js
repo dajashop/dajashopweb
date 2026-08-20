@@ -352,6 +352,7 @@ export const adminCatalogApi = {
   listVariantPrices(id) { return apiRequest(`/variants/${encodeURIComponent(id)}/prices`, { staff: true }); },
   listVariants(id) { return apiRequest(`/products/${encodeURIComponent(id)}/variants`, { staff: true }); },
   addVariantPrice(id, body) { return apiRequest(`/variants/${encodeURIComponent(id)}/prices`, { method: 'POST', staff: true, body }); },
+  refreshVariant(id, body) { return apiRequest(`/variants/${encodeURIComponent(id)}`, { method: 'PATCH', staff: true, body }); },
   deleteVariant(id) { return apiRequest(`/variants/${encodeURIComponent(id)}`, { method: 'DELETE', staff: true }); },
   listVariantSpecifications(id) { return apiRequest(`/variants/${encodeURIComponent(id)}/specifications`, { staff: true }); },
   replaceVariantSpecifications(id, values) { return apiRequest(`/variants/${encodeURIComponent(id)}/specifications`, { method: 'PUT', staff: true, body: { values } }); },
@@ -595,6 +596,12 @@ export const inventoryApi = {
   balances(variantId) { return apiRequest(`/inventory/variants/${encodeURIComponent(variantId)}/balances`, { staff: true }); },
   adjust(body) { return apiRequest('/inventory/adjustments', { method: 'POST', staff: true, body }); },
   createItem(body) { return apiRequest('/inventory/items', { method: 'POST', staff: true, body }); },
+};
+
+export const rfidApi = {
+  byEpc(epc) { return apiRequest(`/rfid/tags/by-epc/${encodeURIComponent(epc)}`, { staff: true }); },
+  createTag(body) { return apiRequest('/rfid/tags', { method: 'POST', staff: true, body }); },
+  assignTag(id, body) { return apiRequest(`/rfid/tags/${encodeURIComponent(id)}/assign`, { method: 'POST', staff: true, body }); },
 };
 
 export const importsApi = {

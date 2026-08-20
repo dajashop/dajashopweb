@@ -12,7 +12,7 @@ import {
   specKeyService,
 } from '../../../services/admin';
 import { saveProduct } from '../../../services/products';
-import { mediaApi, inventoryApi } from '../../../services/dajaPlatform';
+import { mediaApi, inventoryApi, rfidApi } from '../../../services/dajaPlatform';
 import { adminCatalogApi } from '../../../services/dajaPlatform';
 import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
@@ -341,19 +341,65 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         if (validFrom && validUntil && new Date(validUntil) <= new Date(validFrom)) {
           throw new Error('Kraj akcije mora biti posle početka akcije.');
         }
-        if (savedVariants[0]?.id) await adminCatalogApi.addVariantPrice(savedVariants[0].id, { amountMinor: Math.round(Number(pendingPrice.amount) * 100), currency: form.currency || 'RSD', priceType: pendingPrice.type, validFrom, validUntil });
+        if (savedVariants[0]?.id && pendingPrice.amount) {
+          await adminCatalogApi.addVariantPrice(savedVariants[0].id, {
+            amountMinor: Math.round(Number(pendingPrice.amount) * 100),
+            currency: form.currency || 'RSD',
+            priceType: pendingPrice.type,
+            validFrom,
+            validUntil,
+          });
+        }
+        if (savedVariants[0]?.id && pendingPrice.costAmount) {
+          await adminCatalogApi.addVariantPrice(savedVariants[0].id, {
+            amountMinor: Math.round(Number(pendingPrice.costAmount) * 100),
+            currency: form.currency || 'RSD',
+            priceType: 'cost',
+          });
+        }
         setPendingPrice(null);
       }
-      if (savedProductId && form.locationId && Number(form.quantity) !== 0) {
+      if (savedProductId) {
         const savedVariants = await adminCatalogApi.listVariants(savedProductId);
         const primaryVariant = savedVariants[0];
         if (primaryVariant?.id) {
-          await inventoryApi.adjust({
-            variantId: primaryVariant.id,
-            locationId: form.locationId,
-            quantityDelta: Number(form.quantity),
-            sourceType: 'admin_product_save',
-          });
+          const quantity = Number(form.quantity) || 0;
+          let taggedItem = null;
+          if (form.epc) {
+            let tag;
+            try {
+              tag = await rfidApi.byEpc(form.epc);
+            } catch (error) {
+              if (error?.status !== 404) throw error;
+              tag = await rfidApi.createTag({ epc: form.epc, variantId: primaryVariant.id });
+            }
+            if (!tag.inventoryItemId && form.locationId) {
+              taggedItem = await inventoryApi.createItem({
+                variantId: primaryVariant.id,
+                locationId: form.locationId,
+                status: 'in_stock',
+              });
+              await rfidApi.assignTag(tag.id, {
+                inventoryItemId: taggedItem.id,
+                reason: 'Unos proizvoda iz admin modala',
+              });
+            }
+          }
+          if (form.locationId && quantity > (taggedItem ? 1 : 0)) {
+            await inventoryApi.adjust({
+              variantId: primaryVariant.id,
+              locationId: form.locationId,
+              quantityDelta: quantity - (taggedItem ? 1 : 0),
+              sourceType: 'admin_product_save',
+            });
+          }
+          // Publish a new catalog snapshot after inventory/EPC changes so the
+          // RFID desktop app receives the current quantity and tag data.
+          if (form.epc || (form.locationId && quantity > 0)) {
+            await adminCatalogApi.refreshVariant(primaryVariant.id, {
+              attributes: form.specs || {},
+            });
+          }
         }
       }
       await Promise.all(deletedVariantIds.map((variantId) => adminCatalogApi.deleteVariant(variantId)));
