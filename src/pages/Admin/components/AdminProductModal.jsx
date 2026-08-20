@@ -13,12 +13,14 @@ import {
 } from '../../../services/admin';
 import { saveProduct } from '../../../services/products';
 import { mediaApi } from '../../../services/dajaPlatform';
+import { adminCatalogApi } from '../../../services/dajaPlatform';
 import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
 import ImageGalleryModal from '../../../components/modals/ImageGalleryModal.jsx';
 import ImageManager from './ImageManager.jsx';
 import { generateSlug } from '../utils/generators.js';
 import CustomSelect from './CustomSelect.jsx';
+import ProductOperationsPanel from './ProductOperationsPanel.jsx';
 
 // --- 1. Custom Select ---
 
@@ -76,6 +78,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     thumbnailUrl: '',
     mainImageUrl: '',
     seo: buildSeoDefaults(),
+    active: true,
+    published: false,
   });
 
   // State za Image Gallery Modal
@@ -84,9 +88,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const [tempSpecKey, setTempSpecKey] = useState('');
   const [tempSpecVal, setTempSpecVal] = useState('');
   const [loading, setLoading] = useState(false);
+  const [deletedVariantIds, setDeletedVariantIds] = useState([]);
   const [flash, setFlash] = useState({ open: false });
 
   useEffect(() => {
+    setDeletedVariantIds([]);
     const sub1 = brandService.subscribe(setBrands);
     const sub2 = categoryService.subscribe(setCats);
     const sub3 = specKeyService.subscribe(setSpecKeys);
@@ -238,10 +244,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     variants: prev.variants.map((variant, currentIndex) => currentIndex === index ? { ...variant, [field]: value } : variant),
   }));
 
-  const removeVariant = (index) => setForm((prev) => ({
-    ...prev,
-    variants: prev.variants.filter((_, currentIndex) => currentIndex !== index),
-  }));
+  const removeVariant = (index) => {
+    const variant = form.variants[index];
+    if (variant?.id) setDeletedVariantIds((ids) => [...ids, variant.id]);
+    setForm((prev) => ({ ...prev, variants: prev.variants.filter((_, currentIndex) => currentIndex !== index) }));
+  };
 
   const handleSubmit = async () => {
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
@@ -275,12 +282,12 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       );
       const selectedBrand = brands.find((brand) => brand.name === form.brand);
       const selectedCategory = cats.find((category) => category.name === form.category);
-      if (!selectedDepartment?.id) {
-        throw new Error('Izaberi važeće odeljenje pre čuvanja proizvoda.');
+      if (payload.published && !selectedDepartment?.id) {
+        throw new Error('Izaberi važeće odeljenje pre objavljivanja proizvoda.');
       }
       // Department is independent from brand. This is essential for products
       // such as batteries that deliberately do not have a brand.
-      payload.departmentId = selectedDepartment.id;
+      payload.departmentId = selectedDepartment?.id || null;
       if (selectedBrand?.id) {
         payload.brandId = selectedBrand.id;
       }
@@ -294,6 +301,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       else payload.id = product.id;
 
       const savedProductId = await saveProduct(payload);
+      await Promise.all(deletedVariantIds.map((variantId) => adminCatalogApi.deleteVariant(variantId)));
+      setDeletedVariantIds([]);
       const pendingMedia = (form.images || []).filter((image) => image.mediaId && !image.linkId);
       if (savedProductId && pendingMedia.length) {
         const linked = await Promise.all(
@@ -331,6 +340,14 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   // src/pages/Admin/components/AdminProductModal.jsx
 
   const handleImageChange = (newImages) => {
+    if (product?.id) {
+      const retained = new Set(newImages.map((image) => image.linkId).filter(Boolean));
+      const removed = (form.images || []).filter((image) => image.linkId && !retained.has(image.linkId));
+      if (removed.length) {
+        void Promise.all(removed.map((image) => mediaApi.detachFromProduct(product.id, image.linkId)))
+          .catch((error) => console.error('Brisanje veze slike nije uspelo:', error));
+      }
+    }
     setForm((prev) => {
       // URL prve slike pre i posle promene
       const oldPrimaryUrl = prev.images[0]?.url || '';
@@ -662,21 +679,29 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   </div>
                   <button type="button" onClick={addVariant} className="flex items-center gap-2 text-xs font-bold bg-neutral-900 text-white px-3 py-2 rounded-lg hover:bg-neutral-800"><Plus size={14} /> Dodaj varijantu</button>
                 </div>
+                <div className="md:col-span-3 flex gap-6 text-sm">
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={form.active !== false} onChange={(e) => handleChange('active', e.target.checked)} /> Aktivan proizvod</label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={form.published === true} onChange={(e) => handleChange('published', e.target.checked)} /> Objavi proizvod</label>
+                </div>
                 {(form.variants || []).length === 0 && <p className="text-sm text-neutral-400">Nema dodatnih varijanti. Cena iznad ostaje glavna varijanta proizvoda.</p>}
                 <div className="space-y-3">
                   {(form.variants || []).map((variant, index) => (
-                    <div key={variant.id || index} className="grid grid-cols-1 md:grid-cols-5 gap-3 p-3 bg-neutral-50 border border-neutral-100 rounded-xl">
+                    <div key={variant.id || index} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-neutral-50 border border-neutral-100 rounded-xl">
                       <input value={variant.sku || ''} onChange={(e) => updateVariant(index, 'sku', e.target.value)} placeholder="SKU" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
                       <input value={variant.name || ''} onChange={(e) => updateVariant(index, 'name', e.target.value)} placeholder="Naziv varijante" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
+                      <input value={variant.barcode || ''} onChange={(e) => updateVariant(index, 'barcode', e.target.value)} placeholder="Barkod" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
                       <input type="number" value={variant.price ?? ''} onChange={(e) => updateVariant(index, 'price', e.target.value)} placeholder="Cena RSD" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
+                      <input value={variant.currency || 'RSD'} onChange={(e) => updateVariant(index, 'currency', e.target.value.toUpperCase())} placeholder="Valuta" maxLength={3} className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
                       <select value={variant.gender || ''} onChange={(e) => updateVariant(index, 'gender', e.target.value)} className="rounded-lg border border-neutral-200 px-3 py-2 text-sm">
                         {genderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
-                      <div className="flex items-center justify-between gap-2"><label className="text-xs flex items-center gap-1"><input type="checkbox" checked={variant.active !== false} onChange={(e) => updateVariant(index, 'active', e.target.checked)} /> Aktivna</label><button type="button" onClick={() => removeVariant(index)} className="p-2 text-neutral-400 hover:text-red-500"><Trash2 size={17} /></button></div>
+                      <div className="flex items-center justify-between gap-2"><span><label className="text-xs flex items-center gap-1"><input type="checkbox" checked={variant.active !== false} onChange={(e) => updateVariant(index, 'active', e.target.checked)} /> Aktivna</label><label className="text-xs flex items-center gap-1"><input type="checkbox" checked={variant.published !== false} onChange={(e) => updateVariant(index, 'published', e.target.checked)} /> Objavljena</label></span><button type="button" onClick={() => removeVariant(index)} className="p-2 text-neutral-400 hover:text-red-500"><Trash2 size={17} /></button></div>
                     </div>
                   ))}
                 </div>
               </div>
+
+              <ProductOperationsPanel productId={product?.id} variants={form.variants || []} />
 
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
                 <div className="flex justify-between items-center mb-4">

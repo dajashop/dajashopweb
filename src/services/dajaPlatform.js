@@ -340,6 +340,14 @@ export const adminCatalogApi = {
       staff: true,
     });
   },
+  listVariantPrices(id) { return apiRequest(`/variants/${encodeURIComponent(id)}/prices`, { staff: true }); },
+  addVariantPrice(id, body) { return apiRequest(`/variants/${encodeURIComponent(id)}/prices`, { method: 'POST', staff: true, body }); },
+  deleteVariant(id) { return apiRequest(`/variants/${encodeURIComponent(id)}`, { method: 'DELETE', staff: true }); },
+  listVariantSpecifications(id) { return apiRequest(`/variants/${encodeURIComponent(id)}/specifications`, { staff: true }); },
+  replaceVariantSpecifications(id, values) { return apiRequest(`/variants/${encodeURIComponent(id)}/specifications`, { method: 'PUT', staff: true, body: { values } }); },
+  listAdminReviews(id) { return apiRequest(`/admin/products/${encodeURIComponent(id)}/reviews`, { staff: true }); },
+  moderateReview(id, status) { return apiRequest(`/admin/reviews/${encodeURIComponent(id)}`, { method: 'PATCH', staff: true, body: { status } }); },
+  deleteReview(id) { return apiRequest(`/admin/reviews/${encodeURIComponent(id)}`, { method: 'DELETE', staff: true }); },
   repairProductImageUrls(productId = '') {
     return Promise.resolve({ repaired: 0, productId });
   },
@@ -570,6 +578,12 @@ export const mediaApi = {
   deleteProductImages(slug) {
     return Promise.resolve({ deleted: true, slug });
   },
+};
+
+export const inventoryApi = {
+  balances(variantId) { return apiRequest(`/inventory/variants/${encodeURIComponent(variantId)}/balances`, { staff: true }); },
+  adjust(body) { return apiRequest('/inventory/adjustments', { method: 'POST', staff: true, body }); },
+  createItem(body) { return apiRequest('/inventory/items', { method: 'POST', staff: true, body }); },
 };
 
 export const importsApi = {
