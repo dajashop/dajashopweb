@@ -46,6 +46,7 @@ function normalizeProduct(product) {
     product.current_price_amount ??
     firstVariant?.currentPriceAmount ??
     firstVariant?.current_price_amount;
+  const salePriceMinor = product.salePrice ?? product.sale_price;
   const primaryImage =
     product.primaryImageUrl ||
     product.primary_image_url ||
@@ -68,6 +69,12 @@ function normalizeProduct(product) {
       typeof priceMinor === 'number' && priceMinor > 999
         ? priceMinor / 100
         : Number(priceMinor || 0),
+    salePrice:
+      salePriceMinor === null || salePriceMinor === undefined
+        ? null
+        : (typeof salePriceMinor === 'number' && salePriceMinor > 999
+            ? salePriceMinor / 100
+            : Number(salePriceMinor)),
     image: primaryImage,
     mainImageUrl: primaryImage,
     thumbnailUrl: product.thumbnailUrl || product.thumbnail_url || primaryImage,

@@ -134,10 +134,26 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         ...product,
         images: loadedImages,
         specs: product.specs || {},
-        variants: Array.isArray(product.variants) ? product.variants.map((variant) => ({
-          ...variant,
-          price: variant.price ?? (variant.currentPriceAmount ? variant.currentPriceAmount / 100 : ''),
-        })) : [],
+        // The admin list exposes the primary variant as flat fields. Preserve
+        // its ID so this modal updates it rather than creating a duplicate SKU.
+        variants: Array.isArray(product.variants) && product.variants.length
+          ? product.variants.map((variant) => ({
+              ...variant,
+              price: variant.price ?? (variant.currentPriceAmount ? variant.currentPriceAmount / 100 : ''),
+            }))
+          : product.variantId
+            ? [{
+                id: product.variantId,
+                sku: product.sku || product.slug || '',
+                barcode: product.barcode || null,
+                price: product.price ?? (product.currentPriceAmount ? product.currentPriceAmount / 100 : ''),
+                currency: product.currency || 'RSD',
+                gender: product.gender || null,
+                attributes: product.specs || {},
+                active: product.variantActive !== false,
+                published: product.variantPublished !== false,
+              }]
+            : [],
         sku: product.variants?.[0]?.sku || product.sku || '',
         barcode: product.variants?.[0]?.barcode || product.barcode || '',
         currency: product.variants?.[0]?.currency || product.currency || 'RSD',
@@ -363,7 +379,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       }, 500);
     } catch (err) {
       console.error(err);
-      setFlash({ open: true, title: 'Greška', ok: false });
+      setFlash({ open: true, title: err?.message || 'Čuvanje nije uspelo.', ok: false });
     } finally {
       setLoading(false);
     }
