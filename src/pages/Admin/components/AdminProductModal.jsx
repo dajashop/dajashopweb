@@ -12,7 +12,7 @@ import {
   specKeyService,
 } from '../../../services/admin';
 import { saveProduct } from '../../../services/products';
-import { mediaApi } from '../../../services/dajaPlatform';
+import { mediaApi, inventoryApi } from '../../../services/dajaPlatform';
 import { adminCatalogApi } from '../../../services/dajaPlatform';
 import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
@@ -56,6 +56,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   const [brands, setBrands] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [cats, setCats] = useState([]);
   const [specKeys, setSpecKeys] = useState([]);
   const [isSeoOpen, setIsSeoOpen] = useState(true);
@@ -75,7 +76,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     barcode: '',
     epc: '',
     locationId: '',
-    quantity: '',
+    quantity: '1',
     currency: 'RSD',
     // [NOVO] Niz za custom kartice (naslov + podnaslov)
     features: [],
@@ -174,6 +175,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       sub4();
     };
   }, [product]);
+
+  useEffect(() => {
+    inventoryApi.locations().then(setLocations).catch((error) => console.error('Učitavanje lokacija nije uspelo:', error));
+  }, []);
 
   const handleChange = (field, value) => {
     setForm((prev) => {
@@ -312,6 +317,18 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       else payload.id = product.id;
 
       const savedProductId = await saveProduct(payload);
+      if (savedProductId && form.locationId && Number(form.quantity) !== 0) {
+        const savedVariants = await adminCatalogApi.listVariants(savedProductId);
+        const primaryVariant = savedVariants[0];
+        if (primaryVariant?.id) {
+          await inventoryApi.adjust({
+            variantId: primaryVariant.id,
+            locationId: form.locationId,
+            quantityDelta: Number(form.quantity),
+            sourceType: 'admin_product_save',
+          });
+        }
+      }
       await Promise.all(deletedVariantIds.map((variantId) => adminCatalogApi.deleteVariant(variantId)));
       setDeletedVariantIds([]);
       const pendingMedia = (form.images || []).filter((image) => image.mediaId && !image.linkId);
@@ -564,7 +581,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           data-lenis-prevent
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8 space-y-6">
+            <div className="lg:col-span-8 space-y-6 flex flex-col">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="block">
@@ -590,10 +607,6 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2 text-sm text-neutral-600 font-mono outline-none focus:ring-2 focus:ring-neutral-200"
                       placeholder="npr. ECB-900DB-1BER"
                     />
-                    <span className="text-[10px] text-neutral-400 ml-1">
-                      Ovo je link proizvoda. Ako je prazno, generiše se iz
-                      naziva.
-                    </span>
                   </label>
                 </div>
                 <div>
@@ -671,7 +684,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   options={genderOptions}
                   onChange={(v) => handleChange('gender', v)}
                 />
-                <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Lokacija</span><input value={form.locationId || ''} onChange={(e) => handleChange('locationId', e.target.value)} placeholder="Lokacija / magacin" className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3" /></label>
+                <CustomSelect label="Lokacija" value={form.locationId || ''} options={locations.map((location) => ({ value: location.id, label: location.name || location.code }))} onChange={(value) => handleChange('locationId', value)} placeholder="Izaberi lokaciju" />
                 <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Količina</span><input type="number" value={form.quantity || ''} onChange={(e) => handleChange('quantity', e.target.value)} placeholder="0" className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3" /></label>
                 <div className="md:col-span-3">
                   <label className="block">
@@ -721,7 +734,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
               <ProductOperationsPanel productId={product?.id} variants={form.variants || []} />
 
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 order-last">
                 <div className="flex justify-between items-center mb-4">
                   <div>
                     <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
@@ -743,7 +756,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
                 {isSeoOpen && (
                   <div className="space-y-5">
-                    <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">URL slug</span><input value={form.slug || generateSlug(form.name)} onChange={(e) => handleChange('slug', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm font-mono" placeholder="automatski iz naziva" /></label>
+                    <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">URL slug</span><input value={form.slug || generateSlug(form.name)} onChange={(e) => handleChange('slug', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm font-mono" placeholder="automatski iz naziva" /><span className="text-[10px] text-neutral-400 ml-1">Ovo je link proizvoda. Ako je prazno, generiše se iz naziva.</span></label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <label className="block md:col-span-2">
                         <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
