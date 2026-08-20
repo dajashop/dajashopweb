@@ -336,7 +336,12 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       const savedProductId = await saveProduct(payload);
       if (savedProductId && pendingPrice) {
         const savedVariants = await adminCatalogApi.listVariants(savedProductId);
-        if (savedVariants[0]?.id) await adminCatalogApi.addVariantPrice(savedVariants[0].id, { amountMinor: Math.round(Number(pendingPrice.amount) * 100), currency: form.currency || 'RSD', priceType: pendingPrice.type, validFrom: pendingPrice.from ? new Date(pendingPrice.from).toISOString() : undefined, validUntil: pendingPrice.until ? new Date(pendingPrice.until).toISOString() : null });
+        const validFrom = pendingPrice.from ? new Date(pendingPrice.from).toISOString() : undefined;
+        const validUntil = pendingPrice.until ? new Date(pendingPrice.until).toISOString() : null;
+        if (validFrom && validUntil && new Date(validUntil) <= new Date(validFrom)) {
+          throw new Error('Kraj akcije mora biti posle početka akcije.');
+        }
+        if (savedVariants[0]?.id) await adminCatalogApi.addVariantPrice(savedVariants[0].id, { amountMinor: Math.round(Number(pendingPrice.amount) * 100), currency: form.currency || 'RSD', priceType: pendingPrice.type, validFrom, validUntil });
         setPendingPrice(null);
       }
       if (savedProductId && form.locationId && Number(form.quantity) !== 0) {
