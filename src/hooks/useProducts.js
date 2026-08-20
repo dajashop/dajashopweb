@@ -86,6 +86,23 @@ export default function useProducts(params = {}) {
     );
   }, [usePublicRealtime]);
 
+  // A timed sale can end without an admin request. Refresh only the affected
+  // product at that exact time; never reload the whole catalog.
+  useEffect(() => {
+    if (!usePublicRealtime) return undefined;
+    const timers = items
+      .filter((item) => item.salePrice && item.saleValidUntil && item.slug)
+      .map((item) => {
+        const delay = new Date(item.saleValidUntil).getTime() - Date.now();
+        if (!Number.isFinite(delay) || delay <= 0) return null;
+        return window.setTimeout(() => {
+          void applyPublicProductRealtimeEvent({ slug: item.slug });
+        }, Math.min(delay + 50, 2_147_483_647));
+      })
+      .filter(Boolean);
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [items, usePublicRealtime]);
+
   const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
   return { items, loading, err, refresh };
 }

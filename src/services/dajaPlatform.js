@@ -75,6 +75,7 @@ function normalizeProduct(product) {
         : (typeof salePriceMinor === 'number' && salePriceMinor > 999
             ? salePriceMinor / 100
             : Number(salePriceMinor)),
+    saleValidUntil: product.saleValidUntil || product.sale_valid_until || null,
     image: primaryImage,
     mainImageUrl: primaryImage,
     thumbnailUrl: product.thumbnailUrl || product.thumbnail_url || primaryImage,
