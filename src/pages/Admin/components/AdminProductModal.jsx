@@ -285,6 +285,18 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
     setLoading(true);
     try {
+      // Validate price dates before POST/PATCH. This prevents a product from
+      // being saved when its accompanying sale is invalid.
+      if (pendingPrice?.amount) {
+        const saleStart = pendingPrice.from ? new Date(pendingPrice.from) : new Date();
+        const saleEnd = pendingPrice.until ? new Date(pendingPrice.until) : null;
+        if (!saleEnd || Number.isNaN(saleEnd.getTime()) || saleEnd <= saleStart) {
+          throw new Error('Kraj akcije mora biti posle početka akcije.');
+        }
+        if (saleEnd <= new Date()) {
+          throw new Error('Kraj akcije ne može biti u prošlosti.');
+        }
+      }
       const finalSlug = form.slug || generateSlug(form.name);
 
       // [NOVO] Filtriramo prazne redove pre čuvanja
