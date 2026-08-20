@@ -96,6 +96,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const [tempSpecVal, setTempSpecVal] = useState('');
   const [loading, setLoading] = useState(false);
   const [deletedVariantIds, setDeletedVariantIds] = useState([]);
+  const [pendingPrice, setPendingPrice] = useState(null);
   const [flash, setFlash] = useState({ open: false });
 
   useEffect(() => {
@@ -317,6 +318,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       else payload.id = product.id;
 
       const savedProductId = await saveProduct(payload);
+      if (savedProductId && pendingPrice) {
+        const savedVariants = await adminCatalogApi.listVariants(savedProductId);
+        if (savedVariants[0]?.id) await adminCatalogApi.addVariantPrice(savedVariants[0].id, { amountMinor: Math.round(Number(pendingPrice.amount) * 100), currency: form.currency || 'RSD', priceType: pendingPrice.type, validFrom: pendingPrice.from ? new Date(pendingPrice.from).toISOString() : undefined, validUntil: pendingPrice.until ? new Date(pendingPrice.until).toISOString() : null });
+        setPendingPrice(null);
+      }
       if (savedProductId && form.locationId && Number(form.quantity) !== 0) {
         const savedVariants = await adminCatalogApi.listVariants(savedProductId);
         const primaryVariant = savedVariants[0];
@@ -1047,7 +1053,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   </p>
                 </div>
               </div>
-              <ProductOperationsPanel productId={product?.id} variants={form.variants || []} />
+              <ProductOperationsPanel productId={product?.id} variants={form.variants || []} basePrice={form.price} onPendingPrice={setPendingPrice} />
             </div>
           </div>
         </div>
