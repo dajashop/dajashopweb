@@ -340,6 +340,7 @@ export const adminCatalogApi = {
       staff: true,
     });
   },
+  setProductVisibility(id, active) { return apiRequest(`/products/${encodeURIComponent(id)}/visibility`, { method: 'PATCH', staff: true, body: { active } }); },
   listVariantPrices(id) { return apiRequest(`/variants/${encodeURIComponent(id)}/prices`, { staff: true }); },
   listVariants(id) { return apiRequest(`/products/${encodeURIComponent(id)}/variants`, { staff: true }); },
   addVariantPrice(id, body) { return apiRequest(`/variants/${encodeURIComponent(id)}/prices`, { method: 'POST', staff: true, body }); },

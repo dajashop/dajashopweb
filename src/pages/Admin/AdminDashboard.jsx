@@ -19,7 +19,7 @@ import {
   EyeOff, // <--- NOVA IKONA
 } from 'lucide-react';
 import useProducts from '../../hooks/useProducts';
-import { deleteProduct, saveProduct } from '../../services/products';
+import { deleteProduct, saveProduct, setProductVisibility } from '../../services/products';
 
 // ... (Ostali importi ostaju isti: AdminProductModal, ExcelManager, itd.)
 import AdminProductModal from './components/AdminProductModal.jsx';
@@ -192,10 +192,7 @@ export default function AdminDashboard() {
       // Ako postoji, samo ga invertiramo.
       const currentStatus = product.isVisible !== false;
 
-      await saveProduct({
-        id: product.id,
-        isVisible: !currentStatus, // Menjamo u suprotno
-      });
+      await setProductVisibility(product.id, !currentStatus);
     } catch (error) {
       console.error('Greška pri menjanju vidljivosti:', error);
       alert('Došlo je do greške.');

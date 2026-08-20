@@ -121,3 +121,8 @@ export async function deleteProduct(id) {
   notifyProductsChanged({ type: 'delete', id });
   return result;
 }
+
+export async function setProductVisibility(id, isVisible) {
+  await adminCatalogApi.setProductVisibility(id, isVisible);
+  notifyProductsChanged({ type: 'upsert', product: { id, isVisible, active: isVisible } });
+}
