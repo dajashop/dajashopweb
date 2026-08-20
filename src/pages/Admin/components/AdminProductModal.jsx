@@ -581,7 +581,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           data-lenis-prevent
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8 space-y-6 flex flex-col">
+            <div className="lg:col-span-8 flex flex-col gap-6">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="block">
@@ -732,7 +732,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 </div>
               </div>}
 
-              <ProductOperationsPanel productId={product?.id} variants={form.variants || []} />
+              {false && <ProductOperationsPanel productId={product?.id} variants={form.variants || []} />}
 
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 order-last">
                 <div className="flex justify-between items-center mb-4">
@@ -1028,7 +1028,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             </div>
 
             <div className="lg:col-span-4 space-y-6">
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 h-full">
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
                 {/* PROSLEĐUJEMO onImageClick */}
                 <ImageManager
                   images={form.images}
@@ -1047,6 +1047,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   </p>
                 </div>
               </div>
+              <ProductOperationsPanel productId={product?.id} variants={form.variants || []} />
             </div>
           </div>
         </div>
