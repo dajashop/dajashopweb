@@ -23,7 +23,7 @@ export default function ProductHeader({ product }) {
       </h1>
 
       {/* Cena */}
-      <div className="price-tag">{money(product.price)}</div>
+      <div className="price-tag">{product.salePrice ? <><span className="text-sm line-through opacity-50 mr-2">{money(product.price)}</span><span className="text-red-600">{money(product.salePrice)}</span></> : money(product.price)}</div>
     </div>
   );
 }

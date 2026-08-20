@@ -351,7 +351,7 @@ export default function ProductCard({ p }) {
 
           <div className="product-card__footer">
             <div className="product-card__price text-zinc-900 dark:text-white font-medium">
-              {money(p.price)}
+              {p.salePrice ? <><span className="line-through text-zinc-400 mr-2">{money(p.price)}</span><span className="text-red-600">{money(p.salePrice)}</span></> : money(p.price)}
             </div>
 
             <button
