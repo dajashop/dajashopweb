@@ -71,6 +71,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     department: 'satovi',
     specs: {},
     variants: [],
+    sku: '',
+    barcode: '',
+    currency: 'RSD',
     // [NOVO] Niz za custom kartice (naslov + podnaslov)
     features: [],
     model3DUrl: '',
@@ -130,6 +133,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           ...variant,
           price: variant.price ?? (variant.currentPriceAmount ? variant.currentPriceAmount / 100 : ''),
         })) : [],
+        sku: product.variants?.[0]?.sku || product.sku || '',
+        barcode: product.variants?.[0]?.barcode || product.barcode || '',
+        currency: product.variants?.[0]?.currency || product.currency || 'RSD',
         // [NOVO] Učitavamo postojeće features ili postavljamo jedan prazan red
         features:
           product.features && product.features.length > 0
@@ -234,21 +240,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     setForm((prev) => ({ ...prev, specs: newSpecs }));
   };
 
-  const addVariant = () => setForm((prev) => ({
-    ...prev,
-    variants: [...(prev.variants || []), { sku: '', name: '', price: prev.price || '', gender: prev.gender || '', active: true, published: true, attributes: {} }],
-  }));
-
+  // The database keeps one internal sellable record, but the admin UI treats
+  // it as the product's own SKU/barcode rather than a user-managed variant.
   const updateVariant = (index, field, value) => setForm((prev) => ({
     ...prev,
     variants: prev.variants.map((variant, currentIndex) => currentIndex === index ? { ...variant, [field]: value } : variant),
   }));
 
-  const removeVariant = (index) => {
-    const variant = form.variants[index];
-    if (variant?.id) setDeletedVariantIds((ids) => [...ids, variant.id]);
-    setForm((prev) => ({ ...prev, variants: prev.variants.filter((_, currentIndex) => currentIndex !== index) }));
-  };
 
   const handleSubmit = async () => {
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
@@ -268,7 +266,17 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         slug: finalSlug,
         features: cleanFeatures, // [NOVO] Dodajemo u payload
         seo: cleanSeoPayload(form.seo),
-        variants: (form.variants || []).filter((variant) => variant.sku && Number(variant.price) >= 0),
+        variants: [{
+          ...(form.variants?.[0]?.id ? { id: form.variants[0].id } : {}),
+          sku: form.sku || finalSlug,
+          barcode: form.barcode || null,
+          price: Number(form.price),
+          currency: form.currency || 'RSD',
+          gender: form.gender || null,
+          attributes: form.specs || {},
+          active: form.active !== false,
+          published: form.published === true,
+        }],
       };
 
       if (!Object.keys(payload.seo).length) {
@@ -674,10 +682,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">Varijante</h3>
+                    <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">SKU i prodajni podaci</h3>
                     <p className="text-xs text-neutral-500 mt-1">SKU, cena, pol i status se čuvaju zasebno za svaku varijantu.</p>
                   </div>
-                  <button type="button" onClick={addVariant} className="flex items-center gap-2 text-xs font-bold bg-neutral-900 text-white px-3 py-2 rounded-lg hover:bg-neutral-800"><Plus size={14} /> Dodaj varijantu</button>
                 </div>
                 <div className="md:col-span-3 flex gap-6 text-sm">
                   <label className="flex items-center gap-2"><input type="checkbox" checked={form.active !== false} onChange={(e) => handleChange('active', e.target.checked)} /> Aktivan proizvod</label>
@@ -685,17 +692,17 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 </div>
                 {(form.variants || []).length === 0 && <p className="text-sm text-neutral-400">Nema dodatnih varijanti. Cena iznad ostaje glavna varijanta proizvoda.</p>}
                 <div className="space-y-3">
-                  {(form.variants || []).map((variant, index) => (
+                  {[form.variants?.[0] || {}].map((variant, index) => (
                     <div key={variant.id || index} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-neutral-50 border border-neutral-100 rounded-xl">
-                      <input value={variant.sku || ''} onChange={(e) => updateVariant(index, 'sku', e.target.value)} placeholder="SKU" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
+                      <input value={form.sku || ''} onChange={(e) => handleChange('sku', e.target.value)} placeholder="SKU" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
                       <input value={variant.name || ''} onChange={(e) => updateVariant(index, 'name', e.target.value)} placeholder="Naziv varijante" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
-                      <input value={variant.barcode || ''} onChange={(e) => updateVariant(index, 'barcode', e.target.value)} placeholder="Barkod" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
+                      <input value={form.barcode || ''} onChange={(e) => handleChange('barcode', e.target.value)} placeholder="Barkod" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
                       <input type="number" value={variant.price ?? ''} onChange={(e) => updateVariant(index, 'price', e.target.value)} placeholder="Cena RSD" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
-                      <input value={variant.currency || 'RSD'} onChange={(e) => updateVariant(index, 'currency', e.target.value.toUpperCase())} placeholder="Valuta" maxLength={3} className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
+                      <input value={form.currency || 'RSD'} onChange={(e) => handleChange('currency', e.target.value.toUpperCase())} placeholder="Valuta" maxLength={3} className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
                       <select value={variant.gender || ''} onChange={(e) => updateVariant(index, 'gender', e.target.value)} className="rounded-lg border border-neutral-200 px-3 py-2 text-sm">
                         {genderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
-                      <div className="flex items-center justify-between gap-2"><span><label className="text-xs flex items-center gap-1"><input type="checkbox" checked={variant.active !== false} onChange={(e) => updateVariant(index, 'active', e.target.checked)} /> Aktivna</label><label className="text-xs flex items-center gap-1"><input type="checkbox" checked={variant.published !== false} onChange={(e) => updateVariant(index, 'published', e.target.checked)} /> Objavljena</label></span><button type="button" onClick={() => removeVariant(index)} className="p-2 text-neutral-400 hover:text-red-500"><Trash2 size={17} /></button></div>
+                      <div className="flex items-center justify-between gap-2"><span><label className="text-xs flex items-center gap-1"><input type="checkbox" checked={variant.active !== false} onChange={(e) => updateVariant(index, 'active', e.target.checked)} /> Aktivna</label><label className="text-xs flex items-center gap-1"><input type="checkbox" checked={variant.published !== false} onChange={(e) => updateVariant(index, 'published', e.target.checked)} /> Objavljena</label></span></div>
                     </div>
                   ))}
                 </div>
