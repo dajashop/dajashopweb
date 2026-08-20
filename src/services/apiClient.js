@@ -210,6 +210,10 @@ export async function apiRequest(path, options = {}) {
 
   if (response.status === 401 && auth && retry && staff) {
     try {
+      // The staff token is minted from the customer token. After the dashboard
+      // has been idle, both may have expired; renewing only the staff token
+      // then calls `/admin/session` with an expired customer credential.
+      await refreshAccessToken();
       await refreshStaffAccessToken();
       return apiRequest(path, { ...options, retry: false });
     } catch {
