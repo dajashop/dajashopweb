@@ -86,7 +86,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     mainImageUrl: '',
     seo: buildSeoDefaults(),
     active: true,
-    published: false,
+    published: true,
   });
 
   // State za Image Gallery Modal
@@ -706,6 +706,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                       placeholder="/models/moj-sat.glb (iz Storage-a)"
                     />
                   </label>
+                </div>
+                <div className="md:col-span-3 flex flex-wrap gap-6 text-sm pt-1">
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={form.active !== false} onChange={(e) => handleChange('active', e.target.checked)} /> Aktivan proizvod</label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={form.published !== false} onChange={(e) => handleChange('published', e.target.checked)} /> Objavi proizvod</label>
                 </div>
               </div>
 
