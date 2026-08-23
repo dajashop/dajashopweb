@@ -552,8 +552,12 @@ export const ordersApi = {
 };
 
 export const mediaApi = {
-  registerExternal(url) {
-    return apiRequest('/media/external', { method: 'POST', staff: true, body: { url } });
+  registerExternal(url, options = {}) {
+    return apiRequest('/media/external', {
+      method: 'POST',
+      staff: true,
+      body: { url, ...options },
+    });
   },
   createUpload(payload) {
     return apiRequest('/media/uploads', {

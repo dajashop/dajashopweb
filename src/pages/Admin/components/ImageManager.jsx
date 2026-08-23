@@ -70,6 +70,7 @@ function ImageManager({
         storageFolderName,
         files,
         ({ progress }) => setProgress(progress),
+        images.length,
       );
       onChange([...images, ...uploaded]);
 
@@ -109,7 +110,10 @@ function ImageManager({
 
     setUrlLoading(true);
     try {
-      const asset = await mediaApi.registerExternal(sanitizedUrlInput);
+      const asset = await mediaApi.registerExternal(sanitizedUrlInput, {
+        productSlug: storageFolderName,
+        imageIndex: images.length + 1,
+      });
       const image = {
         mediaId: asset.id || asset.mediaId,
         url: asset.publicUrl || asset.public_url || sanitizedUrlInput,
