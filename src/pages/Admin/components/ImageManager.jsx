@@ -142,7 +142,11 @@ function ImageManager({
       }*/
     } catch (error) {
       console.error('Greška na serveru prilikom preuzimanja:', error);
-      alert('Greška na serveru prilikom preuzimanja.');
+      alert(
+        `Preuzimanje slike nije uspelo: ${
+          error?.message || 'Proverite da li ste uneli direktan link slike.'
+        }`,
+      );
     } finally {
       setUrlLoading(false);
     }
