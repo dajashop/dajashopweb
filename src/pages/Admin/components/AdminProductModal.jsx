@@ -528,12 +528,12 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             const balanceRows = Array.isArray(balances)
               ? balances
               : balances?.items || balances?.data || [];
-            const currentQuantity = balanceRows
-              .filter(
+            const locationBalances = balanceRows.filter(
                 (balance) =>
                   balance.locationId === form.locationId ||
                   balance.location_id === form.locationId,
-              )
+              );
+            const currentQuantity = locationBalances
               .reduce(
                 (total, balance) =>
                   total +
@@ -546,12 +546,20 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 0,
               );
             const quantityDelta = quantity - currentQuantity;
-            if (quantityDelta !== 0) {
+            const currentPlacement = locationBalances[0];
+            const selectedZoneId = form.zoneId || null;
+            const selectedBinId = form.binId || null;
+            const placementChanged =
+              (currentPlacement?.zoneId ?? currentPlacement?.zone_id ?? null) !==
+                selectedZoneId ||
+              (currentPlacement?.binId ?? currentPlacement?.bin_id ?? null) !==
+                selectedBinId;
+            if (quantityDelta !== 0 || placementChanged) {
               await inventoryApi.adjust({
                 variantId: primaryVariant.id,
                 locationId: form.locationId,
-                ...(form.zoneId ? { zoneId: form.zoneId } : {}),
-                ...(form.binId ? { binId: form.binId } : {}),
+                zoneId: selectedZoneId,
+                binId: selectedBinId,
                 quantityDelta,
                 sourceType: 'admin_product_save',
               });
