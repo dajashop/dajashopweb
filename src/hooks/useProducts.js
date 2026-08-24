@@ -97,6 +97,21 @@ export default function useProducts(params = {}) {
         // its product payload intentionally excludes stock placement. Use its
         // product ID to load just the changed full admin record instead.
         const productId = event?.data?.productId || event?.productId;
+        const slug = event?.data?.slug || event?.slug;
+        if (event?.data?.deleted === true || event?.deleted === true) {
+          if (!productId && !slug) {
+            setRefreshKey((key) => key + 1);
+            return;
+          }
+          setItems((current) =>
+            current.filter(
+              (item) =>
+                (productId ? item.id !== productId : true) &&
+                (slug ? item.slug !== slug : true),
+            ),
+          );
+          return;
+        }
         if (!productId) {
           setRefreshKey((key) => key + 1);
           return;
