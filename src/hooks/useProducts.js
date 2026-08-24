@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { applyPublicProductRealtimeEvent, subscribeProducts } from '../services/products';
 import {
   adminCatalogApi,
@@ -10,6 +10,10 @@ export default function useProducts(params = {}) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  // A desktop create is two writes: product first, then its inventory
+  // placement. Keep only the response for the newest live event so a slower
+  // first request without a shelf can never overwrite the newer placement.
+  const adminRealtimeSequence = useRef(new Map());
 
   // Stabilizujemo parametre da ne bi izazivali re-render petlju
   // Mentor napomena: Ovo je odlično rešeno sa JSON.stringify
@@ -97,9 +101,12 @@ export default function useProducts(params = {}) {
           setRefreshKey((key) => key + 1);
           return;
         }
+        const sequence = (adminRealtimeSequence.current.get(productId) || 0) + 1;
+        adminRealtimeSequence.current.set(productId, sequence);
         void adminCatalogApi
           .getProduct(productId)
           .then((product) => {
+            if (adminRealtimeSequence.current.get(productId) !== sequence) return;
             if (!product?.id) return;
             setItems((current) => {
               const index = current.findIndex((item) => item.id === product.id);
