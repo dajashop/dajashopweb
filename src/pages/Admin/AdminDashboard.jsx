@@ -66,9 +66,8 @@ const generateSlug = (text) => {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const nav = useNavigate();
-  // RFID changes are published on the safe public catalog channel. Subscribe
-  // here too so the admin product list follows desktop creates/updates/deletes
-  // without a manual browser refresh.
+  // The public realtime signal carries the changed product ID. The admin hook
+  // then loads only that product through its authenticated catalog API.
   const { items: products, refresh: refreshProducts } = useProducts({
     admin: true,
     publicRealtime: true,

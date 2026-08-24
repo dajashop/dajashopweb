@@ -286,6 +286,12 @@ export const adminCatalogApi = {
     const data = await apiRequest('/products', { staff: true });
     return toArrayPayload(data).map(normalizeProduct);
   },
+  async getProduct(id) {
+    const data = await apiRequest(`/products/${encodeURIComponent(id)}`, {
+      staff: true,
+    });
+    return normalizeProduct(data);
+  },
   async saveProduct(product) {
     const has = (key) => Object.prototype.hasOwnProperty.call(product, key);
     const productPayload = {};

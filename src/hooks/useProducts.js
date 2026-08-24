@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { applyPublicProductRealtimeEvent, subscribeProducts } from '../services/products';
-import { subscribePublicCatalogRealtime } from '../services/dajaPlatform';
+import {
+  adminCatalogApi,
+  subscribePublicCatalogRealtime,
+} from '../services/dajaPlatform';
 
 export default function useProducts(params = {}) {
   const [items, setItems] = useState([]);
@@ -81,10 +84,36 @@ export default function useProducts(params = {}) {
   useEffect(() => {
     if (!usePublicRealtime) return undefined;
     return subscribePublicCatalogRealtime(
-      (event) => { void applyPublicProductRealtimeEvent(event); },
+      (event) => {
+        if (!memoizedParams.admin) {
+          void applyPublicProductRealtimeEvent(event);
+          return;
+        }
+        // Public realtime is available before the staff token is minted, but
+        // its product payload intentionally excludes stock placement. Use its
+        // product ID to load just the changed full admin record instead.
+        const productId = event?.data?.productId || event?.productId;
+        if (!productId) {
+          setRefreshKey((key) => key + 1);
+          return;
+        }
+        void adminCatalogApi
+          .getProduct(productId)
+          .then((product) => {
+            if (!product?.id) return;
+            setItems((current) => {
+              const index = current.findIndex((item) => item.id === product.id);
+              if (index === -1) return [product, ...current];
+              const next = [...current];
+              next[index] = product;
+              return next;
+            });
+          })
+          .catch(() => setRefreshKey((key) => key + 1));
+      },
       () => {},
     );
-  }, [usePublicRealtime]);
+  }, [memoizedParams.admin, usePublicRealtime]);
 
   // A timed sale can end without an admin request. Refresh only the affected
   // product at that exact time; never reload the whole catalog.
