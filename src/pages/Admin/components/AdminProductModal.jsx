@@ -12,7 +12,11 @@ import {
   specKeyService,
 } from '../../../services/admin';
 import { saveProduct } from '../../../services/products';
-import { mediaApi, inventoryApi, rfidApi } from '../../../services/dajaPlatform';
+import {
+  mediaApi,
+  inventoryApi,
+  rfidApi,
+} from '../../../services/dajaPlatform';
 import { adminCatalogApi } from '../../../services/dajaPlatform';
 import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
@@ -57,6 +61,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const [brands, setBrands] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [locations, setLocations] = useState([]);
+  const [warehouseLayout, setWarehouseLayout] = useState({
+    warehouses: [],
+    zones: [],
+    bins: [],
+  });
   const [cats, setCats] = useState([]);
   const [specKeys, setSpecKeys] = useState([]);
   const [isSeoOpen, setIsSeoOpen] = useState(true);
@@ -76,6 +85,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     barcode: '',
     epc: '',
     locationId: '',
+    zoneId: '',
+    binId: '',
     quantity: '1',
     currency: 'RSD',
     // [NOVO] Niz za custom kartice (naslov + podnaslov)
@@ -136,27 +147,41 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         specs: product.specs || {},
         // The admin list exposes the primary variant as flat fields. Preserve
         // its ID so this modal updates it rather than creating a duplicate SKU.
-        variants: Array.isArray(product.variants) && product.variants.length
-          ? product.variants.map((variant) => ({
-              ...variant,
-              price: variant.price ?? (variant.currentPriceAmount ? variant.currentPriceAmount / 100 : ''),
-            }))
-          : product.variantId
-            ? [{
-                id: product.variantId,
-                sku: product.sku || product.slug || '',
-                barcode: product.barcode || null,
-                price: product.price ?? (product.currentPriceAmount ? product.currentPriceAmount / 100 : ''),
-                currency: product.currency || 'RSD',
-                gender: product.gender || null,
-                attributes: product.specs || {},
-                active: product.variantActive !== false,
-                published: product.variantPublished !== false,
-              }]
-            : [],
+        variants:
+          Array.isArray(product.variants) && product.variants.length
+            ? product.variants.map((variant) => ({
+                ...variant,
+                price:
+                  variant.price ??
+                  (variant.currentPriceAmount
+                    ? variant.currentPriceAmount / 100
+                    : ''),
+              }))
+            : product.variantId
+              ? [
+                  {
+                    id: product.variantId,
+                    sku: product.sku || product.slug || '',
+                    barcode: product.barcode || null,
+                    price:
+                      product.price ??
+                      (product.currentPriceAmount
+                        ? product.currentPriceAmount / 100
+                        : ''),
+                    currency: product.currency || 'RSD',
+                    gender: product.gender || null,
+                    attributes: product.specs || {},
+                    active: product.variantActive !== false,
+                    published: product.variantPublished !== false,
+                  },
+                ]
+              : [],
         sku: product.variants?.[0]?.sku || product.sku || '',
         barcode: product.variants?.[0]?.barcode || product.barcode || '',
         currency: product.variants?.[0]?.currency || product.currency || 'RSD',
+        locationId: product.locationId || product.location_id || '',
+        zoneId: product.zoneId || product.zone_id || '',
+        binId: product.binId || product.bin_id || '',
         // [NOVO] Učitavamo postojeće features ili postavljamo jedan prazan red
         features:
           product.features && product.features.length > 0
@@ -194,15 +219,35 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   }, [product]);
 
   useEffect(() => {
-    inventoryApi.locations().then(setLocations).catch((error) => console.error('Učitavanje lokacija nije uspelo:', error));
-  }, []);
-
-  useEffect(() => {
-    inventoryApi.locations().then((items) => {
-      if (items.length === 1) {
-        setForm((previous) => previous.locationId ? previous : { ...previous, locationId: items[0].id });
-      }
-    }).catch(() => undefined);
+    let active = true;
+    Promise.all([inventoryApi.locations(), inventoryApi.layout()])
+      .then(([locationItems, layout]) => {
+        if (!active) return;
+        const nextLocations = Array.isArray(locationItems)
+          ? locationItems
+          : locationItems?.items || locationItems?.data || [];
+        setLocations(nextLocations);
+        setWarehouseLayout({
+          warehouses: Array.isArray(layout?.warehouses)
+            ? layout.warehouses
+            : [],
+          zones: Array.isArray(layout?.zones) ? layout.zones : [],
+          bins: Array.isArray(layout?.bins) ? layout.bins : [],
+        });
+        if (nextLocations.length === 1) {
+          setForm((previous) =>
+            previous.locationId
+              ? previous
+              : { ...previous, locationId: nextLocations[0].id },
+          );
+        }
+      })
+      .catch((error) =>
+        console.error('Učitavanje rasporeda skladišta nije uspelo:', error),
+      );
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleChange = (field, value) => {
@@ -227,9 +272,49 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           ? cats.find((category) => category.name === value)?.id || null
           : null;
       }
+      if (field === 'locationId') {
+        next.zoneId = '';
+        next.binId = '';
+      }
+      if (field === 'zoneId') {
+        next.binId = '';
+      }
       return next;
     });
   };
+
+  const locationWarehouseIds = useMemo(
+    () =>
+      warehouseLayout.warehouses
+        .filter(
+          (warehouse) =>
+            warehouse.active !== false &&
+            warehouse.locationId === form.locationId,
+        )
+        .map((warehouse) => warehouse.id),
+    [warehouseLayout.warehouses, form.locationId],
+  );
+
+  const locationZones = useMemo(
+    () =>
+      warehouseLayout.zones.filter(
+        (zone) =>
+          zone.active !== false &&
+          locationWarehouseIds.includes(zone.warehouseId),
+      ),
+    [warehouseLayout.zones, locationWarehouseIds],
+  );
+
+  const zoneBins = useMemo(
+    () =>
+      warehouseLayout.bins.filter(
+        (bin) =>
+          bin.active !== false &&
+          bin.status !== 'inactive' &&
+          bin.zoneId === form.zoneId,
+      ),
+    [warehouseLayout.bins, form.zoneId],
+  );
 
   // --- [NOVO] Funkcije za upravljanje Feature karticama ---
   const handleFeatureChange = (index, field, val) => {
@@ -275,11 +360,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   // The database keeps one internal sellable record, but the admin UI treats
   // it as the product's own SKU/barcode rather than a user-managed variant.
-  const updateVariant = (index, field, value) => setForm((prev) => ({
-    ...prev,
-    variants: prev.variants.map((variant, currentIndex) => currentIndex === index ? { ...variant, [field]: value } : variant),
-  }));
-
+  const updateVariant = (index, field, value) =>
+    setForm((prev) => ({
+      ...prev,
+      variants: prev.variants.map((variant, currentIndex) =>
+        currentIndex === index ? { ...variant, [field]: value } : variant,
+      ),
+    }));
 
   const handleSubmit = async () => {
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
@@ -288,9 +375,17 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       // Validate price dates before POST/PATCH. This prevents a product from
       // being saved when its accompanying sale is invalid.
       if (pendingPrice?.amount) {
-        const saleStart = pendingPrice.from ? new Date(pendingPrice.from) : new Date();
-        const saleEnd = pendingPrice.until ? new Date(pendingPrice.until) : null;
-        if (!saleEnd || Number.isNaN(saleEnd.getTime()) || saleEnd <= saleStart) {
+        const saleStart = pendingPrice.from
+          ? new Date(pendingPrice.from)
+          : new Date();
+        const saleEnd = pendingPrice.until
+          ? new Date(pendingPrice.until)
+          : null;
+        if (
+          !saleEnd ||
+          Number.isNaN(saleEnd.getTime()) ||
+          saleEnd <= saleStart
+        ) {
           throw new Error('Kraj akcije mora biti posle početka akcije.');
         }
         if (saleEnd <= new Date()) {
@@ -311,17 +406,19 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         slug: finalSlug,
         features: cleanFeatures, // [NOVO] Dodajemo u payload
         seo: cleanSeoPayload(form.seo),
-        variants: [{
-          ...(form.variants?.[0]?.id ? { id: form.variants[0].id } : {}),
-          sku: form.sku || finalSlug,
-          barcode: form.barcode || null,
-          price: Number(form.price),
-          currency: form.currency || 'RSD',
-          gender: form.gender || null,
-          attributes: form.specs || {},
-          active: form.active !== false,
-          published: form.published === true,
-        }],
+        variants: [
+          {
+            ...(form.variants?.[0]?.id ? { id: form.variants[0].id } : {}),
+            sku: form.sku || finalSlug,
+            barcode: form.barcode || null,
+            price: Number(form.price),
+            currency: form.currency || 'RSD',
+            gender: form.gender || null,
+            attributes: form.specs || {},
+            active: form.active !== false,
+            published: form.published === true,
+          },
+        ],
       };
 
       if (!Object.keys(payload.seo).length) {
@@ -334,31 +431,42 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         (department) => department.slug === form.department,
       );
       const selectedBrand = brands.find((brand) => brand.name === form.brand);
-      const selectedCategory = cats.find((category) => category.name === form.category);
+      const selectedCategory = cats.find(
+        (category) => category.name === form.category,
+      );
       if (payload.published && !selectedDepartment?.id) {
-        throw new Error('Izaberi važeće odeljenje pre objavljivanja proizvoda.');
+        throw new Error(
+          'Izaberi važeće odeljenje pre objavljivanja proizvoda.',
+        );
       }
       // Department is independent from brand. This is essential for products
       // such as batteries that deliberately do not have a brand.
       payload.departmentId = selectedDepartment?.id || null;
       if (selectedBrand?.id) {
         payload.brandId = selectedBrand.id;
-      }
-      else payload.brandId = null;
+      } else payload.brandId = null;
       if (selectedCategory?.id) {
         payload.primaryCategoryId = selectedCategory.id;
-      }
-      else payload.primaryCategoryId = null;
+      } else payload.primaryCategoryId = null;
 
       if (!product) delete payload.id;
       else payload.id = product.id;
 
       const savedProductId = await saveProduct(payload);
       if (savedProductId && pendingPrice) {
-        const savedVariants = await adminCatalogApi.listVariants(savedProductId);
-        const validFrom = pendingPrice.from ? new Date(pendingPrice.from).toISOString() : undefined;
-        const validUntil = pendingPrice.until ? new Date(pendingPrice.until).toISOString() : null;
-        if (validFrom && validUntil && new Date(validUntil) <= new Date(validFrom)) {
+        const savedVariants =
+          await adminCatalogApi.listVariants(savedProductId);
+        const validFrom = pendingPrice.from
+          ? new Date(pendingPrice.from).toISOString()
+          : undefined;
+        const validUntil = pendingPrice.until
+          ? new Date(pendingPrice.until).toISOString()
+          : null;
+        if (
+          validFrom &&
+          validUntil &&
+          new Date(validUntil) <= new Date(validFrom)
+        ) {
           throw new Error('Kraj akcije mora biti posle početka akcije.');
         }
         if (savedVariants[0]?.id && pendingPrice.amount) {
@@ -380,7 +488,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         setPendingPrice(null);
       }
       if (savedProductId) {
-        const savedVariants = await adminCatalogApi.listVariants(savedProductId);
+        const savedVariants =
+          await adminCatalogApi.listVariants(savedProductId);
         const primaryVariant = savedVariants[0];
         if (primaryVariant?.id) {
           const quantity = Number(form.quantity) || 0;
@@ -390,7 +499,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             try {
               // A new EPC normally does not exist yet. Creating first avoids a
               // noisy, expected 404 from the lookup endpoint for every new tag.
-              tag = await rfidApi.createTag({ epc: form.epc, variantId: primaryVariant.id });
+              tag = await rfidApi.createTag({
+                epc: form.epc,
+                variantId: primaryVariant.id,
+              });
             } catch (error) {
               // The only recoverable case is an EPC already registered in this
               // organization. Reuse it; all other errors must remain visible.
@@ -401,6 +513,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
               taggedItem = await inventoryApi.createItem({
                 variantId: primaryVariant.id,
                 locationId: form.locationId,
+                ...(form.zoneId ? { zoneId: form.zoneId } : {}),
+                ...(form.binId ? { binId: form.binId } : {}),
                 status: 'in_stock',
               });
               await rfidApi.assignTag(tag.id, {
@@ -411,15 +525,33 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           }
           if (form.locationId && Number.isFinite(quantity)) {
             const balances = await inventoryApi.balances(primaryVariant.id);
-            const balanceRows = Array.isArray(balances) ? balances : balances?.items || balances?.data || [];
+            const balanceRows = Array.isArray(balances)
+              ? balances
+              : balances?.items || balances?.data || [];
             const currentQuantity = balanceRows
-              .filter((balance) => balance.locationId === form.locationId || balance.location_id === form.locationId)
-              .reduce((total, balance) => total + Number(balance.quantity ?? balance.quantityOnHand ?? balance.quantity_on_hand ?? 0), 0);
+              .filter(
+                (balance) =>
+                  balance.locationId === form.locationId ||
+                  balance.location_id === form.locationId,
+              )
+              .reduce(
+                (total, balance) =>
+                  total +
+                  Number(
+                    balance.quantity ??
+                      balance.quantityOnHand ??
+                      balance.quantity_on_hand ??
+                      0,
+                  ),
+                0,
+              );
             const quantityDelta = quantity - currentQuantity;
             if (quantityDelta !== 0) {
               await inventoryApi.adjust({
                 variantId: primaryVariant.id,
                 locationId: form.locationId,
+                ...(form.zoneId ? { zoneId: form.zoneId } : {}),
+                ...(form.binId ? { binId: form.binId } : {}),
                 quantityDelta,
                 sourceType: 'admin_product_save',
               });
@@ -434,9 +566,15 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           }
         }
       }
-      await Promise.all(deletedVariantIds.map((variantId) => adminCatalogApi.deleteVariant(variantId)));
+      await Promise.all(
+        deletedVariantIds.map((variantId) =>
+          adminCatalogApi.deleteVariant(variantId),
+        ),
+      );
       setDeletedVariantIds([]);
-      const pendingMedia = (form.images || []).filter((image) => image.mediaId && !image.linkId);
+      const pendingMedia = (form.images || []).filter(
+        (image) => image.mediaId && !image.linkId,
+      );
       if (savedProductId && pendingMedia.length) {
         const linked = await Promise.all(
           pendingMedia.map((image, index) =>
@@ -462,7 +600,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       }, 500);
     } catch (err) {
       console.error(err);
-      setFlash({ open: true, title: err?.message || 'Čuvanje nije uspelo.', ok: false });
+      setFlash({
+        open: true,
+        title: err?.message || 'Čuvanje nije uspelo.',
+        ok: false,
+      });
     } finally {
       setLoading(false);
     }
@@ -474,11 +616,20 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   const handleImageChange = (newImages) => {
     if (product?.id) {
-      const retained = new Set(newImages.map((image) => image.linkId).filter(Boolean));
-      const removed = (form.images || []).filter((image) => image.linkId && !retained.has(image.linkId));
+      const retained = new Set(
+        newImages.map((image) => image.linkId).filter(Boolean),
+      );
+      const removed = (form.images || []).filter(
+        (image) => image.linkId && !retained.has(image.linkId),
+      );
       if (removed.length) {
-        void Promise.all(removed.map((image) => mediaApi.detachFromProduct(product.id, image.linkId)))
-          .catch((error) => console.error('Brisanje veze slike nije uspelo:', error));
+        void Promise.all(
+          removed.map((image) =>
+            mediaApi.detachFromProduct(product.id, image.linkId),
+          ),
+        ).catch((error) =>
+          console.error('Brisanje veze slike nije uspelo:', error),
+        );
       }
     }
     setForm((prev) => {
@@ -557,22 +708,28 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   // Filteri
   const filteredBrands = useMemo(() => {
-    const departmentId = departments.find((department) => department.slug === form.department)?.id;
-    return departmentId ? brands.filter((brand) => brand.departmentId === departmentId) : brands;
+    const departmentId = departments.find(
+      (department) => department.slug === form.department,
+    )?.id;
+    return departmentId
+      ? brands.filter((brand) => brand.departmentId === departmentId)
+      : brands;
   }, [brands, departments, form.department]);
 
   const brandOptions = [
     { value: '', label: 'Bez brenda' },
     ...filteredBrands.map((b) => ({
-    value: b.name,
-    label: b.name,
-    id: b.id,
+      value: b.name,
+      label: b.name,
+      id: b.id,
     })),
   ];
 
   const filteredCats = useMemo(() => {
     const selectedBrand = brands.find((brand) => brand.name === form.brand);
-    const departmentId = departments.find((department) => department.slug === form.department)?.id;
+    const departmentId = departments.find(
+      (department) => department.slug === form.department,
+    )?.id;
     return cats.filter((category) => {
       if (departmentId && category.departmentId !== departmentId) return false;
       return selectedBrand?.id
@@ -612,7 +769,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     if (departments.length) {
       return departments
         .filter((department) => department.slug)
-        .map((department) => ({ value: department.slug, label: department.name }));
+        .map((department) => ({
+          value: department.slug,
+          label: department.name,
+        }));
     }
     return [
       { value: 'satovi', label: 'Satovi' },
@@ -715,10 +875,30 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   </label>
                 </div>
                 <div>
-                  <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Barkod</span><input value={form.barcode || ''} onChange={(e) => handleChange('barcode', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3" placeholder="Barkod" /></label>
+                  <label className="block">
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                      Barkod
+                    </span>
+                    <input
+                      value={form.barcode || ''}
+                      onChange={(e) => handleChange('barcode', e.target.value)}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
+                      placeholder="Barkod"
+                    />
+                  </label>
                 </div>
                 <div>
-                  <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">EPC</span><input value={form.epc || ''} onChange={(e) => handleChange('epc', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 font-mono" placeholder="RFID EPC" /></label>
+                  <label className="block">
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                      EPC
+                    </span>
+                    <input
+                      value={form.epc || ''}
+                      onChange={(e) => handleChange('epc', e.target.value)}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 font-mono"
+                      placeholder="RFID EPC"
+                    />
+                  </label>
                 </div>
                 <div className="md:col-span-1">
                   <label className="block">
@@ -789,8 +969,54 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   options={genderOptions}
                   onChange={(v) => handleChange('gender', v)}
                 />
-                <CustomSelect label="Lokacija" value={form.locationId || ''} options={locations.map((location) => ({ value: location.id, label: location.name || location.code }))} onChange={(value) => handleChange('locationId', value)} placeholder="Izaberi lokaciju" />
-                <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Količina</span><input type="number" value={form.quantity || ''} onChange={(e) => handleChange('quantity', e.target.value)} placeholder="0" className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3" /></label>
+                <CustomSelect
+                  label="Lokacija"
+                  value={form.locationId || ''}
+                  options={locations.map((location) => ({
+                    value: location.id,
+                    label: location.name || location.code,
+                  }))}
+                  onChange={(value) => handleChange('locationId', value)}
+                  placeholder="Izaberi lokaciju"
+                />
+                <CustomSelect
+                  label="Zona"
+                  value={form.zoneId || ''}
+                  options={locationZones.map((zone) => ({
+                    value: zone.id,
+                    label: zone.name || zone.code,
+                  }))}
+                  onChange={(value) => handleChange('zoneId', value)}
+                  placeholder={
+                    form.locationId ? 'Izaberi zonu' : 'Prvo izaberi lokaciju'
+                  }
+                  disabled={!form.locationId || locationZones.length === 0}
+                />
+                <CustomSelect
+                  label="Polica"
+                  value={form.binId || ''}
+                  options={zoneBins.map((bin) => ({
+                    value: bin.id,
+                    label: bin.name || bin.code,
+                  }))}
+                  onChange={(value) => handleChange('binId', value)}
+                  placeholder={
+                    form.zoneId ? 'Izaberi policu' : 'Prvo izaberi zonu'
+                  }
+                  disabled={!form.zoneId || zoneBins.length === 0}
+                />
+                <label className="block">
+                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                    Količina
+                  </span>
+                  <input
+                    type="number"
+                    value={form.quantity || ''}
+                    onChange={(e) => handleChange('quantity', e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
+                  />
+                </label>
                 <div className="md:col-span-3">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
@@ -807,41 +1033,174 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   </label>
                 </div>
                 <div className="md:col-span-3 flex flex-wrap gap-6 text-sm pt-1">
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={form.active !== false} onChange={(e) => handleChange('active', e.target.checked)} /> Aktivan proizvod</label>
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={form.published !== false} onChange={(e) => handleChange('published', e.target.checked)} /> Objavi proizvod</label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.active !== false}
+                      onChange={(e) => handleChange('active', e.target.checked)}
+                    />{' '}
+                    Aktivan proizvod
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.published !== false}
+                      onChange={(e) =>
+                        handleChange('published', e.target.checked)
+                      }
+                    />{' '}
+                    Objavi proizvod
+                  </label>
                 </div>
               </div>
 
-              {false && <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">SKU i prodajni podaci</h3>
-                    <p className="text-xs text-neutral-500 mt-1">SKU, cena, pol i status se čuvaju zasebno za svaku varijantu.</p>
+              {false && (
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                        SKU i prodajni podaci
+                      </h3>
+                      <p className="text-xs text-neutral-500 mt-1">
+                        SKU, cena, pol i status se čuvaju zasebno za svaku
+                        varijantu.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="md:col-span-3 flex gap-6 text-sm">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={form.active !== false}
+                        onChange={(e) =>
+                          handleChange('active', e.target.checked)
+                        }
+                      />{' '}
+                      Aktivan proizvod
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={form.published === true}
+                        onChange={(e) =>
+                          handleChange('published', e.target.checked)
+                        }
+                      />{' '}
+                      Objavi proizvod
+                    </label>
+                  </div>
+                  {(form.variants || []).length === 0 && (
+                    <p className="text-sm text-neutral-400">
+                      Nema dodatnih varijanti. Cena iznad ostaje glavna
+                      varijanta proizvoda.
+                    </p>
+                  )}
+                  <div className="space-y-3">
+                    {[form.variants?.[0] || {}].map((variant, index) => (
+                      <div
+                        key={variant.id || index}
+                        className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-neutral-50 border border-neutral-100 rounded-xl"
+                      >
+                        <input
+                          value={form.sku || ''}
+                          onChange={(e) => handleChange('sku', e.target.value)}
+                          placeholder="SKU"
+                          className="rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                        />
+                        <input
+                          value={variant.name || ''}
+                          onChange={(e) =>
+                            updateVariant(index, 'name', e.target.value)
+                          }
+                          placeholder="Naziv varijante"
+                          className="rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                        />
+                        <input
+                          value={form.barcode || ''}
+                          onChange={(e) =>
+                            handleChange('barcode', e.target.value)
+                          }
+                          placeholder="Barkod"
+                          className="rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                        />
+                        <input
+                          type="number"
+                          value={variant.price ?? ''}
+                          onChange={(e) =>
+                            updateVariant(index, 'price', e.target.value)
+                          }
+                          placeholder="Cena RSD"
+                          className="rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                        />
+                        <input
+                          value={form.currency || 'RSD'}
+                          onChange={(e) =>
+                            handleChange(
+                              'currency',
+                              e.target.value.toUpperCase(),
+                            )
+                          }
+                          placeholder="Valuta"
+                          maxLength={3}
+                          className="rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                        />
+                        <select
+                          value={variant.gender || ''}
+                          onChange={(e) =>
+                            updateVariant(index, 'gender', e.target.value)
+                          }
+                          className="rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                        >
+                          {genderOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="flex items-center justify-between gap-2">
+                          <span>
+                            <label className="text-xs flex items-center gap-1">
+                              <input
+                                type="checkbox"
+                                checked={variant.active !== false}
+                                onChange={(e) =>
+                                  updateVariant(
+                                    index,
+                                    'active',
+                                    e.target.checked,
+                                  )
+                                }
+                              />{' '}
+                              Aktivna
+                            </label>
+                            <label className="text-xs flex items-center gap-1">
+                              <input
+                                type="checkbox"
+                                checked={variant.published !== false}
+                                onChange={(e) =>
+                                  updateVariant(
+                                    index,
+                                    'published',
+                                    e.target.checked,
+                                  )
+                                }
+                              />{' '}
+                              Objavljena
+                            </label>
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className="md:col-span-3 flex gap-6 text-sm">
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={form.active !== false} onChange={(e) => handleChange('active', e.target.checked)} /> Aktivan proizvod</label>
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={form.published === true} onChange={(e) => handleChange('published', e.target.checked)} /> Objavi proizvod</label>
-                </div>
-                {(form.variants || []).length === 0 && <p className="text-sm text-neutral-400">Nema dodatnih varijanti. Cena iznad ostaje glavna varijanta proizvoda.</p>}
-                <div className="space-y-3">
-                  {[form.variants?.[0] || {}].map((variant, index) => (
-                    <div key={variant.id || index} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-neutral-50 border border-neutral-100 rounded-xl">
-                      <input value={form.sku || ''} onChange={(e) => handleChange('sku', e.target.value)} placeholder="SKU" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
-                      <input value={variant.name || ''} onChange={(e) => updateVariant(index, 'name', e.target.value)} placeholder="Naziv varijante" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
-                      <input value={form.barcode || ''} onChange={(e) => handleChange('barcode', e.target.value)} placeholder="Barkod" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
-                      <input type="number" value={variant.price ?? ''} onChange={(e) => updateVariant(index, 'price', e.target.value)} placeholder="Cena RSD" className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
-                      <input value={form.currency || 'RSD'} onChange={(e) => handleChange('currency', e.target.value.toUpperCase())} placeholder="Valuta" maxLength={3} className="rounded-lg border border-neutral-200 px-3 py-2 text-sm" />
-                      <select value={variant.gender || ''} onChange={(e) => updateVariant(index, 'gender', e.target.value)} className="rounded-lg border border-neutral-200 px-3 py-2 text-sm">
-                        {genderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
-                      <div className="flex items-center justify-between gap-2"><span><label className="text-xs flex items-center gap-1"><input type="checkbox" checked={variant.active !== false} onChange={(e) => updateVariant(index, 'active', e.target.checked)} /> Aktivna</label><label className="text-xs flex items-center gap-1"><input type="checkbox" checked={variant.published !== false} onChange={(e) => updateVariant(index, 'published', e.target.checked)} /> Objavljena</label></span></div>
-                    </div>
-                  ))}
-                </div>
-              </div>}
+              )}
 
-              {false && <ProductOperationsPanel productId={product?.id} variants={form.variants || []} />}
+              {false && (
+                <ProductOperationsPanel
+                  productId={product?.id}
+                  variants={form.variants || []}
+                />
+              )}
 
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 order-last">
                 <div className="flex justify-between items-center mb-4">
@@ -865,7 +1224,21 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
                 {isSeoOpen && (
                   <div className="space-y-5">
-                    <label className="block"><span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">URL slug</span><input value={form.slug || generateSlug(form.name)} onChange={(e) => handleChange('slug', e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm font-mono" placeholder="automatski iz naziva" /><span className="text-[10px] text-neutral-400 ml-1">Ovo je link proizvoda. Ako je prazno, generiše se iz naziva.</span></label>
+                    <label className="block">
+                      <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                        URL slug
+                      </span>
+                      <input
+                        value={form.slug || generateSlug(form.name)}
+                        onChange={(e) => handleChange('slug', e.target.value)}
+                        className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm font-mono"
+                        placeholder="automatski iz naziva"
+                      />
+                      <span className="text-[10px] text-neutral-400 ml-1">
+                        Ovo je link proizvoda. Ako je prazno, generiše se iz
+                        naziva.
+                      </span>
+                    </label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <label className="block md:col-span-2">
                         <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
@@ -1156,7 +1529,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   </p>
                 </div>
               </div>
-              <ProductOperationsPanel productId={product?.id} variants={form.variants || []} basePrice={form.price} onBasePriceChange={(value) => handleChange('price', value)} onPendingPrice={setPendingPrice} />
+              <ProductOperationsPanel
+                productId={product?.id}
+                variants={form.variants || []}
+                basePrice={form.price}
+                onBasePriceChange={(value) => handleChange('price', value)}
+                onPendingPrice={setPendingPrice}
+              />
             </div>
           </div>
         </div>

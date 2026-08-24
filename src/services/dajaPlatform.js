@@ -13,10 +13,9 @@ let publicCatalogSocket = null;
 const publicCatalogListeners = new Set();
 
 function realtimeNamespaceUrl() {
-  const apiBase =
-    API_BASE_URL.startsWith('http')
-      ? API_BASE_URL
-      : `${window.location.origin}${API_BASE_URL}`;
+  const apiBase = API_BASE_URL.startsWith('http')
+    ? API_BASE_URL
+    : `${window.location.origin}${API_BASE_URL}`;
   // VITE_DAJA_WS_URL may be either an origin or the complete `/realtime`
   // namespace. Normalize both forms so it can never become `/realtime/realtime`.
   const configured = import.meta.env.VITE_DAJA_WS_URL || apiBase;
@@ -39,7 +38,9 @@ function normalizeUser(data) {
 
 function normalizeProduct(product) {
   if (!product) return product;
-  const firstVariant = Array.isArray(product.variants) ? product.variants[0] : null;
+  const firstVariant = Array.isArray(product.variants)
+    ? product.variants[0]
+    : null;
   const priceMinor =
     product.price ??
     product.currentPriceAmount ??
@@ -62,7 +63,10 @@ function normalizeProduct(product) {
     variantId: product.variantId || product.variant_id || firstVariant?.id,
     brandId: product.brandId || product.brand_id || null,
     primaryCategoryId:
-      product.primaryCategoryId || product.primary_category_id || product.categoryId || null,
+      product.primaryCategoryId ||
+      product.primary_category_id ||
+      product.categoryId ||
+      null,
     brand: product.brand || product.brand_name || null,
     category: product.category || product.category_name || null,
     price:
@@ -72,9 +76,9 @@ function normalizeProduct(product) {
     salePrice:
       salePriceMinor === null || salePriceMinor === undefined
         ? null
-        : (typeof salePriceMinor === 'number' && salePriceMinor > 999
-            ? salePriceMinor / 100
-            : Number(salePriceMinor)),
+        : typeof salePriceMinor === 'number' && salePriceMinor > 999
+          ? salePriceMinor / 100
+          : Number(salePriceMinor),
     saleValidUntil: product.saleValidUntil || product.sale_valid_until || null,
     image: primaryImage,
     mainImageUrl: primaryImage,
@@ -130,7 +134,10 @@ export const authApi = {
     const data = await apiRequest('/customer-auth/login', {
       method: 'POST',
       auth: false,
-      body: { identity: payload.identity || payload.email, password: payload.password },
+      body: {
+        identity: payload.identity || payload.email,
+        password: payload.password,
+      },
     });
     setAuthTokens(data);
     return normalizeUser(data);
@@ -150,7 +157,10 @@ export const authApi = {
   },
   async logout() {
     try {
-      await apiRequest('/customer-auth/logout', { method: 'POST', retry: false });
+      await apiRequest('/customer-auth/logout', {
+        method: 'POST',
+        retry: false,
+      });
     } catch (error) {
       // Logout must always finish locally. A 401 only means that the session
       // was already expired/revoked, which is a normal state for this action.
@@ -169,7 +179,8 @@ export const authApi = {
       localStorage.setItem(storageKey, deviceId);
     }
     const data = await apiRequest('/customer-auth/admin/session', {
-      method: 'POST', body: { deviceId },
+      method: 'POST',
+      body: { deviceId },
     });
     setStaffAccessToken(data?.accessToken || data?.access_token || null);
     return data;
@@ -229,7 +240,9 @@ export const authApi = {
   },
   verifyEmail() {
     return Promise.reject(
-      new Error('Verifikacija e-maila još nije dostupna u DAJA Platform API-ju.'),
+      new Error(
+        'Verifikacija e-maila još nije dostupna u DAJA Platform API-ju.',
+      ),
     );
   },
 };
@@ -258,9 +271,12 @@ export const catalogApi = {
     return products.slice(0, requestedLimit);
   },
   async getProductBySlug(slug) {
-    const data = await apiRequest(`/public/catalog/products/${encodeURIComponent(slug)}`, {
-      auth: false,
-    });
+    const data = await apiRequest(
+      `/public/catalog/products/${encodeURIComponent(slug)}`,
+      {
+        auth: false,
+      },
+    );
     return normalizeProduct(data?.product || data);
   },
 };
@@ -275,26 +291,44 @@ export const adminCatalogApi = {
     const productPayload = {};
     if (has('name')) productPayload.name = product.name;
     if (has('slug')) productPayload.slug = product.slug;
-    if (has('description')) productPayload.description = product.description || '';
+    if (has('description'))
+      productPayload.description = product.description || '';
     if (has('departmentId')) productPayload.departmentId = product.departmentId;
     if (has('seo')) productPayload.seo = product.seo;
     if (has('features')) productPayload.features = product.features;
-    if (has('model3DUrl')) productPayload.model3DUrl = product.model3DUrl || null;
-    if (has('marketingFlags')) productPayload.marketingFlags = product.marketingFlags;
+    if (has('model3DUrl'))
+      productPayload.model3DUrl = product.model3DUrl || null;
+    if (has('marketingFlags'))
+      productPayload.marketingFlags = product.marketingFlags;
     if (has('brandId')) productPayload.brandId = product.brandId;
     else if (has('brand_id')) productPayload.brandId = product.brand_id;
-    if (has('primaryCategoryId')) productPayload.primaryCategoryId = product.primaryCategoryId;
-    else if (has('primary_category_id')) productPayload.primaryCategoryId = product.primary_category_id;
-    else if (has('categoryId')) productPayload.primaryCategoryId = product.categoryId;
+    if (has('primaryCategoryId'))
+      productPayload.primaryCategoryId = product.primaryCategoryId;
+    else if (has('primary_category_id'))
+      productPayload.primaryCategoryId = product.primary_category_id;
+    else if (has('categoryId'))
+      productPayload.primaryCategoryId = product.categoryId;
     if (has('isVisible')) productPayload.active = product.isVisible !== false;
     else if (has('active')) productPayload.active = product.active !== false;
-    if (has('published')) productPayload.published = product.published !== false;
+    if (has('published'))
+      productPayload.published = product.published !== false;
     else if (!product.id) productPayload.published = true;
     const method = product.id ? 'PATCH' : 'POST';
-    const path = product.id ? `/products/${encodeURIComponent(product.id)}` : '/products';
-    const data = await apiRequest(path, { method, body: productPayload, staff: true });
+    const path = product.id
+      ? `/products/${encodeURIComponent(product.id)}`
+      : '/products';
+    const data = await apiRequest(path, {
+      method,
+      body: productPayload,
+      staff: true,
+    });
     const productId = data?.id || data?.product?.id || product.id;
-    if (!product.id && productId && product.price !== undefined && !product.variants?.length) {
+    if (
+      !product.id &&
+      productId &&
+      product.price !== undefined &&
+      !product.variants?.length
+    ) {
       await apiRequest(`/products/${encodeURIComponent(productId)}/variants`, {
         method: 'POST',
         staff: true,
@@ -322,7 +356,8 @@ export const adminCatalogApi = {
     if (productId && Array.isArray(product.variants)) {
       for (const variant of product.variants) {
         const currentPriceAmount =
-          variant.currentPriceAmount ?? Math.round(Number(variant.price || 0) * 100);
+          variant.currentPriceAmount ??
+          Math.round(Number(variant.price || 0) * 100);
         const body = {
           sku: variant.sku,
           barcode: variant.barcode || null,
@@ -337,7 +372,11 @@ export const adminCatalogApi = {
         const variantPath = variant.id
           ? `/variants/${encodeURIComponent(variant.id)}`
           : `/products/${encodeURIComponent(productId)}/variants`;
-        await apiRequest(variantPath, { method: variant.id ? 'PATCH' : 'POST', staff: true, body });
+        await apiRequest(variantPath, {
+          method: variant.id ? 'PATCH' : 'POST',
+          staff: true,
+          body,
+        });
       }
     }
     return productId;
@@ -348,17 +387,73 @@ export const adminCatalogApi = {
       staff: true,
     });
   },
-  setProductVisibility(id, active) { return apiRequest(`/products/${encodeURIComponent(id)}/visibility`, { method: 'PATCH', staff: true, body: { active } }); },
-  listVariantPrices(id) { return apiRequest(`/variants/${encodeURIComponent(id)}/prices`, { staff: true }); },
-  listVariants(id) { return apiRequest(`/products/${encodeURIComponent(id)}/variants`, { staff: true }); },
-  addVariantPrice(id, body) { return apiRequest(`/variants/${encodeURIComponent(id)}/prices`, { method: 'POST', staff: true, body }); },
-  refreshVariant(id, body) { return apiRequest(`/variants/${encodeURIComponent(id)}`, { method: 'PATCH', staff: true, body }); },
-  deleteVariant(id) { return apiRequest(`/variants/${encodeURIComponent(id)}`, { method: 'DELETE', staff: true }); },
-  listVariantSpecifications(id) { return apiRequest(`/variants/${encodeURIComponent(id)}/specifications`, { staff: true }); },
-  replaceVariantSpecifications(id, values) { return apiRequest(`/variants/${encodeURIComponent(id)}/specifications`, { method: 'PUT', staff: true, body: { values } }); },
-  listAdminReviews(id) { return apiRequest(`/admin/products/${encodeURIComponent(id)}/reviews`, { staff: true }); },
-  moderateReview(id, status) { return apiRequest(`/admin/reviews/${encodeURIComponent(id)}`, { method: 'PATCH', staff: true, body: { status } }); },
-  deleteReview(id) { return apiRequest(`/admin/reviews/${encodeURIComponent(id)}`, { method: 'DELETE', staff: true }); },
+  setProductVisibility(id, active) {
+    return apiRequest(`/products/${encodeURIComponent(id)}/visibility`, {
+      method: 'PATCH',
+      staff: true,
+      body: { active },
+    });
+  },
+  listVariantPrices(id) {
+    return apiRequest(`/variants/${encodeURIComponent(id)}/prices`, {
+      staff: true,
+    });
+  },
+  listVariants(id) {
+    return apiRequest(`/products/${encodeURIComponent(id)}/variants`, {
+      staff: true,
+    });
+  },
+  addVariantPrice(id, body) {
+    return apiRequest(`/variants/${encodeURIComponent(id)}/prices`, {
+      method: 'POST',
+      staff: true,
+      body,
+    });
+  },
+  refreshVariant(id, body) {
+    return apiRequest(`/variants/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      staff: true,
+      body,
+    });
+  },
+  deleteVariant(id) {
+    return apiRequest(`/variants/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      staff: true,
+    });
+  },
+  listVariantSpecifications(id) {
+    return apiRequest(`/variants/${encodeURIComponent(id)}/specifications`, {
+      staff: true,
+    });
+  },
+  replaceVariantSpecifications(id, values) {
+    return apiRequest(`/variants/${encodeURIComponent(id)}/specifications`, {
+      method: 'PUT',
+      staff: true,
+      body: { values },
+    });
+  },
+  listAdminReviews(id) {
+    return apiRequest(`/admin/products/${encodeURIComponent(id)}/reviews`, {
+      staff: true,
+    });
+  },
+  moderateReview(id, status) {
+    return apiRequest(`/admin/reviews/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      staff: true,
+      body: { status },
+    });
+  },
+  deleteReview(id) {
+    return apiRequest(`/admin/reviews/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      staff: true,
+    });
+  },
   repairProductImageUrls(productId = '') {
     return Promise.resolve({ repaired: 0, productId });
   },
@@ -410,11 +505,14 @@ export function createCollectionService(collectionName) {
       return created;
     },
     async update(id, name, extraData = {}) {
-      const updated = await apiRequest(`${endpoint}/${encodeURIComponent(id)}`, {
-        method: 'PATCH',
-        staff: true,
-        body: { name: name.trim(), ...extraData },
-      });
+      const updated = await apiRequest(
+        `${endpoint}/${encodeURIComponent(id)}`,
+        {
+          method: 'PATCH',
+          staff: true,
+          body: { name: name.trim(), ...extraData },
+        },
+      );
       await refresh();
       return updated;
     },
@@ -439,7 +537,10 @@ export const customerApi = {
     return toArrayPayload(data);
   },
   addAddress(payload) {
-    return apiRequest('/customers/me/addresses', { method: 'POST', body: payload });
+    return apiRequest('/customers/me/addresses', {
+      method: 'POST',
+      body: payload,
+    });
   },
   updateAddress(id, payload) {
     return apiRequest(`/customers/me/addresses/${encodeURIComponent(id)}`, {
@@ -466,14 +567,19 @@ export const customerApi = {
   async setWishlist(items) {
     const next = Array.isArray(items) ? items : [];
     const current = await this.getWishlist().catch(() => []);
-    const nextIds = new Set(next.map((item) => item.id || item.productId).filter(Boolean));
+    const nextIds = new Set(
+      next.map((item) => item.id || item.productId).filter(Boolean),
+    );
     await Promise.all(
       current
         .filter((item) => !nextIds.has(item.id || item.productId))
         .map((item) =>
-          apiRequest(`/customers/me/wishlist/${encodeURIComponent(item.id || item.productId)}`, {
-            method: 'DELETE',
-          }).catch(() => null),
+          apiRequest(
+            `/customers/me/wishlist/${encodeURIComponent(item.id || item.productId)}`,
+            {
+              method: 'DELETE',
+            },
+          ).catch(() => null),
         ),
     );
     for (const item of next) {
@@ -489,7 +595,9 @@ export const customerApi = {
   },
   requestEmailVerification() {
     return Promise.reject(
-      new Error('Slanje verifikacionog e-maila još nije dostupno u DAJA Platform API-ju.'),
+      new Error(
+        'Slanje verifikacionog e-maila još nije dostupno u DAJA Platform API-ju.',
+      ),
     );
   },
   requestPhoneLinkOtp(phone) {
@@ -567,19 +675,34 @@ export const mediaApi = {
     });
   },
   completeUpload(mediaId) {
-    return apiRequest(`/media/uploads/${encodeURIComponent(mediaId)}/complete`, { method: 'POST', staff: true });
+    return apiRequest(
+      `/media/uploads/${encodeURIComponent(mediaId)}/complete`,
+      { method: 'POST', staff: true },
+    );
   },
   attachToProduct(productId, mediaId, options = {}) {
-    return apiRequest(`/products/${encodeURIComponent(productId)}/media`, { method: 'POST', staff: true, body: { mediaId, ...options } });
+    return apiRequest(`/products/${encodeURIComponent(productId)}/media`, {
+      method: 'POST',
+      staff: true,
+      body: { mediaId, ...options },
+    });
   },
   updateProductMedia(productId, linkId, options) {
-    return apiRequest(`/products/${encodeURIComponent(productId)}/media/${encodeURIComponent(linkId)}`, { method: 'PATCH', staff: true, body: options });
+    return apiRequest(
+      `/products/${encodeURIComponent(productId)}/media/${encodeURIComponent(linkId)}`,
+      { method: 'PATCH', staff: true, body: options },
+    );
   },
   detachFromProduct(productId, linkId) {
-    return apiRequest(`/products/${encodeURIComponent(productId)}/media/${encodeURIComponent(linkId)}`, { method: 'DELETE', staff: true });
+    return apiRequest(
+      `/products/${encodeURIComponent(productId)}/media/${encodeURIComponent(linkId)}`,
+      { method: 'DELETE', staff: true },
+    );
   },
   listProductMedia(productId) {
-    return apiRequest(`/products/${encodeURIComponent(productId)}/media`, { staff: true });
+    return apiRequest(`/products/${encodeURIComponent(productId)}/media`, {
+      staff: true,
+    });
   },
   uploadProductImageFile(slug, file, index = 0) {
     return import('./r2ImageService').then(({ uploadProductImage }) =>
@@ -599,41 +722,90 @@ export const mediaApi = {
 };
 
 export const inventoryApi = {
-  locations() { return apiRequest('/inventory/locations', { staff: true }); },
-  balances(variantId) { return apiRequest(`/inventory/variants/${encodeURIComponent(variantId)}/balances`, { staff: true }); },
-  adjust(body) { return apiRequest('/inventory/adjustments', { method: 'POST', staff: true, body }); },
-  createItem(body) { return apiRequest('/inventory/items', { method: 'POST', staff: true, body }); },
+  locations() {
+    return apiRequest('/inventory/locations', { staff: true });
+  },
+  layout() {
+    return apiRequest('/inventory/layout', { staff: true });
+  },
+  balances(variantId) {
+    return apiRequest(
+      `/inventory/variants/${encodeURIComponent(variantId)}/balances`,
+      { staff: true },
+    );
+  },
+  adjust(body) {
+    return apiRequest('/inventory/adjustments', {
+      method: 'POST',
+      staff: true,
+      body,
+    });
+  },
+  createItem(body) {
+    return apiRequest('/inventory/items', {
+      method: 'POST',
+      staff: true,
+      body,
+    });
+  },
 };
 
 export const rfidApi = {
-  byEpc(epc) { return apiRequest(`/rfid/tags/by-epc/${encodeURIComponent(epc)}`, { staff: true }); },
-  createTag(body) { return apiRequest('/rfid/tags', { method: 'POST', staff: true, body }); },
-  assignTag(id, body) { return apiRequest(`/rfid/tags/${encodeURIComponent(id)}/assign`, { method: 'POST', staff: true, body }); },
+  byEpc(epc) {
+    return apiRequest(`/rfid/tags/by-epc/${encodeURIComponent(epc)}`, {
+      staff: true,
+    });
+  },
+  createTag(body) {
+    return apiRequest('/rfid/tags', { method: 'POST', staff: true, body });
+  },
+  assignTag(id, body) {
+    return apiRequest(`/rfid/tags/${encodeURIComponent(id)}/assign`, {
+      method: 'POST',
+      staff: true,
+      body,
+    });
+  },
 };
 
 export const importsApi = {
   createXlsx({ sourceName, base64Xlsx, dryRun = true }) {
-    return apiRequest('/imports/xlsx', { method: 'POST', staff: true, body: { sourceName, base64Xlsx, dryRun } });
+    return apiRequest('/imports/xlsx', {
+      method: 'POST',
+      staff: true,
+      body: { sourceName, base64Xlsx, dryRun },
+    });
   },
   execute(jobId) {
-    return apiRequest(`/imports/${encodeURIComponent(jobId)}/execute`, { method: 'POST', staff: true });
+    return apiRequest(`/imports/${encodeURIComponent(jobId)}/execute`, {
+      method: 'POST',
+      staff: true,
+    });
   },
   reconciliation(jobId) {
-    return apiRequest(`/imports/${encodeURIComponent(jobId)}/reconciliation`, { staff: true });
+    return apiRequest(`/imports/${encodeURIComponent(jobId)}/reconciliation`, {
+      staff: true,
+    });
   },
 };
 
 export const reviewsApi = {
   async forProduct(productId) {
-    const data = await apiRequest(`/products/${encodeURIComponent(productId)}/reviews`, {
-      auth: false,
-    });
+    const data = await apiRequest(
+      `/products/${encodeURIComponent(productId)}/reviews`,
+      {
+        auth: false,
+      },
+    );
     return toArrayPayload(data);
   },
   add(productId, userData, reviewData) {
     return apiRequest(`/products/${encodeURIComponent(productId)}/reviews`, {
       method: 'POST',
-      body: { userName: userData?.displayName || userData?.email, ...reviewData },
+      body: {
+        userName: userData?.displayName || userData?.email,
+        ...reviewData,
+      },
     });
   },
 };

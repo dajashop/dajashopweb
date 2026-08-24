@@ -12,8 +12,12 @@ function formatBelgradeDateTime(value) {
   return `${fields.year}-${fields.month}-${fields.day}T${fields.hour}:${fields.minute}`;
 }
 
+function defaultPrice() {
+  return { amount: '', costAmount: '', type: 'sale', from: formatBelgradeDateTime(new Date()), until: '' };
+}
+
 export default function ProductOperationsPanel({ productId, variants = [], basePrice = '', onBasePriceChange, onPendingPrice }) {
-  const [price, setPrice] = useState({ amount: '', costAmount: '', type: 'sale', from: '', until: '' });
+  const [price, setPrice] = useState(defaultPrice);
   const [priceChanged, setPriceChanged] = useState(false);
   useEffect(() => {
     if (!productId) return;
@@ -24,12 +28,16 @@ export default function ProductOperationsPanel({ productId, variants = [], baseP
         if (cancelled) return;
         const latestSale = prices.find((item) => item.priceType === 'sale');
         const latestCost = prices.find((item) => item.priceType === 'cost');
-        if (!latestSale && !latestCost) return;
+        if (!latestSale && !latestCost) {
+          setPrice(defaultPrice());
+          setPriceChanged(false);
+          return;
+        }
         setPrice({
           amount: latestSale ? String(Number(latestSale.amountMinor) / 100) : '',
           costAmount: latestCost ? String(Number(latestCost.amountMinor) / 100) : '',
           type: 'sale',
-          from: formatBelgradeDateTime(latestSale?.validFrom),
+          from: formatBelgradeDateTime(latestSale?.validFrom) || defaultPrice().from,
           until: formatBelgradeDateTime(latestSale?.validUntil),
         });
       })
