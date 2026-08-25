@@ -314,6 +314,12 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const handleChange = (field, value) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
+      // The storefront URL and the R2 media folder follow the product name.
+      // An edit used to retain the old slug, so renaming a product left both
+      // the public URL and future uploads under the previous name.
+      if (field === 'name') {
+        next.slug = generateSlug(value);
+      }
       if (field === 'department') {
         // A department change must never keep relations from the previous one.
         next.brand = '';
