@@ -38,7 +38,6 @@ function ensureStaffCatalogSocket() {
     transports: ['websocket'],
     auth: { token: `Bearer ${token}` },
     reconnection: true,
-    reconnectionAttempts: 5,
   });
   staffCatalogSocket.on('catalog.taxonomy.updated', (event) => {
     staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
@@ -49,10 +48,14 @@ function ensureStaffCatalogSocket() {
 }
 
 onAuthTokenChange(() => {
-  if (!staffCatalogSocket) return;
-  staffCatalogSocket.close();
+  // A dashboard can mount before its short-lived staff session is issued.
+  // In that case there is no socket to close, but active catalog subscribers
+  // must still connect as soon as the token becomes available.
+  staffCatalogSocket?.close();
   staffCatalogSocket = null;
-  if (getStaffAccessToken()) ensureStaffCatalogSocket();
+  if (getStaffAccessToken() && staffCatalogListeners.size > 0) {
+    ensureStaffCatalogSocket();
+  }
 });
 
 function normalizeUser(data) {
