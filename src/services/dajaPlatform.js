@@ -11,6 +11,8 @@ import { getStaffAccessToken } from './apiClient';
 
 let publicCatalogSocket = null;
 const publicCatalogListeners = new Set();
+let staffCatalogSocket = null;
+const staffCatalogListeners = new Set();
 
 function realtimeNamespaceUrl() {
   const apiBase = API_BASE_URL.startsWith('http')
@@ -469,6 +471,7 @@ export function createCollectionService(collectionName) {
   const endpoint = collectionEndpoint(collectionName);
   const subscribers = new Set();
   let cachedItems = [];
+  let stopRealtime = null;
   const notify = (items) => {
     cachedItems = items;
     subscribers.forEach((subscriber) => subscriber.onData(items));
@@ -484,6 +487,15 @@ export function createCollectionService(collectionName) {
       throw error;
     }
   };
+  const startRealtime = () => {
+    if (stopRealtime) return;
+    stopRealtime = subscribeStaffCatalogRealtime((event) => {
+      const collections = event?.data?.collections ?? event?.collections;
+      if (!Array.isArray(collections) || collections.includes(collectionName)) {
+        void refresh().catch(() => {});
+      }
+    });
+  };
   return {
     async list() {
       return refresh();
@@ -495,10 +507,15 @@ export function createCollectionService(collectionName) {
     subscribe(onData, onError) {
       const subscriber = { onData, onError };
       subscribers.add(subscriber);
+      startRealtime();
       if (cachedItems.length) onData(cachedItems);
       else void refresh();
       return () => {
         subscribers.delete(subscriber);
+        if (subscribers.size === 0 && stopRealtime) {
+          stopRealtime();
+          stopRealtime = null;
+        }
       };
     },
     async add(name, extraData = {}) {
@@ -853,6 +870,41 @@ export function subscribeRealtime(channels, onEvent, onError) {
   return () => {
     channels.forEach((channel) => socket.off(channel, onEvent));
     socket.close();
+  };
+}
+
+export function subscribeStaffCatalogRealtime(onEvent, onError) {
+  const listener = { onEvent, onError };
+  staffCatalogListeners.add(listener);
+  if (!staffCatalogSocket) {
+    const token = getStaffAccessToken();
+    if (!token) {
+      onError?.(new Error('Staff token nije dostupan za real-time vezu.'));
+    } else {
+      staffCatalogSocket = io(realtimeNamespaceUrl(), {
+        path: '/socket.io',
+        transports: ['websocket'],
+        auth: { token: `Bearer ${token}` },
+        reconnection: true,
+        reconnectionAttempts: 5,
+      });
+      staffCatalogSocket.on('catalog.taxonomy.updated', (event) => {
+        staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
+      });
+      staffCatalogSocket.on('connect_error', (error) => {
+        staffCatalogListeners.forEach((candidate) =>
+          candidate.onError?.(error),
+        );
+      });
+    }
+  }
+
+  return () => {
+    staffCatalogListeners.delete(listener);
+    if (staffCatalogListeners.size === 0 && staffCatalogSocket) {
+      staffCatalogSocket.close();
+      staffCatalogSocket = null;
+    }
   };
 }
 
