@@ -26,6 +26,23 @@ import { generateSlug } from '../utils/generators.js';
 import CustomSelect from './CustomSelect.jsx';
 import ProductOperationsPanel from './ProductOperationsPanel.jsx';
 
+function validateEpcInput(value) {
+  const epc = value
+    .trim()
+    .replace(/^0x/i, '')
+    .replace(/[\s:._-]/g, '')
+    .toUpperCase();
+
+  if (!epc) return { value: '', error: undefined };
+  if (!/^[0-9A-F]{8,64}$/.test(epc) || epc.length % 2 !== 0) {
+    return {
+      value: epc,
+      error: 'EPC mora imati 8–64 heksadecimalna znaka i paran broj znakova.',
+    };
+  }
+  return { value: epc, error: undefined };
+}
+
 // --- 1. Custom Select ---
 
 // --- 3. Main Modal Component ---
@@ -109,6 +126,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const [deletedVariantIds, setDeletedVariantIds] = useState([]);
   const [pendingPrice, setPendingPrice] = useState(null);
   const [flash, setFlash] = useState({ open: false });
+  const epcValidation = validateEpcInput(form.epc || '');
 
   useEffect(() => {
     setDeletedVariantIds([]);
@@ -370,6 +388,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   const handleSubmit = async () => {
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
+    if (epcValidation.error) {
+      setFlash({ open: true, title: epcValidation.error, ok: false });
+      return;
+    }
     setLoading(true);
     try {
       // Validate price dates before POST/PATCH. This prevents a product from
@@ -401,6 +423,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
       const payload = {
         ...form,
+        epc: epcValidation.value,
         price: Number(form.price),
         image: form.mainImageUrl || form.images[0]?.url || '',
         slug: finalSlug,
@@ -494,20 +517,20 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         if (primaryVariant?.id) {
           const quantity = Number(form.quantity) || 0;
           let taggedItem = null;
-          if (form.epc) {
+          if (epcValidation.value) {
             let tag;
             try {
               // A new EPC normally does not exist yet. Creating first avoids a
               // noisy, expected 404 from the lookup endpoint for every new tag.
               tag = await rfidApi.createTag({
-                epc: form.epc,
+                epc: epcValidation.value,
                 variantId: primaryVariant.id,
               });
             } catch (error) {
               // The only recoverable case is an EPC already registered in this
               // organization. Reuse it; all other errors must remain visible.
               if (error?.status !== 409) throw error;
-              tag = await rfidApi.byEpc(form.epc);
+              tag = await rfidApi.byEpc(epcValidation.value);
             }
             if (!tag.inventoryItemId && form.locationId) {
               taggedItem = await inventoryApi.createItem({
@@ -567,7 +590,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           }
           // Publish a new catalog snapshot after inventory/EPC changes so the
           // RFID desktop app receives the current quantity and tag data.
-          if (form.epc || (form.locationId && quantity > 0)) {
+          if (epcValidation.value || (form.locationId && quantity > 0)) {
             await adminCatalogApi.refreshVariant(primaryVariant.id, {
               attributes: form.specs || {},
             });
@@ -903,9 +926,25 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     <input
                       value={form.epc || ''}
                       onChange={(e) => handleChange('epc', e.target.value)}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 font-mono"
+                      onBlur={() => {
+                        if (!epcValidation.error && epcValidation.value) {
+                          handleChange('epc', epcValidation.value);
+                        }
+                      }}
+                      aria-invalid={Boolean(epcValidation.error)}
+                      maxLength={188}
+                      className={`w-full bg-neutral-50 border rounded-xl px-4 py-3 font-mono ${
+                        epcValidation.error
+                          ? 'border-red-500 focus:ring-2 focus:ring-red-200'
+                          : 'border-neutral-200'
+                      }`}
                       placeholder="RFID EPC"
                     />
+                    {epcValidation.error ? (
+                      <span className="mt-1 block text-xs text-red-600">
+                        {epcValidation.error}
+                      </span>
+                    ) : null}
                   </label>
                 </div>
                 <div className="md:col-span-1">
