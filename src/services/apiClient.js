@@ -51,6 +51,7 @@ export function setAuthTokens(tokens = {}) {
 
 export function setStaffAccessToken(accessToken) {
   writeStorage(STAFF_ACCESS_KEY, accessToken || null);
+  emitAuthChange();
 }
 
 export function clearAuthTokens() {

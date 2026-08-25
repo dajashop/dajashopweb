@@ -4,6 +4,7 @@ import {
   setAuthTokens,
   setStaffAccessToken,
   clearAuthTokens,
+  onAuthTokenChange,
   toArrayPayload,
 } from './apiClient';
 import { io } from 'socket.io-client';
@@ -23,6 +24,36 @@ function realtimeNamespaceUrl() {
   const configured = import.meta.env.VITE_DAJA_WS_URL || apiBase;
   return `${new URL(configured).origin}/realtime`;
 }
+
+function ensureStaffCatalogSocket() {
+  if (staffCatalogSocket || staffCatalogListeners.size === 0) return;
+  const token = getStaffAccessToken();
+  if (!token) {
+    const error = new Error('Staff token nije dostupan za real-time vezu.');
+    staffCatalogListeners.forEach((candidate) => candidate.onError?.(error));
+    return;
+  }
+  staffCatalogSocket = io(realtimeNamespaceUrl(), {
+    path: '/socket.io',
+    transports: ['websocket'],
+    auth: { token: `Bearer ${token}` },
+    reconnection: true,
+    reconnectionAttempts: 5,
+  });
+  staffCatalogSocket.on('catalog.taxonomy.updated', (event) => {
+    staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
+  });
+  staffCatalogSocket.on('connect_error', (error) => {
+    staffCatalogListeners.forEach((candidate) => candidate.onError?.(error));
+  });
+}
+
+onAuthTokenChange(() => {
+  if (!staffCatalogSocket) return;
+  staffCatalogSocket.close();
+  staffCatalogSocket = null;
+  if (getStaffAccessToken()) ensureStaffCatalogSocket();
+});
 
 function normalizeUser(data) {
   const user = data?.user || data?.customer || data;
@@ -876,28 +907,7 @@ export function subscribeRealtime(channels, onEvent, onError) {
 export function subscribeStaffCatalogRealtime(onEvent, onError) {
   const listener = { onEvent, onError };
   staffCatalogListeners.add(listener);
-  if (!staffCatalogSocket) {
-    const token = getStaffAccessToken();
-    if (!token) {
-      onError?.(new Error('Staff token nije dostupan za real-time vezu.'));
-    } else {
-      staffCatalogSocket = io(realtimeNamespaceUrl(), {
-        path: '/socket.io',
-        transports: ['websocket'],
-        auth: { token: `Bearer ${token}` },
-        reconnection: true,
-        reconnectionAttempts: 5,
-      });
-      staffCatalogSocket.on('catalog.taxonomy.updated', (event) => {
-        staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
-      });
-      staffCatalogSocket.on('connect_error', (error) => {
-        staffCatalogListeners.forEach((candidate) =>
-          candidate.onError?.(error),
-        );
-      });
-    }
-  }
+  ensureStaffCatalogSocket();
 
   return () => {
     staffCatalogListeners.delete(listener);
