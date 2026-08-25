@@ -737,6 +737,12 @@ export const mediaApi = {
       { method: 'POST', staff: true },
     );
   },
+  discardUpload(mediaId) {
+    return apiRequest(`/media/uploads/${encodeURIComponent(mediaId)}`, {
+      method: 'DELETE',
+      staff: true,
+    });
+  },
   attachToProduct(productId, mediaId, options = {}) {
     return apiRequest(`/products/${encodeURIComponent(productId)}/media`, {
       method: 'POST',

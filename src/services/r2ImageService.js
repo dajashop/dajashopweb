@@ -17,14 +17,23 @@ export async function uploadProductImage(slug, file, index = 0) {
   const uploadUrl = upload.uploadUrl || upload.url;
   const mediaId = upload.mediaId || upload.id;
   if (!uploadUrl || !mediaId) throw new Error('API nije vratio R2 upload podatke.');
-  const response = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type || 'application/octet-stream' },
-    body: file,
-  });
-  if (!response.ok) throw new Error(`R2 upload nije uspeo (${response.status}).`);
-  await mediaApi.completeUpload(mediaId);
-  return { mediaId, url: upload.publicUrl || '', thumb: upload.thumbnailUrl || upload.publicUrl || '' };
+  try {
+    const response = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
+    });
+    if (!response.ok) throw new Error(`R2 upload nije uspeo (${response.status}).`);
+    await mediaApi.completeUpload(mediaId);
+    return { mediaId, url: upload.publicUrl || '', thumb: upload.thumbnailUrl || upload.publicUrl || '' };
+  } catch (error) {
+    try {
+      await mediaApi.discardUpload(mediaId);
+    } catch (cleanupError) {
+      console.error('Brisanje neuspele R2 slike nije uspelo:', cleanupError);
+    }
+    throw error;
+  }
 }
 
 export async function uploadProductImages(slug, files, onProgress, startIndex = 0) {
@@ -32,10 +41,21 @@ export async function uploadProductImages(slug, files, onProgress, startIndex = 
   const total = list.length;
   const uploaded = [];
 
-  for (let i = 0; i < total; i += 1) {
-    const item = await uploadProductImage(slug, list[i], startIndex + i);
-    uploaded.push(item);
-    onProgress?.({ file: list[i], progress: Math.round(((i + 1) / total) * 100) });
+  try {
+    for (let i = 0; i < total; i += 1) {
+      const item = await uploadProductImage(slug, list[i], startIndex + i);
+      uploaded.push(item);
+      onProgress?.({ file: list[i], progress: Math.round(((i + 1) / total) * 100) });
+    }
+  } catch (error) {
+    await Promise.all(
+      uploaded.map((item) =>
+        mediaApi.discardUpload(item.mediaId).catch((cleanupError) =>
+          console.error('Brisanje delimično otpremljene R2 slike nije uspelo:', cleanupError),
+        ),
+      ),
+    );
+    throw error;
   }
 
   return uploaded;

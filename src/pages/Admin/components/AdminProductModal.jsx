@@ -1,6 +1,6 @@
 // src/pages/Admin/components/AdminProductModal.jsx
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 // [IZMENA] Dodat Trash2 za brisanje redova
@@ -126,10 +126,16 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const [deletedVariantIds, setDeletedVariantIds] = useState([]);
   const [pendingPrice, setPendingPrice] = useState(null);
   const [flash, setFlash] = useState({ open: false });
+  const [removedMediaLinkIds, setRemovedMediaLinkIds] = useState([]);
+  // Only media uploaded during this modal can be discarded on cancellation.
+  // Existing product media is deleted only after a successful save.
+  const pendingUploadIdsRef = useRef(new Set());
   const epcValidation = validateEpcInput(form.epc || '');
 
   useEffect(() => {
     setDeletedVariantIds([]);
+    setRemovedMediaLinkIds([]);
+    pendingUploadIdsRef.current.clear();
     const sub1 = brandService.subscribe(setBrands);
     const sub2 = categoryService.subscribe(setCats);
     const sub3 = specKeyService.subscribe(setSpecKeys);
@@ -235,6 +241,43 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       sub4();
     };
   }, [product]);
+
+  // The product list contains display URLs; load the canonical media links so
+  // deletion and reordering can safely address the exact R2-backed asset.
+  useEffect(() => {
+    if (!product?.id) return undefined;
+    let cancelled = false;
+    void mediaApi
+      .listProductMedia(product.id)
+      .then((rows) => {
+        if (cancelled) return;
+        const images = (Array.isArray(rows) ? rows : []).map((row) => ({
+          mediaId: row.mediaId,
+          linkId: row.id,
+          url: row.url,
+          thumb: row.url,
+        }));
+        setForm((previous) => ({ ...previous, images }));
+      })
+      .catch((error) => console.error('Učitavanje galerije proizvoda nije uspelo:', error));
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.id]);
+
+  const discardPendingUploads = () => {
+    const mediaIds = [...pendingUploadIdsRef.current];
+    pendingUploadIdsRef.current.clear();
+    if (!mediaIds.length) return;
+    void Promise.all(mediaIds.map((mediaId) => mediaApi.discardUpload(mediaId))).catch((error) =>
+      console.error('Brisanje privremenih slika iz R2 nije uspelo:', error),
+    );
+  };
+
+  const closeModal = () => {
+    discardPendingUploads();
+    onClose();
+  };
 
   useEffect(() => {
     let active = true;
@@ -603,31 +646,49 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         ),
       );
       setDeletedVariantIds([]);
-      const pendingMedia = (form.images || []).filter(
+      let savedImages = [...(form.images || [])];
+      const pendingMedia = savedImages.filter(
         (image) => image.mediaId && !image.linkId,
       );
       if (savedProductId && pendingMedia.length) {
         const linked = await Promise.all(
-          pendingMedia.map((image, index) =>
-            mediaApi.attachToProduct(savedProductId, image.mediaId, {
-              position: index,
-              isPrimary: index === 0,
-            }),
-          ),
-        );
-        setForm((previous) => ({
-          ...previous,
-          images: previous.images.map((image) => {
-            const link = linked.find((item) => item.mediaId === image.mediaId);
-            return link ? { ...image, linkId: link.id } : image;
+          pendingMedia.map((image) => {
+            const position = savedImages.indexOf(image);
+            return mediaApi.attachToProduct(savedProductId, image.mediaId, {
+              position,
+              isPrimary: position === 0,
+            });
           }),
-        }));
+        );
+        savedImages = savedImages.map((image) => {
+          const link = linked.find((item) => item.mediaId === image.mediaId);
+          return link ? { ...image, linkId: link.id } : image;
+        });
       }
+      if (savedProductId) {
+        const retainedLinks = new Set(savedImages.map((image) => image.linkId).filter(Boolean));
+        const linksToDetach = removedMediaLinkIds.filter((linkId) => !retainedLinks.has(linkId));
+        for (const linkId of linksToDetach) {
+          await mediaApi.detachFromProduct(savedProductId, linkId);
+        }
+        // The first image is always the primary image; the API applies the
+        // same order to the product-media links stored next to R2 assets.
+        for (const [position, image] of savedImages.entries()) {
+          if (!image.linkId) continue;
+          await mediaApi.updateProductMedia(savedProductId, image.linkId, {
+            position,
+            isPrimary: position === 0,
+          });
+        }
+        setForm((previous) => ({ ...previous, images: savedImages }));
+        setRemovedMediaLinkIds([]);
+      }
+      pendingUploadIdsRef.current.clear();
       await onSuccess?.();
 
       setFlash({ open: true, title: 'Uspešno sačuvano!', ok: true });
       setTimeout(() => {
-        onClose();
+        closeModal();
       }, 500);
     } catch (err) {
       console.error(err);
@@ -646,22 +707,29 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   // src/pages/Admin/components/AdminProductModal.jsx
 
   const handleImageChange = (newImages) => {
-    if (product?.id) {
-      const retained = new Set(
-        newImages.map((image) => image.linkId).filter(Boolean),
+    const previousImages = form.images || [];
+    const imageIdentity = (image) => image.mediaId || image.url;
+    const nextImageIds = new Set(newImages.map(imageIdentity).filter(Boolean));
+    const newUploads = newImages.filter(
+      (image) =>
+        image.mediaId &&
+        !image.linkId &&
+        !previousImages.some((previous) => previous.mediaId === image.mediaId),
+    );
+    newUploads.forEach((image) => pendingUploadIdsRef.current.add(image.mediaId));
+    const removed = previousImages.filter((image) => !nextImageIds.has(imageIdentity(image)));
+    const removedLinks = removed.map((image) => image.linkId).filter(Boolean);
+    if (removedLinks.length) {
+      setRemovedMediaLinkIds((current) => [...new Set([...current, ...removedLinks])]);
+    }
+    const removedUploads = removed.filter(
+      (image) => image.mediaId && pendingUploadIdsRef.current.has(image.mediaId),
+    );
+    if (removedUploads.length) {
+      removedUploads.forEach((image) => pendingUploadIdsRef.current.delete(image.mediaId));
+      void Promise.all(removedUploads.map((image) => mediaApi.discardUpload(image.mediaId))).catch(
+        (error) => console.error('Brisanje uklonjene slike iz R2 nije uspelo:', error),
       );
-      const removed = (form.images || []).filter(
-        (image) => image.linkId && !retained.has(image.linkId),
-      );
-      if (removed.length) {
-        void Promise.all(
-          removed.map((image) =>
-            mediaApi.detachFromProduct(product.id, image.linkId),
-          ),
-        ).catch((error) =>
-          console.error('Brisanje veze slike nije uspelo:', error),
-        );
-      }
     }
     setForm((prev) => {
       // URL prve slike pre i posle promene
@@ -865,7 +933,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={closeModal}
             className="p-2 hover:bg-neutral-100 rounded-full text-neutral-500 hover:text-neutral-900 transition"
           >
             <X size={24} />
@@ -1589,7 +1657,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
         <div className="px-8 py-5 bg-white border-t border-neutral-100 flex justify-end gap-4">
           <button
-            onClick={onClose}
+            onClick={closeModal}
             className="px-6 py-2.5 rounded-xl font-semibold text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
           >
             Otkaži
