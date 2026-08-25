@@ -254,6 +254,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         const images = (Array.isArray(rows) ? rows : []).map((row) => ({
           mediaId: row.mediaId,
           linkId: row.id,
+          position: row.position,
+          isPrimary: row.isPrimary,
           url: row.url,
           thumb: row.url,
         }));
@@ -653,6 +655,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       );
       setDeletedVariantIds([]);
       let savedImages = [...(form.images || [])];
+      const newlyLinkedMediaIds = new Set();
       const pendingMedia = savedImages.filter(
         (image) => image.mediaId && !image.linkId,
       );
@@ -666,9 +669,17 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             });
           }),
         );
+        linked.forEach((link) => newlyLinkedMediaIds.add(link.mediaId));
         savedImages = savedImages.map((image) => {
           const link = linked.find((item) => item.mediaId === image.mediaId);
-          return link ? { ...image, linkId: link.id } : image;
+          return link
+            ? {
+                ...image,
+                linkId: link.id,
+                position: link.position,
+                isPrimary: link.isPrimary,
+              }
+            : image;
         });
       }
       if (savedProductId) {
@@ -681,9 +692,16 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         // same order to the product-media links stored next to R2 assets.
         for (const [position, image] of savedImages.entries()) {
           if (!image.linkId) continue;
+          const isPrimary = position === 0;
+          if (
+            newlyLinkedMediaIds.has(image.mediaId) ||
+            (image.position === position && image.isPrimary === isPrimary)
+          ) {
+            continue;
+          }
           await mediaApi.updateProductMedia(savedProductId, image.linkId, {
             position,
-            isPrimary: position === 0,
+            isPrimary,
           });
         }
         setForm((previous) => ({ ...previous, images: savedImages }));
