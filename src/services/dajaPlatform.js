@@ -4,7 +4,7 @@ import {
   setAuthTokens,
   setStaffAccessToken,
   clearAuthTokens,
-  onAuthTokenChange,
+  onStaffAccessTokenChange,
   toArrayPayload,
 } from './apiClient';
 import { io } from 'socket.io-client';
@@ -47,7 +47,7 @@ function ensureStaffCatalogSocket() {
   });
 }
 
-onAuthTokenChange(() => {
+onStaffAccessTokenChange(() => {
   // A dashboard can mount before its short-lived staff session is issued.
   // In that case there is no socket to close, but active catalog subscribers
   // must still connect as soon as the token becomes available.

@@ -9,6 +9,7 @@ const STAFF_ACCESS_KEY = 'daja_staff_access_token';
 
 let refreshPromise = null;
 const authListeners = new Set();
+const staffTokenListeners = new Set();
 
 function readStorage(key) {
   try {
@@ -31,6 +32,10 @@ function emitAuthChange() {
   authListeners.forEach((listener) => listener());
 }
 
+function emitStaffTokenChange() {
+  staffTokenListeners.forEach((listener) => listener());
+}
+
 export function getAccessToken() {
   return readStorage(ACCESS_KEY);
 }
@@ -44,26 +49,41 @@ export function getStaffAccessToken() {
 }
 
 export function setAuthTokens(tokens = {}) {
-  writeStorage(ACCESS_KEY, tokens.accessToken || tokens.access_token || null);
-  writeStorage(REFRESH_KEY, tokens.refreshToken || tokens.refresh_token || null);
-  emitAuthChange();
+  const accessToken = tokens.accessToken || tokens.access_token || null;
+  const refreshToken = tokens.refreshToken || tokens.refresh_token || null;
+  const changed = getAccessToken() !== accessToken || getRefreshToken() !== refreshToken;
+  writeStorage(ACCESS_KEY, accessToken);
+  writeStorage(REFRESH_KEY, refreshToken);
+  if (changed) emitAuthChange();
 }
 
 export function setStaffAccessToken(accessToken) {
-  writeStorage(STAFF_ACCESS_KEY, accessToken || null);
-  emitAuthChange();
+  const nextToken = accessToken || null;
+  if (getStaffAccessToken() === nextToken) return;
+  writeStorage(STAFF_ACCESS_KEY, nextToken);
+  // Staff-token renewal must reconnect the staff socket, not reload the
+  // customer session. Reloading it would mint another staff token forever.
+  emitStaffTokenChange();
 }
 
 export function clearAuthTokens() {
+  const customerChanged = Boolean(getAccessToken() || getRefreshToken());
+  const staffChanged = Boolean(getStaffAccessToken());
   writeStorage(ACCESS_KEY, null);
   writeStorage(REFRESH_KEY, null);
   writeStorage(STAFF_ACCESS_KEY, null);
-  emitAuthChange();
+  if (customerChanged) emitAuthChange();
+  if (staffChanged) emitStaffTokenChange();
 }
 
 export function onAuthTokenChange(listener) {
   authListeners.add(listener);
   return () => authListeners.delete(listener);
+}
+
+export function onStaffAccessTokenChange(listener) {
+  staffTokenListeners.add(listener);
+  return () => staffTokenListeners.delete(listener);
 }
 
 function buildUrl(path, query) {
