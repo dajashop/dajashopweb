@@ -375,7 +375,7 @@ export const adminCatalogApi = {
         method: 'POST',
         staff: true,
         body: {
-          sku: product.sku || product.slug || data?.slug || product.name,
+          sku: product.sku?.trim() || null,
           currentPriceAmount: Math.round(Number(product.price || 0) * 100),
           currency: 'RSD',
           gender: product.gender || null,

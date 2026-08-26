@@ -57,7 +57,7 @@ export default function ProductJsonLd({ product, reviews = [] }) {
       '@type': 'Brand',
       name: product.brand || seoConfig.siteName,
     },
-    sku: product.slug,
+    ...(product.sku ? { sku: product.sku } : {}),
     offers: {
       '@type': 'Offer',
       url: `${seoConfig.siteUrl.replace(/\/$/, '')}/product/${product.slug}`,

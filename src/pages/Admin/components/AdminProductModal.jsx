@@ -185,7 +185,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
               ? [
                   {
                     id: product.variantId,
-                    sku: product.sku || product.slug || '',
+                    sku: product.sku || '',
                     barcode: product.barcode || null,
                     price:
                       product.price ??
@@ -483,7 +483,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         variants: [
           {
             ...(form.variants?.[0]?.id ? { id: form.variants[0].id } : {}),
-            sku: form.sku || finalSlug,
+            sku: form.sku?.trim() || null,
             barcode: form.barcode || null,
             price: Number(form.price),
             currency: form.currency || 'RSD',
