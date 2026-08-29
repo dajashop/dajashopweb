@@ -422,13 +422,6 @@ export default function AuthModal() {
     try {
       setLoading(true);
       await oauth(provider);
-      hideAuth();
-      openFlash(
-        'Uspeh',
-        provider === 'google'
-          ? 'Google prijava je prošla.'
-          : 'Facebook prijava je prošla.'
-      );
     } catch (err) {
       alert(err?.message || 'Greška pri OAuth prijavi.');
     } finally {
