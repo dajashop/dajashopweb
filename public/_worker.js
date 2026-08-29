@@ -188,7 +188,7 @@ export default {
     const url = new URL(request.url);
     const apiBase = (env.DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
     if (url.pathname === '/sitemap.xml') {
-      return fetch(`${apiBase}/public/sitemap.xml`, { cf: { cacheEverything: true, cacheTtl: 3600 } });
+      return fetch(`${apiBase}/public/catalog/sitemap.xml`, { cf: { cacheEverything: true, cacheTtl: 3600 } });
     }
 
     let response = await env.ASSETS.fetch(request);
