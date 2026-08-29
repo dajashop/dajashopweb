@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 
 import { customerApi } from '../../services/dajaPlatform';
+import { loadGoogleMapsPlaces } from '../../services/googleMaps';
 
 import { FORM_RULES } from '../../data/validationRules';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
@@ -26,8 +27,6 @@ import {
   renderIcon,
   getFlagUrl,
 } from '../../utils/accountHelpers.jsx';
-
-const GMAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
 
 // --- LISTA POZIVNIH BROJEVA ---
 const COUNTRY_CODES = [
@@ -59,6 +58,7 @@ function AddressSection({ user }) {
 
   // State za prefiks telefona
   const [phonePrefix, setPhonePrefix] = useState('+381');
+  const [mapsLoaded, setMapsLoaded] = useState(false);
 
   // Pomoćna funkcija za razdvajanje broja
   const parsePhoneNumber = (fullNumber) => {
@@ -131,20 +131,26 @@ function AddressSection({ user }) {
 
   // --- GOOGLE MAPS ---
   useEffect(() => {
-    if (!isAdding || (window.google && window.google.maps)) return;
-    const existingScript = document.getElementById('google-maps-script');
-    if (existingScript) return;
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_API_KEY}&libraries=places&language=sr`;
-    script.async = true;
-    script.defer = true;
-    script.id = 'google-maps-script';
-    document.head.appendChild(script);
+    if (!isAdding) return undefined;
+    let cancelled = false;
+
+    loadGoogleMapsPlaces()
+      .then(() => {
+        if (!cancelled) setMapsLoaded(true);
+      })
+      .catch((error) => {
+        console.error('Google Places nije dostupan:', error);
+        if (!cancelled) setMapsLoaded(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isAdding]);
 
   // --- GOOGLE PLACES AUTOCOMPLETE ---
   useEffect(() => {
-    if (!isAdding) return;
+    if (!isAdding || !mapsLoaded) return;
     let autocomplete = null;
     const initGooglePlaces = () => {
       if (!window.google || !window.google.maps || !window.google.maps.places)
@@ -192,19 +198,14 @@ function AddressSection({ user }) {
       }
       return false;
     };
-    if (!initGooglePlaces()) {
-      const i = setInterval(() => {
-        if (initGooglePlaces()) clearInterval(i);
-      }, 500);
-      return () => clearInterval(i);
-    }
+    if (!initGooglePlaces()) return undefined;
     return () => {
       if (autocomplete)
         window.google.maps.event.clearInstanceListeners(autocomplete);
       const pac = document.querySelector('.pac-container');
       if (pac) pac.remove();
     };
-  }, [isAdding]);
+  }, [isAdding, mapsLoaded]);
 
   // --- VALIDACIJA ---
   const validateField = (name, value) => {

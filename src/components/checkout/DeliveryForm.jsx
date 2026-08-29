@@ -30,6 +30,7 @@ import {
 import ErrorMessage from './ErrorMessage';
 
 import { customerApi } from '../../services/dajaPlatform';
+import { loadGoogleMapsPlaces } from '../../services/googleMaps';
 import {
   ADDRESS_ICONS,
   ADDRESS_ICON_ORDER,
@@ -57,38 +58,6 @@ const POPULAR_DOMAINS = [
   'icloud.com',
   'yahoo.co.uk',
 ];
-
-// ************************************************************
-// GOOGLE MAPS LOADER
-// ************************************************************
-function loadGoogleMapsScript(apiKey) {
-  return new Promise((resolve, reject) => {
-    if (window.google && window.google.maps && window.google.maps.places) {
-      resolve();
-      return;
-    }
-    if (document.getElementById('google-maps-script')) {
-      resolve();
-      return;
-    }
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.id = 'google-maps-script';
-
-    script.onload = () => {
-      if (window.google && window.google.maps && window.google.maps.places) {
-        resolve();
-      } else {
-        reject(new Error('Google Maps API error.'));
-      }
-    };
-    script.onerror = () => reject(new Error('Google Maps load failed.'));
-    document.head.appendChild(script);
-  });
-}
 
 export default function DeliveryForm({
   formData,
@@ -125,6 +94,7 @@ export default function DeliveryForm({
   const hasAutoSelected = useRef(false);
 
   const [mapsReady, setMapsReady] = useState(false);
+  const [mapsLoadError, setMapsLoadError] = useState(false);
   const [emailSuggestions, setEmailSuggestions] = useState([]);
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const [prediction, setPrediction] = useState('');
@@ -317,18 +287,25 @@ export default function DeliveryForm({
 
   // --- GOOGLE MAPS INIT ---
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY;
-    if (!apiKey) {
-      setMapsReady(false);
-      return;
-    }
+    let cancelled = false;
 
-    loadGoogleMapsScript(apiKey)
+    loadGoogleMapsPlaces()
       .then(() => {
+        if (cancelled) return;
         setMapsScriptLoaded(true);
         if (addressInputRef.current) initAutocomplete(addressInputRef.current);
       })
-      .catch(() => setMapsReady(false));
+      .catch((error) => {
+        console.error('Google Places nije dostupan:', error);
+        if (!cancelled) {
+          setMapsReady(false);
+          setMapsLoadError(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const initAutocomplete = (node) => {
@@ -338,8 +315,10 @@ export default function DeliveryForm({
     if (
       node.classList.contains('pac-target-input') ||
       autocompleteInstance.current
-    )
+    ) {
+      setMapsReady(true);
       return;
+    }
 
     try {
       const autocomplete = new window.google.maps.places.Autocomplete(node, {
@@ -949,7 +928,9 @@ export default function DeliveryForm({
                     placeholder={
                       mapsReady
                         ? 'Počnite da kucate ulicu...'
-                        : 'Učitavanje mape...'
+                        : mapsLoadError
+                          ? 'Unesite adresu ručno'
+                          : 'Učitavanje predloga adrese...'
                     }
                     value={formData.address}
                     onChange={handleAddressInput}
@@ -959,7 +940,7 @@ export default function DeliveryForm({
                     autoComplete="new-password"
                     className="real-input"
                   />
-                  {!mapsReady && (
+                  {!mapsReady && !mapsLoadError && (
                     <div style={{ position: 'absolute', right: 12 }}>
                       <Loader2 size={18} className="animate-spin text-muted" />
                     </div>
