@@ -448,6 +448,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       setFlash({ open: true, title: epcValidation.error, ok: false });
       return;
     }
+    // saveProduct notifies the parent synchronously. Capture this before any
+    // await so a parent re-render with the new (empty) EPC cannot erase the
+    // value we still need to unassign.
+    const epcBeforeSave = initialEpcRef.current;
     setLoading(true);
     try {
       // Validate price dates before POST/PATCH. This prevents a product from
@@ -573,7 +577,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         if (primaryVariant?.id) {
           const quantity = Number(form.quantity) || 0;
           let taggedItem = null;
-          const previousEpc = initialEpcRef.current;
+          const previousEpc = epcBeforeSave;
           const epcChanged = previousEpc !== epcValidation.value;
 
           // Removing an EPC from the input used to leave its RFID tag assigned
