@@ -162,6 +162,14 @@ function ImageManager({
     onChange(newImages);
   };
 
+  const updateImageAltText = (index, altText) => {
+    onChange(
+      images.map((image, currentIndex) =>
+        currentIndex === index ? { ...image, altText } : image,
+      ),
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -296,6 +304,13 @@ function ImageManager({
               </div>
 
               <div className="flex-1 min-w-0">
+                <input
+                  value={img.altText || ''}
+                  onChange={(event) => updateImageAltText(idx, event.target.value)}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  placeholder={`Alt tekst slike ${idx + 1}`}
+                  className="mb-1 w-full rounded-md border border-neutral-200 px-2 py-1 text-xs text-neutral-700 outline-none focus:border-blue-400"
+                />
                 <p className="text-xs text-neutral-500 truncate font-mono">
                   {img.path ? (
                     img.path.split('/').pop()

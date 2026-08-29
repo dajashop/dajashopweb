@@ -33,3 +33,47 @@
   color: var(--color-muted, #585858);
   font-variant-numeric: tabular-nums;
 }
+
+.product-regular-price {
+  margin-right: 10px;
+  color: var(--color-muted, #777);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.product-sale-price {
+  color: #b42318;
+}
+
+.product-stock {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.product-stock.is-in-stock {
+  color: #087443;
+}
+
+.product-stock.is-out-of-stock {
+  color: #b42318;
+}
+
+.product-identifiers {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 12px 0 0;
+  color: var(--color-muted, #666);
+  font-size: 0.78rem;
+}
+
+.product-identifiers dt {
+  font-weight: 700;
+}
+
+.product-identifiers dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

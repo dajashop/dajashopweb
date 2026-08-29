@@ -47,6 +47,7 @@ export default function ProductGallery({ product }) {
         src: img.url,
         thumb:
           img.thumb || (i === 0 ? product.thumbnailUrl || img.url : img.url),
+        altText: img.altText || img.alt_text || '',
         id: `img-${i}`,
         imageIndex: i,
       });
@@ -82,7 +83,8 @@ export default function ProductGallery({ product }) {
     (img) => img.url === activeItem?.src,
   );
   const defaultAlt = `${product.brand || ''} ${product.name || ''}`.trim();
-  const mainImageAlt = product.seo?.imageAltText || defaultAlt || product.name;
+  const mainImageAlt =
+    activeItem?.altText || product.seo?.imageAltText || defaultAlt || product.name;
 
   if (!product) return null;
 
@@ -139,7 +141,10 @@ export default function ProductGallery({ product }) {
                 ) : (
                   <img
                     src={item.thumb || item.src}
-                    alt={`${product.name} - slika ${(item.imageIndex || 0) + 1}`}
+                    alt={
+                      item.altText ||
+                      `${defaultAlt || product.name} - slika ${(item.imageIndex || 0) + 1}`
+                    }
                     className="thumb-img"
                   />
                 )}

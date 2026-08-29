@@ -29,7 +29,9 @@ export default function SEOHead({
   const imageUrl = ensureAbsoluteUrl(image);
   const isHome = currentPath === '/' || title === 'Početna';
   const fullTitle = isHome ? siteName : `${title} | ${siteName}`;
-  const robotsValue = noIndex ? 'noindex,nofollow' : 'index,follow';
+  const robotsValue = noIndex
+    ? 'noindex,follow,max-image-preview:large'
+    : 'index,follow,max-image-preview:large';
   const twitterSite = seoConfig.twitterHandle
     ? seoConfig.twitterHandle.startsWith('@')
       ? seoConfig.twitterHandle

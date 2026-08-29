@@ -87,6 +87,22 @@ function normalizeProduct(product) {
     firstVariant?.currentPriceAmount ??
     firstVariant?.current_price_amount;
   const salePriceMinor = product.salePrice ?? product.sale_price;
+  const regularPriceMinor = product.regularPrice ?? product.regular_price;
+  // Platform stores money in minor units. Legacy Firestore-shaped objects
+  // already carry dinars, so retain that representation when no Platform
+  // money field/currency is present.
+  const pricesAreMinor = Boolean(
+    product.currency ||
+      product.currentPriceAmount !== undefined ||
+      product.current_price_amount !== undefined ||
+      regularPriceMinor !== undefined,
+  );
+  const toDisplayPrice = (amount, fallback = 0) => {
+    if (amount === null || amount === undefined || amount === '') return fallback;
+    const numeric = Number(amount);
+    if (!Number.isFinite(numeric)) return fallback;
+    return pricesAreMinor ? numeric / 100 : numeric;
+  };
   const primaryImage =
     product.primaryImageUrl ||
     product.primary_image_url ||
@@ -108,17 +124,28 @@ function normalizeProduct(product) {
       null,
     brand: product.brand || product.brand_name || null,
     category: product.category || product.category_name || null,
-    price:
-      typeof priceMinor === 'number' && priceMinor > 999
-        ? priceMinor / 100
-        : Number(priceMinor || 0),
+    price: toDisplayPrice(priceMinor),
     salePrice:
       salePriceMinor === null || salePriceMinor === undefined
         ? null
-        : typeof salePriceMinor === 'number' && salePriceMinor > 999
-          ? salePriceMinor / 100
-          : Number(salePriceMinor),
+        : toDisplayPrice(salePriceMinor, null),
     saleValidUntil: product.saleValidUntil || product.sale_valid_until || null,
+    regularPrice: toDisplayPrice(regularPriceMinor, null),
+    availability: product.availability || {
+      inStock: Boolean(product.inStock ?? product.in_stock),
+      availableQuantity: Number(
+        product.availableQuantity ?? product.available_quantity ?? 0,
+      ),
+    },
+    inStock: Boolean(product.inStock ?? product.in_stock ?? product.availability?.inStock),
+    availableQuantity: Number(
+      product.availableQuantity ??
+        product.available_quantity ??
+        product.availability?.availableQuantity ??
+        0,
+    ),
+    itemCondition: product.itemCondition || product.item_condition || 'new',
+    mpn: product.mpn || firstVariant?.mpn || null,
     image: primaryImage,
     mainImageUrl: primaryImage,
     thumbnailUrl: product.thumbnailUrl || product.thumbnail_url || primaryImage,
@@ -316,6 +343,7 @@ export const catalogApi = {
         auth: false,
       },
     );
+    if (data?.redirectTo) return { redirectTo: data.redirectTo };
     return normalizeProduct(data?.product || data);
   },
 };
@@ -338,6 +366,7 @@ export const adminCatalogApi = {
     if (has('slug')) productPayload.slug = product.slug;
     if (has('description'))
       productPayload.description = product.description || '';
+    if (has('itemCondition')) productPayload.itemCondition = product.itemCondition;
     if (has('departmentId')) productPayload.departmentId = product.departmentId;
     if (has('seo')) productPayload.seo = product.seo;
     if (has('features')) productPayload.features = product.features;
@@ -379,6 +408,8 @@ export const adminCatalogApi = {
         staff: true,
         body: {
           sku: product.sku?.trim() || null,
+          barcode: product.barcode?.trim() || null,
+          mpn: product.mpn?.trim() || null,
           currentPriceAmount: Math.round(Number(product.price || 0) * 100),
           currency: 'RSD',
           gender: product.gender || null,
@@ -394,6 +425,8 @@ export const adminCatalogApi = {
         staff: true,
         body: {
           currentPriceAmount: Math.round(Number(product.price || 0) * 100),
+          barcode: product.barcode?.trim() || null,
+          mpn: product.mpn?.trim() || null,
           attributes: product.specs || {},
         },
       }).catch(() => null);
@@ -406,6 +439,7 @@ export const adminCatalogApi = {
         const body = {
           sku: variant.sku,
           barcode: variant.barcode || null,
+          mpn: product.mpn || variant.mpn || null,
           ...(variant.epc !== undefined ? { epc: variant.epc } : {}),
           name: variant.name || null,
           gender: variant.gender || null,

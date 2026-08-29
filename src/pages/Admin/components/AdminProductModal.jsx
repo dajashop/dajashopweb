@@ -43,6 +43,23 @@ function validateEpcInput(value) {
   return { value: epc, error: undefined };
 }
 
+function validateGtin(value) {
+  const code = String(value || '').trim().replace(/[\s-]/g, '');
+  if (!code) return { value: '', error: undefined };
+  if (!/^(?:\d{8}|\d{12}|\d{13}|\d{14})$/.test(code)) {
+    return { value: code, error: 'GTIN/EAN mora imati 8, 12, 13 ili 14 cifara.' };
+  }
+  const digits = [...code].map(Number);
+  const expected = digits
+    .slice(0, -1)
+    .reverse()
+    .reduce((sum, digit, index) => sum + digit * (index % 2 === 0 ? 3 : 1), 0);
+  if ((10 - (expected % 10)) % 10 !== digits.at(-1)) {
+    return { value: code, error: 'GTIN/EAN kontrolna cifra nije ispravna.' };
+  }
+  return { value: code, error: undefined };
+}
+
 // --- 1. Custom Select ---
 
 // --- 3. Main Modal Component ---
@@ -86,6 +103,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const [cats, setCats] = useState([]);
   const [specKeys, setSpecKeys] = useState([]);
   const [isSeoOpen, setIsSeoOpen] = useState(true);
+  const [ogImageSize, setOgImageSize] = useState(null);
+  const [seoPeers, setSeoPeers] = useState([]);
+  const isLegacyVariantPanelOpen = false;
 
   const [form, setForm] = useState({
     name: '',
@@ -100,6 +120,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     variants: [],
     sku: '',
     barcode: '',
+    mpn: '',
+    itemCondition: 'new',
     epc: '',
     locationId: '',
     zoneId: '',
@@ -134,12 +156,50 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   // the initially loaded EPC so a removal (or replacement) can unassign its
   // tag after the product itself is saved.
   const initialEpcRef = useRef('');
+  const slugManuallyEditedRef = useRef(false);
   const epcValidation = validateEpcInput(form.epc || '');
+  const gtinValidation = validateGtin(form.barcode || '');
+
+  useEffect(() => {
+    const imageUrl = form.seo?.ogImage || form.images?.[0]?.url;
+    if (!imageUrl) {
+      setOgImageSize(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const image = new Image();
+    image.onload = () => {
+      if (!cancelled) setOgImageSize({ width: image.naturalWidth, height: image.naturalHeight });
+    };
+    image.onerror = () => {
+      if (!cancelled) setOgImageSize({ width: 0, height: 0 });
+    };
+    image.src = imageUrl;
+    return () => {
+      cancelled = true;
+    };
+  }, [form.seo?.ogImage, form.images]);
+
+  useEffect(() => {
+    let active = true;
+    void adminCatalogApi
+      .listProducts()
+      .then((items) => {
+        if (active) setSeoPeers(Array.isArray(items) ? items : []);
+      })
+      .catch(() => {
+        if (active) setSeoPeers([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     setDeletedVariantIds([]);
     setRemovedMediaLinkIds([]);
     pendingUploadIdsRef.current.clear();
+    slugManuallyEditedRef.current = Boolean(product);
     initialEpcRef.current = validateEpcInput(product?.epc || '').value;
     const sub1 = brandService.subscribe(setBrands);
     const sub2 = categoryService.subscribe(setCats);
@@ -192,6 +252,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     id: product.variantId,
                     sku: product.sku || '',
                     barcode: product.barcode || null,
+                    mpn: product.mpn || null,
                     price:
                       product.price ??
                       (product.currentPriceAmount
@@ -207,6 +268,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
               : [],
         sku: product.variants?.[0]?.sku || product.sku || '',
         barcode: product.variants?.[0]?.barcode || product.barcode || '',
+        mpn: product.variants?.[0]?.mpn || product.mpn || '',
+        itemCondition: product.itemCondition || product.item_condition || 'new',
         currency: product.variants?.[0]?.currency || product.currency || 'RSD',
         locationId: product.locationId || product.location_id || '',
         zoneId: product.zoneId || product.zone_id || '',
@@ -263,6 +326,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           isPrimary: row.isPrimary,
           url: row.url,
           thumb: row.url,
+          altText: row.altText || row.alt_text || '',
         }));
         setForm((previous) => ({ ...previous, images }));
       })
@@ -324,7 +388,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       // The storefront URL and the R2 media folder follow the product name.
       // An edit used to retain the old slug, so renaming a product left both
       // the public URL and future uploads under the previous name.
-      if (field === 'name') {
+      if (field === 'slug') {
+        slugManuallyEditedRef.current = true;
+      }
+      if (field === 'name' && !product && !slugManuallyEditedRef.current) {
         next.slug = generateSlug(value);
       }
       if (field === 'department') {
@@ -448,6 +515,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       setFlash({ open: true, title: epcValidation.error, ok: false });
       return;
     }
+    if (gtinValidation.error) {
+      setFlash({ open: true, title: gtinValidation.error, ok: false });
+      return;
+    }
     // saveProduct notifies the parent synchronously. Capture this before any
     // await so a parent re-render with the new (empty) EPC cannot erase the
     // value we still need to unassign.
@@ -493,7 +564,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           {
             ...(form.variants?.[0]?.id ? { id: form.variants[0].id } : {}),
             sku: form.sku?.trim() || null,
-            barcode: form.barcode || null,
+            barcode: gtinValidation.value || null,
+            mpn: form.mpn?.trim() || null,
             // null explicitly clears the RFID relation in the variant PATCH.
             epc: epcValidation.value || null,
             price: Number(form.price),
@@ -696,6 +768,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             return mediaApi.attachToProduct(savedProductId, image.mediaId, {
               position,
               isPrimary: position === 0,
+              altText: image.altText || null,
             });
           }),
         );
@@ -723,15 +796,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         for (const [position, image] of savedImages.entries()) {
           if (!image.linkId) continue;
           const isPrimary = position === 0;
-          if (
-            newlyLinkedMediaIds.has(image.mediaId) ||
-            (image.position === position && image.isPrimary === isPrimary)
-          ) {
+          if (newlyLinkedMediaIds.has(image.mediaId)) {
             continue;
           }
           await mediaApi.updateProductMedia(savedProductId, image.linkId, {
             position,
             isPrimary,
+            altText: image.altText || '',
           });
         }
         setForm((previous) => ({ ...previous, images: savedImages }));
@@ -945,14 +1016,90 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     specOptions.find((o) => o.value === tempSpecKey)?.unit || '';
 
   const fallbackSeoTitle = `${form.brand || ''} ${form.name || ''}`.trim();
-  const fallbackSeoDescription = (form.description || '').trim();
+  const fallbackSeoDescription = (
+    form.description ||
+    [
+      fallbackSeoTitle,
+      form.category ? `iz kategorije ${form.category}` : '',
+      form.mpn ? `model ${form.mpn}` : '',
+      ...Object.entries(form.specs || {})
+        .slice(0, 2)
+        .map(([key, value]) => `${key}: ${value}`),
+      'Dostupno u DajaShop prodavnici.',
+    ]
+      .filter(Boolean)
+      .join('. ')
+  )
+    .trim()
+    .slice(0, 160);
   const effectiveSeoTitle =
     (form.seo?.metaTitle || '').trim() || fallbackSeoTitle;
   const effectiveSeoDescription =
     (form.seo?.metaDescription || '').trim() || fallbackSeoDescription;
   const googlePreviewUrl = `dajashop.rs/product/${form.slug || generateSlug(form.name) || 'proizvod'}`;
-  const titleLen = (form.seo?.metaTitle || '').length;
-  const descLen = (form.seo?.metaDescription || '').length;
+  const renderedSeoTitle = effectiveSeoTitle
+    ? `${effectiveSeoTitle} | DajaShop`
+    : 'DajaShop';
+  const titleLen = renderedSeoTitle.length;
+  const descLen = effectiveSeoDescription.length;
+  const normalizedSeoTitle = renderedSeoTitle.trim().toLocaleLowerCase('sr-RS');
+  const normalizedSeoDescription = effectiveSeoDescription.trim().toLocaleLowerCase('sr-RS');
+  const hasMissingImageAlt = (form.images || []).some((image) => {
+    if (typeof image === 'string') return true;
+    return !String(image?.altText || image?.alt_text || '').trim();
+  });
+  const hasDuplicateSeo = seoPeers.some((peer) => {
+    if (!peer?.id || peer.id === product?.id) return false;
+    const peerTitle = `${peer.seo?.metaTitle || `${peer.brand || ''} ${peer.name || ''}`.trim()} | DajaShop`
+      .trim()
+      .toLocaleLowerCase('sr-RS');
+    const peerDescription = (peer.seo?.metaDescription || peer.description || '')
+      .trim()
+      .toLocaleLowerCase('sr-RS');
+    return (
+      (normalizedSeoTitle.length > 0 && peerTitle === normalizedSeoTitle) ||
+      (normalizedSeoDescription.length > 0 && peerDescription === normalizedSeoDescription)
+    );
+  });
+  const seoChecks = [
+    {
+      label: titleLen >= 30 && titleLen <= 60 ? 'Naslov je odgovarajuće dužine' : 'Naslov treba ciljati na 30–60 znakova',
+      ok: titleLen >= 30 && titleLen <= 60,
+    },
+    {
+      label: descLen >= 70 && descLen <= 160 ? 'Opis je odgovarajuće dužine' : 'Opis treba ciljati na 70–160 znakova',
+      ok: descLen >= 70 && descLen <= 160,
+    },
+    {
+      label: form.images?.length ? 'Glavna slika je dodata' : 'Dodajte glavnu sliku proizvoda',
+      ok: Boolean(form.images?.length),
+    },
+    {
+      label: form.images?.length
+        ? hasMissingImageAlt
+          ? 'Dodajte alt tekst svakoj slici iz galerije'
+          : 'Sve slike imaju alt tekst'
+        : 'Dodajte sliku da biste uneli alt tekst',
+      ok: Boolean(form.images?.length) && !hasMissingImageAlt,
+    },
+    {
+      label:
+        ogImageSize?.width >= 1200
+          ? `OG slika ima preporučenu širinu (${ogImageSize.width}px)`
+          : ogImageSize?.width === 0
+            ? 'OG slika ne može da se učita'
+            : 'Za OG sliku preporučena je širina od najmanje 1200px',
+      ok: Boolean(ogImageSize?.width >= 1200),
+    },
+    {
+      label: gtinValidation.value || !form.barcode ? 'GTIN/EAN je validan' : 'GTIN/EAN nije validan',
+      ok: Boolean(gtinValidation.value || !form.barcode),
+    },
+    {
+      label: hasDuplicateSeo ? 'Naslov ili opis se ponavlja na drugom artiklu' : 'Naslov i opis nisu duplikat u katalogu',
+      ok: !hasDuplicateSeo,
+    },
+  ];
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
@@ -1030,14 +1177,17 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 <div>
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      Barkod
+                      GTIN / EAN
                     </span>
                     <input
                       value={form.barcode || ''}
                       onChange={(e) => handleChange('barcode', e.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
-                      placeholder="Barkod"
+                      placeholder="8, 12, 13 ili 14 cifara"
                     />
+                    <span className="mt-1 block text-[10px] text-neutral-400">
+                      Za Google Shopping unesite originalni GTIN/EAN proizvođa.
+                    </span>
                   </label>
                 </div>
                 <div>
@@ -1223,7 +1373,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 </div>
               </div>
 
-              {false && (
+              {isLegacyVariantPanelOpen && (
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
                   <div className="flex items-center justify-between mb-4">
                     <div>
@@ -1268,7 +1418,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     {[form.variants?.[0] || {}].map((variant, index) => (
                       <div
                         key={variant.id || index}
-                        className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-neutral-50 border border-neutral-100 rounded-xl"
+                        className="grid grid-cols-1 md:grid-cols-5 gap-3 p-3 bg-neutral-50 border border-neutral-100 rounded-xl"
                       >
                         <input
                           value={form.sku || ''}
@@ -1289,7 +1439,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                           onChange={(e) =>
                             handleChange('barcode', e.target.value)
                           }
-                          placeholder="Barkod"
+                          placeholder="GTIN / EAN"
+                          className="rounded-lg border border-neutral-200 px-3 py-2 text-sm"
+                        />
+                        <input
+                          value={form.mpn || ''}
+                          onChange={(e) => handleChange('mpn', e.target.value)}
+                          placeholder="MPN / broj modela"
                           className="rounded-lg border border-neutral-200 px-3 py-2 text-sm"
                         />
                         <input
@@ -1364,7 +1520,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 </div>
               )}
 
-              {false && (
+              {isLegacyVariantPanelOpen && (
                 <ProductOperationsPanel
                   productId={product?.id}
                   variants={form.variants || []}
@@ -1404,11 +1560,51 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                         placeholder="automatski iz naziva"
                       />
                       <span className="text-[10px] text-neutral-400 ml-1">
-                        Ovo je link proizvoda. Ako je prazno, generiše se iz
-                        naziva.
+                        Postojeći link se ne menja pri promeni naziva. Ako ga
+                        promenite, stari link ostaje trajno preusmeren na novi.
                       </span>
                     </label>
+                    {product && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          slugManuallyEditedRef.current = true;
+                          setForm((prev) => ({
+                            ...prev,
+                            slug: generateSlug(prev.name),
+                          }));
+                        }}
+                        className="text-xs font-bold text-blue-700 hover:text-blue-900"
+                      >
+                        Generiši novi link iz naziva
+                      </button>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="block">
+                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                          Stanje artikla
+                        </span>
+                        <select
+                          value={form.itemCondition || 'new'}
+                          onChange={(e) => handleChange('itemCondition', e.target.value)}
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm"
+                        >
+                          <option value="new">Novo</option>
+                          <option value="used">Polovno</option>
+                          <option value="refurbished">Obnovljeno</option>
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                          MPN / broj modela
+                        </span>
+                        <input
+                          value={form.mpn || ''}
+                          onChange={(e) => handleChange('mpn', e.target.value)}
+                          placeholder="Proizvođački broj modela"
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm"
+                        />
+                      </label>
                       <label className="block md:col-span-2">
                         <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                           SEO Naslov
@@ -1455,26 +1651,6 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
                       <label className="block">
                         <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                          Ključne Reči
-                        </span>
-                        <input
-                          value={form.seo?.metaKeywords || ''}
-                          onChange={(e) =>
-                            setForm((prev) => ({
-                              ...prev,
-                              seo: {
-                                ...prev.seo,
-                                metaKeywords: e.target.value,
-                              },
-                            }))
-                          }
-                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
-                          placeholder="sat, casio, g-shock, muški sat"
-                        />
-                      </label>
-
-                      <label className="block">
-                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                           OG Slika URL
                         </span>
                         <input
@@ -1488,6 +1664,59 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                           className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
                           placeholder="Ostavi prazno za glavnu sliku proizvoda"
                         />
+                        {form.images?.length > 0 && (
+                          <div className="mt-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  seo: {
+                                    ...prev.seo,
+                                    ogImage: prev.images[0]?.url || '',
+                                  },
+                                }))
+                              }
+                              className="text-xs font-bold text-blue-700 hover:text-blue-900"
+                            >
+                              Koristi glavnu sliku iz galerije
+                            </button>
+                            <div className="mt-2 flex flex-wrap gap-2" aria-label="Izaberite OG sliku iz galerije">
+                              {form.images.map((image, index) => {
+                                const imageUrl = typeof image === 'string' ? image : image?.url;
+                                const imageAlt = typeof image === 'string' ? '' : image?.altText;
+                                const selected = (form.seo?.ogImage || '') === imageUrl;
+                                return imageUrl ? (
+                                  <button
+                                    key={`${imageUrl}-${index}`}
+                                    type="button"
+                                    onClick={() =>
+                                      setForm((prev) => ({
+                                        ...prev,
+                                        seo: { ...prev.seo, ogImage: imageUrl },
+                                      }))
+                                    }
+                                    className={`h-14 w-14 overflow-hidden rounded-lg border-2 ${selected ? 'border-blue-600' : 'border-transparent hover:border-neutral-300'}`}
+                                    title={`Koristi sliku ${index + 1} kao OG sliku`}
+                                  >
+                                    <img
+                                      src={imageUrl}
+                                      alt={imageAlt || `Slika ${index + 1}`}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  </button>
+                                ) : null;
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {(form.seo?.ogImage || form.images?.[0]?.url) && (
+                          <img
+                            src={form.seo?.ogImage || form.images?.[0]?.url}
+                            alt="Pregled odabrane OG slike"
+                            className="mt-3 h-28 w-full rounded-lg border border-neutral-200 object-cover"
+                          />
+                        )}
                       </label>
 
                       <label className="block md:col-span-2">
@@ -1513,10 +1742,23 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
                     <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
                       <p className="text-[11px] uppercase tracking-wider text-neutral-400 font-bold mb-2">
+                        SEO provera
+                      </p>
+                      <div className="grid gap-1 text-xs">
+                        {seoChecks.map((check) => (
+                          <span key={check.label} className={check.ok ? 'text-emerald-700' : 'text-amber-700'}>
+                            {check.ok ? '✓' : '⚠'} {check.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                      <p className="text-[11px] uppercase tracking-wider text-neutral-400 font-bold mb-2">
                         Google Preview
                       </p>
                       <p className="text-base leading-snug text-blue-700 font-medium line-clamp-2">
-                        {effectiveSeoTitle || 'Naslov proizvoda'}
+                        {renderedSeoTitle}
                       </p>
                       <p className="text-xs text-green-700 mt-1">
                         {googlePreviewUrl}

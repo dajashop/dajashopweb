@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import './Product.css';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useCart } from '../hooks/useCart.js';
 import { useFlash } from '../hooks/useFlash.js';
 import { useWishlist } from '../context/WishlistProvider.jsx';
@@ -39,6 +39,7 @@ const DEPARTMENT_PATHS = {
 
 export default function Product() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const { product: p, loading, error } = useProduct(slug);
   const { items: allProducts } = useProducts();
   const { dispatch } = useCart();
@@ -49,6 +50,10 @@ export default function Product() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [slug]);
+
+  useEffect(() => {
+    if (p?.redirectTo) navigate(p.redirectTo, { replace: true });
+  }, [navigate, p?.redirectTo]);
 
   const relatedVariants = useMemo(() => {
     if (!p || !allProducts.length) return [];
@@ -71,12 +76,24 @@ export default function Product() {
     return <div className="container product-loading">Učitavanje...</div>;
   if (error || !p)
     return <div className="container product-error">Nije pronađeno.</div>;
+  if (p.redirectTo) return <div className="container product-loading">Preusmeravanje...</div>;
 
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
   const productTitle = `${p.brand || ''} ${p.name || ''}`.trim();
   const productDescription =
     p.description ||
-    `Kupite ${productTitle} po ceni od ${p.price} RSD. Besplatna dostava.`;
+    [
+      productTitle,
+      p.category ? `iz kategorije ${p.category}` : '',
+      p.mpn ? `model ${p.mpn}` : '',
+      ...Object.entries(p.specs || {})
+        .slice(0, 2)
+        .map(([key, value]) => `${key}: ${value}`),
+      `Kupite u DajaShop prodavnici po ceni od ${p.price} RSD.`,
+    ]
+      .filter(Boolean)
+      .join('. ')
+      .slice(0, 160);
   const productImage =
     p.mainImageUrl ||
     p.images?.[0]?.url ||

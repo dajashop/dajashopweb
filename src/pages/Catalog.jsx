@@ -71,6 +71,7 @@ export default function Catalog({ department = 'satovi' }) {
 
   const [sp, setSp] = useSearchParams();
   const spKey = sp.toString();
+  const hasFilteredCatalogUrl = spKey.length > 0;
   const navType = useNavigationType();
 
   const sortParam = sp.get('sort') || 'popular';
@@ -412,6 +413,7 @@ export default function Catalog({ department = 'satovi' }) {
         description={activeSeo.description}
         keywords={activeSeo.keywords}
         url={`${siteRoot}${activeSeo.path}`}
+        noIndex={hasFilteredCatalogUrl}
       />
       <BreadcrumbJsonLd
         items={[
