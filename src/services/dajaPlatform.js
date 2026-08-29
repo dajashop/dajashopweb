@@ -268,9 +268,15 @@ export const authApi = {
     return normalizeUser(data);
   },
   oauthStart(provider) {
-    window.location.assign(
+    // The API signs this allowed origin into the Google OAuth state. On the
+    // callback it can return the customer to the same storefront hostname
+    // (production domain or the Pages preview) without trusting an open URL.
+    const startUrl = new URL(
       `${API_BASE_URL}/customer-auth/oauth/${provider}/start`,
+      window.location.origin,
     );
+    startUrl.searchParams.set('returnTo', window.location.origin);
+    window.location.assign(startUrl.toString());
   },
   async passkeyRegisterStart(payload) {
     return apiRequest('/customer-auth/passkeys/register-challenge', {
