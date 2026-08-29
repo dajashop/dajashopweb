@@ -406,6 +406,7 @@ export const adminCatalogApi = {
         const body = {
           sku: variant.sku,
           barcode: variant.barcode || null,
+          ...(variant.epc !== undefined ? { epc: variant.epc } : {}),
           name: variant.name || null,
           gender: variant.gender || null,
           currentPriceAmount,

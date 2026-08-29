@@ -494,6 +494,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             ...(form.variants?.[0]?.id ? { id: form.variants[0].id } : {}),
             sku: form.sku?.trim() || null,
             barcode: form.barcode || null,
+            // null explicitly clears the RFID relation in the variant PATCH.
+            epc: epcValidation.value || null,
             price: Number(form.price),
             currency: form.currency || 'RSD',
             gender: form.gender || null,
