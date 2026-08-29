@@ -19,6 +19,7 @@ export function AuthProvider({ children }) {
   const [mode, setMode] = useState('login');
   const [pendingPhone, setPendingPhone] = useState(null);
   const [pendingEmailVerify, setPendingEmailVerify] = useState(false);
+  const [oauthJustSucceeded, setOauthJustSucceeded] = useState(false);
 
   const loadMe = useCallback(async () => {
     if (!getAccessToken()) {
@@ -73,7 +74,12 @@ export function AuthProvider({ children }) {
     if (params.get('oauth') !== 'success' || !accessToken || !refreshToken) return;
 
     setAuthTokens({ accessToken, refreshToken });
+    setOauthJustSucceeded(true);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+  }, []);
+
+  const dismissOauthSuccess = useCallback(() => {
+    setOauthJustSucceeded(false);
   }, []);
 
   function showAuth(nextMode = 'login') {
@@ -225,6 +231,8 @@ export function AuthProvider({ children }) {
       register,
       confirmPhoneCode,
       oauth,
+      oauthJustSucceeded,
+      dismissOauthSuccess,
       pendingEmailVerify,
       detectIdentity,
       linkUsernameToEmail,
@@ -239,6 +247,7 @@ export function AuthProvider({ children }) {
       userInfo,
       authOpen,
       mode,
+      oauthJustSucceeded,
       pendingEmailVerify,
       confirmPhoneCode,
       detectIdentity,
@@ -249,6 +258,7 @@ export function AuthProvider({ children }) {
       passkeyRegister,
       linkPasskey,
       loadMe,
+      dismissOauthSuccess,
     ],
   );
 

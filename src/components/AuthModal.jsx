@@ -73,6 +73,8 @@ export default function AuthModal() {
     register,
     confirmPhoneCode,
     oauth,
+    oauthJustSucceeded,
+    dismissOauthSuccess,
     pendingEmailVerify,
     detectIdentity,
     passkeyLogin,
@@ -352,6 +354,13 @@ export default function AuthModal() {
     setFlashSub(sub);
     setFlashOpen(true);
   }
+
+  useEffect(() => {
+    if (!oauthJustSucceeded) return;
+
+    openFlash('Google prijava uspešna', 'Uspešno ste prijavljeni putem Google naloga.');
+    dismissOauthSuccess();
+  }, [oauthJustSucceeded, dismissOauthSuccess]);
 
   async function onSubmit(e) {
     e.preventDefault();
