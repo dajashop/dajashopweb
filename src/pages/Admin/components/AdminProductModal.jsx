@@ -130,12 +130,17 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   // Only media uploaded during this modal can be discarded on cancellation.
   // Existing product media is deleted only after a successful save.
   const pendingUploadIdsRef = useRef(new Set());
+  // EPCs are represented by RFID tags, not by the product PATCH payload. Keep
+  // the initially loaded EPC so a removal (or replacement) can unassign its
+  // tag after the product itself is saved.
+  const initialEpcRef = useRef('');
   const epcValidation = validateEpcInput(form.epc || '');
 
   useEffect(() => {
     setDeletedVariantIds([]);
     setRemovedMediaLinkIds([]);
     pendingUploadIdsRef.current.clear();
+    initialEpcRef.current = validateEpcInput(product?.epc || '').value;
     const sub1 = brandService.subscribe(setBrands);
     const sub2 = categoryService.subscribe(setCats);
     const sub3 = specKeyService.subscribe(setSpecKeys);
@@ -568,6 +573,24 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         if (primaryVariant?.id) {
           const quantity = Number(form.quantity) || 0;
           let taggedItem = null;
+          const previousEpc = initialEpcRef.current;
+          const epcChanged = previousEpc !== epcValidation.value;
+
+          // Removing an EPC from the input used to leave its RFID tag assigned
+          // to the product, so the catalog query returned the old EPC again.
+          // Do this for both deletion and replacement before assigning a new
+          // tag. A tag that was already removed/unassigned is harmless.
+          if (previousEpc && epcChanged) {
+            try {
+              const previousTag = await rfidApi.byEpc(previousEpc);
+              await rfidApi.unassignTag(previousTag.id, {
+                reason: 'EPC uklonjen ili zamenjen iz admin artikla',
+              });
+            } catch (error) {
+              if (error?.status !== 404 && error?.status !== 409) throw error;
+            }
+          }
+
           if (epcValidation.value) {
             let tag;
             try {
@@ -641,11 +664,12 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           }
           // Publish a new catalog snapshot after inventory/EPC changes so the
           // RFID desktop app receives the current quantity and tag data.
-          if (epcValidation.value || (form.locationId && quantity > 0)) {
+          if (epcChanged || epcValidation.value || (form.locationId && quantity > 0)) {
             await adminCatalogApi.refreshVariant(primaryVariant.id, {
               attributes: form.specs || {},
             });
           }
+          initialEpcRef.current = epcValidation.value;
         }
       }
       await Promise.all(

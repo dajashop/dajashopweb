@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { applyPublicProductRealtimeEvent, subscribeProducts } from '../services/products';
 import {
   adminCatalogApi,
+  subscribeStaffCatalogRealtime,
   subscribePublicCatalogRealtime,
 } from '../services/dajaPlatform';
 
@@ -87,7 +88,14 @@ export default function useProducts(params = {}) {
 
   useEffect(() => {
     if (!usePublicRealtime) return undefined;
-    return subscribePublicCatalogRealtime(
+    // Administrators must receive the organization-scoped signal.  The
+    // public room is intentionally optional and can be configured for a
+    // different storefront organization, which left the Artikli screen stale
+    // after RFID changes until a manual refresh.
+    const subscribeRealtime = memoizedParams.admin
+      ? subscribeStaffCatalogRealtime
+      : subscribePublicCatalogRealtime;
+    return subscribeRealtime(
       (event) => {
         if (!memoizedParams.admin) {
           void applyPublicProductRealtimeEvent(event);

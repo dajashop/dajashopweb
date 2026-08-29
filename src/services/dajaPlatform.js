@@ -39,6 +39,9 @@ function ensureStaffCatalogSocket() {
     auth: { token: `Bearer ${token}` },
     reconnection: true,
   });
+  staffCatalogSocket.on('product.updated', (event) => {
+    staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
+  });
   staffCatalogSocket.on('catalog.taxonomy.updated', (event) => {
     staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
   });
@@ -824,6 +827,13 @@ export const rfidApi = {
   },
   assignTag(id, body) {
     return apiRequest(`/rfid/tags/${encodeURIComponent(id)}/assign`, {
+      method: 'POST',
+      staff: true,
+      body,
+    });
+  },
+  unassignTag(id, body) {
+    return apiRequest(`/rfid/tags/${encodeURIComponent(id)}/unassign`, {
       method: 'POST',
       staff: true,
       body,
