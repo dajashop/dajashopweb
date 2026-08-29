@@ -124,7 +124,7 @@ function buildSeo({ siteUrl, product }) {
 }
 
 async function fetchProductBySlug({ slug, env, request }) {
-  const apiBase = (env.DAJA_API_BASE_URL || 'https://api.dajashop.rs/api/v1').replace(/\/$/, '');
+  const apiBase = (env.DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
   const cacheUrl = new URL(request.url);
   cacheUrl.pathname = `/__seo_cache/product/${slug}.json`;
   const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
@@ -186,7 +186,7 @@ function rewriteProductHtml(response, seo) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const apiBase = (env.DAJA_API_BASE_URL || 'https://api.dajashop.rs/api/v1').replace(/\/$/, '');
+    const apiBase = (env.DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
     if (url.pathname === '/sitemap.xml') {
       return fetch(`${apiBase}/public/sitemap.xml`, { cf: { cacheEverything: true, cacheTtl: 3600 } });
     }

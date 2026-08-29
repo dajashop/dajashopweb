@@ -5,7 +5,7 @@
 U Cloudflare Pages projektu za produkciju postaviti sledeće varijable:
 
 - `SITE_URL=https://dajashop.rs`
-- `DAJA_API_BASE_URL=https://api.dajashop.rs/api/v1`
+- `DAJA_API_BASE_URL=https://daja-platform-api.onrender.com/api/v1`
 
 Zatim napraviti novi production deploy kroz postojeću Git integraciju ili Pages deploy za `dist` direktorijum.
 
