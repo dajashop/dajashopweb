@@ -126,7 +126,9 @@ function buildSeo({ siteUrl, product }) {
 async function fetchProductBySlug({ slug, env, request }) {
   const apiBase = (env.DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
   const cacheUrl = new URL(request.url);
-  cacheUrl.pathname = `/__seo_cache/product/${slug}.json`;
+  // v2 prevents a response cached by an older worker payload shape from
+  // leaking into the corrected product metadata response.
+  cacheUrl.pathname = `/__seo_cache/v2/product/${slug}.json`;
   const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
   const cached = await caches.default.match(cacheKey);
   if (cached) return cached.json();
@@ -135,9 +137,13 @@ async function fetchProductBySlug({ slug, env, request }) {
   if (response.status === 404) return { missing: true };
   if (!response.ok) return { unavailable: true };
   const data = await response.json();
-  const result = data?.redirectTo
-    ? { redirectTo: data.redirectTo }
-    : { product: data?.product || data };
+  // Nest's response envelope is { data, meta, requestId }, while local and
+  // older deployments can return the product directly. Support both without
+  // changing the public browser API.
+  const payload = data?.data ?? data;
+  const result = payload?.redirectTo
+    ? { redirectTo: payload.redirectTo }
+    : { product: payload?.product || payload };
   await caches.default.put(
     cacheKey,
     new Response(JSON.stringify(result), {
