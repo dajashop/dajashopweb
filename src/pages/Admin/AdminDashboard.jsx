@@ -87,6 +87,75 @@ const AUDIT_OPERATION_LABELS = {
   price_change: 'Izmenjena cena',
 };
 
+const AUDIT_FIELD_LABELS = {
+  name: 'Naziv',
+  slug: 'URL naziv',
+  description: 'Opis',
+  sku: 'Šifra artikla',
+  barcode: 'Barkod',
+  mpn: 'Model / MPN',
+  gender: 'Pol',
+  currentPriceAmount: 'Cena',
+  currency: 'Valuta',
+  active: 'Aktivan',
+  published: 'Vidljiv u prodavnici',
+  attributes: 'Specifikacije',
+  imageUrl: 'Glavna slika',
+  imageUrls: 'Slike',
+};
+
+const AUDIT_IGNORED_FIELDS = new Set([
+  'id',
+  'organizationId',
+  'createdAt',
+  'updatedAt',
+  'deletedAt',
+  'version',
+]);
+
+const auditValuesMatch = (before, after) =>
+  JSON.stringify(before ?? null) === JSON.stringify(after ?? null);
+
+const formatAuditValue = (value, field, payload) => {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'boolean') return value ? 'Da' : 'Ne';
+  if (field === 'currentPriceAmount' && Number.isFinite(Number(value))) {
+    return `${(Number(value) / 100).toLocaleString('sr-RS', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} ${payload?.currency || 'RSD'}`;
+  }
+  if (typeof value === 'object') {
+    const text = Array.isArray(value)
+      ? value.join(', ')
+      : JSON.stringify(value);
+    return text.length > 180 ? `${text.slice(0, 177)}…` : text;
+  }
+  return String(value);
+};
+
+const getAuditChanges = (event) => {
+  const before = event.beforePayload;
+  const after = event.afterPayload;
+  if (
+    !before ||
+    !after ||
+    typeof before !== 'object' ||
+    typeof after !== 'object'
+  )
+    return [];
+
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])]
+    .filter((field) => !AUDIT_IGNORED_FIELDS.has(field))
+    .filter((field) => !auditValuesMatch(before[field], after[field]))
+    .map((field) => ({
+      field,
+      label: AUDIT_FIELD_LABELS[field] || field,
+      before: formatAuditValue(before[field], field, before),
+      after: formatAuditValue(after[field], field, after),
+    }));
+};
+
 const formatAuditDate = (value) =>
   value
     ? new Intl.DateTimeFormat('sr-RS', {
@@ -119,6 +188,7 @@ export default function AdminDashboard() {
   const [auditEvents, setAuditEvents] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditError, setAuditError] = useState('');
+  const [expandedAuditId, setExpandedAuditId] = useState(null);
 
   // ... (Ostali state-ovi za brendove, kategorije...)
   const [brands, setBrands] = useState([]);
@@ -819,33 +889,101 @@ export default function AdminDashboard() {
                       <th className="p-4">Korisnik</th>
                       <th className="p-4">Akcija</th>
                       <th className="p-4">Artikal</th>
+                      <th className="p-4 text-right">Detalji</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
-                    {auditEvents.map((event) => (
-                      <tr key={event.id} className="hover:bg-neutral-50">
-                        <td className="p-4 whitespace-nowrap text-neutral-600">
-                          {formatAuditDate(event.occurredAt)}
-                        </td>
-                        <td className="p-4">
-                          <div className="font-medium text-neutral-900">
-                            {event.actorName}
-                          </div>
-                          {event.actorEmail && (
-                            <div className="text-xs text-neutral-500">
-                              {event.actorEmail}
-                            </div>
+                    {auditEvents.map((event) => {
+                      const isExpanded = expandedAuditId === event.id;
+                      const changes = getAuditChanges(event);
+
+                      return (
+                        <React.Fragment key={event.id}>
+                          <tr className="hover:bg-neutral-50">
+                            <td className="p-4 whitespace-nowrap text-neutral-600">
+                              {formatAuditDate(event.occurredAt)}
+                            </td>
+                            <td className="p-4">
+                              <div className="font-medium text-neutral-900">
+                                {event.actorName}
+                              </div>
+                              {event.actorEmail && (
+                                <div className="text-xs text-neutral-500">
+                                  {event.actorEmail}
+                                </div>
+                              )}
+                            </td>
+                            <td className="p-4 font-medium text-neutral-800">
+                              {AUDIT_OPERATION_LABELS[event.operation] ||
+                                event.operation}
+                            </td>
+                            <td className="p-4 text-neutral-700">
+                              {event.productName}
+                            </td>
+                            <td className="p-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setExpandedAuditId(
+                                    isExpanded ? null : event.id,
+                                  )
+                                }
+                                className="text-sm font-semibold text-primary hover:underline"
+                                aria-expanded={isExpanded}
+                              >
+                                {isExpanded ? 'Sakrij' : 'Prikaži'}
+                              </button>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr className="bg-neutral-50/70">
+                              <td colSpan="5" className="p-4">
+                                {changes.length > 0 ? (
+                                  <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+                                    <table className="w-full text-sm">
+                                      <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
+                                        <tr>
+                                          <th className="p-3 text-left">
+                                            Polje
+                                          </th>
+                                          <th className="p-3 text-left">
+                                            Pre izmene
+                                          </th>
+                                          <th className="p-3 text-left">
+                                            Posle izmene
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-neutral-100">
+                                        {changes.map((change) => (
+                                          <tr key={change.field}>
+                                            <td className="p-3 font-medium text-neutral-800">
+                                              {change.label}
+                                            </td>
+                                            <td className="p-3 text-neutral-600 break-all">
+                                              {change.before}
+                                            </td>
+                                            <td className="p-3 text-neutral-900 break-all">
+                                              {change.after}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-neutral-600">
+                                    Za ovu akciju nema poređenja pre i posle
+                                    izmene. Dodavanje i brisanje čuvaju samo
+                                    dostupno stanje artikla.
+                                  </p>
+                                )}
+                              </td>
+                            </tr>
                           )}
-                        </td>
-                        <td className="p-4 font-medium text-neutral-800">
-                          {AUDIT_OPERATION_LABELS[event.operation] ||
-                            event.operation}
-                        </td>
-                        <td className="p-4 text-neutral-700">
-                          {event.productName}
-                        </td>
-                      </tr>
-                    ))}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
