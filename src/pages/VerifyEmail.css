@@ -8,7 +8,10 @@
   overflow: hidden;
   padding: clamp(24px, 4vw, 58px) clamp(24px, 7vw, 120px);
   color: var(--verify-ink);
-  background: radial-gradient(circle at -2% 4%, rgba(232,233,237,.72) 0 9%, transparent 9.15%), radial-gradient(circle at 103% 69%, rgba(241,242,245,.96) 0 15%, transparent 15.15%), linear-gradient(112deg,#fff 0%,#fefefe 55%,#fcfcfb 100%);
+  background:
+    radial-gradient(circle at -2% 4%, rgba(232, 233, 237, .72) 0 9%, transparent 9.15%),
+    radial-gradient(circle at 103% 69%, rgba(241, 242, 245, .96) 0 15%, transparent 15.15%),
+    linear-gradient(112deg, #fff 0%, #fefefe 55%, #fcfcfb 100%);
 }
 .verify-email-page::before,.verify-email-page::after { position:absolute; z-index:-1; content:''; pointer-events:none; }
 .verify-email-page::before { width:min(31vw,520px); height:min(31vw,520px); right:-10%; top:12%; border-radius:44% 56% 66% 34% / 46% 37% 63% 54%; background:linear-gradient(145deg,rgba(247,247,248,.92),rgba(229,230,234,.48)); transform:rotate(-22deg); }

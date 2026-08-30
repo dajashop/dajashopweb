@@ -15,7 +15,8 @@ export default function App() {
     pathname === '/daljinski' ||
     pathname === '/baterije' ||
     pathname === '/naocare' ||
-    pathname === '/logout';
+    pathname === '/logout' ||
+    pathname === '/verify-email';
   const isFullBleedPage = pathname === '/logout' || pathname === '/verify-email';
 
   // Resetovanje skrola na vrh pri promeni stranice (samo za PUSH/REPLACE)
