@@ -91,6 +91,10 @@ const AUDIT_FIELD_LABELS = {
   name: 'Naziv',
   slug: 'URL naziv',
   description: 'Opis',
+  itemCondition: 'Stanje artikla',
+  departmentId: 'Odeljenje',
+  brandId: 'Brend',
+  primaryCategoryId: 'Kategorija',
   sku: 'Šifra artikla',
   barcode: 'Barkod',
   mpn: 'Model / MPN',
@@ -102,6 +106,10 @@ const AUDIT_FIELD_LABELS = {
   attributes: 'Specifikacije',
   imageUrl: 'Glavna slika',
   imageUrls: 'Slike',
+  features: 'Istaknute karakteristike',
+  seo: 'SEO podaci',
+  marketingFlags: 'Marketinške oznake',
+  model3DUrl: '3D model',
 };
 
 const AUDIT_IGNORED_FIELDS = new Set([
@@ -220,24 +228,71 @@ const collapseInitialCatalogEvents = (events) => {
   });
 };
 
-const auditSectionTitle = (event) => {
-  if (event.aggregateType === 'product' && event.operation === 'create') {
-    return 'Podaci novog artikla';
-  }
-  if (event.aggregateType === 'variant' && event.operation === 'create') {
-    return 'Početna varijanta';
-  }
-  return 'Automatska dopuna pri unosu';
-};
+const AUDIT_DETAIL_TABS = [
+  {
+    id: 'basic',
+    label: 'Osnovno',
+    fields: [
+      'name',
+      'slug',
+      'description',
+      'itemCondition',
+      'departmentId',
+      'brandId',
+      'primaryCategoryId',
+      'active',
+      'published',
+    ],
+  },
+  {
+    id: 'variant',
+    label: 'Cena i varijanta',
+    fields: [
+      'sku',
+      'barcode',
+      'mpn',
+      'gender',
+      'currentPriceAmount',
+      'currency',
+    ],
+  },
+  {
+    id: 'specifications',
+    label: 'Specifikacije',
+    fields: ['attributes', 'features'],
+  },
+  {
+    id: 'seo',
+    label: 'SEO i marketing',
+    fields: ['seo', 'marketingFlags', 'model3DUrl'],
+  },
+];
 
-const getAuditSections = (event) =>
-  (event.relatedEvents || [event])
-    .map((sourceEvent) => ({
-      id: sourceEvent.id,
-      title: auditSectionTitle(sourceEvent),
-      changes: getAuditChanges(sourceEvent),
-    }))
-    .filter((section) => section.changes.length > 0);
+const getAuditDetailTabs = (event) => {
+  const allChanges = (event.relatedEvents || [event]).flatMap((sourceEvent) =>
+    getAuditChanges(sourceEvent).map((change) => ({
+      ...change,
+      source: sourceEvent.aggregateType,
+    })),
+  );
+  const fieldCounts = allChanges.reduce((counts, change) => {
+    counts[change.field] = (counts[change.field] || 0) + 1;
+    return counts;
+  }, {});
+
+  return AUDIT_DETAIL_TABS.map((tab) => ({
+    ...tab,
+    changes: allChanges
+      .filter((change) => tab.fields.includes(change.field))
+      .map((change) => ({
+        ...change,
+        label:
+          fieldCounts[change.field] > 1 && change.source === 'variant'
+            ? `Varijanta: ${change.label}`
+            : change.label,
+      })),
+  })).filter((tab) => tab.changes.length > 0);
+};
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -264,6 +319,7 @@ export default function AdminDashboard() {
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditError, setAuditError] = useState('');
   const [expandedAuditId, setExpandedAuditId] = useState(null);
+  const [activeAuditDetailTab, setActiveAuditDetailTab] = useState('basic');
   const displayedAuditEvents = useMemo(
     () => collapseInitialCatalogEvents(auditEvents),
     [auditEvents],
@@ -974,7 +1030,11 @@ export default function AdminDashboard() {
                   <tbody className="divide-y divide-neutral-100">
                     {displayedAuditEvents.map((event) => {
                       const isExpanded = expandedAuditId === event.id;
-                      const sections = getAuditSections(event);
+                      const detailTabs = getAuditDetailTabs(event);
+                      const selectedDetailTab =
+                        detailTabs.find(
+                          (tab) => tab.id === activeAuditDetailTab,
+                        ) || detailTabs[0];
 
                       return (
                         <React.Fragment key={event.id}>
@@ -1002,11 +1062,13 @@ export default function AdminDashboard() {
                             <td className="p-4 text-right">
                               <button
                                 type="button"
-                                onClick={() =>
+                                onClick={() => {
                                   setExpandedAuditId(
                                     isExpanded ? null : event.id,
-                                  )
-                                }
+                                  );
+                                  if (!isExpanded)
+                                    setActiveAuditDetailTab('basic');
+                                }}
                                 className="text-sm font-semibold text-primary hover:underline"
                                 aria-expanded={isExpanded}
                               >
@@ -1017,49 +1079,62 @@ export default function AdminDashboard() {
                           {isExpanded && (
                             <tr className="bg-neutral-50/70">
                               <td colSpan="5" className="p-4">
-                                {sections.length > 0 ? (
-                                  <div className="space-y-4">
-                                    {sections.map((section) => (
-                                      <div key={section.id}>
-                                        {sections.length > 1 && (
-                                          <h3 className="mb-2 text-sm font-semibold text-neutral-800">
-                                            {section.title}
-                                          </h3>
-                                        )}
-                                        <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
-                                          <table className="w-full text-sm">
-                                            <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-                                              <tr>
-                                                <th className="p-3 text-left">
-                                                  Polje
-                                                </th>
-                                                <th className="p-3 text-left">
-                                                  Pre izmene
-                                                </th>
-                                                <th className="p-3 text-left">
-                                                  Posle izmene
-                                                </th>
+                                {selectedDetailTab ? (
+                                  <div>
+                                    <div className="mb-4 flex flex-wrap gap-2 border-b border-neutral-200 pb-3">
+                                      {detailTabs.map((tab) => (
+                                        <button
+                                          key={tab.id}
+                                          type="button"
+                                          onClick={() =>
+                                            setActiveAuditDetailTab(tab.id)
+                                          }
+                                          className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                                            selectedDetailTab.id === tab.id
+                                              ? 'bg-neutral-900 text-white'
+                                              : 'bg-white text-neutral-600 hover:bg-neutral-100'
+                                          }`}
+                                        >
+                                          {tab.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+                                      <table className="w-full text-sm">
+                                        <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
+                                          <tr>
+                                            <th className="p-3 text-left">
+                                              Polje
+                                            </th>
+                                            <th className="p-3 text-left">
+                                              Pre izmene
+                                            </th>
+                                            <th className="p-3 text-left">
+                                              Posle izmene
+                                            </th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-neutral-100">
+                                          {selectedDetailTab.changes.map(
+                                            (change) => (
+                                              <tr
+                                                key={`${change.source}-${change.field}`}
+                                              >
+                                                <td className="p-3 font-medium text-neutral-800">
+                                                  {change.label}
+                                                </td>
+                                                <td className="p-3 text-neutral-600 break-all">
+                                                  {change.before}
+                                                </td>
+                                                <td className="p-3 text-neutral-900 break-all">
+                                                  {change.after}
+                                                </td>
                                               </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-neutral-100">
-                                              {section.changes.map((change) => (
-                                                <tr key={change.field}>
-                                                  <td className="p-3 font-medium text-neutral-800">
-                                                    {change.label}
-                                                  </td>
-                                                  <td className="p-3 text-neutral-600 break-all">
-                                                    {change.before}
-                                                  </td>
-                                                  <td className="p-3 text-neutral-900 break-all">
-                                                    {change.after}
-                                                  </td>
-                                                </tr>
-                                              ))}
-                                            </tbody>
-                                          </table>
-                                        </div>
-                                      </div>
-                                    ))}
+                                            ),
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    </div>
                                   </div>
                                 ) : (
                                   <p className="text-sm text-neutral-600">
