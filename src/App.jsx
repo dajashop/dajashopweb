@@ -15,7 +15,6 @@ export default function App() {
     pathname === '/daljinski' ||
     pathname === '/baterije' ||
     pathname === '/naocare';
-  const isStandalonePage = pathname === '/logout';
 
   // Resetovanje skrola na vrh pri promeni stranice (samo za PUSH/REPLACE)
   useEffect(() => {
@@ -25,16 +24,16 @@ export default function App() {
 
   return (
     <div className="app-root">
-      {!isStandalonePage && <Header />}
+      <Header />
       <main
-        className={isStandalonePage ? 'app-standalone' : isWidePage ? 'w-full' : 'container'}
-        style={isStandalonePage ? undefined : { padding: '20px 0 48px' }}
+        className={isWidePage ? 'w-full' : 'container'}
+        style={{ padding: '20px 0 48px' }}
       >
         <AuthModal />
-        {!isStandalonePage && <NewsletterModal />}
+        <NewsletterModal />
         <AppRoutes />
       </main>
-      {!isStandalonePage && <Footer />}
+      <Footer />
     </div>
   );
 }
