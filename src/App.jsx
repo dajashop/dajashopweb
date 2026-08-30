@@ -25,7 +25,7 @@ export default function App() {
   }, [pathname, navType]);
 
   return (
-    <div className="app-root">
+    <div className={isFullBleedPage ? 'app-root app-root--logout' : 'app-root'}>
       <Header />
       <main
         className={isWidePage ? 'w-full' : 'container'}

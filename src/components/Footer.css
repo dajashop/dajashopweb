@@ -23,6 +23,11 @@
   margin-top: 80px;
 }
 
+/* The logout screen ends directly at the newsletter/footer section. */
+.app-root--logout .footer-newsletter-strip {
+  margin-top: 0;
+}
+
 .footer-newsletter-content {
   display: flex;
   align-items: center;
