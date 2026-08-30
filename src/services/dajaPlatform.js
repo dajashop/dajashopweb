@@ -1044,6 +1044,24 @@ export function subscribeRealtime(channels, onEvent, onError) {
   };
 }
 
+export function subscribeCustomerRealtime(onEvent, onError) {
+  const token = getAccessToken();
+  if (!token) return () => {};
+  const socket = io(realtimeNamespaceUrl(), {
+    path: '/socket.io',
+    transports: ['websocket'],
+    auth: { token: `Bearer ${token}` },
+    reconnection: true,
+    reconnectionAttempts: 5,
+  });
+  socket.on('customer.email_verified', onEvent);
+  socket.on('connect_error', onError || (() => {}));
+  return () => {
+    socket.off('customer.email_verified', onEvent);
+    socket.close();
+  };
+}
+
 export function subscribeStaffCatalogRealtime(onEvent, onError) {
   const listener = { onEvent, onError };
   staffCatalogListeners.add(listener);

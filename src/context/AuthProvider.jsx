@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Ctx } from './AuthContext';
-import { authApi, customerApi, isAdminEmail } from '../services/dajaPlatform';
+import {
+  authApi,
+  customerApi,
+  isAdminEmail,
+  subscribeCustomerRealtime,
+} from '../services/dajaPlatform';
 import { getAccessToken, onAuthTokenChange, setAuthTokens } from '../services/apiClient';
 import {
   browserSupportsWebAuthn,
@@ -66,6 +71,19 @@ export function AuthProvider({ children }) {
     loadMe();
     return onAuthTokenChange(loadMe);
   }, [loadMe]);
+
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    return subscribeCustomerRealtime((event) => {
+      if (event?.data?.emailVerified !== true) return;
+      setUser((current) =>
+        current ? { ...current, emailVerified: true } : current,
+      );
+      setUserInfo((current) =>
+        current ? { ...current, emailVerified: true } : current,
+      );
+    });
+  }, [user?.id]);
 
   useEffect(() => {
     const hash = window.location.hash.startsWith('#')
