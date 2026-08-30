@@ -8,7 +8,7 @@ import {
   toArrayPayload,
 } from './apiClient';
 import { io } from 'socket.io-client';
-import { getStaffAccessToken } from './apiClient';
+import { getAccessToken, getStaffAccessToken } from './apiClient';
 
 let publicCatalogSocket = null;
 const publicCatalogListeners = new Set();
