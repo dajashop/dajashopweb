@@ -27,7 +27,9 @@ export default function ProductVariants({ product, relatedVariants }) {
           <div
             key={variant.id}
             className="variant-card"
-            onClick={() => navigate(`/product/${variant.slug}`)}
+            onClick={() =>
+              navigate(`/product/${variant.slug}`, { replace: true })
+            }
             title={variant.name}
           >
             <img
