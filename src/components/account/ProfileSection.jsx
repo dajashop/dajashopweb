@@ -85,8 +85,14 @@ function ProfileSection({ user }) {
   const handleSendVerification = async () => {
     setLoading(true);
     try {
-      await customerApi.requestEmailVerification();
-      flash('Uspeh', 'Verifikacioni link je poslat na vaš email.', 'info');
+      const response = await customerApi.requestEmailVerification();
+      flash(
+        'Uspeh',
+        response?.status === 'already_verified'
+          ? 'Ova email adresa je već verifikovana.'
+          : 'Verifikacioni link je poslat na vaš email i važi 15 minuta.',
+        'info',
+      );
     } catch (error) {
       console.error(error);
       flash('Greška', 'Greška pri slanju linka. Pokušajte ponovo.', 'error');

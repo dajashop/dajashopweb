@@ -97,8 +97,8 @@ export default function NewsletterModal() {
                 </div>
                 <h2>Uspešno!</h2>
                 <p>
-                  Poslali smo vam link za potvrdu. Proverite inbox i spam, pa
-                  potvrdite email adresu da biste aktivirali newsletter i popust.
+                  Uspešno ste prijavljeni. Proverite inbox i spam folder za
+                  poruku dobrodošlice i kod za popust.
                 </p>
               </div>
             )}

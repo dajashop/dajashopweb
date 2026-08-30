@@ -37,7 +37,7 @@ export default function Footer() {
       setSuccess(true);
       flash(
         'Uspeh',
-        'Poslali smo link za potvrdu. Proverite email i aktivirajte prijavu.',
+        'Uspešno ste prijavljeni na newsletter. Proverite email za poruku dobrodošlice.',
         'success',
       );
       setEmail('');

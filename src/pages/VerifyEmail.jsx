@@ -16,7 +16,7 @@ export default function VerifyEmail() {
     'Proveravamo vaš verifikacioni link...',
   );
 
-  const actionCode = searchParams.get('oobCode');
+  const actionCode = searchParams.get('token');
 
   useEffect(() => {
     if (!actionCode) {

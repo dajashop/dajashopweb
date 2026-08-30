@@ -372,7 +372,13 @@ export const authApi = {
     setAuthTokens(data);
     return normalizeUser(data);
   },
-  verifyEmail() {
+  verifyEmail(token) {
+    if (token) {
+      return apiRequest(
+        `/customer-auth/email/verify?token=${encodeURIComponent(token)}`,
+        { method: 'GET', auth: false },
+      );
+    }
     return Promise.reject(
       new Error(
         'Verifikacija e-maila još nije dostupna u DAJA Platform API-ju.',
@@ -767,11 +773,7 @@ export const customerApi = {
     return apiRequest('/customers/me', { method: 'PATCH', body: payload });
   },
   requestEmailVerification() {
-    return Promise.reject(
-      new Error(
-        'Slanje verifikacionog e-maila još nije dostupno u DAJA Platform API-ju.',
-      ),
-    );
+    return apiRequest('/customer-auth/email/verification', { method: 'POST' });
   },
   requestPhoneLinkOtp(phone) {
     return apiRequest('/customer-auth/phone/start', {
