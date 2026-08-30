@@ -38,14 +38,26 @@ export default function Footer() {
       flash(
         'Uspeh',
         'Uspešno ste se prijavili! Kod vam stiže na email.',
-        'success'
+        'success',
       );
       setEmail('');
 
       setTimeout(() => setSuccess(false), 3500);
     } catch (error) {
       console.error('Newsletter error:', error);
-      flash('Info', error.message, 'info');
+      if (error?.status === 409) {
+        flash(
+          'Već ste prijavljeni',
+          'Ova email adresa je već na newsletter listi.',
+          'info',
+        );
+      } else {
+        flash(
+          'Greška',
+          error.message || 'Prijava na newsletter nije uspela.',
+          'error',
+        );
+      }
       setSuccess(false);
     } finally {
       setLoading(false);

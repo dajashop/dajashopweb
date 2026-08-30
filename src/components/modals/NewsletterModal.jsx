@@ -110,10 +110,7 @@ export default function NewsletterModal() {
                   <Check size={32} />
                 </div>
                 <h2>Već ste prijavljeni!</h2>
-                <p>
-                  Hvala vam na interesovanju, ali ova adresa je već na našoj
-                  listi. Proverite vaš inbox za kod{' '}
-                </p>
+                <p>Ova email adresa je već prijavljena na naš newsletter.</p>
                 <button
                   onClick={handleClose}
                   className="newsletter-submit"
