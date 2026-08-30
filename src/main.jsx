@@ -13,22 +13,22 @@ import { WishlistProvider } from './context/WishlistProvider.jsx';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthProvider>
-      <ThemeProvider>
-        <CartProvider>
-          <FlashProvider>
-            <UndoProvider>
-              <WishlistProvider>
-                <HelmetProvider>
-                  <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <ThemeProvider>
+          <CartProvider>
+            <FlashProvider>
+              <UndoProvider>
+                <WishlistProvider>
+                  <HelmetProvider>
                     <App />
-                  </BrowserRouter>
-                </HelmetProvider>
-              </WishlistProvider>
-            </UndoProvider>
-          </FlashProvider>
-        </CartProvider>
-      </ThemeProvider>
-    </AuthProvider>
+                  </HelmetProvider>
+                </WishlistProvider>
+              </UndoProvider>
+            </FlashProvider>
+          </CartProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </React.StrictMode>,
 );

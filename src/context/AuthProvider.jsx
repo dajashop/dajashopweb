@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Ctx } from './AuthContext';
 import {
   authApi,
@@ -18,6 +19,7 @@ const PHONE_RE = /^\+?[0-9]{8,15}$/;
 const USER_RE = /^[a-zA-Z0-9._-]{3,24}$/;
 
 export function AuthProvider({ children }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
@@ -199,6 +201,7 @@ export function AuthProvider({ children }) {
     await authApi.logout();
     setUser(null);
     setUserInfo(null);
+    navigate('/logout', { replace: true });
   }
 
   const passkeyLogin = useCallback(async () => {

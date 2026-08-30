@@ -10,6 +10,7 @@ import Orders from './pages/Orders.jsx';
 import About from './pages/About.jsx';
 import AdminDashboard from './pages/Admin/AdminDashboard.jsx';
 import VerifyEmail from './pages/VerifyEmail.jsx';
+import Logout from './pages/Logout.jsx';
 import FAQ from './pages/FAQ.jsx';
 import Contact from './pages/Contact.jsx';
 import Usluge from './pages/Usluge.jsx';
@@ -38,6 +39,7 @@ export default function AppRoutes() {
       <Route path="/about" element={<About />} />
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/logout" element={<Logout />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/usluge" element={<Usluge />} />

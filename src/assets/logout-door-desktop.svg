@@ -1,0 +1,56 @@
+<svg width="760" height="620" viewBox="0 0 760 620" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Otvorena vrata i biljka</title>
+  <desc id="desc">Minimalistična ilustracija otvorenih belih vrata pored zelene biljke u saksiji.</desc>
+  <defs>
+    <linearGradient id="circle" x1="128" y1="68" x2="566" y2="526" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8F9FB"/>
+      <stop offset="1" stop-color="#ECEEF2"/>
+    </linearGradient>
+    <linearGradient id="doorFront" x1="275" y1="145" x2="468" y2="478" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF"/>
+      <stop offset=".72" stop-color="#F6F7F8"/>
+      <stop offset="1" stop-color="#E4E6E9"/>
+    </linearGradient>
+    <linearGradient id="doorSide" x1="198" y1="142" x2="310" y2="478" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DDE0E4"/>
+      <stop offset=".52" stop-color="#F9FAFB"/>
+      <stop offset="1" stop-color="#D2D6DB"/>
+    </linearGradient>
+    <linearGradient id="pot" x1="523" y1="382" x2="585" y2="489" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F0EEE9"/>
+      <stop offset="1" stop-color="#C9C2B8"/>
+    </linearGradient>
+    <filter id="shadow" x="125" y="103" width="496" height="438" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="22" stdDeviation="19" flood-color="#76808B" flood-opacity=".17"/>
+    </filter>
+    <filter id="soft" x="89" y="410" width="572" height="103" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+  <ellipse cx="377" cy="472" rx="255" ry="22" fill="#C9CDD2" fill-opacity=".36" filter="url(#soft)"/>
+  <circle cx="375" cy="303" r="237" fill="url(#circle)"/>
+  <g filter="url(#shadow)">
+    <path d="M212 144L279 122V468L212 493V144Z" fill="url(#doorSide)"/>
+    <path d="M226 153L273 139V456L226 473V153Z" fill="#FAFBFC"/>
+    <path d="M280 123L462 144V470L280 468V123Z" fill="#EEF0F2"/>
+    <path d="M294 141L447 158V452L294 452V141Z" fill="#DDE0E4"/>
+    <path d="M293 138L463 180V480L293 451V138Z" fill="url(#doorFront)"/>
+    <path d="M308 161L447 193V452L308 429V161Z" fill="#FAFBFC" fill-opacity=".72"/>
+    <path d="M454 180L464 180V480L454 478V180Z" fill="#D0D4D8"/>
+    <ellipse cx="394" cy="319" rx="9" ry="9" fill="#C5C8CB"/>
+    <ellipse cx="392" cy="317" rx="5" ry="5" fill="#F9FAFB"/>
+  </g>
+  <g>
+    <path d="M554 399C547 354 521 323 497 296" stroke="#5A8B34" stroke-width="8" stroke-linecap="round"/>
+    <path d="M549 375C570 342 596 328 622 332C617 362 592 382 554 389L549 375Z" fill="#5D9634"/>
+    <path d="M544 359C525 326 503 313 478 319C482 349 504 370 541 375L544 359Z" fill="#70A944"/>
+    <path d="M537 337C537 302 551 280 575 269C588 295 580 325 551 349L537 337Z" fill="#4D862A"/>
+    <path d="M529 390C508 366 485 360 462 369C475 395 498 407 531 405L529 390Z" fill="#83B454"/>
+    <path d="M557 398C581 377 603 376 623 390C608 414 585 421 554 412L557 398Z" fill="#4B8028"/>
+    <path d="M519 392H585L575 480H529L519 392Z" fill="url(#pot)"/>
+    <path d="M519 392H585L580 408H524L519 392Z" fill="#D6D1C8"/>
+  </g>
+  <path d="M540 76L533 48" stroke="#A2A6AC" stroke-width="7" stroke-linecap="round"/>
+  <path d="M573 95L596 77" stroke="#A2A6AC" stroke-width="7" stroke-linecap="round"/>
+  <path d="M590 129L619 132" stroke="#A2A6AC" stroke-width="7" stroke-linecap="round"/>
+</svg>

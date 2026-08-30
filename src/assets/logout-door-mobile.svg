@@ -1,0 +1,24 @@
+<svg width="520" height="420" viewBox="0 0 520 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Otvorena vrata i biljka</title>
+  <desc id="desc">Kompaktna minimalistična ilustracija otvorenih belih vrata pored zelene biljke u saksiji.</desc>
+  <defs>
+    <linearGradient id="circle" x1="103" y1="31" x2="390" y2="335" gradientUnits="userSpaceOnUse"><stop stop-color="#FAFBFC"/><stop offset="1" stop-color="#ECEEF1"/></linearGradient>
+    <linearGradient id="door" x1="188" y1="79" x2="307" y2="319" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF"/><stop offset="1" stop-color="#E5E7EA"/></linearGradient>
+    <filter id="shadow" x="107" y="57" width="291" height="292" filterUnits="userSpaceOnUse"><feDropShadow dx="0" dy="15" stdDeviation="14" flood-color="#76808B" flood-opacity=".16"/></filter>
+  </defs>
+  <circle cx="255" cy="202" r="166" fill="url(#circle)"/>
+  <g filter="url(#shadow)">
+    <path d="M147 96L194 81V321L147 338V96Z" fill="#DDE0E3"/>
+    <path d="M159 103L188 94V310L159 320V103Z" fill="#FBFCFC"/>
+    <path d="M196 81L325 111V328L196 319V81Z" fill="url(#door)"/>
+    <path d="M208 99L313 124V306L208 289V99Z" fill="#FAFBFC" fill-opacity=".74"/>
+    <ellipse cx="268" cy="215" rx="6.5" ry="6.5" fill="#C5C8CA"/>
+    <ellipse cx="266" cy="213" rx="3.4" ry="3.4" fill="#FFF"/>
+  </g>
+  <path d="M342 280C337 243 318 222 297 200" stroke="#5B8B35" stroke-width="6" stroke-linecap="round"/>
+  <path d="M338 255C357 230 379 221 400 226C395 249 375 264 342 269L338 255Z" fill="#5C9634"/>
+  <path d="M335 241C318 216 298 207 278 213C282 236 301 251 332 256L335 241Z" fill="#75AA48"/>
+  <path d="M331 224C330 197 342 179 361 170C371 191 365 215 341 233L331 224Z" fill="#4D862A"/>
+  <path d="M320 272H370L363 337H327L320 272Z" fill="#D8D2C8"/>
+  <path d="M320 272H370L367 284H323L320 272Z" fill="#EEEAE3"/>
+</svg>
