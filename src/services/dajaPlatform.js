@@ -1004,6 +1004,12 @@ export const newsletterApi = {
       body: { email },
     });
   },
+  confirm(token) {
+    return apiRequest(`/newsletter/confirm?token=${encodeURIComponent(token)}`, {
+      method: 'GET',
+      auth: false,
+    });
+  },
 };
 
 export const promotionsApi = {

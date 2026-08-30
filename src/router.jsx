@@ -14,6 +14,7 @@ import FAQ from './pages/FAQ.jsx';
 import Contact from './pages/Contact.jsx';
 import Usluge from './pages/Usluge.jsx';
 import OrdersPage from './pages/Admin/OrdersPage';
+import NewsletterConfirmation from './pages/NewsletterConfirmation.jsx';
 
 export default function AppRoutes() {
   return (
@@ -38,6 +39,7 @@ export default function AppRoutes() {
       <Route path="/about" element={<About />} />
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/newsletter/confirm" element={<NewsletterConfirmation />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/usluge" element={<Usluge />} />
