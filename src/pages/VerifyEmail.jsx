@@ -1,148 +1,103 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Check, ChevronRight, Loader2, ShoppingBag, X } from 'lucide-react';
 import { authApi } from '../services/dajaPlatform';
-import { motion } from 'framer-motion';
-import { CheckCircle2, XCircle, Loader2, ArrowRight } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
-  const { showAuth } = useAuth();
-
-  // Stanja procesa: 'loading', 'success', 'error'
   const [status, setStatus] = useState('loading');
-  const [message, setMessage] = useState(
-    'Proveravamo vaš verifikacioni link...',
-  );
-
-  const actionCode = searchParams.get('token');
+  const [message, setMessage] = useState('Proveravamo vaš verifikacioni link...');
+  const verificationToken = searchParams.get('token');
 
   useEffect(() => {
-    if (!actionCode) {
+    if (!verificationToken) {
       setStatus('error');
-      setMessage(
-        'Verifikacioni kod nije pronađen. Proverite da li je link ispravan.',
-      );
+      setMessage('Verifikacioni link nije potpun. Zatražite novi iz svog naloga.');
       return;
     }
 
-    authApi.verifyEmail(actionCode)
+    authApi
+      .verifyEmail(verificationToken)
       .then(() => {
         setStatus('success');
-        setMessage(
-          'Vaš email je uspešno potvrđen. Dobro došli u Daja Shop porodicu.',
-        );
+        setMessage('Vaša email adresa je uspešno potvrđena i nalog je spreman za kupovinu.');
       })
       .catch((error) => {
         console.error(error);
         setStatus('error');
-        if (error.code === 'auth/expired-action-code') {
-          setMessage(
-            'Verifikacioni link je istekao. Molimo vas, zatražite novi.',
-          );
-        } else if (error.code === 'auth/invalid-action-code') {
-          setMessage('Verifikacioni link je neispravan ili je već iskorišćen.');
-        } else {
-          setMessage(
-            'Došlo je do greške prilikom verifikacije. Pokušajte ponovo.',
-          );
-        }
+        setMessage(
+          error?.message ||
+            'Link je neispravan, istekao je ili je već iskorišćen. Zatražite novi iz svog naloga.',
+        );
       });
-  }, [actionCode]);
+  }, [verificationToken]);
 
-  // Animacija kartice
-  const cardVariants = {
-    hidden: { opacity: 0, y: 20, scale: 0.95 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: { type: 'spring', duration: 0.6, bounce: 0.3 },
-    },
-  };
+  const isLoading = status === 'loading';
+  const isSuccess = status === 'success';
 
   return (
-    <div className="grid place-items-center min-h-[60vh] p-5">
-      <SEOHead title="Verifikacija email-a" noIndex={true} />
-      <motion.div
-        className="w-full max-w-lg p-8 md:p-12 text-center rounded-3xl relative overflow-hidden bg-white/60 backdrop-blur-xl border border-white/40 shadow-2xl"
-        variants={cardVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* LOADING STANJE */}
-        {status === 'loading' && (
-          <div className="flex flex-col items-center gap-4">
-            <Loader2
-              size={48}
-              className="animate-spin text-[var(--color-primary)] mb-2"
-            />
-            <h1 className="text-3xl font-extrabold text-[var(--color-text)] tracking-tight">
-              Verifikacija u toku
-            </h1>
-            <p className="text-lg text-[var(--color-muted)] leading-relaxed">
-              {message}
-            </p>
-          </div>
-        )}
+    <main className="relative isolate grid min-h-[72vh] place-items-center overflow-hidden bg-[#f7f7f4] px-5 py-16">
+      <SEOHead title="Potvrda email adrese" noIndex={true} />
+      <div className="absolute -left-24 top-8 h-72 w-72 rounded-full bg-emerald-200/35 blur-3xl" />
+      <div className="absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-amber-200/35 blur-3xl" />
 
-        {/* SUCCESS STANJE */}
-        {status === 'success' && (
-          <div className="flex flex-col items-center gap-4">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+      <section className="relative w-full max-w-xl overflow-hidden rounded-[2rem] border border-black/[0.07] bg-white px-7 py-9 text-center shadow-[0_24px_70px_rgba(20,24,20,0.13)] sm:px-12 sm:py-12">
+        <div className="mx-auto mb-8 flex w-fit items-center gap-2 rounded-full border border-black/[0.08] bg-black/[0.025] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-neutral-600">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          DajaShop nalog
+        </div>
+
+        <div
+          className={`mx-auto mb-7 grid h-20 w-20 place-items-center rounded-full border transition-colors ${
+            isLoading
+              ? 'border-neutral-200 bg-neutral-50 text-neutral-700'
+              : isSuccess
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                : 'border-red-200 bg-red-50 text-red-500'
+          }`}
+        >
+          {isLoading && <Loader2 size={34} className="animate-spin" />}
+          {isSuccess && <Check size={39} strokeWidth={3} />}
+          {status === 'error' && <X size={39} strokeWidth={3} />}
+        </div>
+
+        <h1 className="text-3xl font-black tracking-[-0.045em] text-neutral-950 sm:text-4xl">
+          {isLoading
+            ? 'Potvrda je u toku'
+            : isSuccess
+              ? 'Email je potvrđen'
+              : 'Link više nije važeći'}
+        </h1>
+        <p className="mx-auto mt-4 max-w-md text-[15px] leading-7 text-neutral-600 sm:text-base">
+          {message}
+        </p>
+
+        {!isLoading && (
+          <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link
+              to="/catalog"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-neutral-950 px-6 py-3.5 text-sm font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-neutral-800 sm:w-auto"
             >
-              <CheckCircle2 size={64} className="text-emerald-500 mb-2" />
-            </motion.div>
-            <h1 className="text-3xl font-extrabold text-[var(--color-text)] tracking-tight">
-              Email potvrđen!
-            </h1>
-            <p className="text-lg text-[var(--color-muted)] leading-relaxed max-w-md mx-auto">
-              {message}
-            </p>
-
-            <div className="mt-6 w-full flex justify-center">
-              <button
-                onClick={() => showAuth('login')}
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg shadow-[var(--color-primary)]/20"
-              >
-                Prijavi se sada <ArrowRight size={18} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ERROR STANJE */}
-        {status === 'error' && (
-          <div className="flex flex-col items-center gap-4">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+              <ShoppingBag size={18} />
+              U prodavnicu
+              <ChevronRight size={17} />
+            </Link>
+            <Link
+              to="/account/profile"
+              className="inline-flex w-full items-center justify-center rounded-2xl px-6 py-3.5 text-sm font-bold text-neutral-700 transition hover:bg-black/[0.04] sm:w-auto"
             >
-              <XCircle size={64} className="text-red-500 mb-2" />
-            </motion.div>
-            <h1 className="text-3xl font-extrabold text-[var(--color-text)] tracking-tight">
-              Verifikacija neuspešna
-            </h1>
-            <p className="text-lg text-[var(--color-muted)] leading-relaxed max-w-md mx-auto">
-              {message}
-            </p>
-
-            <div className="mt-6 w-full flex justify-center">
-              <Link
-                to="/"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-black/5 transition-all duration-200"
-              >
-                Nazad na početnu
-              </Link>
-            </div>
+              Moj nalog
+            </Link>
           </div>
         )}
-      </motion.div>
-    </div>
+
+        {isSuccess && (
+          <p className="mt-8 text-xs font-medium text-neutral-400">
+            Srećna kupovina — dobro došli u DajaShop.
+          </p>
+        )}
+      </section>
+    </main>
   );
 }
