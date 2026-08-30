@@ -166,6 +166,79 @@ const formatAuditDate = (value) =>
       }).format(new Date(value))
     : '—';
 
+const AUDIT_CREATION_GROUP_WINDOW_MS = 10_000;
+
+const auditTimestamp = (event) => new Date(event.occurredAt).getTime();
+
+const auditProductId = (event) =>
+  event.productId ||
+  (event.aggregateType === 'product' ? event.aggregateId : null);
+
+const collapseInitialCatalogEvents = (events) => {
+  const grouped = new Set();
+  const replacementByEventId = new Map();
+
+  events
+    .filter(
+      (event) =>
+        event.aggregateType === 'product' && event.operation === 'create',
+    )
+    .forEach((productCreated) => {
+      const productId = auditProductId(productCreated);
+      const startedAt = auditTimestamp(productCreated);
+      if (!productId || Number.isNaN(startedAt)) return;
+
+      const relatedEvents = events
+        .filter((candidate) => {
+          const candidateTime = auditTimestamp(candidate);
+          return (
+            auditProductId(candidate) === productId &&
+            candidate.actorUserId === productCreated.actorUserId &&
+            candidateTime >= startedAt &&
+            candidateTime - startedAt <= AUDIT_CREATION_GROUP_WINDOW_MS
+          );
+        })
+        .sort((a, b) => auditTimestamp(a) - auditTimestamp(b));
+
+      if (relatedEvents.length < 2) return;
+
+      const mostRecent = relatedEvents.at(-1);
+      relatedEvents.forEach((event) => grouped.add(event.id));
+      replacementByEventId.set(mostRecent.id, {
+        ...productCreated,
+        id: `creation-${productCreated.id}`,
+        occurredAt: mostRecent.occurredAt,
+        operation: 'create',
+        relatedEvents,
+      });
+    });
+
+  return events.flatMap((event) => {
+    const replacement = replacementByEventId.get(event.id);
+    if (replacement) return [replacement];
+    return grouped.has(event.id) ? [] : [event];
+  });
+};
+
+const auditSectionTitle = (event) => {
+  if (event.aggregateType === 'product' && event.operation === 'create') {
+    return 'Podaci novog artikla';
+  }
+  if (event.aggregateType === 'variant' && event.operation === 'create') {
+    return 'Početna varijanta';
+  }
+  return 'Automatska dopuna pri unosu';
+};
+
+const getAuditSections = (event) =>
+  (event.relatedEvents || [event])
+    .map((sourceEvent) => ({
+      id: sourceEvent.id,
+      title: auditSectionTitle(sourceEvent),
+      changes: getAuditChanges(sourceEvent),
+    }))
+    .filter((section) => section.changes.length > 0);
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const nav = useNavigate();
@@ -191,6 +264,10 @@ export default function AdminDashboard() {
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditError, setAuditError] = useState('');
   const [expandedAuditId, setExpandedAuditId] = useState(null);
+  const displayedAuditEvents = useMemo(
+    () => collapseInitialCatalogEvents(auditEvents),
+    [auditEvents],
+  );
 
   // ... (Ostali state-ovi za brendove, kategorije...)
   const [brands, setBrands] = useState([]);
@@ -895,9 +972,9 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
-                    {auditEvents.map((event) => {
+                    {displayedAuditEvents.map((event) => {
                       const isExpanded = expandedAuditId === event.id;
-                      const changes = getAuditChanges(event);
+                      const sections = getAuditSections(event);
 
                       return (
                         <React.Fragment key={event.id}>
@@ -940,38 +1017,49 @@ export default function AdminDashboard() {
                           {isExpanded && (
                             <tr className="bg-neutral-50/70">
                               <td colSpan="5" className="p-4">
-                                {changes.length > 0 ? (
-                                  <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
-                                    <table className="w-full text-sm">
-                                      <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-                                        <tr>
-                                          <th className="p-3 text-left">
-                                            Polje
-                                          </th>
-                                          <th className="p-3 text-left">
-                                            Pre izmene
-                                          </th>
-                                          <th className="p-3 text-left">
-                                            Posle izmene
-                                          </th>
-                                        </tr>
-                                      </thead>
-                                      <tbody className="divide-y divide-neutral-100">
-                                        {changes.map((change) => (
-                                          <tr key={change.field}>
-                                            <td className="p-3 font-medium text-neutral-800">
-                                              {change.label}
-                                            </td>
-                                            <td className="p-3 text-neutral-600 break-all">
-                                              {change.before}
-                                            </td>
-                                            <td className="p-3 text-neutral-900 break-all">
-                                              {change.after}
-                                            </td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
+                                {sections.length > 0 ? (
+                                  <div className="space-y-4">
+                                    {sections.map((section) => (
+                                      <div key={section.id}>
+                                        {sections.length > 1 && (
+                                          <h3 className="mb-2 text-sm font-semibold text-neutral-800">
+                                            {section.title}
+                                          </h3>
+                                        )}
+                                        <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+                                          <table className="w-full text-sm">
+                                            <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
+                                              <tr>
+                                                <th className="p-3 text-left">
+                                                  Polje
+                                                </th>
+                                                <th className="p-3 text-left">
+                                                  Pre izmene
+                                                </th>
+                                                <th className="p-3 text-left">
+                                                  Posle izmene
+                                                </th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-neutral-100">
+                                              {section.changes.map((change) => (
+                                                <tr key={change.field}>
+                                                  <td className="p-3 font-medium text-neutral-800">
+                                                    {change.label}
+                                                  </td>
+                                                  <td className="p-3 text-neutral-600 break-all">
+                                                    {change.before}
+                                                  </td>
+                                                  <td className="p-3 text-neutral-900 break-all">
+                                                    {change.after}
+                                                  </td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </div>
+                                    ))}
                                   </div>
                                 ) : (
                                   <p className="text-sm text-neutral-600">
