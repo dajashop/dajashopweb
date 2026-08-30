@@ -15,6 +15,63 @@ const publicCatalogListeners = new Set();
 let staffCatalogSocket = null;
 const staffCatalogListeners = new Set();
 
+const OAUTH_WAKEUP_TIMEOUT_MS = 90_000;
+const OAUTH_WAKEUP_RETRY_MS = 2_000;
+const OAUTH_WAKEUP_REQUEST_TIMEOUT_MS = 12_000;
+
+const delay = (duration) =>
+  new Promise((resolve) => window.setTimeout(resolve, duration));
+
+async function waitForApiBeforeOAuth(onProgress) {
+  const probeUrl = new URL(
+    `${API_BASE_URL}/public/catalog/products`,
+    window.location.origin,
+  );
+  probeUrl.searchParams.set('limit', '1');
+
+  const startedAt = Date.now();
+  let attempt = 0;
+  let lastError = null;
+
+  while (Date.now() - startedAt < OAUTH_WAKEUP_TIMEOUT_MS) {
+    attempt += 1;
+    onProgress?.({ attempt, elapsedMs: Date.now() - startedAt });
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      OAUTH_WAKEUP_REQUEST_TIMEOUT_MS,
+    );
+
+    try {
+      const response = await fetch(probeUrl, {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      const contentType = response.headers.get('content-type') || '';
+
+      // Render returns its own HTML while a sleeping service is starting.
+      // Only a real JSON response means that it is safe to navigate away
+      // from the DajaShop modal to the Google OAuth endpoint.
+      if (response.ok && contentType.includes('application/json')) return;
+
+      lastError = new Error('API još nije spreman za Google prijavu.');
+    } catch (error) {
+      lastError = error;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+
+    await delay(OAUTH_WAKEUP_RETRY_MS);
+  }
+
+  throw new Error(
+    'Priprema Google prijave traje duže nego što je očekivano. Pokušajte ponovo za minut.',
+    { cause: lastError },
+  );
+}
+
 function realtimeNamespaceUrl() {
   const apiBase = API_BASE_URL.startsWith('http')
     ? API_BASE_URL
@@ -93,12 +150,13 @@ function normalizeProduct(product) {
   // money field/currency is present.
   const pricesAreMinor = Boolean(
     product.currency ||
-      product.currentPriceAmount !== undefined ||
-      product.current_price_amount !== undefined ||
-      regularPriceMinor !== undefined,
+    product.currentPriceAmount !== undefined ||
+    product.current_price_amount !== undefined ||
+    regularPriceMinor !== undefined,
   );
   const toDisplayPrice = (amount, fallback = 0) => {
-    if (amount === null || amount === undefined || amount === '') return fallback;
+    if (amount === null || amount === undefined || amount === '')
+      return fallback;
     const numeric = Number(amount);
     if (!Number.isFinite(numeric)) return fallback;
     return pricesAreMinor ? numeric / 100 : numeric;
@@ -137,7 +195,9 @@ function normalizeProduct(product) {
         product.availableQuantity ?? product.available_quantity ?? 0,
       ),
     },
-    inStock: Boolean(product.inStock ?? product.in_stock ?? product.availability?.inStock),
+    inStock: Boolean(
+      product.inStock ?? product.in_stock ?? product.availability?.inStock,
+    ),
     availableQuantity: Number(
       product.availableQuantity ??
         product.available_quantity ??
@@ -267,7 +327,9 @@ export const authApi = {
     setAuthTokens(data);
     return normalizeUser(data);
   },
-  oauthStart(provider) {
+  async oauthStart(provider, onProgress) {
+    await waitForApiBeforeOAuth(onProgress);
+
     // The API signs this allowed origin into the Google OAuth state. On the
     // callback it can return the customer to the same storefront hostname
     // (production domain or the Pages preview) without trusting an open URL.
@@ -372,7 +434,8 @@ export const adminCatalogApi = {
     if (has('slug')) productPayload.slug = product.slug;
     if (has('description'))
       productPayload.description = product.description || '';
-    if (has('itemCondition')) productPayload.itemCondition = product.itemCondition;
+    if (has('itemCondition'))
+      productPayload.itemCondition = product.itemCondition;
     if (has('departmentId')) productPayload.departmentId = product.departmentId;
     if (has('seo')) productPayload.seo = product.seo;
     if (has('features')) productPayload.features = product.features;
@@ -542,6 +605,15 @@ export const adminCatalogApi = {
   },
   repairProductImageUrls(productId = '') {
     return Promise.resolve({ repaired: 0, productId });
+  },
+};
+
+export const catalogAuditApi = {
+  list(params = {}) {
+    return apiRequest('/admin/catalog-audit', {
+      staff: true,
+      query: params,
+    });
   },
 };
 

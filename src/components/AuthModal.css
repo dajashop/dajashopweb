@@ -113,6 +113,62 @@
 .btn-oauth span {
   font-weight: 600;
 }
+.btn-oauth:disabled,
+.icon-btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.oauth-wakeup {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 32px;
+  text-align: center;
+  border-radius: inherit;
+  background: color-mix(
+    in oklab,
+    var(--color-surface, #f5f5f7) 96%,
+    transparent
+  );
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+.oauth-wakeup h2 {
+  margin: 4px 0 0;
+  font-size: 1.12rem;
+}
+.oauth-wakeup p {
+  max-width: 290px;
+  margin: 0;
+  color: var(--color-muted, #6e6e73);
+  line-height: 1.45;
+}
+.oauth-wakeup span {
+  font-size: 0.8rem;
+  color: var(--color-muted, #6e6e73);
+}
+.oauth-wakeup-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid color-mix(
+    in oklab,
+    var(--color-primary, #111) 18%,
+    transparent
+  );
+  border-top-color: var(--color-primary, #111);
+  border-radius: 50%;
+  animation: oauth-wakeup-spin 0.8s linear infinite;
+}
+@keyframes oauth-wakeup-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* Slider */
 .form-slider {

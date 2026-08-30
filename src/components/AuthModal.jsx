@@ -93,6 +93,9 @@ export default function AuthModal() {
   const [name, setName] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [oauthWaking, setOauthWaking] = useState(false);
+  const [oauthWakeupAttempt, setOauthWakeupAttempt] = useState(0);
+  const [oauthProvider, setOauthProvider] = useState('');
   const [errors, setErrors] = useState({});
   const [submitCount, setSubmitCount] = useState(0);
 
@@ -147,6 +150,9 @@ export default function AuthModal() {
     setErrors({});
     setSubmitCount(0);
     setIsCountryDropdownOpen(false);
+    setOauthWaking(false);
+    setOauthWakeupAttempt(0);
+    setOauthProvider('');
   }, [mode]);
 
   useEffect(() => {
@@ -430,11 +436,17 @@ export default function AuthModal() {
   async function handleOauth(provider) {
     try {
       setLoading(true);
-      await oauth(provider);
+      setOauthProvider(provider);
+      setOauthWakeupAttempt(1);
+      setOauthWaking(true);
+      await oauth(provider, ({ attempt }) => setOauthWakeupAttempt(attempt));
     } catch (err) {
       alert(err?.message || 'Greška pri OAuth prijavi.');
     } finally {
       setLoading(false);
+      setOauthWaking(false);
+      setOauthWakeupAttempt(0);
+      setOauthProvider('');
     }
   }
 
@@ -496,9 +508,35 @@ export default function AuthModal() {
                 className="icon-btn close"
                 onClick={hideAuth}
                 aria-label="Zatvori"
+                disabled={oauthWaking}
               >
                 <X size={20} />
               </button>
+
+              <AnimatePresence>
+                {oauthWaking && (
+                  <motion.div
+                    className="oauth-wakeup"
+                    role="status"
+                    aria-live="polite"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <div className="oauth-wakeup-spinner" aria-hidden="true" />
+                    <h2>
+                      Pripremamo {oauthProvider === 'google' ? 'Google' : 'Facebook'} prijavu
+                    </h2>
+                    <p>
+                      DajaShop bezbedno uspostavlja vezu. Samo trenutak, zatim
+                      nastavljate na prijavu.
+                    </p>
+                    {oauthWakeupAttempt > 1 && (
+                      <span>Server se pokreće, molimo sačekajte…</span>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <div className="tabs">
                 <motion.button
@@ -836,6 +874,7 @@ export default function AuthModal() {
                                 type="button"
                                 className="btn-oauth"
                                 onClick={() => handleOauth('google')}
+                                disabled={loading}
                               >
                                 <svg
                                   viewBox="0 0 24 24"
@@ -854,6 +893,7 @@ export default function AuthModal() {
                                 type="button"
                                 className="btn-oauth"
                                 onClick={() => handleOauth('facebook')}
+                                disabled={loading}
                               >
                                 <Facebook size={18} />
                                 <span>Facebook</span>
@@ -862,6 +902,7 @@ export default function AuthModal() {
                                 type="button"
                                 className="btn-oauth"
                                 onClick={handlePasskey}
+                                disabled={loading}
                                 style={{
                                   width: '100%',
                                   justifyContent: 'center',

@@ -168,8 +168,8 @@ export function AuthProvider({ children }) {
     return authApi.register({ username, email, linkOnly: true });
   }, []);
 
-  async function oauth(provider) {
-    authApi.oauthStart(provider);
+  async function oauth(provider, onProgress) {
+    return authApi.oauthStart(provider, onProgress);
   }
 
   async function logout() {

@@ -1,6 +1,16 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { isAdminEmail, importsApi } from '../../services/dajaPlatform';
+import {
+  catalogAuditApi,
+  isAdminEmail,
+  importsApi,
+} from '../../services/dajaPlatform';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -17,9 +27,14 @@ import {
   Filter,
   Eye, // <--- NOVA IKONA
   EyeOff, // <--- NOVA IKONA
+  ClipboardList,
 } from 'lucide-react';
 import useProducts from '../../hooks/useProducts';
-import { deleteProduct, saveProduct, setProductVisibility } from '../../services/products';
+import {
+  deleteProduct,
+  saveProduct,
+  setProductVisibility,
+} from '../../services/products';
 
 // ... (Ostali importi ostaju isti: AdminProductModal, ExcelManager, itd.)
 import AdminProductModal from './components/AdminProductModal.jsx';
@@ -63,6 +78,23 @@ const generateSlug = (text) => {
     .replace(/\-\-+/g, '-');
 };
 
+const AUDIT_OPERATION_LABELS = {
+  create: 'Dodat artikal',
+  update: 'Izmenjen artikal',
+  soft_delete: 'Obrisan artikal',
+  publish: 'Objavljen artikal',
+  unpublish: 'Sakriven artikal',
+  price_change: 'Izmenjena cena',
+};
+
+const formatAuditDate = (value) =>
+  value
+    ? new Intl.DateTimeFormat('sr-RS', {
+        dateStyle: 'short',
+        timeStyle: 'medium',
+      }).format(new Date(value))
+    : '—';
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const nav = useNavigate();
@@ -84,6 +116,9 @@ export default function AdminDashboard() {
   const [editProduct, setEditProduct] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [repairingImages, setRepairingImages] = useState(false);
+  const [auditEvents, setAuditEvents] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState('');
 
   // ... (Ostali state-ovi za brendove, kategorije...)
   const [brands, setBrands] = useState([]);
@@ -156,8 +191,11 @@ export default function AdminDashboard() {
     [departments],
   );
   const departmentNameFor = (departmentId, fallbackSlug = '') =>
-    departments.find((department) => String(department.id) === String(departmentId))?.name ||
-    departmentOptions.find((department) => department.id === fallbackSlug)?.label ||
+    departments.find(
+      (department) => String(department.id) === String(departmentId),
+    )?.name ||
+    departmentOptions.find((department) => department.id === fallbackSlug)
+      ?.label ||
     fallbackSlug ||
     'Nepoznato';
   const belongsToDepartment = useCallback(
@@ -183,6 +221,31 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!user || !isAdminEmail(user.email)) nav('/');
   }, [user, nav]);
+
+  useEffect(() => {
+    if (activeTab !== 'audit') return undefined;
+
+    let cancelled = false;
+    setAuditLoading(true);
+    setAuditError('');
+    catalogAuditApi
+      .list({ limit: 100 })
+      .then((events) => {
+        if (!cancelled) setAuditEvents(Array.isArray(events) ? events : []);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setAuditError(error?.message || 'Dnevnik aktivnosti nije dostupan.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAuditLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
 
   // --- NOVA FUNKCIJA: Toggle Visibility ---
   const toggleVisibility = async (product) => {
@@ -210,7 +273,8 @@ export default function AdminDashboard() {
   const handleAddBrand = async (e) => {
     e.preventDefault();
     if (!newBrandName.trim()) return;
-    const departmentSlug = brandFilters.length === 1 ? brandFilters[0] : newBrandDept;
+    const departmentSlug =
+      brandFilters.length === 1 ? brandFilters[0] : newBrandDept;
     const departmentId = departmentIdFor(departmentSlug);
     if (!departmentId) return alert('Izaberi odeljenje za novi brend.');
     try {
@@ -250,7 +314,8 @@ export default function AdminDashboard() {
     if (!newCatName.trim()) return;
     const brandToUse = catBrandFilter || newCatBrand;
     const brandObj = brands.find((b) => b.name === brandToUse);
-    const selectedDepartmentSlug = catFilters.length === 1 ? catFilters[0] : newCatDept;
+    const selectedDepartmentSlug =
+      catFilters.length === 1 ? catFilters[0] : newCatDept;
     const selectedDepartmentId = departmentIdFor(selectedDepartmentSlug);
     const dept = selectedDepartmentId || brandObj?.departmentId;
     if (!dept) return alert('Izaberi odeljenje.');
@@ -294,7 +359,8 @@ export default function AdminDashboard() {
   const handleAddSpec = async (e) => {
     e.preventDefault();
     if (!newSpecName.trim()) return;
-    const departmentSlug = specFilters.length === 1 ? specFilters[0] : newSpecDept;
+    const departmentSlug =
+      specFilters.length === 1 ? specFilters[0] : newSpecDept;
     const departmentId = departmentIdFor(departmentSlug);
     if (!departmentId) return alert('Izaberi odeljenje za karakteristiku.');
     try {
@@ -373,11 +439,20 @@ export default function AdminDashboard() {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-    const draft = await importsApi.createXlsx({ sourceName: file.name, base64Xlsx, dryRun: true });
+    const draft = await importsApi.createXlsx({
+      sourceName: file.name,
+      base64Xlsx,
+      dryRun: true,
+    });
     const jobId = draft?.id || draft?.jobId;
     if (!jobId) throw new Error('API nije vratio ID posla za uvoz.');
     const report = await importsApi.reconciliation(jobId);
-    if (!window.confirm(`Provera je gotova. Nastaviti sa uvozom?\n${JSON.stringify(report).slice(0, 400)}`)) return;
+    if (
+      !window.confirm(
+        `Provera je gotova. Nastaviti sa uvozom?\n${JSON.stringify(report).slice(0, 400)}`,
+      )
+    )
+      return;
     await importsApi.execute(jobId);
     refreshProducts();
   };
@@ -419,16 +494,22 @@ export default function AdminDashboard() {
       const deptMatch =
         catFilters.length === 0 ||
         catFilters.some((slug) => c.departmentId === departmentIdFor(slug));
-      const selectedBrandId = brands.find((brand) => brand.name === catBrandFilter)?.id;
+      const selectedBrandId = brands.find(
+        (brand) => brand.name === catBrandFilter,
+      )?.id;
       const brandMatch = !catBrandFilter || c.brandId === selectedBrandId;
       return deptMatch && brandMatch;
     });
   }, [categories, catFilters, catBrandFilter, brands, departmentIdFor]);
   const availableBrandsForCat = useMemo(() => {
     if (catFilters.length === 1)
-      return brands.filter((b) => b.departmentId === departmentIdFor(catFilters[0]));
+      return brands.filter(
+        (b) => b.departmentId === departmentIdFor(catFilters[0]),
+      );
     if (newCatDept)
-      return brands.filter((b) => b.departmentId === departmentIdFor(newCatDept));
+      return brands.filter(
+        (b) => b.departmentId === departmentIdFor(newCatDept),
+      );
     return brands;
   }, [brands, catFilters, newCatDept, departmentIdFor]);
   const visibleSpecs = useMemo(() => {
@@ -473,6 +554,12 @@ export default function AdminDashboard() {
               onClick={() => setActiveTab('specs')}
               icon={List}
               label="Specifikacije"
+            />
+            <TabButton
+              active={activeTab === 'audit'}
+              onClick={() => setActiveTab('audit')}
+              icon={ClipboardList}
+              label="Dnevnik"
             />
           </div>
         </div>
@@ -698,6 +785,74 @@ export default function AdminDashboard() {
           </motion.div>
         )}
 
+        {activeTab === 'audit' && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden"
+          >
+            <div className="p-5 border-b border-neutral-100">
+              <h2 className="font-bold text-lg text-neutral-900">
+                Dnevnik aktivnosti artikala
+              </h2>
+              <p className="text-sm text-neutral-500 mt-1">
+                Ko je dodao, izmenio, sakrio ili obrisao artikal.
+              </p>
+            </div>
+
+            {auditLoading ? (
+              <div className="p-8 text-center text-neutral-500">
+                Učitavanje dnevnika…
+              </div>
+            ) : auditError ? (
+              <div className="p-8 text-center text-red-600">{auditError}</div>
+            ) : auditEvents.length === 0 ? (
+              <div className="p-8 text-center text-neutral-500">
+                Još nema zabeleženih aktivnosti za artikle.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-neutral-50 text-neutral-500 uppercase text-xs font-bold tracking-wider border-b border-neutral-200">
+                    <tr>
+                      <th className="p-4">Vreme</th>
+                      <th className="p-4">Korisnik</th>
+                      <th className="p-4">Akcija</th>
+                      <th className="p-4">Artikal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {auditEvents.map((event) => (
+                      <tr key={event.id} className="hover:bg-neutral-50">
+                        <td className="p-4 whitespace-nowrap text-neutral-600">
+                          {formatAuditDate(event.occurredAt)}
+                        </td>
+                        <td className="p-4">
+                          <div className="font-medium text-neutral-900">
+                            {event.actorName}
+                          </div>
+                          {event.actorEmail && (
+                            <div className="text-xs text-neutral-500">
+                              {event.actorEmail}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-4 font-medium text-neutral-800">
+                          {AUDIT_OPERATION_LABELS[event.operation] ||
+                            event.operation}
+                        </td>
+                        <td className="p-4 text-neutral-700">
+                          {event.productName}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </motion.div>
+        )}
+
         {/* Ostali tabovi za Brendove/Kategorije/Specifikacije (ostaju nepromenjeni) */}
         {activeTab === 'brands' /* ... kod za brendove ... */ && (
           <motion.div
@@ -736,10 +891,10 @@ export default function AdminDashboard() {
                   ))}{' '}
                   {brandFilters.length > 0 && (
                     <button
-                    onClick={() => {
-                      setBrandFilters([]);
-                      setNewBrandDept('');
-                    }}
+                      onClick={() => {
+                        setBrandFilters([]);
+                        setNewBrandDept('');
+                      }}
                       className="px-2 text-xs font-bold text-red-400 hover:text-red-600"
                     >
                       {' '}
@@ -833,7 +988,10 @@ export default function AdminDashboard() {
                             {brandFilters.length !== 1 && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-neutral-400 border border-white/5 uppercase tracking-wider">
                                 {' '}
-                                {departments.find((department) => department.id === item.departmentId)?.name || 'Nepoznato'}{' '}
+                                {departments.find(
+                                  (department) =>
+                                    department.id === item.departmentId,
+                                )?.name || 'Nepoznato'}{' '}
                               </span>
                             )}{' '}
                           </div>{' '}
@@ -981,7 +1139,9 @@ export default function AdminDashboard() {
                     onChange={(e) => setNewCatBrand(e.target.value)}
                   >
                     {' '}
-                      <option value="">- Bez brenda (opšta kategorija) -</option>{' '}
+                    <option value="">
+                      - Bez brenda (opšta kategorija) -
+                    </option>{' '}
                     {availableBrandsForCat.map((b) => (
                       <option key={b.id} value={b.name}>
                         {' '}
@@ -1006,7 +1166,13 @@ export default function AdminDashboard() {
                 <button
                   type="submit"
                   disabled={
-                    !newCatName.trim() || !(catFilters.length === 1 || newCatDept || catBrandFilter || newCatBrand)
+                    !newCatName.trim() ||
+                    !(
+                      catFilters.length === 1 ||
+                      newCatDept ||
+                      catBrandFilter ||
+                      newCatBrand
+                    )
                   }
                   className="btn btn--primary rounded-xl px-3 py-2 mb-[1px]"
                 >
@@ -1040,13 +1206,20 @@ export default function AdminDashboard() {
                           <select
                             className="bg-black/20 rounded-lg px-2 py-1 text-sm outline-none border border-primary/50"
                             value={editingCatBrandId}
-                            onChange={(e) => setEditingCatBrandId(e.target.value)}
+                            onChange={(e) =>
+                              setEditingCatBrandId(e.target.value)
+                            }
                           >
                             <option value="">Bez brenda</option>
                             {brands
-                              .filter((brand) => brand.departmentId === item.departmentId)
+                              .filter(
+                                (brand) =>
+                                  brand.departmentId === item.departmentId,
+                              )
                               .map((brand) => (
-                                <option key={brand.id} value={brand.id}>{brand.name}</option>
+                                <option key={brand.id} value={brand.id}>
+                                  {brand.name}
+                                </option>
                               ))}
                           </select>
                           <button
@@ -1075,12 +1248,16 @@ export default function AdminDashboard() {
                             </span>{' '}
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-white border border-white/10">
                               {' '}
-                              {brands.find((brand) => brand.id === item.brandId)?.name || 'Bez brenda'}{' '}
+                              {brands.find((brand) => brand.id === item.brandId)
+                                ?.name || 'Bez brenda'}{' '}
                             </span>{' '}
                             {catFilters.length !== 1 && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-neutral-400 border border-white/5 uppercase tracking-wider">
                                 {' '}
-                                {departments.find((department) => department.id === item.departmentId)?.name || 'Satovi'}{' '}
+                                {departments.find(
+                                  (department) =>
+                                    department.id === item.departmentId,
+                                )?.name || 'Satovi'}{' '}
                               </span>
                             )}{' '}
                           </div>{' '}
@@ -1289,7 +1466,10 @@ export default function AdminDashboard() {
                             {specFilters.length !== 1 && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-neutral-400 border border-white/5 uppercase tracking-wider">
                                 {' '}
-                                {departmentNameFor(item.departmentId, item.department)}{' '}
+                                {departmentNameFor(
+                                  item.departmentId,
+                                  item.department,
+                                )}{' '}
                               </span>
                             )}{' '}
                           </div>{' '}
