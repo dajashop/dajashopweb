@@ -1,0 +1,115 @@
+.verify-email-page {
+  display: grid;
+  min-height: 72vh;
+  place-items: center;
+  padding: clamp(32px, 7vw, 80px) 16px;
+  background: var(--color-bg);
+}
+
+.verify-email-card {
+  width: min(100%, 500px);
+  padding: clamp(32px, 6vw, 52px);
+  text-align: center;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 24%, transparent);
+  border-radius: 16px;
+  box-shadow: 0 14px 38px color-mix(in srgb, #000 14%, transparent);
+}
+
+.verify-email-icon {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 22px;
+  place-items: center;
+  border: 1px solid color-mix(in oklab, var(--color-accent) 36%, transparent);
+  border-radius: 50%;
+  color: var(--color-primary);
+  background: color-mix(in oklab, var(--color-primary) 11%, var(--color-surface));
+}
+
+.verify-email-icon--error {
+  color: #df3e3e;
+  border-color: color-mix(in srgb, #df3e3e 42%, transparent);
+  background: color-mix(in srgb, #df3e3e 10%, var(--color-surface));
+}
+
+.verify-email-kicker {
+  margin: 0 0 10px;
+  color: var(--color-muted);
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.verify-email-card h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.verify-email-message {
+  max-width: 360px;
+  margin: 14px auto 0;
+  color: var(--color-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.verify-email-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.verify-email-primary,
+.verify-email-secondary {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 0.94rem;
+  font-weight: 700;
+  transition: transform 0.16s ease, filter 0.16s ease, background 0.16s ease;
+}
+
+.verify-email-primary {
+  color: var(--color-on-primary, #fff) !important;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  box-shadow: 0 7px 16px color-mix(in oklab, var(--color-primary) 28%, transparent);
+}
+
+.verify-email-primary:hover {
+  color: var(--color-on-primary, #fff) !important;
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+}
+
+.verify-email-secondary {
+  color: var(--color-text) !important;
+  background: transparent;
+  border: 1px solid color-mix(in oklab, var(--color-accent) 40%, transparent);
+}
+
+.verify-email-secondary:hover {
+  background: color-mix(in oklab, var(--color-accent) 8%, transparent);
+}
+
+@media (max-width: 480px) {
+  .verify-email-actions {
+    flex-direction: column;
+  }
+
+  .verify-email-primary,
+  .verify-email-secondary {
+    width: 100%;
+  }
+}
