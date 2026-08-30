@@ -14,7 +14,9 @@ export default function App() {
     pathname.startsWith('/catalog') ||
     pathname === '/daljinski' ||
     pathname === '/baterije' ||
-    pathname === '/naocare';
+    pathname === '/naocare' ||
+    pathname === '/logout';
+  const isFullBleedPage = pathname === '/logout';
 
   // Resetovanje skrola na vrh pri promeni stranice (samo za PUSH/REPLACE)
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function App() {
       <Header />
       <main
         className={isWidePage ? 'w-full' : 'container'}
-        style={{ padding: '20px 0 48px' }}
+        style={isFullBleedPage ? undefined : { padding: '20px 0 48px' }}
       >
         <AuthModal />
         <NewsletterModal />

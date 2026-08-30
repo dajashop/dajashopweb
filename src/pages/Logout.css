@@ -3,9 +3,10 @@
   --logout-muted: #6e6e73;
   position: relative;
   isolation: isolate;
-  min-height: min(760px, calc(100vh - 2px));
+  width: 100%;
+  min-height: clamp(440px, 39vw, 590px);
   overflow: hidden;
-  padding: clamp(34px, 7vw, 104px) clamp(24px, 7vw, 120px);
+  padding: clamp(24px, 4vw, 58px) clamp(24px, 7vw, 120px);
   background:
     radial-gradient(circle at -2% 4%, rgba(232, 233, 237, .72) 0 9%, transparent 9.15%),
     radial-gradient(circle at 103% 69%, rgba(241, 242, 245, .96) 0 15%, transparent 15.15%),
@@ -46,7 +47,7 @@
   align-items: center;
   gap: clamp(38px, 8vw, 155px);
   width: min(1120px, 100%);
-  min-height: min(560px, calc(100vh - 210px));
+  min-height: clamp(392px, 31vw, 474px);
   margin: 0 auto;
 }
 
@@ -59,7 +60,7 @@
 .logout-page__visual img {
   display: block;
   width: min(100%, 560px);
-  max-height: 510px;
+  max-height: 405px;
   object-fit: contain;
 }
 
@@ -179,8 +180,8 @@
 
 @media (max-width: 700px) {
   .logout-page {
-    min-height: calc(100svh - 1px);
-    padding: 31px 24px 55px;
+    min-height: 0;
+    padding: 31px 24px 48px;
     background: linear-gradient(145deg, #fff 0%, #fefefe 58%, #fafafa 100%);
   }
 
