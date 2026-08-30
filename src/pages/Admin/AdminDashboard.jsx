@@ -137,22 +137,24 @@ const formatAuditValue = (value, field, payload) => {
 const getAuditChanges = (event) => {
   const before = event.beforePayload;
   const after = event.afterPayload;
-  if (
-    !before ||
-    !after ||
-    typeof before !== 'object' ||
-    typeof after !== 'object'
-  )
-    return [];
+  const hasBefore = before && typeof before === 'object';
+  const hasAfter = after && typeof after === 'object';
+  if (!hasBefore && !hasAfter) return [];
 
-  return [...new Set([...Object.keys(before), ...Object.keys(after)])]
+  const fields =
+    hasBefore && hasAfter
+      ? [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(
+          (field) => !auditValuesMatch(before[field], after[field]),
+        )
+      : Object.keys(hasAfter ? after : before);
+
+  return fields
     .filter((field) => !AUDIT_IGNORED_FIELDS.has(field))
-    .filter((field) => !auditValuesMatch(before[field], after[field]))
     .map((field) => ({
       field,
       label: AUDIT_FIELD_LABELS[field] || field,
-      before: formatAuditValue(before[field], field, before),
-      after: formatAuditValue(after[field], field, after),
+      before: formatAuditValue(hasBefore ? before[field] : null, field, before),
+      after: formatAuditValue(hasAfter ? after[field] : null, field, after),
     }));
 };
 
