@@ -1,0 +1,15 @@
+<svg width="720" height="540" viewBox="0 0 720 540" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Potvrđena email poruka</title><desc id="desc">Minimalistična bela koverta sa zelenom potvrdom i biljkom.</desc>
+  <defs>
+    <linearGradient id="circle" x1="170" y1="55" x2="480" y2="432" gradientUnits="userSpaceOnUse"><stop stop-color="#F5FBF2"/><stop offset="1" stop-color="#E8F2E5"/></linearGradient>
+    <linearGradient id="paper" x1="242" y1="148" x2="395" y2="350" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF"/><stop offset="1" stop-color="#EEF0F2"/></linearGradient>
+    <linearGradient id="env" x1="192" y1="232" x2="439" y2="394" gradientUnits="userSpaceOnUse"><stop stop-color="#FCFCFC"/><stop offset="1" stop-color="#E1E3E6"/></linearGradient>
+    <filter id="shadow" x="144" y="104" width="412" height="354" filterUnits="userSpaceOnUse"><feDropShadow dx="0" dy="20" stdDeviation="18" flood-color="#68726E" flood-opacity=".16"/></filter>
+  </defs>
+  <circle cx="338" cy="270" r="206" fill="url(#circle)"/>
+  <ellipse cx="361" cy="404" rx="191" ry="18" fill="#BFC8BD" fill-opacity=".24"/>
+  <g filter="url(#shadow)"><rect x="229" y="139" width="182" height="218" rx="12" fill="url(#paper)"/><path d="M198 233C198 224 205 217 214 217H424C433 217 440 224 440 233V370C440 381 431 390 420 390H218C207 390 198 381 198 370V233Z" fill="url(#env)"/><path d="M201 233L319 323C331 332 348 332 360 323L437 264V232C437 224 430 220 423 220H215C207 220 201 225 201 233Z" fill="#FFF"/><path d="M199 370L278 293L317 322C330 332 348 332 361 322L439 370C439 381 430 390 419 390H219C208 390 199 381 199 370Z" fill="#EAEBED"/><path d="M201 233L317 322C330 332 348 332 361 322L437 233" stroke="#D7DADD" stroke-width="2"/></g>
+  <circle cx="398" cy="169" r="42" fill="#67B34C"/><path d="M380 169L391 180L417 154" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M466 385C463 344 445 318 419 292" stroke="#5A8B35" stroke-width="7" stroke-linecap="round"/><path d="M458 358C478 329 503 320 528 327C522 355 497 373 462 375L458 358Z" fill="#62A23B"/><path d="M451 342C431 316 407 308 384 316C390 344 412 360 449 362L451 342Z" fill="#78AE4C"/><path d="M444 323C443 293 457 272 480 262C493 288 484 316 454 337L444 323Z" fill="#4B862C"/><path d="M435 380H500L490 471H446L435 380Z" fill="#D8D0C4"/><path d="M435 380H500L496 396H439L435 380Z" fill="#EEE9E2"/>
+  <path d="M185 88L179 64" stroke="#72B95D" stroke-width="6" stroke-linecap="round"/><path d="M214 101L232 84" stroke="#72B95D" stroke-width="6" stroke-linecap="round"/><path d="M224 130L249 133" stroke="#72B95D" stroke-width="6" stroke-linecap="round"/>
+</svg>

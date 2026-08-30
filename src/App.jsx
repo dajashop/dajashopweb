@@ -16,7 +16,7 @@ export default function App() {
     pathname === '/baterije' ||
     pathname === '/naocare' ||
     pathname === '/logout';
-  const isFullBleedPage = pathname === '/logout';
+  const isFullBleedPage = pathname === '/logout' || pathname === '/verify-email';
 
   // Resetovanje skrola na vrh pri promeni stranice (samo za PUSH/REPLACE)
   useEffect(() => {
@@ -25,7 +25,11 @@ export default function App() {
   }, [pathname, navType]);
 
   return (
-    <div className={isFullBleedPage ? 'app-root app-root--logout' : 'app-root'}>
+    <div
+      className={
+        isFullBleedPage ? 'app-root app-root--seamless-footer' : 'app-root'
+      }
+    >
       <Header />
       <main
         className={isWidePage ? 'w-full' : 'container'}

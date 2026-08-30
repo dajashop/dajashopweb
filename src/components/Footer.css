@@ -24,7 +24,7 @@
 }
 
 /* The logout screen ends directly at the newsletter/footer section. */
-.app-root--logout .footer-newsletter-strip {
+.app-root--seamless-footer .footer-newsletter-strip {
   margin-top: 0;
 }
 
