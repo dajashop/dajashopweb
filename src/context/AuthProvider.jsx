@@ -40,16 +40,21 @@ export function AuthProvider({ children }) {
       // Publish the admin user only after the staff-session exchange. This
       // prevents admin widgets from sending their first request with a normal
       // customer token while the staff token is still being created.
-      setUser(me);
-
       try {
         const customer = await customerApi.me();
+        const hydratedUser = {
+          ...me,
+          ...customer,
+          emailVerified: Boolean(customer?.emailVerified ?? me?.emailVerified),
+        };
+        setUser(hydratedUser);
         setUserInfo(customer);
+        return hydratedUser;
       } catch {
+        setUser(me);
         setUserInfo(me);
+        return me;
       }
-
-      return me;
     } catch {
       setUser(null);
       setUserInfo(null);
