@@ -101,7 +101,7 @@ export default function VerifyEmail() {
                   {resendState === 'sent' ? 'Link je poslat' : resendState === 'verified' ? 'Email je već potvrđen' : 'Pošalji novi link'}
                 </button>
               )}
-              <Link to="/" className="verify-email-page__secondary">{isSuccess ? 'Srećna kupovina' : 'Idi na početnu stranu'} <ArrowRight size={17} /></Link>
+              <Link to="/" className="verify-email-page__secondary">{isSuccess ? 'Nazad na početnu' : 'Idi na početnu stranu'} <ArrowRight size={17} /></Link>
               {resendState === 'failed' && <p className="verify-email-page__notice">Slanje nije uspelo. Pokušajte ponovo za trenutak.</p>}
               {resendState === 'verified' && <p className="verify-email-page__notice">Vaša email adresa je već verifikovana.</p>}
             </div>
