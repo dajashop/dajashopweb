@@ -332,14 +332,13 @@ export const authApi = {
   async oauthStart(provider, onProgress) {
     await waitForApiBeforeOAuth(onProgress);
 
-    // The API signs this allowed origin into the Google OAuth state. On the
-    // callback it can return the customer to the same storefront hostname
-    // (production domain or the Pages preview) without trusting an open URL.
+    // The API validates and signs this URL's origin into the OAuth state, then
+    // returns the customer to this exact route (including catalog filters).
     const startUrl = new URL(
       `${API_BASE_URL}/customer-auth/oauth/${provider}/start`,
       window.location.origin,
     );
-    startUrl.searchParams.set('returnTo', window.location.origin);
+    startUrl.searchParams.set('returnTo', window.location.href);
     window.location.assign(startUrl.toString());
   },
   async passkeyRegisterStart(payload) {
