@@ -363,9 +363,11 @@ export default function SecuritySection({ user }) {
         </div>
 
         {isGoogleLinked ? (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-500 rounded-lg text-xs font-bold border border-green-500/20">
-            <Check size={14} />
-            <span>Povezano</span>
+          <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 py-1.5 pl-1.5 pr-3 text-xs font-semibold text-emerald-700 shadow-sm">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
+              <Check size={12} strokeWidth={3} />
+            </span>
+            <span>Google je povezan</span>
           </div>
         ) : (
           <button
