@@ -94,7 +94,7 @@ export default function VerifyEmail() {
           {!isLoading && (
             <div className="verify-email-page__actions">
               {isSuccess ? (
-                <Link to="/catalog" className="verify-email-page__primary"><ShoppingBag size={18} /> U prodavnicu <ArrowRight size={17} /></Link>
+                <Link to="/catalog" className="verify-email-page__primary"><ShoppingBag size={18} /> Pronađi svoj sat <ArrowRight size={17} /></Link>
               ) : (
                 <button type="button" className="verify-email-page__primary" onClick={requestNewLink} disabled={resendState === 'loading' || resendState === 'sent' || resendState === 'verified'}>
                   {resendState === 'loading' ? <Loader2 size={18} className="animate-spin" /> : resendState === 'sent' || resendState === 'verified' ? <CheckCircle2 size={18} /> : <RefreshCw size={18} />}
