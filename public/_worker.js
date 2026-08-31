@@ -3,6 +3,7 @@
 const BOT_UA_REGEX =
   /(facebookexternalhit|facebot|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegrambot|pinterest|googlebot|bingbot|yandexbot|duckduckbot)/i;
 const SEO_CACHE_SECONDS = 120;
+const GOOGLE_OAUTH_CALLBACK_PATH = '/api/v1/customer-auth/oauth/google/callback';
 
 function isProductPath(pathname) {
   return /^\/product\/[^/]+\/?$/.test(pathname);
@@ -193,6 +194,11 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const apiBase = (env.DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
+    if (url.pathname === GOOGLE_OAUTH_CALLBACK_PATH) {
+      const callbackUrl = new URL(`${apiBase}/customer-auth/oauth/google/callback`);
+      callbackUrl.search = url.search;
+      return fetch(new Request(callbackUrl, request));
+    }
     if (url.pathname === '/sitemap.xml') {
       return fetch(`${apiBase}/public/catalog/sitemap.xml`, { cf: { cacheEverything: true, cacheTtl: 3600 } });
     }
