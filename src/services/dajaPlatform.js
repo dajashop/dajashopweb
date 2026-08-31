@@ -1029,23 +1029,41 @@ export const promotionsApi = {
 };
 
 export function subscribeRealtime(channels, onEvent, onError) {
-  const token = getStaffAccessToken();
-  if (!token) {
-    onError?.(new Error('Staff token nije dostupan za real-time vezu.'));
-    return () => {};
-  }
-  const socket = io(realtimeNamespaceUrl(), {
-    path: '/socket.io',
-    transports: ['websocket'],
-    auth: { token: `Bearer ${token}` },
-    reconnection: true,
-    reconnectionAttempts: 3,
-  });
-  channels.forEach((channel) => socket.on(channel, onEvent));
-  socket.on('connect_error', onError || (() => {}));
-  return () => {
+  let socket = null;
+
+  const disconnect = () => {
+    if (!socket) return;
     channels.forEach((channel) => socket.off(channel, onEvent));
     socket.close();
+    socket = null;
+  };
+
+  const connect = () => {
+    const token = getStaffAccessToken();
+    if (!token) {
+      onError?.(new Error('Staff token nije dostupan za real-time vezu.'));
+      return;
+    }
+    socket = io(realtimeNamespaceUrl(), {
+      path: '/socket.io',
+      transports: ['websocket'],
+      auth: { token: `Bearer ${token}` },
+      reconnection: true,
+      reconnectionAttempts: 3,
+    });
+    channels.forEach((channel) => socket.on(channel, onEvent));
+    socket.on('connect_error', onError || (() => {}));
+  };
+
+  connect();
+  const unsubscribeToken = onStaffAccessTokenChange(() => {
+    disconnect();
+    connect();
+  });
+
+  return () => {
+    unsubscribeToken();
+    disconnect();
   };
 }
 
