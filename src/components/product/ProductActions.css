@@ -65,3 +65,118 @@
   fill: #ef4444;
   color: #ef4444;
 }
+
+.product-actions .actions-container {
+  margin-bottom: 12px;
+}
+
+.stock-alert-button,
+.price-alert-button {
+  border: 1px solid var(--color-border, #e5e5e5);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.stock-alert-button {
+  flex: 1;
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 14px 20px;
+  border-color: #111;
+  border-radius: 14px;
+  background: #111;
+  color: #fff;
+}
+
+.stock-alert-button:hover,
+.price-alert-button:hover {
+  transform: translateY(-1px);
+}
+
+.price-alert-button {
+  width: 100%;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #111);
+  font-size: 0.9rem;
+}
+
+.stock-alert-button.is-subscribed,
+.price-alert-button.is-subscribed {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #15803d;
+  cursor: default;
+}
+
+.stock-alert-button:disabled,
+.price-alert-button:disabled,
+.product-alert-form button:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.product-alert-form {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border, #e5e5e5);
+  border-radius: 12px;
+  background: var(--color-surface, #fff);
+}
+
+.product-alert-form label {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--color-muted, #6b7280);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.product-alert-form__controls {
+  display: flex;
+  gap: 8px;
+}
+
+.product-alert-form input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 9px;
+  padding: 11px 12px;
+  background: transparent;
+  color: var(--color-text, #111);
+  font: inherit;
+}
+
+.product-alert-form button {
+  border: 0;
+  border-radius: 9px;
+  padding: 0 14px;
+  background: #111;
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .product-alert-form__controls {
+    flex-direction: column;
+  }
+
+  .product-alert-form button {
+    min-height: 42px;
+  }
+}

@@ -839,6 +839,15 @@ export const ordersApi = {
   },
 };
 
+export const productAlertsApi = {
+  subscribe(productId, payload) {
+    return apiRequest(`/products/${encodeURIComponent(productId)}/alerts`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+};
+
 export const mediaApi = {
   registerExternal(url, options = {}) {
     return apiRequest('/media/external', {

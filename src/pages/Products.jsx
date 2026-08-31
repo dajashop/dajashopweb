@@ -181,6 +181,7 @@ export default function Product() {
           <ProductVariants product={p} relatedVariants={relatedVariants} />
 
           <ProductActions
+            product={p}
             onAdd={handleAdd}
             onWishlist={handleWishlist}
             isLiked={isLiked}
