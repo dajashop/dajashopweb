@@ -169,7 +169,8 @@ export default function AdminOrders() {
               <React.Fragment key={order.id}>
                 {/* GLAVNI RED */}
                 <tr
-                  className={`transition-colors ${
+                  onClick={() => toggleDetails(order)}
+                  className={`cursor-pointer transition-colors ${
                     expandedOrderId === order.id
                       ? 'bg-neutral-50'
                       : !order.isRead
@@ -230,7 +231,16 @@ export default function AdminOrders() {
                   </td>
                   <td className="p-4 text-right">
                     <button
-                      onClick={() => toggleDetails(order)}
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleDetails(order);
+                      }}
+                      aria-label={
+                        expandedOrderId === order.id
+                          ? `Zatvori detalje porudžbine ${order.id}`
+                          : `Otvori detalje porudžbine ${order.id}`
+                      }
                       className="p-2 hover:bg-white rounded-lg text-neutral-500 hover:text-neutral-900 border border-transparent hover:border-neutral-200 transition-all"
                     >
                       <ChevronDown
