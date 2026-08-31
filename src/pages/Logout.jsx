@@ -48,7 +48,7 @@ export default function Logout() {
               Prijavi se
             </button>
             <Link to="/catalog" className="logout-page__guest">
-              Nastavi u gost modu
+              Nastavi kao gost
               <ArrowRight size={18} />
             </Link>
           </div>
