@@ -389,6 +389,15 @@ export default function AuthModal() {
     setIsSuggestedEmail(false);
   };
 
+  const handleSuggestedEmailPointerDown = (e) => {
+    if (!isSuggestedEmail) return;
+
+    e.preventDefault();
+    e.currentTarget.focus();
+    e.currentTarget.select();
+    setIsSuggestedEmail(false);
+  };
+
   const selectSuggestion = (val) => {
     setIdentity(val);
     setShowSuggestions(false);
@@ -713,7 +722,7 @@ export default function AuthModal() {
                                 Email ili telefon
                                 {loginPane && lastLogin?.provider === 'password' && (
                                   <small className="last-used-field-note">
-                                    {lastLogin.email}
+                                    Poslednje korišćeno
                                   </small>
                                 )}
                               </span>
@@ -826,6 +835,7 @@ export default function AuthModal() {
                                   onChange={handleIdentityChange}
                                   onKeyDown={handleKeyDown}
                                   onFocus={handleSuggestedEmailFocus}
+                                  onPointerDown={handleSuggestedEmailPointerDown}
                                   onBlur={handleBlur}
                                   required
                                   autoComplete="username"
