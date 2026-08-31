@@ -864,6 +864,10 @@ export default function AuthModal() {
                                   onBlur={handleBlur}
                                   required
                                   autoComplete="username"
+                                  inputMode={isPhone ? 'tel' : 'email'}
+                                  autoCapitalize="none"
+                                  autoCorrect="off"
+                                  spellCheck={false}
                                   className="real-input"
                                   style={{
                                     paddingLeft: isPhone ? '55px' : '0',
