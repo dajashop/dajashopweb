@@ -17,6 +17,7 @@ export default function Header() {
   const { count: wishlistCount } = useWishlist();
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadOrders, setUnreadOrders] = useState(0);
 
   const anchorRef = useRef(null);
 
@@ -61,9 +62,14 @@ export default function Header() {
             aria-controls="hm-panel"
             onClick={() => setMenuOpen((v) => !v)}
           >
-            <span></span>
-            <span></span>
-            <span></span>
+            <span className="hamburger__line"></span>
+            <span className="hamburger__line"></span>
+            <span className="hamburger__line"></span>
+            {unreadOrders > 0 && (
+              <span className="hamburger__notification" aria-label={`${unreadOrders} novih porudžbina`}>
+                {unreadOrders > 99 ? '99+' : unreadOrders}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -77,6 +83,7 @@ export default function Header() {
         cart={cart}
         user={user}
         anchorEl={anchorRef}
+        onUnreadOrdersChange={setUnreadOrders}
       />
     </header>
   );

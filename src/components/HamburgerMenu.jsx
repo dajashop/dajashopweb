@@ -44,6 +44,7 @@ export default function HamburgerMenu({
   count = 0,
   user = null,
   anchorEl = null,
+  onUnreadOrdersChange,
 }) {
   const isDesktop = useIsDesktop();
   const loc = useLocation();
@@ -55,7 +56,11 @@ export default function HamburgerMenu({
 
   // --- LISTENER ZA NEPROCITANE PORUDZBINE ---
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      setUnreadOrders(0);
+      onUnreadOrdersChange?.(0);
+      return;
+    }
 
     let cancelled = false;
     const refreshUnread = () => {
@@ -67,7 +72,9 @@ export default function HamburgerMenu({
         .adminList()
         .then((orders) => {
           if (!cancelled) {
-            setUnreadOrders(orders.filter((order) => !order.isRead).length);
+            const nextUnreadOrders = orders.filter((order) => !order.isRead).length;
+            setUnreadOrders(nextUnreadOrders);
+            onUnreadOrdersChange?.(nextUnreadOrders);
           }
         })
         .catch((error) => {
@@ -85,7 +92,7 @@ export default function HamburgerMenu({
       cancelled = true;
       unsubscribe?.();
     };
-  }, [isAdmin]);
+  }, [isAdmin, onUnreadOrdersChange]);
 
   useEffect(() => {
     if (open) onClose?.();
