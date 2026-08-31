@@ -141,7 +141,7 @@
 .last-used-badge::before {
   content: '';
   position: absolute;
-  top: -8px;
+  top: -7px;
   left: 50%;
   transform: translateX(-50%);
   border-right: 7px solid transparent;
@@ -268,7 +268,7 @@
 .last-used-field-note::before {
   content: '';
   position: absolute;
-  bottom: -8px;
+  bottom: -7px;
   left: 11px;
   border-top: 7px solid #ef4444;
   border-right: 7px solid transparent;
