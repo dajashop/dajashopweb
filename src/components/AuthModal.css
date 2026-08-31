@@ -128,8 +128,8 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 5px 10px;
-  border: 2px solid #f87171;
-  border-radius: 0;
+  border: 0;
+  border-radius: 4px;
   background: #ef4444;
   color: #fff;
   font-weight: 700;
