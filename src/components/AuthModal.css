@@ -113,6 +113,38 @@
 .btn-oauth span {
   font-weight: 600;
 }
+.btn-oauth--last-used {
+  position: relative;
+  border-color: color-mix(
+    in oklab,
+    var(--color-primary, #111) 32%,
+    var(--color-accent, #d2d2d7)
+  );
+  background: color-mix(
+    in oklab,
+    var(--color-primary, #111) 5%,
+    var(--color-surface, #f5f5f7)
+  );
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.06);
+}
+.last-used-badge {
+  position: absolute;
+  top: -9px;
+  right: 8px;
+  padding: 2px 6px;
+  border: 1px solid color-mix(
+    in oklab,
+    var(--color-primary, #111) 14%,
+    transparent
+  );
+  border-radius: 999px;
+  background: var(--color-surface, #f5f5f7);
+  color: var(--color-muted, #6e6e73);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
 .btn-oauth:disabled,
 .icon-btn:disabled {
   cursor: wait;
@@ -214,6 +246,12 @@
   font-size: 12px;
   color: var(--color-muted, #6e6e73);
   margin-bottom: 6px;
+}
+.last-used-field-note {
+  margin-left: 8px;
+  color: var(--color-primary, #111);
+  font-size: 0.65rem;
+  font-weight: 700;
 }
 
 /* --- INPUT STYLES --- */

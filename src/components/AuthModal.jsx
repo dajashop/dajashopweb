@@ -50,6 +50,39 @@ const REGEX = {
   passwordStrong: /^(?=.*[A-Z])(?=.*\d).{8,}$/,
 };
 
+const LAST_LOGIN_STORAGE_KEY = 'daja_last_login';
+const LAST_LOGIN_PROVIDERS = ['password', 'google', 'facebook', 'passkey'];
+
+function readLastLogin() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(LAST_LOGIN_STORAGE_KEY) || 'null');
+    const email = String(saved?.email || '').trim().toLowerCase();
+    if (!saved || !LAST_LOGIN_PROVIDERS.includes(saved.provider)) {
+      return null;
+    }
+    if (saved.provider === 'password' && !REGEX.email.test(email)) return null;
+    return { provider: saved.provider, ...(REGEX.email.test(email) ? { email } : {}) };
+  } catch {
+    return null;
+  }
+}
+
+function saveLastLogin(provider, email) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!LAST_LOGIN_PROVIDERS.includes(provider)) return null;
+  if (provider === 'password' && !REGEX.email.test(normalizedEmail)) return null;
+  const value = {
+    provider,
+    ...(REGEX.email.test(normalizedEmail) ? { email: normalizedEmail } : {}),
+  };
+  try {
+    window.localStorage.setItem(LAST_LOGIN_STORAGE_KEY, JSON.stringify(value));
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 const ErrorMessage = ({ message }) => (
   <motion.div
     initial={{ opacity: 0, y: -8, height: 0, marginTop: 0 }}
@@ -65,6 +98,7 @@ const ErrorMessage = ({ message }) => (
 
 export default function AuthModal() {
   const {
+    user,
     authOpen,
     hideAuth,
     mode,
@@ -92,6 +126,8 @@ export default function AuthModal() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const [lastLogin, setLastLogin] = useState(readLastLogin);
+  const [isSuggestedEmail, setIsSuggestedEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [oauthWaking, setOauthWaking] = useState(false);
   const [oauthWakeupAttempt, setOauthWakeupAttempt] = useState(0);
@@ -140,7 +176,17 @@ export default function AuthModal() {
   }, [authOpen]);
 
   useEffect(() => {
+    const savedLogin = readLastLogin();
+    const shouldSuggestEmail = Boolean(
+      authOpen && mode === 'login' && savedLogin?.provider === 'password',
+    );
+
+    setLastLogin(savedLogin);
+    setIdentity(shouldSuggestEmail ? savedLogin.email : '');
+    setIsSuggestedEmail(shouldSuggestEmail);
     setPassword('');
+    setName('');
+    setShowPass(false);
     setSmsCode('');
     setAwaitPhoneCode(false);
     setSentTo('');
@@ -153,7 +199,7 @@ export default function AuthModal() {
     setOauthWaking(false);
     setOauthWakeupAttempt(0);
     setOauthProvider('');
-  }, [mode]);
+  }, [authOpen, mode]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -215,6 +261,7 @@ export default function AuthModal() {
 
   const handleIdentityChange = (e) => {
     let val = e.target.value;
+    setIsSuggestedEmail(false);
 
     if (/[a-zA-Z@]/.test(val)) {
       const detectedPrefix = COUNTRY_CODES.find((c) => val.startsWith(c.dial));
@@ -336,6 +383,12 @@ export default function AuthModal() {
     }
   };
 
+  const handleSuggestedEmailFocus = (e) => {
+    if (!isSuggestedEmail) return;
+    window.requestAnimationFrame(() => e.currentTarget.select());
+    setIsSuggestedEmail(false);
+  };
+
   const selectSuggestion = (val) => {
     setIdentity(val);
     setShowSuggestions(false);
@@ -362,11 +415,14 @@ export default function AuthModal() {
   }
 
   useEffect(() => {
-    if (!oauthJustSucceeded) return;
+    if (!oauthJustSucceeded || !user?.email) return;
+
+    const savedLogin = saveLastLogin('google', user.email);
+    if (savedLogin) setLastLogin(savedLogin);
 
     openFlash('Google prijava uspešna', 'Uspešno ste prijavljeni putem Google naloga.');
     dismissOauthSuccess();
-  }, [oauthJustSucceeded, dismissOauthSuccess]);
+  }, [oauthJustSucceeded, user?.email, dismissOauthSuccess]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -382,6 +438,8 @@ export default function AuthModal() {
           setAwaitPhoneCode(true);
           setSentTo(identity);
         } else {
+          const savedLogin = saveLastLogin('password', r?.email || identity);
+          if (savedLogin) setLastLogin(savedLogin);
           hideAuth();
           openFlash('Prijava uspešna', 'Dobro došli nazad! ⌚');
         }
@@ -435,6 +493,13 @@ export default function AuthModal() {
 
   async function handleOauth(provider) {
     try {
+      if (isLogin) {
+        const savedLogin = saveLastLogin(
+          provider,
+          lastLogin?.provider === provider ? lastLogin.email : undefined,
+        );
+        if (savedLogin) setLastLogin(savedLogin);
+      }
       setLoading(true);
       setOauthProvider(provider);
       setOauthWakeupAttempt(1);
@@ -454,6 +519,8 @@ export default function AuthModal() {
     setLoading(true);
     try {
       if (isLogin) {
+        const savedLogin = saveLastLogin('passkey');
+        if (savedLogin) setLastLogin(savedLogin);
         await passkeyLogin();
         hideAuth();
         openFlash('Uspeh', 'Prijavljeni ste putem Passkey-a! 🔑');
@@ -642,7 +709,14 @@ export default function AuthModal() {
                               className="field"
                               ref={loginPane ? loginWrapperRef : regWrapperRef}
                             >
-                              <span>Email ili telefon</span>
+                              <span>
+                                Email ili telefon
+                                {loginPane && lastLogin?.provider === 'password' && (
+                                  <small className="last-used-field-note">
+                                    Poslednje korišćeno
+                                  </small>
+                                )}
+                              </span>
                               <div
                                 className={`input ghost-container ${
                                   errors.identity ? 'input-error' : ''
@@ -751,6 +825,7 @@ export default function AuthModal() {
                                   value={identity}
                                   onChange={handleIdentityChange}
                                   onKeyDown={handleKeyDown}
+                                  onFocus={handleSuggestedEmailFocus}
                                   onBlur={handleBlur}
                                   required
                                   autoComplete="username"
@@ -872,7 +947,11 @@ export default function AuthModal() {
                             <div className="oauth-row">
                               <button
                                 type="button"
-                                className="btn-oauth"
+                                className={`btn-oauth ${
+                                  loginPane && lastLogin?.provider === 'google'
+                                    ? 'btn-oauth--last-used'
+                                    : ''
+                                }`}
                                 onClick={() => handleOauth('google')}
                                 disabled={loading}
                               >
@@ -888,19 +967,37 @@ export default function AuthModal() {
                                   />
                                 </svg>
                                 <span>Google</span>
+                                {loginPane && lastLogin?.provider === 'google' && (
+                                  <small className="last-used-badge">
+                                    Poslednje korišćeno
+                                  </small>
+                                )}
                               </button>
                               <button
                                 type="button"
-                                className="btn-oauth"
+                                className={`btn-oauth ${
+                                  loginPane && lastLogin?.provider === 'facebook'
+                                    ? 'btn-oauth--last-used'
+                                    : ''
+                                }`}
                                 onClick={() => handleOauth('facebook')}
                                 disabled={loading}
                               >
                                 <Facebook size={18} />
                                 <span>Facebook</span>
+                                {loginPane && lastLogin?.provider === 'facebook' && (
+                                  <small className="last-used-badge">
+                                    Poslednje korišćeno
+                                  </small>
+                                )}
                               </button>
                               <button
                                 type="button"
-                                className="btn-oauth"
+                                className={`btn-oauth ${
+                                  loginPane && lastLogin?.provider === 'passkey'
+                                    ? 'btn-oauth--last-used'
+                                    : ''
+                                }`}
                                 onClick={handlePasskey}
                                 disabled={loading}
                                 style={{
@@ -918,6 +1015,11 @@ export default function AuthModal() {
                                     ? 'Prijavi se Passkey-om'
                                     : 'Registruj se Passkey-om'}
                                 </span>
+                                {loginPane && lastLogin?.provider === 'passkey' && (
+                                  <small className="last-used-badge">
+                                    Poslednje korišćeno
+                                  </small>
+                                )}
                               </button>
                             </div>
                           </form>
