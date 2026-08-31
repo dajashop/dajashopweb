@@ -713,7 +713,7 @@ export default function AuthModal() {
                                 Email ili telefon
                                 {loginPane && lastLogin?.provider === 'password' && (
                                   <small className="last-used-field-note">
-                                    Poslednje korišćeno
+                                    {lastLogin.email}
                                   </small>
                                 )}
                               </span>
@@ -944,7 +944,14 @@ export default function AuthModal() {
                                 ? 'Prijavi se'
                                 : 'Napravi nalog'}
                             </motion.button>
-                            <div className="oauth-row">
+                            <div
+                              className={`oauth-row ${
+                                loginPane &&
+                                ['google', 'facebook', 'passkey'].includes(lastLogin?.provider)
+                                  ? 'oauth-row--has-last-used'
+                                  : ''
+                              }`}
+                            >
                               <button
                                 type="button"
                                 className={`btn-oauth ${
