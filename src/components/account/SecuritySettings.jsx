@@ -70,9 +70,7 @@ const SecuritySettings = () => {
   };
 
   // Provera da li je Google već povezan
-  const isGoogleLinked = user?.providerData.some(
-    (p) => p.providerId === 'google.com'
-  );
+  const isGoogleLinked = Boolean(user?.googleLinked);
 
   // Provera da li je Passkey povezan
   const isPasskeyLinked = user?.providerData.some(

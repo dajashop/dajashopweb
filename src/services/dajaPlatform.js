@@ -129,6 +129,8 @@ function normalizeUser(data) {
     phoneNumber: user.phoneNumber || user.phone_number || user.phone || '',
     emailVerified: Boolean(user.emailVerified || user.email_verified),
     providerData: user.providerData || user.identities || [],
+    hasPassword: Boolean(user.hasPassword ?? user.has_password),
+    googleLinked: Boolean(user.googleLinked ?? user.google_linked),
   };
 }
 
@@ -787,10 +789,14 @@ export const customerApi = {
       body: { phone, code, purpose: 'link' },
     });
   },
-  updatePassword() {
-    return Promise.reject(
-      new Error('Izmena lozinke još nije dostupna u DAJA Platform API-ju.'),
-    );
+  updatePassword({ currentPassword, newPassword }) {
+    return apiRequest('/customer-auth/password', {
+      method: 'POST',
+      body: {
+        ...(currentPassword ? { currentPassword } : {}),
+        newPassword,
+      },
+    });
   },
   linkOAuth(provider) {
     window.location.assign(

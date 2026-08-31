@@ -46,7 +46,7 @@ export default function SecuritySection({ user }) {
 
   // --- PASSKEY HOOK ---
   const { registerPasskey, loading: pkLoading, error: pkError } = usePasskey();
-  const { linkPasskey } = useAuth();
+  const { linkPasskey, refreshUser } = useAuth();
   const [isPasskeyEnabled, setIsPasskeyEnabled] = useState(false); // Idealno povući sa servera
 
   // State za Lozinku
@@ -58,9 +58,8 @@ export default function SecuritySection({ user }) {
   });
 
   // Google Linked Status
-  const isGoogleLinked = user?.providerData.some(
-    (p) => p.providerId === 'google.com'
-  );
+  const hasPassword = Boolean(user?.hasPassword);
+  const isGoogleLinked = Boolean(user?.googleLinked);
 
   // --- HANDLER ZA GOOGLE ---
   const handleGoogleLink = async () => {
@@ -92,8 +91,8 @@ export default function SecuritySection({ user }) {
 
   const onUpdatePassword = async (e) => {
     e.preventDefault();
-    if (passForm.new.length < 6) {
-      flash('Greška', 'Lozinka mora imati bar 6 karaktera.', 'error');
+    if (passForm.new.length < 8) {
+      flash('Greška', 'Lozinka mora imati bar 8 karaktera.', 'error');
       return;
     }
     if (passForm.new !== passForm.confirm) {
@@ -103,14 +102,25 @@ export default function SecuritySection({ user }) {
 
     setLoading(true);
     try {
-      await customerApi.updatePassword(passForm.current, passForm.new);
+      await customerApi.updatePassword({
+        currentPassword: hasPassword ? passForm.current : undefined,
+        newPassword: passForm.new,
+      });
+      await refreshUser();
 
-      flash('Uspeh', 'Lozinka je uspešno promenjena.', 'success');
+      flash(
+        'Uspeh',
+        hasPassword
+          ? 'Lozinka je uspešno promenjena.'
+          : 'Lozinka je dodata. Sada se možete prijaviti i emailom i lozinkom.',
+        'success',
+      );
       setIsEditingPassword(false);
       setPassForm({ current: '', new: '', confirm: '' });
     } catch (error) {
       console.error(error);
       if (
+        error.status === 401 ||
         error.code === 'auth/wrong-password' ||
         error.code === 'auth/invalid-credential'
       ) {
@@ -148,7 +158,9 @@ export default function SecuritySection({ user }) {
                     Lozinka
                   </h4>
                   <p className="text-xs text-[var(--color-muted)]">
-                    Poslednja izmena: pre 3 meseca
+                    {hasPassword
+                      ? 'Prijava emailom i lozinkom'
+                      : 'Dodajte alternativni način prijave'}
                   </p>
                 </div>
               </div>
@@ -158,7 +170,7 @@ export default function SecuritySection({ user }) {
                   onClick={() => setIsEditingPassword(true)}
                   className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-bg-subtle)] text-xs font-bold text-[var(--color-text)] transition shadow-sm"
                 >
-                  Promeni lozinku
+                  {hasPassword ? 'Promeni lozinku' : 'Dodaj lozinku'}
                 </button>
               )}
             </div>
@@ -173,13 +185,13 @@ export default function SecuritySection({ user }) {
                     className="h-full flex flex-col justify-between"
                   >
                     <p className="text-sm text-[var(--color-muted)] leading-relaxed">
-                      Koristite jaku lozinku koju ne koristite na drugim
-                      sajtovima. Preporučujemo kombinaciju slova, brojeva i
-                      simbola.
+                      {hasPassword
+                        ? 'Koristite jaku lozinku koju ne koristite na drugim sajtovima. Preporučujemo kombinaciju slova, brojeva i simbola.'
+                        : 'Prijavljeni ste preko Google naloga. Dodajte lozinku ako želite da se ubuduće prijavite i emailom, kada vam Google prijava nije praktična.'}
                     </p>
                     <div className="mt-4 flex items-center gap-2 text-xs font-medium text-green-500 bg-green-500/10 px-3 py-1.5 rounded-lg w-fit">
                       <CheckCircle2 size={14} />
-                      <span>Lozinka je aktivna</span>
+                      <span>{hasPassword ? 'Lozinka je aktivna' : 'Google prijava je aktivna'}</span>
                     </div>
                   </motion.div>
                 ) : (
@@ -190,22 +202,24 @@ export default function SecuritySection({ user }) {
                     onSubmit={onUpdatePassword}
                     className="flex flex-col gap-3 mt-2"
                   >
-                    <div className="input-group">
-                      <input
-                        type="password"
-                        name="current"
-                        placeholder="Trenutna lozinka"
-                        value={passForm.current}
-                        onChange={handlePassChange}
-                        required
-                        className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[1rem] focus:border-[var(--color-primary)] outline-none text-[var(--color-text)]"
-                      />
-                    </div>
+                    {hasPassword && (
+                      <div className="input-group">
+                        <input
+                          type="password"
+                          name="current"
+                          placeholder="Trenutna lozinka"
+                          value={passForm.current}
+                          onChange={handlePassChange}
+                          required
+                          className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-[1rem] focus:border-[var(--color-primary)] outline-none text-[var(--color-text)]"
+                        />
+                      </div>
+                    )}
                     <div className="input-group">
                       <input
                         type="password"
                         name="new"
-                        placeholder="Nova lozinka (min. 6)"
+                        placeholder="Nova lozinka (min. 8)"
                         value={passForm.new}
                         onChange={handlePassChange}
                         required
@@ -341,7 +355,9 @@ export default function SecuritySection({ user }) {
               Google Nalog
             </h4>
             <p className="text-xs text-[var(--color-muted)]">
-              Povežite Google nalog za brzu prijavu jednim klikom.
+              {isGoogleLinked
+                ? 'Google nalog je povezan za brzu prijavu jednim klikom.'
+                : 'Povežite Google nalog za brzu prijavu jednim klikom.'}
             </p>
           </div>
         </div>
