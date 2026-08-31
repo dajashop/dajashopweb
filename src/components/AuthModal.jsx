@@ -279,7 +279,10 @@ export default function AuthModal() {
 
     setIdentity(val);
     setPrediction('');
-    if (errors.identity) setErrors((prev) => ({ ...prev, identity: null }));
+    setErrors((prev) => ({
+      ...prev,
+      identity: getLiveValidationError('identity', val),
+    }));
 
     const isPhoneStart = /^(\+?[\d]{2,})/.test(val) && !/[a-zA-Z@]/.test(val);
 
@@ -343,6 +346,22 @@ export default function AuthModal() {
     }
   };
 
+  const getLiveValidationError = (fieldName, value) => {
+    const cleanVal = value ? value.trim() : '';
+
+    if (!cleanVal) {
+      return submitCount > 0 ? validateField(fieldName, value) : null;
+    }
+
+    if (fieldName === 'identity') return validateField(fieldName, value);
+
+    if (fieldName === 'password' && !isLogin && !isPhone) {
+      return validateField(fieldName, value);
+    }
+
+    return submitCount > 0 ? validateField(fieldName, value) : null;
+  };
+
   const handleBlur = (e) => {
     if (dropdownRef.current && dropdownRef.current.contains(e.relatedTarget)) {
       return;
@@ -357,22 +376,28 @@ export default function AuthModal() {
         setIdentity(valToValidate);
         setPrediction('');
       }
-      if (isPhone) return;
     }
 
-    const error = validateField(name, valToValidate);
+    const error = getLiveValidationError(name, valToValidate);
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   const handlePasswordChange = (e) => {
-    setPassword(e.target.value);
-    if (errors.password) setErrors((prev) => ({ ...prev, password: null }));
+    const { value } = e.target;
+    setPassword(value);
+    setErrors((prev) => ({
+      ...prev,
+      password: getLiveValidationError('password', value),
+    }));
   };
 
   const handleNameChange = (e) => {
     const val = e.target.value.replace(/(^\w|\s\w)/g, (m) => m.toUpperCase());
     setName(val);
-    if (errors.name) setErrors((prev) => ({ ...prev, name: null }));
+    setErrors((prev) => ({
+      ...prev,
+      name: getLiveValidationError('name', val),
+    }));
   };
 
   const handleKeyDown = (e) => {
