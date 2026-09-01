@@ -30,7 +30,10 @@ export function loadCloudflareWebAnalytics() {
   script.type = 'module';
   script.async = true;
   script.src = SCRIPT_SRC;
-  script.dataset.cfBeacon = JSON.stringify({ token });
+  // Cloudflare's current SPA soft-navigation collector can throw inside its
+  // own web-vitals code. Keep normal page-load analytics, but opt out of that
+  // optional client-side route tracking until Cloudflare fixes the beacon.
+  script.dataset.cfBeacon = JSON.stringify({ token, spa: false });
   document.head.appendChild(script);
   return true;
 }
