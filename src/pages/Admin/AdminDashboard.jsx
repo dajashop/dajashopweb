@@ -86,6 +86,7 @@ const AUDIT_OPERATION_LABELS = {
   publish: 'Objavljen artikal',
   unpublish: 'Sakriven artikal',
   price_change: 'Izmenjena cena',
+  adjust: 'Izmenjeno stanje',
 };
 
 const AUDIT_FIELD_LABELS = {
@@ -111,6 +112,21 @@ const AUDIT_FIELD_LABELS = {
   seo: 'SEO podaci',
   marketingFlags: 'Marketinške oznake',
   model3DUrl: '3D model',
+  quantity: 'Količina na stanju',
+  quantityDelta: 'Razlika',
+  locationId: 'Lokacija',
+  zoneId: 'Zona',
+  binId: 'Polica',
+  sourceType: 'Razlog izmene',
+};
+
+const INVENTORY_SOURCE_LABELS = {
+  admin_product_save: 'Admin: čuvanje artikla',
+  admin_product_quantity_change: 'Admin: ručna izmena količine',
+  inventory_item_create: 'Dodavanje komada na stanje',
+  inventory_item_move: 'Premeštanje komada',
+  rfiddaja_sync: 'RFID aplikacija',
+  rfiddaja_tag_placement: 'Postavljanje RFID taga',
 };
 
 const AUDIT_IGNORED_FIELDS = new Set([
@@ -128,6 +144,9 @@ const auditValuesMatch = (before, after) =>
 const formatAuditValue = (value, field, payload) => {
   if (value === null || value === undefined || value === '') return '—';
   if (typeof value === 'boolean') return value ? 'Da' : 'Ne';
+  if (field === 'sourceType') {
+    return INVENTORY_SOURCE_LABELS[value] || String(value);
+  }
   if (field === 'currentPriceAmount' && Number.isFinite(Number(value))) {
     return `${(Number(value) / 100).toLocaleString('sr-RS', {
       minimumFractionDigits: 2,
@@ -266,6 +285,18 @@ const AUDIT_DETAIL_TABS = [
     id: 'seo',
     label: 'SEO i marketing',
     fields: ['seo', 'marketingFlags', 'model3DUrl'],
+  },
+  {
+    id: 'inventory',
+    label: 'Stanje',
+    fields: [
+      'quantity',
+      'quantityDelta',
+      'locationId',
+      'zoneId',
+      'binId',
+      'sourceType',
+    ],
   },
 ];
 
@@ -1002,7 +1033,7 @@ export default function AdminDashboard() {
                 Dnevnik aktivnosti artikala
               </h2>
               <p className="text-sm text-neutral-500 mt-1">
-                Ko je dodao, izmenio, sakrio ili obrisao artikal.
+                Ko je menjao artikal ili njegovo stanje na lageru.
               </p>
             </div>
 
@@ -1107,6 +1138,15 @@ export default function AdminDashboard() {
                               <td colSpan="5" className="p-4">
                                 {selectedDetailTab ? (
                                   <div>
+                                    {event.reason && (
+                                      <p className="mb-3 text-sm text-neutral-600">
+                                        <span className="font-semibold text-neutral-800">
+                                          Razlog:
+                                        </span>{' '}
+                                        {INVENTORY_SOURCE_LABELS[event.reason] ||
+                                          event.reason}
+                                      </p>
+                                    )}
                                     <div className="mb-4 flex flex-wrap gap-2 border-b border-neutral-200 pb-3">
                                       {detailTabs.map((tab) => (
                                         <button

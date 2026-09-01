@@ -152,6 +152,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   // Only media uploaded during this modal can be discarded on cancellation.
   // Existing product media is deleted only after a successful save.
   const pendingUploadIdsRef = useRef(new Set());
+  // Stock is a separate, safety-critical operation.  Saving a title, price,
+  // image or SEO field must never reconcile stock unless the quantity input
+  // itself was explicitly edited during this modal session.
+  const quantityEditedRef = useRef(false);
   // EPCs are represented by RFID tags, not by the product PATCH payload. Keep
   // the initially loaded EPC so a removal (or replacement) can unassign its
   // tag after the product itself is saved.
@@ -199,6 +203,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     setDeletedVariantIds([]);
     setRemovedMediaLinkIds([]);
     pendingUploadIdsRef.current.clear();
+    quantityEditedRef.current = false;
     slugManuallyEditedRef.current = Boolean(product);
     initialEpcRef.current = validateEpcInput(product?.epc || '').value;
     const sub1 = brandService.subscribe(setBrands);
@@ -383,6 +388,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   }, []);
 
   const handleChange = (field, value) => {
+    if (field === 'quantity') quantityEditedRef.current = true;
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       // The storefront URL and the R2 media folder follow the product name.
@@ -511,6 +517,20 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   const handleSubmit = async () => {
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
+    const shouldReconcileQuantity = !product || quantityEditedRef.current;
+    const quantityInput = String(form.quantity ?? '').trim();
+    const requestedQuantity = Number(quantityInput);
+    if (
+      shouldReconcileQuantity &&
+      (!quantityInput || !Number.isInteger(requestedQuantity) || requestedQuantity < 0)
+    ) {
+      setFlash({
+        open: true,
+        title: 'Količina mora biti ceo broj nula ili veći.',
+        ok: false,
+      });
+      return;
+    }
     if (epcValidation.error) {
       setFlash({ open: true, title: epcValidation.error, ok: false });
       return;
@@ -649,7 +669,6 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           await adminCatalogApi.listVariants(savedProductId);
         const primaryVariant = savedVariants[0];
         if (primaryVariant?.id) {
-          const quantity = Number(form.quantity) || 0;
           let taggedItem = null;
           const previousEpc = epcBeforeSave;
           const epcChanged = previousEpc !== epcValidation.value;
@@ -698,7 +717,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
               });
             }
           }
-          if (form.locationId && Number.isFinite(quantity)) {
+          // Existing articles only change stock after the admin has edited the
+          // quantity field.  A regular product save used to turn a missing or
+          // stale form value into zero and silently remove stock.
+          if (form.locationId && shouldReconcileQuantity) {
             const balances = await inventoryApi.balances(primaryVariant.id);
             const balanceRows = Array.isArray(balances)
               ? balances
@@ -720,29 +742,31 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   ),
                 0,
               );
-            const quantityDelta = quantity - currentQuantity;
-            const currentPlacement = locationBalances[0];
+            const quantityDelta = requestedQuantity - currentQuantity;
             const selectedZoneId = form.zoneId || null;
             const selectedBinId = form.binId || null;
-            const placementChanged =
-              (currentPlacement?.zoneId ?? currentPlacement?.zone_id ?? null) !==
-                selectedZoneId ||
-              (currentPlacement?.binId ?? currentPlacement?.bin_id ?? null) !==
-                selectedBinId;
-            if (quantityDelta !== 0 || placementChanged) {
+            if (quantityDelta !== 0) {
               await inventoryApi.adjust({
                 variantId: primaryVariant.id,
                 locationId: form.locationId,
                 zoneId: selectedZoneId,
                 binId: selectedBinId,
                 quantityDelta,
-                sourceType: 'admin_product_save',
+                sourceType: 'admin_product_quantity_change',
+                metadata: {
+                  previousQuantity: currentQuantity,
+                  requestedQuantity,
+                },
               });
             }
           }
           // Publish a new catalog snapshot after inventory/EPC changes so the
           // RFID desktop app receives the current quantity and tag data.
-          if (epcChanged || epcValidation.value || (form.locationId && quantity > 0)) {
+          if (
+            epcChanged ||
+            epcValidation.value ||
+            (form.locationId && shouldReconcileQuantity && requestedQuantity > 0)
+          ) {
             await adminCatalogApi.refreshVariant(primaryVariant.id, {
               attributes: form.specs || {},
             });
