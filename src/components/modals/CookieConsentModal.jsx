@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, ChevronLeft, Cookie, MapPinned, Settings2, ShieldCheck, X } from 'lucide-react';
+import { BarChart3, Check, ChevronLeft, Cookie, MapPinned, Settings2, ShieldCheck, X } from 'lucide-react';
 import './CookieConsentModal.css';
 
 export default function CookieConsentModal({
@@ -15,6 +15,7 @@ export default function CookieConsentModal({
   const [settings, setSettings] = useState(false);
   const [preferences, setPreferences] = useState(false);
   const [externalGoogle, setExternalGoogle] = useState(false);
+  const [analytics, setAnalytics] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -23,9 +24,10 @@ export default function CookieConsentModal({
     setSettings(forceSettings);
     setPreferences(initialCategories?.preferences === true);
     setExternalGoogle(initialCategories?.externalGoogle === true);
+    setAnalytics(initialCategories?.analytics === true);
     setSaving(false);
     setError('');
-  }, [forceSettings, initialCategories?.externalGoogle, initialCategories?.preferences, open, policy?.version]);
+  }, [forceSettings, initialCategories?.analytics, initialCategories?.externalGoogle, initialCategories?.preferences, open, policy?.version]);
 
   if (!open) return null;
 
@@ -51,6 +53,7 @@ export default function CookieConsentModal({
               Koristimo samo neophodnu memoriju dok ne izaberete dodatna podešavanja.
               Newsletter i obaveštenja o artiklima se uključuju zasebno.
             </p>
+            <p className="cookie-consent__subcopy">„Prihvati sve” uključuje podešavanja, Google Maps i Cloudflare analitiku.</p>
             <p className="cookie-consent__links">
               Pročitajte <a href="/cookies">politiku kolačića</a> i <a href="/privacy">politiku privatnosti</a>.
             </p>
@@ -93,12 +96,16 @@ export default function CookieConsentModal({
               <span><MapPinned size={19} /><strong>Google Maps</strong><small>Mapa i automatski unos adrese preko Google-a.</small></span>
               <input type="checkbox" checked={externalGoogle} onChange={(event) => setExternalGoogle(event.target.checked)} disabled={saving} />
             </label>
+            <label className="cookie-consent__category">
+              <span><BarChart3 size={19} /><strong>Analitika</strong><small>Cloudflare Web Analytics meri posete i performanse sajta tek nakon vašeg pristanka.</small></span>
+              <input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} disabled={saving} />
+            </label>
             {error && <p className="cookie-consent__error">{error}</p>}
             <button
               type="button"
               className="cookie-consent__primary cookie-consent__save"
               disabled={saving}
-              onClick={() => run(() => onSave({ preferences, externalGoogle }))}
+              onClick={() => run(() => onSave({ preferences, externalGoogle, analytics }))}
             >
               <Check size={18} /> {saving ? 'Čuvamo…' : 'Sačuvaj izbor'}
             </button>

@@ -9,11 +9,15 @@ import {
   setConsentStorageState,
   writeConsentRecord,
 } from '../services/consentStorage.js';
+import {
+  loadCloudflareWebAnalytics,
+  removeCloudflareWebAnalyticsScript,
+} from '../services/cloudflareWebAnalytics.js';
 import { unloadGoogleMaps } from '../services/googleMaps.js';
 
 const FALLBACK_POLICY = {
-  version: '2026-09-01-draft',
-  material: false,
+  version: '2026-09-01-analytics-draft',
+  material: true,
   changeSummary: '',
   ready: false,
 };
@@ -22,6 +26,7 @@ function normalizeCategories(value) {
   return {
     preferences: value?.preferences === true,
     externalGoogle: value?.externalGoogle === true,
+    analytics: value?.analytics === true,
   };
 }
 
@@ -33,6 +38,7 @@ export function ConsentProvider({ children }) {
   const [googlePromptOpen, setGooglePromptOpen] = useState(false);
   const [googleSaving, setGoogleSaving] = useState(false);
   const googleResolver = useRef(null);
+  const analyticsWasAllowed = useRef(false);
 
   const applyDecision = useCallback((nextDecision, { persist = true } = {}) => {
     const categories = normalizeCategories(nextDecision.categories);
@@ -47,9 +53,18 @@ export function ConsentProvider({ children }) {
       ready: true,
       preferences: categories.preferences,
       externalGoogle: categories.externalGoogle,
+      analytics: categories.analytics,
     });
     if (!categories.preferences) clearOptionalStorage();
     if (!categories.externalGoogle) unloadGoogleMaps();
+    if (analyticsWasAllowed.current && !categories.analytics) {
+      // Cloudflare's beacon registers SPA listeners after it has loaded. A
+      // clean reload is the reliable way to end a granted session immediately
+      // when the visitor withdraws consent.
+      removeCloudflareWebAnalyticsScript();
+      window.setTimeout(() => window.location.reload(), 0);
+    }
+    analyticsWasAllowed.current = categories.analytics;
   }, []);
 
   useEffect(() => {
@@ -100,6 +115,10 @@ export function ConsentProvider({ children }) {
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, [applyDecision]);
+
+  useEffect(() => {
+    if (decision?.categories?.analytics) loadCloudflareWebAnalytics();
+  }, [decision?.categories?.analytics]);
 
   const save = useCallback(async (categories, action = 'granted') => {
     const response = await privacyApi.recordConsent(
@@ -154,10 +173,11 @@ export function ConsentProvider({ children }) {
     categories: normalizeCategories(decision?.categories),
     preferencesAllowed: decision?.categories?.preferences === true,
     googleAllowed: decision?.categories?.externalGoogle === true,
+    analyticsAllowed: decision?.categories?.analytics === true,
     policy,
     openSettings: () => setSettingsOpen(true),
     saveSettings: (categories) => save(categories, 'updated'),
-    withdrawOptional: () => save({ preferences: false, externalGoogle: false }, 'revoked'),
+    withdrawOptional: () => save({ preferences: false, externalGoogle: false, analytics: false }, 'revoked'),
     requestGooglePermission,
   }), [decision, loading, policy, requestGooglePermission, save]);
 
@@ -170,8 +190,8 @@ export function ConsentProvider({ children }) {
         forceSettings={Boolean(decision && settingsOpen)}
         initialCategories={decision?.categories}
         onCloseSettings={() => setSettingsOpen(false)}
-        onNecessary={() => save({ preferences: false, externalGoogle: false })}
-        onAll={() => save({ preferences: true, externalGoogle: true })}
+        onNecessary={() => save({ preferences: false, externalGoogle: false, analytics: false })}
+        onAll={() => save({ preferences: true, externalGoogle: true, analytics: true })}
         onSave={(categories) => save(categories)}
       />
       {googlePromptOpen && (

@@ -10,6 +10,7 @@ let state = {
   ready: false,
   preferences: false,
   externalGoogle: false,
+  analytics: false,
 };
 
 export function setConsentStorageState(next) {
@@ -17,6 +18,7 @@ export function setConsentStorageState(next) {
     ready: Boolean(next?.ready),
     preferences: Boolean(next?.preferences),
     externalGoogle: Boolean(next?.externalGoogle),
+    analytics: Boolean(next?.analytics),
   };
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('daja:consent-state', { detail: state }));
@@ -37,6 +39,10 @@ export function isPreferenceStorageAllowed() {
 
 export function isGoogleAllowed() {
   return state.ready && state.externalGoogle;
+}
+
+export function isAnalyticsAllowed() {
+  return state.ready && state.analytics;
 }
 
 export function readStoredValue(key, category = 'necessary') {
