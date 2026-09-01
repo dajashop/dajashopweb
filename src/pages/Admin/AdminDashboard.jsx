@@ -28,6 +28,7 @@ import {
   Eye, // <--- NOVA IKONA
   EyeOff, // <--- NOVA IKONA
   ClipboardList,
+  ChevronDown,
 } from 'lucide-react';
 import useProducts from '../../hooks/useProducts';
 import {
@@ -1038,7 +1039,33 @@ export default function AdminDashboard() {
 
                       return (
                         <React.Fragment key={event.id}>
-                          <tr className="hover:bg-neutral-50">
+                          <tr
+                            className="cursor-pointer hover:bg-neutral-50"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={isExpanded}
+                            onClick={() => {
+                              setExpandedAuditId(
+                                isExpanded ? null : event.id,
+                              );
+                              if (!isExpanded)
+                                setActiveAuditDetailTab('basic');
+                            }}
+                            onKeyDown={(keyboardEvent) => {
+                              if (
+                                keyboardEvent.key !== 'Enter' &&
+                                keyboardEvent.key !== ' '
+                              )
+                                return;
+
+                              keyboardEvent.preventDefault();
+                              setExpandedAuditId(
+                                isExpanded ? null : event.id,
+                              );
+                              if (!isExpanded)
+                                setActiveAuditDetailTab('basic');
+                            }}
+                          >
                             <td className="p-4 whitespace-nowrap text-neutral-600">
                               {formatAuditDate(event.occurredAt)}
                             </td>
@@ -1060,20 +1087,19 @@ export default function AdminDashboard() {
                               {event.productName}
                             </td>
                             <td className="p-4 text-right">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setExpandedAuditId(
-                                    isExpanded ? null : event.id,
-                                  );
-                                  if (!isExpanded)
-                                    setActiveAuditDetailTab('basic');
-                                }}
-                                className="text-sm font-semibold text-primary hover:underline"
-                                aria-expanded={isExpanded}
+                              <span
+                                className="inline-flex text-[0px] text-primary"
+                                aria-hidden="true"
                               >
+                                <ChevronDown
+                                  size={20}
+                                  className={`transition-transform ${
+                                    isExpanded ? 'rotate-180' : ''
+                                  }`}
+                                  aria-hidden="true"
+                                />
                                 {isExpanded ? 'Sakrij' : 'Prikaži'}
-                              </button>
+                              </span>
                             </td>
                           </tr>
                           {isExpanded && (
