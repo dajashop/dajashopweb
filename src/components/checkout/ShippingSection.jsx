@@ -2,6 +2,7 @@ import React from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { Truck, MapPin, CheckCircle2, MessageSquare } from 'lucide-react'; // Dodata MessageSquare
+import GoogleMapEmbed from '../privacy/GoogleMapEmbed.jsx';
 
 // Prosleđujemo URL mape kao prop ili konstantu ako je potrebno
 const SHOP_ADDRESS_QUERY = 'Daja Shop, Podzemni prolaz lokal C31, Nis, Srbija';
@@ -228,7 +229,7 @@ export default function ShippingSection({
                        {' '}
             <div className="map-container">
                            {' '}
-              <iframe
+              <GoogleMapEmbed
                 className="map-iframe"
                 title="Daja Shop Lokacija"
                 width="100%"
@@ -237,7 +238,7 @@ export default function ShippingSection({
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
                 src={MAP_EMBED_URL}
-              ></iframe>
+              />
                          {' '}
             </div>
                      {' '}

@@ -29,30 +29,26 @@ function WishlistAlertButton({ item }) {
   const type = inStock ? 'price_change' : 'back_in_stock';
 
   useEffect(() => {
-    const storedTypes = productAlertSubscriptions.typesFor(
-      product?.id,
-      product?.variantId,
-    );
+    const authenticated = Boolean(user?.email);
+    const storedTypes = authenticated
+      ? []
+      : productAlertSubscriptions.typesFor(product?.id, product?.variantId);
     setSubscribedTypes(storedTypes);
 
-    if (!user?.email || !product?.id || !product?.variantId) return undefined;
+    const contact = productAlertSubscriptions.contact();
+    if ((!authenticated && !contact.managementToken) || !product?.id || !product?.variantId) return undefined;
     let cancelled = false;
     productAlertsApi
       .status(product.id, {
         variantId: product.variantId,
-        email: user.email,
-      })
+        ...(!authenticated && contact.managementToken ? { managementToken: contact.managementToken } : {}),
+      }, { auth: authenticated })
       .then((response) => {
         if (cancelled) return;
         const activeTypes = Array.isArray(response?.types) ? response.types : [];
-        activeTypes.forEach((activeType) =>
-          productAlertSubscriptions.markSubscribed(
-            product.id,
-            product.variantId,
-            activeType,
-            user.email,
-          ),
-        );
+        if (!authenticated) {
+          productAlertSubscriptions.replaceTypes(product.id, product.variantId, activeTypes);
+        }
         setSubscribedTypes(activeTypes);
       })
       .catch(() => {
@@ -70,11 +66,6 @@ function WishlistAlertButton({ item }) {
     ? type
     : subscribedTypes[0] || type;
   const subscribed = subscribedTypes.includes(activeType);
-  const alertEmail = user?.email || productAlertSubscriptions.emailFor(
-    product.id,
-    product.variantId,
-    activeType,
-  );
   const label = activeType === 'price_change'
     ? 'Obavesti me kada se cena promeni'
     : 'Obavesti me kada bude na stanju';
@@ -84,7 +75,9 @@ function WishlistAlertButton({ item }) {
   };
 
   const unsubscribeAlert = async () => {
-    if (!alertEmail) {
+    const contact = productAlertSubscriptions.contact();
+    const authenticated = Boolean(user?.email);
+    if (!authenticated && !contact.managementToken) {
       flash(
         'Email nije dostupan',
         'Prijavite se ponovo da biste isključili ovo obaveštenje.',
@@ -99,15 +92,17 @@ function WishlistAlertButton({ item }) {
         {
           variantId: product.variantId,
           type: activeType,
-          email: alertEmail,
+          ...(!authenticated && contact.managementToken ? { managementToken: contact.managementToken } : {}),
         },
-        { auth: Boolean(user?.email) },
+        { auth: authenticated },
       );
-      productAlertSubscriptions.markUnsubscribed(
-        product.id,
-        product.variantId,
-        activeType,
-      );
+      if (!authenticated) {
+        productAlertSubscriptions.markUnsubscribed(
+          product.id,
+          product.variantId,
+          activeType,
+        );
+      }
       setSubscribedTypes((current) =>
         current.filter((currentType) => currentType !== activeType),
       );
@@ -123,13 +118,15 @@ function WishlistAlertButton({ item }) {
     }
   };
 
-  const handleGuestSubscription = ({ email, newsletterWarning }) => {
-    productAlertSubscriptions.markSubscribed(
-      product.id,
-      product.variantId,
-      type,
-      email || user?.email,
-    );
+  const handleGuestSubscription = ({ newsletterWarning, contact }) => {
+    if (!user?.email) {
+      productAlertSubscriptions.markSubscribed(
+        product.id,
+        product.variantId,
+        type,
+        contact,
+      );
+    }
     setSubscribedTypes((current) =>
       current.includes(type) ? current : [...current, type],
     );
@@ -180,6 +177,7 @@ function WishlistAlertButton({ item }) {
         product={product}
         type={type}
         initialEmail={user?.email ?? ''}
+        authenticated={Boolean(user?.email)}
         onSubscribed={handleGuestSubscription}
       />
     </>

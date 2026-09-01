@@ -13,6 +13,7 @@ import {
   Building2,
   Dumbbell,
 } from 'lucide-react';
+import { getFlagUrl as firstPartyFlagUrl } from './flags.js';
 
 // --- CONFIGURATION CONSTANTS ---
 export const ADDRESS_ICONS = {
@@ -57,8 +58,7 @@ export const COUNTRY_CODES = [
 
 // --- HELPER FUNCTIONS ---
 
-export const getFlagUrl = (code) =>
-  `https://flagcdn.com/w40/${code.toLowerCase()}.png`;
+export const getFlagUrl = firstPartyFlagUrl;
 
 export const renderIcon = (iconKey, size = 20) => {
   const IconComponent = ADDRESS_ICONS[iconKey]?.icon || MapPin;

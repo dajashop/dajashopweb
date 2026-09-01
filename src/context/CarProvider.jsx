@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { CartCtx } from './CartContext.jsx';
 import { useAuth } from '../hooks/useAuth';
 import { customerApi, subscribePublicCatalogRealtime } from '../services/dajaPlatform';
 import { applyPublicProductRealtimeEvent } from '../services/products';
+import { useConsent } from './ConsentContext.jsx';
+import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 
 const initial = () => {
   try {
-    return JSON.parse(localStorage.getItem('cart') || '[]');
+    return JSON.parse(readStoredValue('cart', 'necessary') || '[]');
   } catch {
     return [];
   }
@@ -72,24 +74,32 @@ function reducer(state, action) {
 export function CartProvider({ children }) {
   const [items, dispatch] = useReducer(reducer, [], initial);
   const { user } = useAuth();
+  const { hasDecision } = useConsent();
   const loadedServerCart = useRef(false);
   const isServerUpdate = useRef(false);
   const cartChannel = useRef(null);
   const latestItems = useRef(items);
   const hasCrossTabState = useRef(false);
+  const hydratedGuestCart = useRef(false);
+  const guestCartPersistence = useRef(false);
 
   useEffect(() => {
     latestItems.current = items;
   }, [items]);
 
   useEffect(() => {
+    if (!hasDecision) return undefined;
     loadedServerCart.current = false;
     hasCrossTabState.current = false;
 
     if (!user) {
-      dispatch({ type: 'CLEAR' });
-      localStorage.removeItem('cart');
-      return;
+      if (!hydratedGuestCart.current) {
+        const localItems = initial();
+        guestCartPersistence.current = localItems.length > 0;
+        dispatch({ type: 'REPLACE', items: localItems });
+        hydratedGuestCart.current = true;
+      }
+      return undefined;
     }
 
     let cancelled = false;
@@ -116,19 +126,20 @@ export function CartProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [hasDecision, user]);
 
   useEffect(() => {
-    if (!user) return undefined;
+    if (!hasDecision || !user) return undefined;
 
     return subscribePublicCatalogRealtime((event) => {
       void applyPublicProductRealtimeEvent(event);
     });
-  }, [user]);
+  }, [hasDecision, user]);
 
   useEffect(() => {
     const userId = user?.uid || user?.id;
     if (
+      !hasDecision ||
       !userId ||
       typeof window === 'undefined' ||
       !('BroadcastChannel' in window)
@@ -157,7 +168,7 @@ export function CartProvider({ children }) {
       if (cartChannel.current === channel) cartChannel.current = null;
       channel.close();
     };
-  }, [user?.id, user?.uid]);
+  }, [hasDecision, user?.id, user?.uid]);
 
   useEffect(() => {
     const applyProductChange = (event) => {
@@ -177,6 +188,7 @@ export function CartProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (!hasDecision) return undefined;
     if (isServerUpdate.current) {
       isServerUpdate.current = false;
       return;
@@ -196,17 +208,25 @@ export function CartProvider({ children }) {
       return () => clearTimeout(t);
     }
 
-    localStorage.setItem('cart', JSON.stringify(items));
-  }, [items, user]);
+    if (!hydratedGuestCart.current || !guestCartPersistence.current) return undefined;
+    writeStoredValue('cart', JSON.stringify(items), 'necessary');
+    return undefined;
+  }, [hasDecision, items, user]);
 
   const total = useMemo(
     () => items.reduce((sum, item) => sum + item.price * item.qty, 0),
     [items],
   );
   const count = useMemo(() => items.reduce((sum, item) => sum + item.qty, 0), [items]);
+  const customerDispatch = useCallback((action) => {
+    if (!user && !['REPLACE', 'UPDATE_PRODUCT', 'REMOVE_PRODUCT'].includes(action?.type)) {
+      guestCartPersistence.current = true;
+    }
+    dispatch(action);
+  }, [user]);
 
   return (
-    <CartCtx.Provider value={{ items, cart: items, dispatch, total, count }}>
+    <CartCtx.Provider value={{ items, cart: items, dispatch: customerDispatch, total, count }}>
       {children}
     </CartCtx.Provider>
   );

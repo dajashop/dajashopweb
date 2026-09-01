@@ -249,6 +249,21 @@
   color: var(--color-muted, #6e6e73);
   margin-bottom: 6px;
 }
+
+.auth-remember-login {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--color-muted, #6e6e73);
+  font-size: .78rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.auth-remember-login input {
+  margin-top: 2px;
+  accent-color: var(--color-primary, #111);
+}
 .last-used-field-note {
   position: relative;
   display: inline-flex;

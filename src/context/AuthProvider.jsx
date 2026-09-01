@@ -8,6 +8,7 @@ import {
   subscribeCustomerRealtime,
 } from '../services/dajaPlatform';
 import { getAccessToken, onAuthTokenChange, setAuthTokens } from '../services/apiClient';
+import { useConsent } from './ConsentContext.jsx';
 import {
   browserSupportsWebAuthn,
   startAuthentication,
@@ -20,6 +21,7 @@ const USER_RE = /^[a-zA-Z0-9._-]{3,24}$/;
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
+  const { hasDecision } = useConsent();
   const [user, setUser] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
@@ -70,12 +72,17 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (!hasDecision) {
+      setUser(null);
+      setUserInfo(null);
+      return undefined;
+    }
     loadMe();
     return onAuthTokenChange(loadMe);
-  }, [loadMe]);
+  }, [hasDecision, loadMe]);
 
   useEffect(() => {
-    if (!user?.id) return undefined;
+    if (!hasDecision || !user?.id) return undefined;
     return subscribeCustomerRealtime((event) => {
       if (event?.data?.emailVerified !== true) return;
       setUser((current) =>
@@ -85,9 +92,10 @@ export function AuthProvider({ children }) {
         current ? { ...current, emailVerified: true } : current,
       );
     });
-  }, [user?.id]);
+  }, [hasDecision, user?.id]);
 
   useEffect(() => {
+    if (!hasDecision) return;
     const hash = window.location.hash.startsWith('#')
       ? window.location.hash.slice(1)
       : window.location.hash;
@@ -101,7 +109,7 @@ export function AuthProvider({ children }) {
     setAuthTokens({ accessToken, refreshToken });
     setOauthJustSucceeded(true);
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-  }, []);
+  }, [hasDecision]);
 
   const dismissOauthSuccess = useCallback(() => {
     setOauthJustSucceeded(false);

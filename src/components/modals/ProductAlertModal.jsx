@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Bell, X } from 'lucide-react';
 import {
-  productAlertPreferences,
+  productAlertSubscriptions,
   productAlertsApi,
   newsletterApi,
 } from '../../services/dajaPlatform.js';
+import { useConsent } from '../../context/ConsentContext.jsx';
 import './ProductAlertModal.css';
 
 const ALERT_LABELS = {
@@ -19,9 +20,14 @@ export default function ProductAlertModal({
   product,
   type,
   initialEmail = '',
+  authenticated = false,
   onSubscribed,
 }) {
+  const { policy } = useConsent();
   const [email, setEmail] = useState('');
+  const [managementToken, setManagementToken] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [useAnotherEmail, setUseAnotherEmail] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [termsPreviouslyAccepted, setTermsPreviouslyAccepted] = useState(false);
   const [subscribeToNewsletter, setSubscribeToNewsletter] = useState(false);
@@ -30,19 +36,48 @@ export default function ProductAlertModal({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isOpen) return;
-    const nextEmail = String(initialEmail || '').trim();
-    const preferences = productAlertPreferences.forEmail(nextEmail);
-    setEmail(nextEmail);
-    setAcceptedTerms(preferences.acceptedTerms);
-    setTermsPreviouslyAccepted(preferences.acceptedTerms);
+    if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
+    const storedContact = authenticated ? {} : productAlertSubscriptions.contact();
+    const token = storedContact.managementToken || '';
+    setEmail(String(initialEmail || '').trim());
+    setManagementToken(token);
+    setMaskedEmail(storedContact.maskedEmail || '');
+    setUseAnotherEmail(false);
+    setAcceptedTerms(false);
+    setTermsPreviouslyAccepted(false);
     setSubscribeToNewsletter(false);
-    setNewsletterSubscribed(preferences.newsletterSubscribed);
+    setNewsletterSubscribed(false);
     setSubmitting(false);
     setError('');
-  }, [initialEmail, isOpen, product?.id, type]);
+
+    if (!authenticated && !token) return undefined;
+    let cancelled = false;
+    productAlertsApi
+      .status(
+        product.id,
+        { variantId: product.variantId, ...(token ? { managementToken: token } : {}) },
+        { auth: authenticated },
+      )
+      .then((status) => {
+        if (cancelled) return;
+        setTermsPreviouslyAccepted(status?.termsAccepted === true);
+        setNewsletterSubscribed(status?.newsletterSubscribed === true);
+        if (status?.maskedEmail) setMaskedEmail(status.maskedEmail);
+      })
+      .catch(() => {
+        // A failed lookup never assumes consent or a newsletter subscription.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authenticated, initialEmail, isOpen, product?.id, product?.variantId, type]);
 
   if (!isOpen || !product?.id || !product?.variantId || !type) return null;
+
+  const reusableGuestContact = !authenticated && managementToken && !useAnotherEmail;
+  const needsEmailInput = authenticated || !reusableGuestContact;
+  const selectedEmail = String(email || '').trim();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -50,37 +85,54 @@ export default function ProductAlertModal({
       setError('Potvrdite saglasnost sa uslovima i politikom privatnosti.');
       return;
     }
+    if (needsEmailInput && !selectedEmail) {
+      setError('Unesite email adresu za obaveštenje.');
+      return;
+    }
 
     setSubmitting(true);
     setError('');
     try {
-      await productAlertsApi.subscribe(product.id, {
-        type,
-        variantId: product.variantId,
-        email,
-        acceptedTerms: true,
-      }, { auth: false });
-
-      if (!termsPreviouslyAccepted) {
-        productAlertPreferences.markAcceptedTerms(email);
-      }
+      const result = await productAlertsApi.subscribe(
+        product.id,
+        {
+          type,
+          variantId: product.variantId,
+          ...(authenticated ? {} : {
+            ...(reusableGuestContact ? { managementToken } : { email: selectedEmail }),
+          }),
+          acceptedTerms: true,
+          ...(policy?.version ? { policyVersion: policy.version } : {}),
+        },
+        { auth: authenticated },
+      );
 
       let newsletterWarning = false;
       if (!newsletterSubscribed && subscribeToNewsletter) {
         try {
-          await newsletterApi.subscribe(email, 'product_alert');
-          productAlertPreferences.markNewsletterSubscribed(email);
+          await newsletterApi.subscribe(
+            reusableGuestContact ? undefined : selectedEmail,
+            {
+              source: 'product_alert',
+              acceptedMarketing: true,
+              authenticated,
+              ...(reusableGuestContact ? { managementToken } : {}),
+              ...(policy?.version ? { policyVersion: policy.version } : {}),
+            },
+          );
         } catch (newsletterError) {
-          // A duplicate subscription is already the desired outcome.
-          if (newsletterError?.status === 409) {
-            productAlertPreferences.markNewsletterSubscribed(email);
-          } else {
-            newsletterWarning = true;
-          }
+          if (newsletterError?.status !== 409) newsletterWarning = true;
         }
       }
 
-      onSubscribed?.({ type, email, newsletterWarning });
+      onSubscribed?.({
+        type,
+        newsletterWarning,
+        contact: {
+          managementToken: result?.managementToken || managementToken,
+          maskedEmail: result?.maskedEmail || maskedEmail,
+        },
+      });
       onClose();
     } catch (requestError) {
       setError(requestError.message || 'Prijava za obaveštenje nije uspela.');
@@ -89,10 +141,6 @@ export default function ProductAlertModal({
     }
   };
 
-  // A wishlist card is animated with a CSS transform. Rendering the overlay
-  // inside it makes a `position: fixed` layer use the card as its viewport,
-  // which caused the modal to flash on card hover. A portal keeps it at the
-  // document root, centered over the complete screen.
   return createPortal(
     <div className="product-alert-modal__overlay" role="presentation">
       <div
@@ -111,35 +159,44 @@ export default function ProductAlertModal({
           <X size={20} />
         </button>
 
-        <div className="product-alert-modal__icon">
-          <Bell size={22} />
-        </div>
+        <div className="product-alert-modal__icon"><Bell size={22} /></div>
         <h2 id="product-alert-modal-title">Obavesti me</h2>
-        <p>
-          Unesite email adresu, a mi ćemo vam javiti {ALERT_LABELS[type]}.
-        </p>
+        <p>Javićemo vam {ALERT_LABELS[type]}.</p>
 
         <form onSubmit={handleSubmit}>
-          <label htmlFor="product-alert-subscription-email">Email adresa</label>
-          <input
-            id="product-alert-subscription-email"
-            type="email"
-            value={email}
-            onChange={(event) => {
-              const nextEmail = event.target.value;
-              const preferences = productAlertPreferences.forEmail(nextEmail);
-              setEmail(nextEmail);
-              setAcceptedTerms(preferences.acceptedTerms);
-              setTermsPreviouslyAccepted(preferences.acceptedTerms);
-              setNewsletterSubscribed(preferences.newsletterSubscribed);
-              setSubscribeToNewsletter(false);
-            }}
-            placeholder="vas@email.com"
-            autoComplete="email"
-            required
-            disabled={submitting}
-            autoFocus
-          />
+          {reusableGuestContact ? (
+            <div className="product-alert-modal__saved-contact">
+              <strong>Email za obaveštenje</strong>
+              <span>{maskedEmail || 'Sačuvana email adresa'}</span>
+              <button type="button" onClick={() => setUseAnotherEmail(true)} disabled={submitting}>
+                Koristi drugi email
+              </button>
+            </div>
+          ) : (
+            <>
+              <label htmlFor="product-alert-subscription-email">Email adresa</label>
+              <input
+                id="product-alert-subscription-email"
+                type="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (!authenticated) {
+                    setManagementToken('');
+                    setMaskedEmail('');
+                    setTermsPreviouslyAccepted(false);
+                    setNewsletterSubscribed(false);
+                  }
+                }}
+                placeholder="vas@email.com"
+                autoComplete="email"
+                required={needsEmailInput}
+                readOnly={authenticated}
+                disabled={submitting}
+                autoFocus
+              />
+            </>
+          )}
 
           {!termsPreviouslyAccepted && (
             <label className="product-alert-modal__check">
@@ -169,7 +226,6 @@ export default function ProductAlertModal({
           )}
 
           {error && <p className="product-alert-modal__error">{error}</p>}
-
           <button type="submit" disabled={submitting}>
             {submitting ? 'Čuvamo…' : 'Potvrdi obaveštenje'}
           </button>

@@ -31,14 +31,14 @@ import ErrorMessage from './ErrorMessage';
 
 import { customerApi } from '../../services/dajaPlatform';
 import { loadGoogleMapsPlaces } from '../../services/googleMaps';
+import { useConsent } from '../../context/ConsentContext.jsx';
+import { getFlagUrl } from '../../utils/flags.js';
 import {
   ADDRESS_ICONS,
   ADDRESS_ICON_ORDER,
 } from '../../utils/accountHelpers';
 
 // Konstante
-const getFlagUrl = (code) =>
-  `https://flagcdn.com/w40/${code.toLowerCase()}.png`;
 const COUNTRY_CODES = [
   { code: 'RS', dial: '+381', label: 'Srbija' },
   { code: 'ME', dial: '+382', label: 'Crna Gora' },
@@ -89,6 +89,7 @@ export default function DeliveryForm({
   const autocompleteInstance = useRef(null);
   const addressInputRef = useRef(null);
   const addressSelectorRef = useRef(null);
+  const { googleAllowed, requestGooglePermission } = useConsent();
 
   // --- REF ZA PRAĆENJE AUTOMATSKE SELEKCIJE ---
   const hasAutoSelected = useRef(false);
@@ -287,6 +288,12 @@ export default function DeliveryForm({
 
   // --- GOOGLE MAPS INIT ---
   useEffect(() => {
+    if (!googleAllowed) {
+      setMapsReady(false);
+      setMapsLoadError(false);
+      setMapsScriptLoaded(false);
+      return undefined;
+    }
     let cancelled = false;
 
     loadGoogleMapsPlaces()
@@ -306,7 +313,7 @@ export default function DeliveryForm({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [googleAllowed]);
 
   const initAutocomplete = (node) => {
     if (!window.google || !window.google.maps || !window.google.maps.places)
@@ -926,7 +933,9 @@ export default function DeliveryForm({
                     type="text"
                     name="address"
                     placeholder={
-                      mapsReady
+                      !googleAllowed
+                        ? 'Unesite adresu ručno ili uključite predloge'
+                        : mapsReady
                         ? 'Počnite da kucate ulicu...'
                         : mapsLoadError
                           ? 'Unesite adresu ručno'
@@ -936,6 +945,9 @@ export default function DeliveryForm({
                     onChange={handleAddressInput}
                     onKeyDown={handleAddressKeyDown}
                     onBlur={handleBlur}
+                    onFocus={() => {
+                      if (!googleAllowed) void requestGooglePermission();
+                    }}
                     required={requiredForCourier}
                     autoComplete="new-password"
                     className="real-input"

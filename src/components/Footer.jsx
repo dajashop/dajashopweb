@@ -14,14 +14,17 @@ import {
 import './Footer.css';
 import { useFlash } from '../hooks/useFlash';
 import { newsletterApi } from '../services/dajaPlatform';
+import { useConsent } from '../context/ConsentContext.jsx';
 
 export default function Footer() {
   const year = new Date().getFullYear();
   const { flash } = useFlash();
+  const { policy, openSettings } = useConsent();
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [acceptedMarketing, setAcceptedMarketing] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,10 +32,18 @@ export default function Footer() {
       flash('Greška', 'Molimo unesite validnu email adresu.', 'error');
       return;
     }
+    if (!acceptedMarketing) {
+      flash('Saglasnost je potrebna', 'Potvrdite da želite da primate novosti emailom.', 'error');
+      return;
+    }
 
     setLoading(true);
     try {
-      await newsletterApi.subscribe(email);
+      await newsletterApi.subscribe(email, {
+        source: 'footer',
+        policyVersion: policy?.version,
+        acceptedMarketing: true,
+      });
 
       setSuccess(true);
       flash(
@@ -41,6 +52,7 @@ export default function Footer() {
         'success',
       );
       setEmail('');
+      setAcceptedMarketing(false);
 
       setTimeout(() => setSuccess(false), 3500);
     } catch (error) {
@@ -129,6 +141,18 @@ export default function Footer() {
                 )}
               </button>
             </div>
+            <label className="footer-newsletter-consent">
+              <input
+                type="checkbox"
+                checked={acceptedMarketing}
+                onChange={(event) => setAcceptedMarketing(event.target.checked)}
+                disabled={loading || success}
+              />
+              <span>
+                Želim da primam novosti emailom i prihvatam{' '}
+                <Link to="/privacy">politiku privatnosti</Link>.
+              </span>
+            </label>
           </form>
         </div>
       </div>
@@ -232,6 +256,8 @@ export default function Footer() {
             <div className="footer__links">
               <Link to="/terms">Uslovi korišćenja</Link>
               <Link to="/privacy">Politika privatnosti</Link>
+              <Link to="/cookies">Kolačići</Link>
+              <button type="button" className="footer__privacy-button" onClick={openSettings}>Podešavanja privatnosti</button>
             </div>
           </div>
         </div>

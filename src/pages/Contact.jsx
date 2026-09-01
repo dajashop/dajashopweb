@@ -2,6 +2,7 @@ import React from 'react';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
 import './Contact.css';
 import SEOHead from '../components/seo/SEOHead.jsx';
+import GoogleMapEmbed from '../components/privacy/GoogleMapEmbed.jsx';
 
 /**
  * @file src/pages/Contact.jsx
@@ -117,7 +118,7 @@ export default function Contact() {
         <div className="contact-map">
           <h2>Naša lokacija</h2>
           <div className="map-embed-container">
-            <iframe
+            <GoogleMapEmbed
               className="map-iframe"
               title="Daja Shop Lokacija"
               width="100%"
@@ -126,7 +127,7 @@ export default function Contact() {
               allowFullScreen
               referrerPolicy="no-referrer-when-downgrade"
               src={MAP_EMBED_URL}
-            ></iframe>
+            />
           </div>
           <p
             style={{

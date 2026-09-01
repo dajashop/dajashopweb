@@ -18,6 +18,7 @@ import {
 
 import { customerApi } from '../../services/dajaPlatform';
 import { loadGoogleMapsPlaces } from '../../services/googleMaps';
+import { useConsent } from '../../context/ConsentContext.jsx';
 
 import { FORM_RULES } from '../../data/validationRules';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
@@ -43,6 +44,7 @@ const COUNTRY_CODES = [
 
 function AddressSection({ user }) {
   const { flash } = useFlash();
+  const { googleAllowed, requestGooglePermission } = useConsent();
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -131,7 +133,10 @@ function AddressSection({ user }) {
 
   // --- GOOGLE MAPS ---
   useEffect(() => {
-    if (!isAdding) return undefined;
+    if (!isAdding || !googleAllowed) {
+      setMapsLoaded(false);
+      return undefined;
+    }
     let cancelled = false;
 
     loadGoogleMapsPlaces()
@@ -146,7 +151,7 @@ function AddressSection({ user }) {
     return () => {
       cancelled = true;
     };
-  }, [isAdding]);
+  }, [googleAllowed, isAdding]);
 
   // --- GOOGLE PLACES AUTOCOMPLETE ---
   useEffect(() => {
@@ -456,6 +461,9 @@ function AddressSection({ user }) {
                   value={form.address}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
+                  onFocus={() => {
+                    if (!googleAllowed) void requestGooglePermission();
+                  }}
                   placeholder="Počnite da kucate adresu..."
                   autoComplete="off"
                   autoCorrect="off"

@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Check,
   ShieldCheck,
+  Cookie,
 } from 'lucide-react';
 
 // --- NAVIGATION ---
@@ -24,6 +25,7 @@ function AccountNav({ activeTab, setActiveTab, logout }) {
     { id: 'security', label: 'Bezbednost', icon: ShieldCheck },
     { id: 'addresses', label: 'Adrese', icon: MapPin },
     { id: 'wishlist', label: 'Lista želja', icon: Heart },
+    { id: 'privacy', label: 'Privatnost', icon: Cookie },
   ];
 
   const activeItem =

@@ -14,9 +14,10 @@ import AddressSection from '../components/account/AddressSection.jsx';
 import WishlistSection from '../components/account/WishlistSection.jsx';
 import OrdersSection from '../components/account/OrdersSection.jsx';
 import SecuritySection from '../components/account/SecuritySection.jsx';
+import PrivacySection from '../components/account/PrivacySection.jsx';
 import SEOHead from '../components/seo/SEOHead.jsx';
 
-const allowedTabs = ['profile', 'orders', 'security', 'addresses', 'wishlist'];
+const allowedTabs = ['profile', 'orders', 'security', 'addresses', 'wishlist', 'privacy'];
 const defaultTab = 'profile';
 
 export default function Account() {
@@ -95,6 +96,7 @@ export default function Account() {
             <AddressSection key="addr" user={user} />
           )}
           {activeTab === 'wishlist' && <WishlistSection key="wish" />}
+          {activeTab === 'privacy' && <PrivacySection key="privacy" user={user} />}
         </AnimatePresence>
       </main>
     </div>

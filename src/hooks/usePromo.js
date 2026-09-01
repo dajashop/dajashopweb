@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PROMO_CODES } from '../data/promoCodes';
 import { ordersApi, promotionsApi } from '../services/dajaPlatform';
+import { useConsent } from '../context/ConsentContext.jsx';
+import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 
 export function usePromo() {
+  const { hasDecision } = useConsent();
   // 1. INICIJALIZACIJA: Proveravamo da li već postoji sačuvan kod u localStorage
   const [appliedPromo, setAppliedPromo] = useState(() => {
     try {
-      const saved = localStorage.getItem('daja_active_promo');
+      const saved = readStoredValue('daja_active_promo', 'necessary');
       return saved ? JSON.parse(saved) : null;
     } catch (e) {
       return null;
@@ -16,15 +19,30 @@ export function usePromo() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
+  const [hydrated, setHydrated] = useState(false);
+  const promoPersistence = useRef(false);
+
+  useEffect(() => {
+    if (!hasDecision) return;
+    try {
+      const saved = readStoredValue('daja_active_promo', 'necessary');
+      promoPersistence.current = Boolean(saved);
+      setAppliedPromo(saved ? JSON.parse(saved) : null);
+    } catch {
+      setAppliedPromo(null);
+    }
+    setHydrated(true);
+  }, [hasDecision]);
 
   // 2. EFEKAT: Kad god se promo promeni, sačuvaj ga (ili obriši) u localStorage
   useEffect(() => {
-    if (appliedPromo) {
-      localStorage.setItem('daja_active_promo', JSON.stringify(appliedPromo));
-    } else {
-      localStorage.removeItem('daja_active_promo');
-    }
-  }, [appliedPromo]);
+    if (!hasDecision || !hydrated || !promoPersistence.current) return;
+    writeStoredValue(
+      'daja_active_promo',
+      appliedPromo ? JSON.stringify(appliedPromo) : null,
+      'necessary',
+    );
+  }, [appliedPromo, hasDecision, hydrated]);
 
   const validateAndApply = async (
     inputCode,
@@ -77,6 +95,7 @@ export function usePromo() {
             amount: verifiedAmount,
             isBrandSpecific: false,
           };
+          if (!isAuto) promoPersistence.current = true;
           setAppliedPromo(promoData);
           if (!isAuto) setSuccessMsg('Newsletter popust je primenjen.');
           return;
@@ -113,6 +132,7 @@ export function usePromo() {
         isBrandSpecific: promo.validBrands.length > 0,
       };
 
+      if (!isAuto) promoPersistence.current = true;
       setAppliedPromo(promoData);
 
       if (!isAuto) {
@@ -133,8 +153,9 @@ export function usePromo() {
   };
 
   const removePromo = () => {
+    promoPersistence.current = true;
     setAppliedPromo(null);
-    localStorage.removeItem('daja_active_promo'); // Brišemo i iz memorije
+    writeStoredValue('daja_active_promo', null, 'necessary');
     setError(null);
     setSuccessMsg(null);
   };

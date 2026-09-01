@@ -29,6 +29,7 @@ import {
   EyeOff, // <--- NOVA IKONA
   ClipboardList,
   ChevronDown,
+  ShieldCheck,
 } from 'lucide-react';
 import useProducts from '../../hooks/useProducts';
 import {
@@ -51,6 +52,7 @@ import {
 } from '../../services/admin';
 import { money } from '../../utils/currency';
 import SEOHead from '../../components/seo/SEOHead.jsx';
+import PolicyPublicationPanel from './components/PolicyPublicationPanel.jsx';
 
 // ... (sanitizeItem i generateSlug funkcije ostaju iste)
 
@@ -798,6 +800,12 @@ export default function AdminDashboard() {
               icon={ClipboardList}
               label="Dnevnik"
             />
+            <TabButton
+              active={activeTab === 'privacy'}
+              onClick={() => setActiveTab('privacy')}
+              icon={ShieldCheck}
+              label="Privatnost"
+            />
           </div>
         </div>
       </div>
@@ -1221,6 +1229,8 @@ export default function AdminDashboard() {
             )}
           </motion.div>
         )}
+
+        {activeTab === 'privacy' && <PolicyPublicationPanel />}
 
         {/* Ostali tabovi za Brendove/Kategorije/Specifikacije (ostaju nepromenjeni) */}
         {activeTab === 'brands' /* ... kod za brendove ... */ && (

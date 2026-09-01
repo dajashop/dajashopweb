@@ -5,8 +5,10 @@ import {
   subscribeStaffCatalogRealtime,
   subscribePublicCatalogRealtime,
 } from '../services/dajaPlatform';
+import { useConsent } from '../context/ConsentContext.jsx';
 
 export default function useProducts(params = {}) {
+  const { hasDecision } = useConsent();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
@@ -87,7 +89,7 @@ export default function useProducts(params = {}) {
   }, [memoizedParams.admin, usePublicRealtime]);
 
   useEffect(() => {
-    if (!usePublicRealtime) return undefined;
+    if (!hasDecision || !usePublicRealtime) return undefined;
     // Administrators must receive the organization-scoped signal.  The
     // public room is intentionally optional and can be configured for a
     // different storefront organization, which left the Artikli screen stale
@@ -143,7 +145,7 @@ export default function useProducts(params = {}) {
       },
       () => {},
     );
-  }, [memoizedParams.admin, usePublicRealtime]);
+  }, [hasDecision, memoizedParams.admin, usePublicRealtime]);
 
   // A timed sale can end without an admin request. Refresh only the affected
   // product at that exact time; never reload the whole catalog.

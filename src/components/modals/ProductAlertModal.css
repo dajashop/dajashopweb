@@ -81,6 +81,38 @@
   font: inherit;
 }
 
+.product-alert-modal input[readonly] {
+  opacity: .75;
+  cursor: default;
+}
+
+.product-alert-modal__saved-contact {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-surface, #fff) 88%, #e8f1ff);
+}
+
+.product-alert-modal__saved-contact span {
+  color: var(--color-muted, #4b5563);
+}
+
+.product-alert-modal__saved-contact button {
+  justify-self: start;
+  margin-top: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary, #111);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .product-alert-modal__check {
   display: flex;
   align-items: flex-start;

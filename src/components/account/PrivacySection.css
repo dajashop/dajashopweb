@@ -1,0 +1,113 @@
+.privacy-section {
+  display: grid;
+  gap: 16px;
+}
+
+.privacy-section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.privacy-section__header h3,
+.privacy-section__header p,
+.privacy-section__card h4,
+.privacy-section__card p {
+  margin: 0;
+}
+
+.privacy-section__header p,
+.privacy-section__card p {
+  margin-top: 5px;
+  color: var(--color-muted, #6b7280);
+}
+
+.privacy-section__settings,
+.privacy-section__primary,
+.privacy-section__danger,
+.privacy-section__alerts button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 9px;
+  padding: 10px 13px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.privacy-section__settings,
+.privacy-section__primary {
+  background: var(--color-text, #111);
+  color: var(--color-bg, #fff);
+}
+
+.privacy-section__danger,
+.privacy-section__alerts button {
+  margin-top: 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.privacy-section__card {
+  padding: 18px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 14px;
+  background: var(--color-surface, #fff);
+}
+
+.privacy-section__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.privacy-section__choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 15px 0 0;
+}
+
+.privacy-section__choices div {
+  padding: 11px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--color-surface, #fff) 88%, #e8eef8);
+}
+
+.privacy-section__choices dt {
+  font-size: .78rem;
+  color: var(--color-muted, #6b7280);
+}
+
+.privacy-section__choices dd {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 0 0;
+  font-weight: 700;
+}
+
+.privacy-section__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: .88rem;
+}
+
+.privacy-section__check input { margin-top: 2px; accent-color: var(--color-primary, #111); }
+.privacy-section__alerts { display: grid; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.privacy-section__alerts li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--color-border, #e5e7eb); }
+.privacy-section__alerts button { margin: 0; padding: 7px 10px; font-size: .82rem; }
+.privacy-section__alerts small { color: var(--color-muted, #6b7280); }
+.privacy-section__error { margin: 0; color: #b91c1c; }
+.privacy-section__loading { display: flex; align-items: center; gap: 8px; color: var(--color-muted, #6b7280); }
+
+@media (max-width: 640px) {
+  .privacy-section__header { flex-direction: column; }
+  .privacy-section__choices { grid-template-columns: 1fr; }
+}

@@ -10,25 +10,28 @@ import { AuthProvider } from './context/AuthProvider.jsx';
 import { FlashProvider } from './context/FlashContext.jsx';
 import { UndoProvider } from './context/UndoProvider.jsx';
 import { WishlistProvider } from './context/WishlistProvider.jsx';
+import { ConsentProvider } from './context/ConsentProvider.jsx';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <ThemeProvider>
-          <CartProvider>
-            <FlashProvider>
-              <UndoProvider>
-                <WishlistProvider>
-                  <HelmetProvider>
-                    <App />
-                  </HelmetProvider>
-                </WishlistProvider>
-              </UndoProvider>
-            </FlashProvider>
-          </CartProvider>
-        </ThemeProvider>
-      </AuthProvider>
+      <ConsentProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <CartProvider>
+              <FlashProvider>
+                <UndoProvider>
+                  <WishlistProvider>
+                    <HelmetProvider>
+                      <App />
+                    </HelmetProvider>
+                  </WishlistProvider>
+                </UndoProvider>
+              </FlashProvider>
+            </CartProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </ConsentProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );

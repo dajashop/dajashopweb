@@ -8,6 +8,7 @@ import {
   Ticket,
   MessageSquareQuote,
 } from 'lucide-react';
+import GoogleMapEmbed from '../privacy/GoogleMapEmbed.jsx';
 
 const MAP_API_KEY = 'AIzaSyCwDMD-56pwnAqgEDqNCT8uMxFy_mPbAe0';
 const SHOP_ADDRESS_QUERY = 'Daja Shop, TPC Gorca lokal C31, Nis, Srbija';
@@ -177,7 +178,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
                       className="map-container rounded-xl overflow-hidden"
                       style={{ position: 'relative', width: '100%' }}
                     >
-                      <iframe
+                      <GoogleMapEmbed
                         className="map-iframe"
                         title="Lokacija preuzimanja"
                         width="100%"
@@ -186,7 +187,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
                         loading="lazy"
                         allowFullScreen
                         src={MAP_EMBED_URL}
-                      ></iframe>
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>

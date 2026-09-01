@@ -88,6 +88,28 @@
   gap: 12px;
 }
 
+.newsletter-marketing-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--color-muted, #6b7280);
+  font-size: .78rem;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.newsletter-marketing-consent input {
+  width: auto;
+  margin-top: 2px;
+  accent-color: var(--color-primary, #111);
+}
+
+.newsletter-marketing-consent a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
 .newsletter-input {
   width: 100%;
   padding: 16px;

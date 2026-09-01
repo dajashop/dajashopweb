@@ -12,20 +12,11 @@ const authListeners = new Set();
 const staffTokenListeners = new Set();
 
 function readStorage(key) {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
+  return readStoredValue(key, 'necessary');
 }
 
 function writeStorage(key, value) {
-  try {
-    if (value) localStorage.setItem(key, value);
-    else localStorage.removeItem(key);
-  } catch {
-    // Storage can be unavailable in private contexts.
-  }
+  writeStoredValue(key, value, 'necessary');
 }
 
 function emitAuthChange() {
@@ -192,7 +183,12 @@ export async function apiRequest(path, options = {}) {
   } = options;
 
   const requestHeaders = { ...headers };
-  const token = staff ? getStaffAccessToken() || getAccessToken() : getAccessToken();
+  // Public endpoints must not touch browser storage before the visitor makes
+  // a consent choice. This also prevents an old session from being attached
+  // to an otherwise anonymous privacy or catalog request.
+  const token = auth
+    ? (staff ? getStaffAccessToken() || getAccessToken() : getAccessToken())
+    : null;
   if (auth && token) requestHeaders.Authorization = `Bearer ${token}`;
 
   let requestBody = body;
@@ -212,7 +208,9 @@ export async function apiRequest(path, options = {}) {
       method,
       headers: requestHeaders,
       body: requestBody,
-      credentials: 'include',
+      // Public catalog/privacy requests do not need a browser session and
+      // therefore must not attach incidental cookies before consent.
+      credentials: auth ? 'include' : 'omit',
     });
   } catch (error) {
     throw new Error(
@@ -269,3 +267,7 @@ export function toArrayPayload(data, keys = ['items', 'data', 'results']) {
 }
 
 export { API_BASE_URL };
+import {
+  readStoredValue,
+  writeStoredValue,
+} from './consentStorage.js';

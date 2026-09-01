@@ -19,9 +19,9 @@ import {
 import { useAuth } from '../hooks/useAuth.js';
 import './AuthModal.css';
 import FlashModal from './modals/FlashModal.jsx';
-
-const getFlagUrl = (code) =>
-  `https://flagcdn.com/w40/${code.toLowerCase()}.png`;
+import { getFlagUrl } from '../utils/flags.js';
+import { useConsent } from '../context/ConsentContext.jsx';
+import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 
 const COUNTRY_CODES = [
   { code: 'RS', dial: '+381', label: 'Srbija' },
@@ -55,7 +55,7 @@ const LAST_LOGIN_PROVIDERS = ['password', 'google', 'facebook', 'passkey'];
 
 function readLastLogin() {
   try {
-    const saved = JSON.parse(window.localStorage.getItem(LAST_LOGIN_STORAGE_KEY) || 'null');
+    const saved = JSON.parse(readStoredValue(LAST_LOGIN_STORAGE_KEY, 'preferences') || 'null');
     const email = String(saved?.email || '').trim().toLowerCase();
     if (!saved || !LAST_LOGIN_PROVIDERS.includes(saved.provider)) {
       return null;
@@ -67,7 +67,8 @@ function readLastLogin() {
   }
 }
 
-function saveLastLogin(provider, email) {
+function saveLastLogin(provider, email, canRemember) {
+  if (!canRemember) return null;
   const normalizedEmail = String(email || '').trim().toLowerCase();
   if (!LAST_LOGIN_PROVIDERS.includes(provider)) return null;
   if (provider === 'password' && !REGEX.email.test(normalizedEmail)) return null;
@@ -76,8 +77,9 @@ function saveLastLogin(provider, email) {
     ...(REGEX.email.test(normalizedEmail) ? { email: normalizedEmail } : {}),
   };
   try {
-    window.localStorage.setItem(LAST_LOGIN_STORAGE_KEY, JSON.stringify(value));
-    return value;
+    return writeStoredValue(LAST_LOGIN_STORAGE_KEY, JSON.stringify(value), 'preferences')
+      ? value
+      : null;
   } catch {
     return null;
   }
@@ -114,6 +116,7 @@ export default function AuthModal() {
     passkeyLogin,
     passkeyRegister,
   } = useAuth();
+  const { preferencesAllowed } = useConsent();
 
   const isLogin = mode === 'login';
 
@@ -127,6 +130,7 @@ export default function AuthModal() {
   const [name, setName] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [lastLogin, setLastLogin] = useState(readLastLogin);
+  const [rememberLogin, setRememberLogin] = useState(false);
   const [isSuggestedEmail, setIsSuggestedEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [oauthWaking, setOauthWaking] = useState(false);
@@ -199,7 +203,8 @@ export default function AuthModal() {
     setOauthWaking(false);
     setOauthWakeupAttempt(0);
     setOauthProvider('');
-  }, [authOpen, mode]);
+    setRememberLogin(false);
+  }, [authOpen, mode, preferencesAllowed]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -451,12 +456,12 @@ export default function AuthModal() {
   useEffect(() => {
     if (!oauthJustSucceeded || !user?.email) return;
 
-    const savedLogin = saveLastLogin('google', user.email);
+    const savedLogin = saveLastLogin('google', user.email, preferencesAllowed && rememberLogin);
     if (savedLogin) setLastLogin(savedLogin);
 
     openFlash('Google prijava uspešna', 'Uspešno ste prijavljeni putem Google naloga.');
     dismissOauthSuccess();
-  }, [oauthJustSucceeded, user?.email, dismissOauthSuccess]);
+  }, [oauthJustSucceeded, user?.email, dismissOauthSuccess, preferencesAllowed, rememberLogin]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -472,7 +477,7 @@ export default function AuthModal() {
           setAwaitPhoneCode(true);
           setSentTo(identity);
         } else {
-          const savedLogin = saveLastLogin('password', r?.email || identity);
+          const savedLogin = saveLastLogin('password', r?.email || identity, preferencesAllowed && rememberLogin);
           if (savedLogin) setLastLogin(savedLogin);
           hideAuth();
           openFlash('Prijava uspešna', 'Dobro došli nazad! ⌚');
@@ -531,6 +536,7 @@ export default function AuthModal() {
         const savedLogin = saveLastLogin(
           provider,
           lastLogin?.provider === provider ? lastLogin.email : undefined,
+          preferencesAllowed && rememberLogin,
         );
         if (savedLogin) setLastLogin(savedLogin);
       }
@@ -553,7 +559,7 @@ export default function AuthModal() {
     setLoading(true);
     try {
       if (isLogin) {
-        const savedLogin = saveLastLogin('passkey');
+        const savedLogin = saveLastLogin('passkey', undefined, preferencesAllowed && rememberLogin);
         if (savedLogin) setLastLogin(savedLogin);
         await passkeyLogin();
         hideAuth();
@@ -968,6 +974,17 @@ export default function AuthModal() {
                                     )
                                   )}
                                 </AnimatePresence>
+                              </label>
+                            )}
+                            {loginPane && preferencesAllowed && (
+                              <label className="auth-remember-login">
+                                <input
+                                  type="checkbox"
+                                  checked={rememberLogin}
+                                  onChange={(event) => setRememberLogin(event.target.checked)}
+                                  disabled={loading}
+                                />
+                                <span>Zapamti email i poslednji način prijave na ovom uređaju.</span>
                               </label>
                             )}
                             <motion.button

@@ -22,30 +22,26 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
 
   useEffect(() => {
     setGuestAlertType(null);
-    const storedTypes = productAlertSubscriptions.typesFor(
-      product.id,
-      product.variantId,
-    );
+    const authenticated = Boolean(user?.email);
+    const storedTypes = authenticated
+      ? []
+      : productAlertSubscriptions.typesFor(product.id, product.variantId);
     setSubscribedTypes(storedTypes);
 
-    if (!user?.email) return undefined;
+    const contact = productAlertSubscriptions.contact();
+    if (!authenticated && !contact.managementToken) return undefined;
     let cancelled = false;
     productAlertsApi
       .status(product.id, {
         variantId: product.variantId,
-        email: user.email,
-      })
+        ...(!authenticated && contact.managementToken ? { managementToken: contact.managementToken } : {}),
+      }, { auth: authenticated })
       .then((response) => {
         if (cancelled) return;
         const activeTypes = Array.isArray(response?.types) ? response.types : [];
-        activeTypes.forEach((type) =>
-          productAlertSubscriptions.markSubscribed(
-            product.id,
-            product.variantId,
-            type,
-            user.email,
-          ),
-        );
+        if (!authenticated) {
+          productAlertSubscriptions.replaceTypes(product.id, product.variantId, activeTypes);
+        }
         setSubscribedTypes(activeTypes);
       })
       .catch(() => {
@@ -62,13 +58,15 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
     setGuestAlertType(type);
   };
 
-  const handleGuestSubscription = ({ type, email, newsletterWarning }) => {
-    productAlertSubscriptions.markSubscribed(
-      product.id,
-      product.variantId,
-      type,
-      email || user?.email,
-    );
+  const handleGuestSubscription = ({ type, newsletterWarning, contact }) => {
+    if (!user?.email) {
+      productAlertSubscriptions.markSubscribed(
+        product.id,
+        product.variantId,
+        type,
+        contact,
+      );
+    }
     setSubscribedTypes((current) =>
       current.includes(type) ? current : [...current, type],
     );
@@ -141,6 +139,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
         product={product}
         type={guestAlertType}
         initialEmail={user?.email ?? ''}
+        authenticated={Boolean(user?.email)}
         onSubscribed={handleGuestSubscription}
       />
     </div>

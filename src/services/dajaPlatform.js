@@ -9,6 +9,7 @@ import {
 } from './apiClient';
 import { io } from 'socket.io-client';
 import { getAccessToken, getStaffAccessToken } from './apiClient';
+import { readStoredValue, writeStoredValue } from './consentStorage.js';
 
 let publicCatalogSocket = null;
 const publicCatalogListeners = new Set();
@@ -301,10 +302,10 @@ export const authApi = {
   },
   async createAdminSession() {
     const storageKey = 'daja_staff_device_id';
-    let deviceId = localStorage.getItem(storageKey);
+    let deviceId = readStoredValue(storageKey, 'necessary');
     if (!deviceId) {
       deviceId = crypto.randomUUID();
-      localStorage.setItem(storageKey, deviceId);
+      writeStoredValue(storageKey, deviceId, 'necessary');
     }
     const data = await apiRequest('/customer-auth/admin/session', {
       method: 'POST',
@@ -847,11 +848,11 @@ export const productAlertsApi = {
       body: payload,
     });
   },
-  status(productId, { variantId, email }) {
+  status(productId, { variantId, managementToken } = {}, { auth = true } = {}) {
     return apiRequest(`/products/${encodeURIComponent(productId)}/alerts/status`, {
       method: 'POST',
-      auth: false,
-      body: { variantId, email },
+      auth,
+      body: { variantId, ...(managementToken ? { managementToken } : {}) },
     });
   },
   unsubscribe(productId, payload, { auth = true } = {}) {
@@ -863,127 +864,79 @@ export const productAlertsApi = {
   },
 };
 
-const PRODUCT_ALERTS_STORAGE_KEY = 'dajashop_product_alert_subscriptions';
-const PRODUCT_ALERT_PREFERENCES_STORAGE_KEY = 'dajashop_product_alert_preferences';
+const PRODUCT_ALERT_STATE_STORAGE_KEY = 'dajashop_product_alert_state';
 
 function productAlertStorageId(productId, variantId, type) {
   return [productId, variantId, type].map(String).join(':');
 }
 
-function readStoredProductAlerts() {
-  if (typeof window === 'undefined') return {};
-  try {
-    const value = JSON.parse(window.localStorage.getItem(PRODUCT_ALERTS_STORAGE_KEY) || '{}');
-    return value && typeof value === 'object' ? value : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeStoredProductAlerts(alerts) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(PRODUCT_ALERTS_STORAGE_KEY, JSON.stringify(alerts));
-  } catch {
-    // Alert delivery must still work when browser storage is unavailable.
-  }
-}
-
-function normalizedAlertEmail(email) {
-  return String(email || '').trim().toLowerCase();
-}
-
-function readStoredProductAlertPreferences() {
-  if (typeof window === 'undefined') return {};
+function readStoredProductAlertState() {
+  if (typeof window === 'undefined') return { subscriptions: {} };
   try {
     const value = JSON.parse(
-      window.localStorage.getItem(PRODUCT_ALERT_PREFERENCES_STORAGE_KEY) || '{}',
+      readStoredValue(PRODUCT_ALERT_STATE_STORAGE_KEY, 'necessary') || '{}',
     );
-    return value && typeof value === 'object' ? value : {};
+    return value && typeof value === 'object'
+      ? { subscriptions: {}, ...value, subscriptions: value.subscriptions || {} }
+      : { subscriptions: {} };
   } catch {
-    return {};
+    return { subscriptions: {} };
   }
 }
 
-function writeStoredProductAlertPreferences(preferences) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(
-      PRODUCT_ALERT_PREFERENCES_STORAGE_KEY,
-      JSON.stringify(preferences),
-    );
-  } catch {
-    // Preferences only simplify repeat confirmations; subscription still works.
-  }
+function writeStoredProductAlertState(state) {
+  writeStoredValue(
+    PRODUCT_ALERT_STATE_STORAGE_KEY,
+    JSON.stringify({
+      managementToken: state.managementToken || undefined,
+      maskedEmail: state.maskedEmail || undefined,
+      subscriptions: state.subscriptions || {},
+    }),
+    'necessary',
+  );
 }
 
 export const productAlertSubscriptions = {
   typesFor(productId, variantId) {
     if (!productId || !variantId) return [];
     const prefix = `${String(productId)}:${String(variantId)}:`;
-    return Object.keys(readStoredProductAlerts())
+    return Object.keys(readStoredProductAlertState().subscriptions)
       .filter((key) => key.startsWith(prefix))
       .map((key) => key.slice(prefix.length));
   },
-  markSubscribed(productId, variantId, type, emailInput = '') {
+  markSubscribed(productId, variantId, type, contact = {}) {
     if (!productId || !variantId || !type) return;
-    const alerts = readStoredProductAlerts();
+    const state = readStoredProductAlertState();
     const key = productAlertStorageId(productId, variantId, type);
-    const existing = alerts[key];
-    const email = normalizedAlertEmail(emailInput) ||
-      (existing && typeof existing === 'object'
-        ? normalizedAlertEmail(existing.email)
-        : '');
-    alerts[key] = email ? { email } : true;
-    writeStoredProductAlerts(alerts);
+    state.subscriptions[key] = true;
+    if (contact.managementToken) state.managementToken = contact.managementToken;
+    if (contact.maskedEmail) state.maskedEmail = contact.maskedEmail;
+    writeStoredProductAlertState(state);
   },
-  emailFor(productId, variantId, type) {
-    const alert = readStoredProductAlerts()[
-      productAlertStorageId(productId, variantId, type)
-    ];
-    return alert && typeof alert === 'object'
-      ? normalizedAlertEmail(alert.email)
-      : '';
+  replaceTypes(productId, variantId, types = []) {
+    if (!productId || !variantId) return;
+    const state = readStoredProductAlertState();
+    const prefix = `${String(productId)}:${String(variantId)}:`;
+    Object.keys(state.subscriptions).forEach((key) => {
+      if (key.startsWith(prefix)) delete state.subscriptions[key];
+    });
+    types.forEach((type) => {
+      state.subscriptions[productAlertStorageId(productId, variantId, type)] = true;
+    });
+    writeStoredProductAlertState(state);
   },
   markUnsubscribed(productId, variantId, type) {
     if (!productId || !variantId || !type) return;
-    const alerts = readStoredProductAlerts();
-    delete alerts[productAlertStorageId(productId, variantId, type)];
-    writeStoredProductAlerts(alerts);
+    const state = readStoredProductAlertState();
+    delete state.subscriptions[productAlertStorageId(productId, variantId, type)];
+    writeStoredProductAlertState(state);
   },
-};
-
-export const productAlertPreferences = {
-  forEmail(email) {
-    const normalizedEmail = normalizedAlertEmail(email);
-    if (!normalizedEmail) {
-      return { acceptedTerms: false, newsletterSubscribed: false };
-    }
-    const preference = readStoredProductAlertPreferences()[normalizedEmail];
+  contact() {
+    const state = readStoredProductAlertState();
     return {
-      acceptedTerms: preference?.acceptedTerms === true,
-      newsletterSubscribed: preference?.newsletterSubscribed === true,
+      managementToken: state.managementToken || '',
+      maskedEmail: state.maskedEmail || '',
     };
-  },
-  markAcceptedTerms(email) {
-    const normalizedEmail = normalizedAlertEmail(email);
-    if (!normalizedEmail) return;
-    const preferences = readStoredProductAlertPreferences();
-    preferences[normalizedEmail] = {
-      ...preferences[normalizedEmail],
-      acceptedTerms: true,
-    };
-    writeStoredProductAlertPreferences(preferences);
-  },
-  markNewsletterSubscribed(email) {
-    const normalizedEmail = normalizedAlertEmail(email);
-    if (!normalizedEmail) return;
-    const preferences = readStoredProductAlertPreferences();
-    preferences[normalizedEmail] = {
-      ...preferences[normalizedEmail],
-      newsletterSubscribed: true,
-    };
-    writeStoredProductAlertPreferences(preferences);
   },
 };
 
@@ -1152,19 +1105,73 @@ export const reviewsApi = {
 };
 
 export const newsletterApi = {
-  async subscribe(email, source = 'site') {
-    const result = await apiRequest('/newsletter/subscribe', {
+  async subscribe(email, {
+    source = 'site',
+    policyVersion,
+    managementToken,
+    acceptedMarketing = false,
+    authenticated = false,
+  } = {}) {
+    if (!acceptedMarketing) {
+      throw new Error('Potvrdite saglasnost za prijavu na novosti.');
+    }
+    return apiRequest('/newsletter/subscribe', {
       method: 'POST',
-      auth: false,
-      body: { email, source },
+      auth: authenticated,
+      body: {
+        ...(email ? { email } : {}),
+        ...(managementToken ? { managementToken } : {}),
+        source,
+        acceptedMarketing,
+        ...(policyVersion ? { policyVersion } : {}),
+      },
     });
-    productAlertPreferences.markNewsletterSubscribed(email);
-    return result;
   },
   confirm(token) {
     return apiRequest(`/newsletter/confirm?token=${encodeURIComponent(token)}`, {
       method: 'GET',
       auth: false,
+    });
+  },
+};
+
+export const privacyApi = {
+  current() {
+    return apiRequest('/privacy/current', { auth: false });
+  },
+  documents() {
+    return apiRequest('/privacy/documents', { auth: false });
+  },
+  document(kind) {
+    return apiRequest(`/privacy/documents/${encodeURIComponent(kind)}`, { auth: false });
+  },
+  recordConsent(payload, { authenticated = false } = {}) {
+    return apiRequest('/privacy/consents', {
+      method: 'POST',
+      auth: authenticated,
+      body: payload,
+    });
+  },
+  mine() {
+    return apiRequest('/privacy/me');
+  },
+  unsubscribeNewsletter() {
+    return apiRequest('/privacy/me/newsletter', { method: 'DELETE' });
+  },
+  unsubscribeAlert(id) {
+    return apiRequest(`/privacy/me/alerts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
+};
+
+export const privacyAdminApi = {
+  listPublications() {
+    return apiRequest('/privacy/admin/publications', { staff: true });
+  },
+  publish(payload) {
+    return apiRequest('/privacy/admin/publications', {
+      method: 'POST',
+      staff: true,
+      body: payload,
     });
   },
 };

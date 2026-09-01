@@ -15,6 +15,8 @@ import FAQ from './pages/FAQ.jsx';
 import Contact from './pages/Contact.jsx';
 import Usluge from './pages/Usluge.jsx';
 import OrdersPage from './pages/Admin/OrdersPage';
+import LegalDocument from './pages/LegalDocument.jsx';
+import Unsubscribe from './pages/Unsubscribe.jsx';
 
 export default function AppRoutes() {
   return (
@@ -44,6 +46,10 @@ export default function AppRoutes() {
       <Route path="/contact" element={<Contact />} />
       <Route path="/usluge" element={<Usluge />} />
       <Route path="/admin/orders" element={<OrdersPage />} />
+      <Route path="/privacy" element={<LegalDocument kind="privacy" />} />
+      <Route path="/cookies" element={<LegalDocument kind="cookies" />} />
+      <Route path="/terms" element={<LegalDocument kind="terms" />} />
+      <Route path="/unsubscribe" element={<Unsubscribe />} />
     </Routes>
   );
 }

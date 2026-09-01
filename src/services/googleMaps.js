@@ -20,6 +20,9 @@ function mapsPlacesIsReady() {
  * autocomplete was created too early and never retried.
  */
 export function loadGoogleMapsPlaces() {
+  if (!isGoogleAllowed()) {
+    return Promise.reject(new Error('Google Maps nije dozvoljen u podešavanjima privatnosti.'));
+  }
   if (mapsPlacesIsReady()) return Promise.resolve(window.google.maps);
   if (mapsLoadPromise) return mapsLoadPromise;
 
@@ -80,3 +83,12 @@ export function loadGoogleMapsPlaces() {
 
   return mapsLoadPromise;
 }
+
+export function unloadGoogleMaps() {
+  mapsLoadPromise = null;
+  if (typeof document === 'undefined') return;
+  document.getElementById(SCRIPT_ID)?.remove();
+  document.getElementById(LEGACY_SCRIPT_ID)?.remove();
+  document.querySelectorAll('.pac-container').forEach((element) => element.remove());
+}
+import { isGoogleAllowed } from './consentStorage.js';

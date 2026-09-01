@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { useFlash } from '../hooks/useFlash';
 import { useAuth } from '../hooks/useAuth';
 import { customerApi } from '../services/dajaPlatform';
+import { useConsent } from './ConsentContext.jsx';
+import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 
 const WishlistContext = createContext();
 
@@ -10,7 +12,7 @@ export const useWishlist = () => useContext(WishlistContext);
 export const WishlistProvider = ({ children }) => {
   const [wishlist, setWishlist] = useState(() => {
     try {
-      const saved = localStorage.getItem('daja_wishlist');
+      const saved = readStoredValue('daja_wishlist', 'necessary');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -19,24 +21,36 @@ export const WishlistProvider = ({ children }) => {
 
   const { flash } = useFlash();
   const { user } = useAuth();
+  const { hasDecision } = useConsent();
   const loadedServerWishlist = useRef(false);
   const isServerUpdate = useRef(false);
   const wishlistChannel = useRef(null);
   const latestWishlist = useRef(wishlist);
   const hasCrossTabState = useRef(false);
+  const hydratedGuestWishlist = useRef(false);
+  const guestWishlistPersistence = useRef(false);
 
   useEffect(() => {
     latestWishlist.current = wishlist;
   }, [wishlist]);
 
   useEffect(() => {
+    if (!hasDecision) return undefined;
     loadedServerWishlist.current = false;
     hasCrossTabState.current = false;
 
     if (!user) {
-      setWishlist([]);
-      localStorage.removeItem('daja_wishlist');
-      return;
+      if (!hydratedGuestWishlist.current) {
+        try {
+          const localWishlist = JSON.parse(readStoredValue('daja_wishlist', 'necessary') || '[]');
+          guestWishlistPersistence.current = localWishlist.length > 0;
+          setWishlist(localWishlist);
+        } catch {
+          setWishlist([]);
+        }
+        hydratedGuestWishlist.current = true;
+      }
+      return undefined;
     }
 
     let cancelled = false;
@@ -50,7 +64,7 @@ export const WishlistProvider = ({ children }) => {
         }
         let localList = [];
         try {
-          localList = JSON.parse(localStorage.getItem('daja_wishlist') || '[]');
+          localList = JSON.parse(readStoredValue('daja_wishlist', 'necessary') || '[]');
         } catch {
           localList = [];
         }
@@ -68,11 +82,12 @@ export const WishlistProvider = ({ children }) => {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [hasDecision, user]);
 
   useEffect(() => {
     const userId = user?.uid || user?.id;
     if (
+      !hasDecision ||
       !userId ||
       typeof window === 'undefined' ||
       !('BroadcastChannel' in window)
@@ -101,7 +116,7 @@ export const WishlistProvider = ({ children }) => {
       if (wishlistChannel.current === channel) wishlistChannel.current = null;
       channel.close();
     };
-  }, [user?.id, user?.uid]);
+  }, [hasDecision, user?.id, user?.uid]);
 
   useEffect(() => {
     const applyProductChange = (event) => {
@@ -146,6 +161,7 @@ export const WishlistProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    if (!hasDecision) return undefined;
     if (isServerUpdate.current) {
       isServerUpdate.current = false;
       return;
@@ -165,10 +181,13 @@ export const WishlistProvider = ({ children }) => {
       return () => clearTimeout(t);
     }
 
-    localStorage.setItem('daja_wishlist', JSON.stringify(wishlist));
-  }, [wishlist, user]);
+    if (!hydratedGuestWishlist.current || !guestWishlistPersistence.current) return undefined;
+    writeStoredValue('daja_wishlist', JSON.stringify(wishlist), 'necessary');
+    return undefined;
+  }, [hasDecision, wishlist, user]);
 
   const toggleWishlist = (product) => {
+    if (!user) guestWishlistPersistence.current = true;
     const exists = wishlist.find((item) => item.id === product.id);
 
     if (exists) {
@@ -192,11 +211,13 @@ export const WishlistProvider = ({ children }) => {
   };
 
   const removeFromWishlist = (id) => {
+    if (!user) guestWishlistPersistence.current = true;
     setWishlist((prev) => prev.filter((item) => item.id !== id));
     flash('Uklonjeno', 'Proizvod uklonjen iz liste zelja.', 'info');
   };
 
   const addToWishlist = (product) => {
+    if (!user) guestWishlistPersistence.current = true;
     setWishlist((prev) => {
       if (prev.some((item) => item.id === product.id)) return prev;
       return [...prev, product];

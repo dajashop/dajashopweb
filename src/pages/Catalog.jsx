@@ -20,6 +20,8 @@ import useProducts from '../hooks/useProducts.js';
 // --- ADMIN IMPORTI (Potrebni da bismo znali da li da prikažemo skrivene satove) ---
 import { useAuth } from '../hooks/useAuth';
 import { isAdminEmail } from '../services/dajaPlatform';
+import { useConsent } from '../context/ConsentContext.jsx';
+import { readSessionValue, writeSessionValue } from '../services/consentStorage.js';
 
 const PER_PAGE = 32;
 
@@ -99,6 +101,7 @@ export default function Catalog({ department = 'satovi' }) {
 
   // --- PROVERA ADMINA ---
   const { user } = useAuth();
+  const { preferencesAllowed } = useConsent();
   const isAdmin = user && isAdminEmail(user.email);
 
   // --- FETCH DATA ---
@@ -292,7 +295,7 @@ export default function Catalog({ department = 'satovi' }) {
   // Vrati skrol i paginaciju kad se vracamo (Back/Forward), bez Lenis-a
   useEffect(() => {
     if (navType === 'POP') {
-      const savedRaw = sessionStorage.getItem(scrollKey);
+      const savedRaw = readSessionValue(scrollKey, 'preferences');
       if (savedRaw) {
         try {
           const saved = JSON.parse(savedRaw);
@@ -317,7 +320,7 @@ export default function Catalog({ department = 'satovi' }) {
     savedScrollRef.current = null;
     setPage(1);
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [spKey, department, navType, scrollKey]);
+  }, [spKey, department, navType, preferencesAllowed, scrollKey]);
 
   // Kada se data ucita, ponovi skrol (u slucaju da je layout naknadno narastao)
   useEffect(() => {
@@ -338,9 +341,9 @@ export default function Catalog({ department = 'satovi' }) {
   useEffect(() => {
     return () => {
       const payload = JSON.stringify({ y: window.scrollY, page });
-      sessionStorage.setItem(scrollKey, payload);
+      writeSessionValue(scrollKey, payload, 'preferences');
     };
-  }, [scrollKey, page]);
+  }, [scrollKey, page, preferencesAllowed]);
 
   const start = (page - 1) * PER_PAGE;
   const itemsToShow = filteredData.slice(start, start + PER_PAGE);
