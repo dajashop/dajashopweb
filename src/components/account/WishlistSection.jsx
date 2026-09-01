@@ -21,7 +21,7 @@ function WishlistAlertButton({ item }) {
   const { product, loading } = useProduct(item.slug);
   const { user } = useAuth();
   const { flash } = useFlash();
-  const [subscribed, setSubscribed] = useState(false);
+  const [subscribedTypes, setSubscribedTypes] = useState([]);
   const [showGuestAlertModal, setShowGuestAlertModal] = useState(false);
 
   const inStock = product?.availability?.inStock ?? product?.inStock;
@@ -32,7 +32,7 @@ function WishlistAlertButton({ item }) {
       product?.id,
       product?.variantId,
     );
-    setSubscribed(storedTypes.includes(type));
+    setSubscribedTypes(storedTypes);
 
     if (!user?.email || !product?.id || !product?.variantId) return undefined;
     let cancelled = false;
@@ -51,7 +51,7 @@ function WishlistAlertButton({ item }) {
             activeType,
           ),
         );
-        setSubscribed(activeTypes.includes(type));
+        setSubscribedTypes(activeTypes);
       })
       .catch(() => {
         // The locally saved state remains available if the status lookup fails.
@@ -64,7 +64,11 @@ function WishlistAlertButton({ item }) {
 
   if (loading || !product?.id || !product.variantId) return null;
 
-  const label = inStock
+  const activeType = subscribedTypes.includes(type)
+    ? type
+    : subscribedTypes[0] || type;
+  const subscribed = subscribedTypes.includes(activeType);
+  const label = activeType === 'price_change'
     ? 'Obavesti me kada se cena promeni'
     : 'Obavesti me kada bude na stanju';
 
@@ -74,7 +78,9 @@ function WishlistAlertButton({ item }) {
 
   const handleGuestSubscription = ({ newsletterWarning }) => {
     productAlertSubscriptions.markSubscribed(product.id, product.variantId, type);
-    setSubscribed(true);
+    setSubscribedTypes((current) =>
+      current.includes(type) ? current : [...current, type],
+    );
     setShowGuestAlertModal(false);
     flash(
       'Obaveštenje je uključeno',
@@ -96,7 +102,11 @@ function WishlistAlertButton({ item }) {
         className={`wishlist-alert-btn${subscribed ? ' is-subscribed' : ''}`}
       >
         {subscribed ? <BellRing size={15} /> : <Bell size={15} />}
-        {subscribed ? 'Obaveštenje uključeno' : label}
+        {subscribed
+          ? activeType === 'price_change'
+            ? 'Obaveštenje o promeni cene uključeno'
+            : 'Obaveštenje o stanju uključeno'
+          : label}
       </button>
       <ProductAlertModal
         isOpen={showGuestAlertModal}

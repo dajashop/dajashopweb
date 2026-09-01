@@ -15,6 +15,10 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
   const [guestAlertType, setGuestAlertType] = useState(null);
   const [subscribedTypes, setSubscribedTypes] = useState([]);
   const inStock = product.availability?.inStock ?? product.inStock;
+  const outOfStockAlertType = subscribedTypes.includes('price_change')
+    ? 'price_change'
+    : 'back_in_stock';
+  const outOfStockSubscribed = subscribedTypes.includes(outOfStockAlertType);
 
   useEffect(() => {
     setGuestAlertType(null);
@@ -82,17 +86,19 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
         ) : (
           <button
             type="button"
-            className={`stock-alert-button${subscribedTypes.includes('back_in_stock') ? ' is-subscribed' : ''}`}
-            onClick={() => requestAlert('back_in_stock')}
-            disabled={subscribedTypes.includes('back_in_stock')}
+            className={`stock-alert-button${outOfStockSubscribed ? ' is-subscribed' : ''}`}
+            onClick={() => requestAlert(outOfStockAlertType)}
+            disabled={outOfStockSubscribed}
           >
-            {subscribedTypes.includes('back_in_stock') ? (
+            {outOfStockSubscribed ? (
               <BellRing size={19} />
             ) : (
               <Bell size={19} />
             )}
-            {subscribedTypes.includes('back_in_stock')
-              ? 'Obaveštenje je uključeno'
+            {outOfStockSubscribed
+              ? outOfStockAlertType === 'price_change'
+                ? 'Pratite promenu cene'
+                : 'Obaveštenje je uključeno'
               : 'Obavesti me kada bude na stanju'}
           </button>
         )}
