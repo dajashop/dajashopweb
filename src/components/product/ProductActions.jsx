@@ -100,17 +100,19 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
         </button>
       </div>
 
-      <button
-        type="button"
-        className={`price-alert-button${subscribedTypes.includes('price_change') ? ' is-subscribed' : ''}`}
-        onClick={() => requestAlert('price_change')}
-        disabled={subscribing || subscribedTypes.includes('price_change')}
-      >
-        {subscribedTypes.includes('price_change') ? <BellRing size={16} /> : <Tag size={16} />}
-        {subscribedTypes.includes('price_change')
-          ? 'Pratite promenu cene'
-          : 'Obavesti me kada se cena promeni'}
-      </button>
+      {inStock && (
+        <button
+          type="button"
+          className={`price-alert-button${subscribedTypes.includes('price_change') ? ' is-subscribed' : ''}`}
+          onClick={() => requestAlert('price_change')}
+          disabled={subscribing || subscribedTypes.includes('price_change')}
+        >
+          {subscribedTypes.includes('price_change') ? <BellRing size={16} /> : <Tag size={16} />}
+          {subscribedTypes.includes('price_change')
+            ? 'Pratite promenu cene'
+            : 'Obavesti me kada se cena promeni'}
+        </button>
+      )}
 
       {alertType && !user?.email && (
         <form
