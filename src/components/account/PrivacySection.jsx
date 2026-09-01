@@ -156,6 +156,8 @@ export default function PrivacySection({ user }) {
             {alerts.map((alert) => {
               const name = [alert.brand, alert.name].filter(Boolean).join(' ') || 'Artikal';
               const hasPrice = Number.isFinite(Number(alert.price));
+              const imageSrc = alert.image || '/images/product-placeholder.svg';
+              const imageNeedsCors = imageSrc.startsWith('https://cdn.dajashop.rs/');
               return (
                 <li key={alert.id}>
                   <div className="privacy-section__alert-product">
@@ -163,12 +165,13 @@ export default function PrivacySection({ user }) {
                       type="button"
                       className="privacy-section__image-button"
                       aria-label={`Uvećaj sliku: ${name}`}
-                      onClick={() => setPreview({ src: alert.image || '/images/product-placeholder.svg', name })}
+                      onClick={() => setPreview({ src: imageSrc, name, imageNeedsCors })}
                     >
                       <img
-                        src={alert.image || '/images/product-placeholder.svg'}
+                        src={imageSrc}
                         alt=""
                         className="privacy-section__alert-image"
+                        crossOrigin={imageNeedsCors ? 'anonymous' : undefined}
                         onError={(event) => {
                           event.currentTarget.src = '/images/product-placeholder.svg';
                         }}
@@ -194,7 +197,7 @@ export default function PrivacySection({ user }) {
         <div className="privacy-section__image-modal" role="dialog" aria-modal="true" aria-label={`Slika artikla: ${preview.name}`} onClick={() => setPreview(null)}>
           <div className="privacy-section__image-modal-content" onClick={(event) => event.stopPropagation()}>
             <button type="button" className="privacy-section__image-modal-close" aria-label="Zatvori sliku" onClick={() => setPreview(null)}><X size={21} /></button>
-            <img src={preview.src} alt={preview.name} onError={(event) => { event.currentTarget.src = '/images/product-placeholder.svg'; }} />
+            <img src={preview.src} alt={preview.name} crossOrigin={preview.imageNeedsCors ? 'anonymous' : undefined} onError={(event) => { event.currentTarget.src = '/images/product-placeholder.svg'; }} />
             <strong>{preview.name}</strong>
           </div>
         </div>

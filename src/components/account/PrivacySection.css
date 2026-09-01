@@ -26,7 +26,7 @@
 .privacy-section__settings,
 .privacy-section__primary,
 .privacy-section__danger,
-.privacy-section__alerts button {
+.privacy-section__alerts > li > button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -46,7 +46,7 @@
 }
 
 .privacy-section__danger,
-.privacy-section__alerts button {
+.privacy-section__alerts > li > button {
   margin-top: 12px;
   background: #fef2f2;
   color: #b91c1c;
@@ -124,5 +124,5 @@
   .privacy-section__header { flex-direction: column; }
   .privacy-section__choices { grid-template-columns: 1fr; }
   .privacy-section__alerts li { align-items: flex-start; }
-  .privacy-section__alerts button { flex: 0 0 auto; }
+  .privacy-section__alerts > li > button { flex: 0 0 auto; }
 }
