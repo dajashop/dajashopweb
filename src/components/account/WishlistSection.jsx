@@ -12,6 +12,7 @@ import useProduct from '../../hooks/useProduct.js';
 import { productAlertsApi } from '../../services/dajaPlatform.js';
 import './WishlistSection.css';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
+import ProductAlertModal from '../modals/ProductAlertModal.jsx';
 
 function WishlistAlertButton({ item }) {
   const { product, loading } = useProduct(item.slug);
@@ -19,6 +20,7 @@ function WishlistAlertButton({ item }) {
   const { flash } = useFlash();
   const [subscribing, setSubscribing] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
+  const [showGuestAlertModal, setShowGuestAlertModal] = useState(false);
 
   if (loading || !product?.id || !product.variantId) return null;
 
@@ -31,7 +33,7 @@ function WishlistAlertButton({ item }) {
   const subscribe = async () => {
     if (subscribing || subscribed) return;
     if (!user?.email) {
-      flash('Dodaj email adresu', 'Potrebna je email adresa za obaveštenja.', 'info');
+      setShowGuestAlertModal(true);
       return;
     }
 
@@ -40,6 +42,7 @@ function WishlistAlertButton({ item }) {
       await productAlertsApi.subscribe(product.id, {
         type,
         variantId: product.variantId,
+        email: user.email,
       });
       setSubscribed(true);
       flash(
@@ -56,16 +59,39 @@ function WishlistAlertButton({ item }) {
     }
   };
 
+  const handleGuestSubscription = ({ newsletterWarning }) => {
+    setSubscribed(true);
+    setShowGuestAlertModal(false);
+    flash(
+      'Obaveštenje je uključeno',
+      newsletterWarning
+        ? 'Obaveštenje je sačuvano, ali prijava na novosti nije uspela.'
+        : inStock
+          ? 'Javićemo vam emailom kada se cena promeni.'
+          : 'Javićemo vam emailom kada proizvod ponovo bude na stanju.',
+      newsletterWarning ? 'info' : 'success',
+    );
+  };
+
   return (
-    <button
-      type="button"
-      onClick={subscribe}
-      disabled={subscribing || subscribed}
-      className={`wishlist-alert-btn${subscribed ? ' is-subscribed' : ''}`}
-    >
-      {subscribed ? <BellRing size={15} /> : <Bell size={15} />}
-      {subscribed ? 'Obaveštenje uključeno' : label}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={subscribe}
+        disabled={subscribing || subscribed}
+        className={`wishlist-alert-btn${subscribed ? ' is-subscribed' : ''}`}
+      >
+        {subscribed ? <BellRing size={15} /> : <Bell size={15} />}
+        {subscribed ? 'Obaveštenje uključeno' : label}
+      </button>
+      <ProductAlertModal
+        isOpen={showGuestAlertModal}
+        onClose={() => setShowGuestAlertModal(false)}
+        product={product}
+        type={type}
+        onSubscribed={handleGuestSubscription}
+      />
+    </>
   );
 }
 

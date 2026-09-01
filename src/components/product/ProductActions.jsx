@@ -3,43 +3,35 @@ import { Bell, BellRing, Heart, Tag } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFlash } from '../../hooks/useFlash.js';
 import { productAlertsApi } from '../../services/dajaPlatform.js';
+import ProductAlertModal from '../modals/ProductAlertModal.jsx';
 import './ProductActions.css';
-
-const ALERT_COPY = {
-  back_in_stock: 'Obavesti me kada bude na stanju',
-  price_change: 'Prati promenu cene',
-};
 
 export default function ProductActions({ product, onAdd, onWishlist, isLiked }) {
   const { user } = useAuth();
   const { flash } = useFlash();
-  const [alertType, setAlertType] = useState(null);
-  const [email, setEmail] = useState('');
+  const [guestAlertType, setGuestAlertType] = useState(null);
   const [subscribing, setSubscribing] = useState(false);
   const [subscribedTypes, setSubscribedTypes] = useState([]);
   const inStock = product.availability?.inStock ?? product.inStock;
 
   useEffect(() => {
-    setAlertType(null);
-    setEmail('');
+    setGuestAlertType(null);
     setSubscribing(false);
     setSubscribedTypes([]);
   }, [product.id]);
 
-  const subscribe = async (type, recipientEmail) => {
-    if (!product.id || !product.variantId || !recipientEmail || subscribing) return;
+  const subscribe = async (type) => {
+    if (!product.id || !product.variantId || !user?.email || subscribing) return;
     setSubscribing(true);
     try {
       await productAlertsApi.subscribe(product.id, {
         type,
         variantId: product.variantId,
-        ...(user?.email ? {} : { email: recipientEmail }),
+        email: user.email,
       });
       setSubscribedTypes((current) =>
         current.includes(type) ? current : [...current, type]
       );
-      setAlertType(null);
-      setEmail('');
       flash(
         'Obaveštenje je uključeno',
         type === 'back_in_stock'
@@ -57,10 +49,24 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
   const requestAlert = (type) => {
     if (subscribedTypes.includes(type)) return;
     if (user?.email) {
-      subscribe(type, user.email);
+      subscribe(type);
       return;
     }
-    setAlertType(type);
+    setGuestAlertType(type);
+  };
+
+  const handleGuestSubscription = ({ type, newsletterWarning }) => {
+    setSubscribedTypes((current) =>
+      current.includes(type) ? current : [...current, type],
+    );
+    setGuestAlertType(null);
+    flash(
+      'Obaveštenje je uključeno',
+      newsletterWarning
+        ? 'Obaveštenje je sačuvano, ali prijava na novosti nije uspela.'
+        : 'Javićemo vam emailom čim se promeni stanje ili cena artikla.',
+      newsletterWarning ? 'info' : 'success',
+    );
   };
 
   return (
@@ -114,37 +120,13 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
         </button>
       )}
 
-      {alertType && !user?.email && (
-        <form
-          className="product-alert-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            subscribe(alertType, email);
-          }}
-        >
-          <label htmlFor="product-alert-email">
-            Unesite email na koji želite obaveštenje
-          </label>
-          <div className="product-alert-form__controls">
-            <input
-              id="product-alert-email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="vas@email.com"
-              autoComplete="email"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              required
-              autoFocus
-            />
-            <button type="submit" disabled={subscribing}>
-              {subscribing ? 'Čuvamo...' : ALERT_COPY[alertType]}
-            </button>
-          </div>
-        </form>
-      )}
+      <ProductAlertModal
+        isOpen={Boolean(guestAlertType)}
+        onClose={() => setGuestAlertType(null)}
+        product={product}
+        type={guestAlertType}
+        onSubscribed={handleGuestSubscription}
+      />
     </div>
   );
 }

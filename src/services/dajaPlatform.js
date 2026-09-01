@@ -840,9 +840,10 @@ export const ordersApi = {
 };
 
 export const productAlertsApi = {
-  subscribe(productId, payload) {
+  subscribe(productId, payload, { auth = true } = {}) {
     return apiRequest(`/products/${encodeURIComponent(productId)}/alerts`, {
       method: 'POST',
+      auth,
       body: payload,
     });
   },
@@ -1013,11 +1014,11 @@ export const reviewsApi = {
 };
 
 export const newsletterApi = {
-  subscribe(email) {
+  subscribe(email, source = 'site') {
     return apiRequest('/newsletter/subscribe', {
       method: 'POST',
       auth: false,
-      body: { email },
+      body: { email, source },
     });
   },
   confirm(token) {
