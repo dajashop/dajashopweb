@@ -96,6 +96,42 @@
   flex-direction: column;
 }
 
+.wishlist-alert-btn {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 9px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #111);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.wishlist-alert-btn:hover {
+  background: var(--color-surface-hover, #f5f5f5);
+  border-color: var(--color-primary, #111);
+}
+
+.wishlist-alert-btn.is-subscribed {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #15803d;
+  cursor: default;
+}
+
+.wishlist-alert-btn:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
 @media (max-width: 640px) {
   .wishlist-grid {
     grid-template-columns: repeat(2, 1fr);

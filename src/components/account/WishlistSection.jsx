@@ -1,14 +1,73 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Trash2, ShoppingCart, ArrowRight } from 'lucide-react';
+import { Bell, BellRing, Heart, Trash2, ShoppingCart } from 'lucide-react';
 import { money } from '../../utils/currency.js';
 import { useWishlist } from '../../context/WishlistProvider.jsx';
 import { useCart } from '../../hooks/useCart.js';
 import { useFlash } from '../../hooks/useFlash.js';
 import { useUndo } from '../../hooks/useUndo.js';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth.js';
+import useProduct from '../../hooks/useProduct.js';
+import { productAlertsApi } from '../../services/dajaPlatform.js';
 import './WishlistSection.css';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
+
+function WishlistAlertButton({ item }) {
+  const { product, loading } = useProduct(item.slug);
+  const { user } = useAuth();
+  const { flash } = useFlash();
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+
+  if (loading || !product?.id || !product.variantId) return null;
+
+  const inStock = product.availability?.inStock ?? product.inStock;
+  const type = inStock ? 'price_change' : 'back_in_stock';
+  const label = inStock
+    ? 'Obavesti me kada se cena promeni'
+    : 'Obavesti me kada bude na stanju';
+
+  const subscribe = async () => {
+    if (subscribing || subscribed) return;
+    if (!user?.email) {
+      flash('Dodaj email adresu', 'Potrebna je email adresa za obaveštenja.', 'info');
+      return;
+    }
+
+    setSubscribing(true);
+    try {
+      await productAlertsApi.subscribe(product.id, {
+        type,
+        variantId: product.variantId,
+      });
+      setSubscribed(true);
+      flash(
+        'Obaveštenje je uključeno',
+        inStock
+          ? 'Javićemo vam emailom kada se cena promeni.'
+          : 'Javićemo vam emailom kada proizvod ponovo bude na stanju.',
+        'success',
+      );
+    } catch (error) {
+      flash('Nismo uspeli', error.message || 'Pokušajte ponovo za trenutak.', 'error');
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={subscribe}
+      disabled={subscribing || subscribed}
+      className={`wishlist-alert-btn${subscribed ? ' is-subscribed' : ''}`}
+    >
+      {subscribed ? <BellRing size={15} /> : <Bell size={15} />}
+      {subscribed ? 'Obaveštenje uključeno' : label}
+    </button>
+  );
+}
 
 function WishlistSection() {
   const { wishlist, removeFromWishlist, addToWishlist } = useWishlist();
@@ -134,6 +193,8 @@ function WishlistSection() {
                   <div className="font-mono font-bold text-lg mb-3">
                     {money(item.price)}
                   </div>
+
+                  <WishlistAlertButton item={item} />
 
                   <button
                     onClick={() => moveToCart(item)}
