@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Bell, X } from 'lucide-react';
 import {
   productAlertPreferences,
@@ -88,7 +89,11 @@ export default function ProductAlertModal({
     }
   };
 
-  return (
+  // A wishlist card is animated with a CSS transform. Rendering the overlay
+  // inside it makes a `position: fixed` layer use the card as its viewport,
+  // which caused the modal to flash on card hover. A portal keeps it at the
+  // document root, centered over the complete screen.
+  return createPortal(
     <div className="product-alert-modal__overlay" role="presentation">
       <div
         className="product-alert-modal"
@@ -170,6 +175,7 @@ export default function ProductAlertModal({
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
