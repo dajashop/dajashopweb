@@ -125,6 +125,7 @@
   background: #f0fdf4;
   color: #15803d;
   cursor: default;
+  white-space: nowrap;
 }
 
 .wishlist-alert-btn:disabled {

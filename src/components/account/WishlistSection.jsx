@@ -104,8 +104,8 @@ function WishlistAlertButton({ item }) {
         {subscribed ? <BellRing size={15} /> : <Bell size={15} />}
         {subscribed
           ? activeType === 'price_change'
-            ? 'Obaveštenje o promeni cene uključeno'
-            : 'Obaveštenje o stanju uključeno'
+            ? 'Cena: uključeno'
+            : 'Stanje: uključeno'
           : label}
       </button>
       <ProductAlertModal
