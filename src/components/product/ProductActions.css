@@ -127,6 +127,12 @@
   cursor: wait;
 }
 
+.stock-alert-button.is-subscribed:disabled,
+.price-alert-button.is-subscribed:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
 .product-alert-form {
   margin-top: 12px;
   padding: 14px;

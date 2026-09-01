@@ -849,6 +849,47 @@ export const productAlertsApi = {
   },
 };
 
+const PRODUCT_ALERTS_STORAGE_KEY = 'dajashop_product_alert_subscriptions';
+
+function productAlertStorageId(productId, variantId, type) {
+  return [productId, variantId, type].map(String).join(':');
+}
+
+function readStoredProductAlerts() {
+  if (typeof window === 'undefined') return {};
+  try {
+    const value = JSON.parse(window.localStorage.getItem(PRODUCT_ALERTS_STORAGE_KEY) || '{}');
+    return value && typeof value === 'object' ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredProductAlerts(alerts) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(PRODUCT_ALERTS_STORAGE_KEY, JSON.stringify(alerts));
+  } catch {
+    // Alert delivery must still work when browser storage is unavailable.
+  }
+}
+
+export const productAlertSubscriptions = {
+  typesFor(productId, variantId) {
+    if (!productId || !variantId) return [];
+    const prefix = `${String(productId)}:${String(variantId)}:`;
+    return Object.keys(readStoredProductAlerts())
+      .filter((key) => key.startsWith(prefix))
+      .map((key) => key.slice(prefix.length));
+  },
+  markSubscribed(productId, variantId, type) {
+    if (!productId || !variantId || !type) return;
+    const alerts = readStoredProductAlerts();
+    alerts[productAlertStorageId(productId, variantId, type)] = true;
+    writeStoredProductAlerts(alerts);
+  },
+};
+
 export const mediaApi = {
   registerExternal(url, options = {}) {
     return apiRequest('/media/external', {

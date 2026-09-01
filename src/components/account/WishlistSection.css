@@ -132,6 +132,11 @@
   cursor: wait;
 }
 
+.wishlist-alert-btn.is-subscribed:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
 @media (max-width: 640px) {
   .wishlist-grid {
     grid-template-columns: repeat(2, 1fr);

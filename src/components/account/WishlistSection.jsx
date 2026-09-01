@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bell, BellRing, Heart, Trash2, ShoppingCart } from 'lucide-react';
 import { money } from '../../utils/currency.js';
@@ -9,7 +9,10 @@ import { useUndo } from '../../hooks/useUndo.js';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
 import useProduct from '../../hooks/useProduct.js';
-import { productAlertsApi } from '../../services/dajaPlatform.js';
+import {
+  productAlertsApi,
+  productAlertSubscriptions,
+} from '../../services/dajaPlatform.js';
 import './WishlistSection.css';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
 import ProductAlertModal from '../modals/ProductAlertModal.jsx';
@@ -22,10 +25,19 @@ function WishlistAlertButton({ item }) {
   const [subscribed, setSubscribed] = useState(false);
   const [showGuestAlertModal, setShowGuestAlertModal] = useState(false);
 
+  const inStock = product?.availability?.inStock ?? product?.inStock;
+  const type = inStock ? 'price_change' : 'back_in_stock';
+
+  useEffect(() => {
+    setSubscribed(
+      productAlertSubscriptions
+        .typesFor(product?.id, product?.variantId)
+        .includes(type),
+    );
+  }, [product?.id, product?.variantId, type]);
+
   if (loading || !product?.id || !product.variantId) return null;
 
-  const inStock = product.availability?.inStock ?? product.inStock;
-  const type = inStock ? 'price_change' : 'back_in_stock';
   const label = inStock
     ? 'Obavesti me kada se cena promeni'
     : 'Obavesti me kada bude na stanju';
@@ -44,6 +56,7 @@ function WishlistAlertButton({ item }) {
         variantId: product.variantId,
         email: user.email,
       });
+      productAlertSubscriptions.markSubscribed(product.id, product.variantId, type);
       setSubscribed(true);
       flash(
         'Obaveštenje je uključeno',
@@ -60,6 +73,7 @@ function WishlistAlertButton({ item }) {
   };
 
   const handleGuestSubscription = ({ newsletterWarning }) => {
+    productAlertSubscriptions.markSubscribed(product.id, product.variantId, type);
     setSubscribed(true);
     setShowGuestAlertModal(false);
     flash(

@@ -2,7 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Bell, BellRing, Heart, Tag } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFlash } from '../../hooks/useFlash.js';
-import { productAlertsApi } from '../../services/dajaPlatform.js';
+import {
+  productAlertsApi,
+  productAlertSubscriptions,
+} from '../../services/dajaPlatform.js';
 import ProductAlertModal from '../modals/ProductAlertModal.jsx';
 import './ProductActions.css';
 
@@ -17,8 +20,10 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
   useEffect(() => {
     setGuestAlertType(null);
     setSubscribing(false);
-    setSubscribedTypes([]);
-  }, [product.id]);
+    setSubscribedTypes(
+      productAlertSubscriptions.typesFor(product.id, product.variantId),
+    );
+  }, [product.id, product.variantId]);
 
   const subscribe = async (type) => {
     if (!product.id || !product.variantId || !user?.email || subscribing) return;
@@ -29,6 +34,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
         variantId: product.variantId,
         email: user.email,
       });
+      productAlertSubscriptions.markSubscribed(product.id, product.variantId, type);
       setSubscribedTypes((current) =>
         current.includes(type) ? current : [...current, type]
       );
@@ -56,6 +62,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
   };
 
   const handleGuestSubscription = ({ type, newsletterWarning }) => {
+    productAlertSubscriptions.markSubscribed(product.id, product.variantId, type);
     setSubscribedTypes((current) =>
       current.includes(type) ? current : [...current, type],
     );
