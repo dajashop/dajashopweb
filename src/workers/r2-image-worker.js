@@ -21,19 +21,11 @@ function getObjectKey(pathname) {
   return key || null;
 }
 
-function getCorsHeaders(origin, env) {
-  const allowed = String(env.ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((v) => v.trim())
-    .filter(Boolean);
-
-  if (!origin || !allowed.includes(origin)) {
-    return {};
-  }
-
+function getCorsHeaders() {
   return {
-    'Access-Control-Allow-Origin': origin,
-    Vary: 'Origin',
+    // Product images are public. A fixed wildcard header prevents a cached
+    // no-Origin response from being reused by a CORS request (e.g. QR tools).
+    'Access-Control-Allow-Origin': '*',
   };
 }
 
@@ -53,8 +45,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const method = request.method.toUpperCase();
-    const origin = request.headers.get('Origin');
-    const corsHeaders = getCorsHeaders(origin, env);
+    const corsHeaders = getCorsHeaders();
 
     if (method === 'OPTIONS') {
       return new Response(null, {
