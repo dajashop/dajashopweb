@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react';
 import { CartCtx } from './CartContext.jsx';
 import { useAuth } from '../hooks/useAuth';
-import { customerApi } from '../services/dajaPlatform';
+import { customerApi, subscribePublicCatalogRealtime } from '../services/dajaPlatform';
 
 const initial = () => {
   try {
@@ -24,6 +24,12 @@ function reducer(state, action) {
     }
     case 'REMOVE':
       return state.filter((x) => x.id !== action.id);
+    case 'REMOVE_PRODUCT':
+      return state.filter(
+        (item) =>
+          (!action.productId || item.id !== action.productId) &&
+          (!action.slug || item.slug !== action.slug),
+      );
     case 'SET_QTY':
       return state.map((x) =>
         x.id === action.id ? { ...x, qty: Math.max(1, action.qty) } : x,
@@ -42,6 +48,8 @@ export function CartProvider({ children }) {
   const { user } = useAuth();
   const loadedServerCart = useRef(false);
   const isServerUpdate = useRef(false);
+  const invalidatedProductIds = useRef(new Set());
+  const invalidatedProductSlugs = useRef(new Set());
 
   useEffect(() => {
     loadedServerCart.current = false;
@@ -60,18 +68,43 @@ export function CartProvider({ children }) {
         const localItems = initial();
         const merged = [...serverCart];
         localItems.forEach((localItem) => {
-          if (!merged.some((item) => item.id === localItem.id)) merged.push(localItem);
+          if (
+            !invalidatedProductIds.current.has(localItem.id) &&
+            !invalidatedProductSlugs.current.has(localItem.slug) &&
+            !merged.some((item) => item.id === localItem.id)
+          ) {
+            merged.push(localItem);
+          }
         });
+        const validItems = merged.filter(
+          (item) =>
+            !invalidatedProductIds.current.has(item.id) &&
+            !invalidatedProductSlugs.current.has(item.slug),
+        );
         isServerUpdate.current = true;
-        dispatch({ type: 'REPLACE', items: merged });
+        dispatch({ type: 'REPLACE', items: validItems });
         loadedServerCart.current = true;
-        if (merged.length !== serverCart.length) customerApi.setCart(merged);
+        if (validItems.length !== serverCart.length) customerApi.setCart(validItems);
       })
       .catch((error) => console.error('Cart load error:', error));
 
     return () => {
       cancelled = true;
     };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+
+    return subscribePublicCatalogRealtime((event) => {
+      const productId = event?.data?.productId || event?.productId;
+      const slug = event?.data?.slug || event?.slug;
+      if (!productId && !slug) return;
+
+      if (productId) invalidatedProductIds.current.add(productId);
+      if (slug) invalidatedProductSlugs.current.add(slug);
+      dispatch({ type: 'REMOVE_PRODUCT', productId, slug });
+    });
   }, [user]);
 
   useEffect(() => {

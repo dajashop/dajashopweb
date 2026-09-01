@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useFlash } from '../hooks/useFlash';
 import { useAuth } from '../hooks/useAuth';
-import { customerApi } from '../services/dajaPlatform';
+import { customerApi, subscribePublicCatalogRealtime } from '../services/dajaPlatform';
 
 const WishlistContext = createContext();
 
@@ -21,6 +21,8 @@ export const WishlistProvider = ({ children }) => {
   const { user } = useAuth();
   const loadedServerWishlist = useRef(false);
   const isServerUpdate = useRef(false);
+  const invalidatedProductIds = useRef(new Set());
+  const invalidatedProductSlugs = useRef(new Set());
 
   useEffect(() => {
     loadedServerWishlist.current = false;
@@ -44,18 +46,49 @@ export const WishlistProvider = ({ children }) => {
         }
         const merged = [...serverList];
         localList.forEach((localItem) => {
-          if (!merged.some((item) => item.id === localItem.id)) merged.push(localItem);
+          if (
+            !invalidatedProductIds.current.has(localItem.id) &&
+            !invalidatedProductSlugs.current.has(localItem.slug) &&
+            !merged.some((item) => item.id === localItem.id)
+          ) {
+            merged.push(localItem);
+          }
         });
+        const validItems = merged.filter(
+          (item) =>
+            !invalidatedProductIds.current.has(item.id) &&
+            !invalidatedProductSlugs.current.has(item.slug),
+        );
         isServerUpdate.current = true;
-        setWishlist(merged);
+        setWishlist(validItems);
         loadedServerWishlist.current = true;
-        if (merged.length !== serverList.length) customerApi.setWishlist(merged);
+        if (validItems.length !== serverList.length) customerApi.setWishlist(validItems);
       })
       .catch((error) => console.error('Wishlist load error:', error));
 
     return () => {
       cancelled = true;
     };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+
+    return subscribePublicCatalogRealtime((event) => {
+      const productId = event?.data?.productId || event?.productId;
+      const slug = event?.data?.slug || event?.slug;
+      if (!productId && !slug) return;
+
+      if (productId) invalidatedProductIds.current.add(productId);
+      if (slug) invalidatedProductSlugs.current.add(slug);
+      setWishlist((current) =>
+        current.filter(
+          (item) =>
+            (!productId || item.id !== productId) &&
+            (!slug || item.slug !== slug),
+        ),
+      );
+    });
   }, [user]);
 
   useEffect(() => {
