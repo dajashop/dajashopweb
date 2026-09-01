@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { BellOff, Check, Cookie, Loader2, Mail, Settings2 } from 'lucide-react';
+import { BellOff, Check, Cookie, Loader2, Mail, Settings2, X } from 'lucide-react';
 import { privacyApi, newsletterApi } from '../../services/dajaPlatform.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import { money } from '../../utils/currency.js';
@@ -17,6 +17,7 @@ export default function PrivacySection({ user }) {
   const [busy, setBusy] = useState('');
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [error, setError] = useState('');
+  const [preview, setPreview] = useState(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -33,6 +34,15 @@ export default function PrivacySection({ user }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (!preview) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setPreview(null);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [preview]);
 
   const unsubscribeNewsletter = async () => {
     setBusy('newsletter');
@@ -149,14 +159,21 @@ export default function PrivacySection({ user }) {
               return (
                 <li key={alert.id}>
                   <div className="privacy-section__alert-product">
-                    <img
-                      src={alert.image || '/images/product-placeholder.svg'}
-                      alt={name}
-                      className="privacy-section__alert-image"
-                      onError={(event) => {
-                        event.currentTarget.src = '/images/product-placeholder.svg';
-                      }}
-                    />
+                    <button
+                      type="button"
+                      className="privacy-section__image-button"
+                      aria-label={`Uvećaj sliku: ${name}`}
+                      onClick={() => setPreview({ src: alert.image || '/images/product-placeholder.svg', name })}
+                    >
+                      <img
+                        src={alert.image || '/images/product-placeholder.svg'}
+                        alt=""
+                        className="privacy-section__alert-image"
+                        onError={(event) => {
+                          event.currentTarget.src = '/images/product-placeholder.svg';
+                        }}
+                      />
+                    </button>
                     <div className="privacy-section__alert-details">
                       <strong>{name}</strong>
                       <span>{alertLabel[alert.type] || 'Obaveštenje'}</span>
@@ -172,6 +189,16 @@ export default function PrivacySection({ user }) {
           </ul>
         )}
       </article>
+
+      {preview && (
+        <div className="privacy-section__image-modal" role="dialog" aria-modal="true" aria-label={`Slika artikla: ${preview.name}`} onClick={() => setPreview(null)}>
+          <div className="privacy-section__image-modal-content" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="privacy-section__image-modal-close" aria-label="Zatvori sliku" onClick={() => setPreview(null)}><X size={21} /></button>
+            <img src={preview.src} alt={preview.name} onError={(event) => { event.currentTarget.src = '/images/product-placeholder.svg'; }} />
+            <strong>{preview.name}</strong>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
