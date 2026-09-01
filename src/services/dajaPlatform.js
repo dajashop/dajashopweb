@@ -854,6 +854,13 @@ export const productAlertsApi = {
       body: { variantId, email },
     });
   },
+  unsubscribe(productId, payload, { auth = true } = {}) {
+    return apiRequest(`/products/${encodeURIComponent(productId)}/alerts`, {
+      method: 'DELETE',
+      auth,
+      body: payload,
+    });
+  },
 };
 
 const PRODUCT_ALERTS_STORAGE_KEY = 'dajashop_product_alert_subscriptions';
@@ -918,10 +925,30 @@ export const productAlertSubscriptions = {
       .filter((key) => key.startsWith(prefix))
       .map((key) => key.slice(prefix.length));
   },
-  markSubscribed(productId, variantId, type) {
+  markSubscribed(productId, variantId, type, emailInput = '') {
     if (!productId || !variantId || !type) return;
     const alerts = readStoredProductAlerts();
-    alerts[productAlertStorageId(productId, variantId, type)] = true;
+    const key = productAlertStorageId(productId, variantId, type);
+    const existing = alerts[key];
+    const email = normalizedAlertEmail(emailInput) ||
+      (existing && typeof existing === 'object'
+        ? normalizedAlertEmail(existing.email)
+        : '');
+    alerts[key] = email ? { email } : true;
+    writeStoredProductAlerts(alerts);
+  },
+  emailFor(productId, variantId, type) {
+    const alert = readStoredProductAlerts()[
+      productAlertStorageId(productId, variantId, type)
+    ];
+    return alert && typeof alert === 'object'
+      ? normalizedAlertEmail(alert.email)
+      : '';
+  },
+  markUnsubscribed(productId, variantId, type) {
+    if (!productId || !variantId || !type) return;
+    const alerts = readStoredProductAlerts();
+    delete alerts[productAlertStorageId(productId, variantId, type)];
     writeStoredProductAlerts(alerts);
   },
 };

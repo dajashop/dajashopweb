@@ -124,8 +124,33 @@
   border-color: #16a34a;
   background: #f0fdf4;
   color: #15803d;
-  cursor: default;
+  cursor: pointer;
   white-space: nowrap;
+}
+
+.wishlist-alert-btn__status,
+.wishlist-alert-btn__unsubscribe {
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.wishlist-alert-btn__status {
+  display: inline-flex;
+}
+
+.wishlist-alert-btn__unsubscribe {
+  display: none;
+}
+
+@media (hover: hover) {
+  .wishlist-alert-btn.is-subscribed:not(:disabled):hover .wishlist-alert-btn__status {
+    display: none;
+  }
+
+  .wishlist-alert-btn.is-subscribed:not(:disabled):hover .wishlist-alert-btn__unsubscribe {
+    display: inline-flex;
+  }
 }
 
 .wishlist-alert-btn:disabled {
@@ -134,8 +159,8 @@
 }
 
 .wishlist-alert-btn.is-subscribed:disabled {
-  opacity: 1;
-  cursor: default;
+  opacity: 0.75;
+  cursor: wait;
 }
 
 @media (max-width: 640px) {

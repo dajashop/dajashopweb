@@ -43,6 +43,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
             product.id,
             product.variantId,
             type,
+            user.email,
           ),
         );
         setSubscribedTypes(activeTypes);
@@ -61,8 +62,13 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
     setGuestAlertType(type);
   };
 
-  const handleGuestSubscription = ({ type, newsletterWarning }) => {
-    productAlertSubscriptions.markSubscribed(product.id, product.variantId, type);
+  const handleGuestSubscription = ({ type, email, newsletterWarning }) => {
+    productAlertSubscriptions.markSubscribed(
+      product.id,
+      product.variantId,
+      type,
+      email || user?.email,
+    );
     setSubscribedTypes((current) =>
       current.includes(type) ? current : [...current, type],
     );

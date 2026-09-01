@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, BellRing, Heart, Trash2, ShoppingCart } from 'lucide-react';
+import { Bell, BellOff, BellRing, Heart, Trash2, ShoppingCart } from 'lucide-react';
 import { money } from '../../utils/currency.js';
 import { useWishlist } from '../../context/WishlistProvider.jsx';
 import { useCart } from '../../hooks/useCart.js';
@@ -23,6 +23,7 @@ function WishlistAlertButton({ item }) {
   const { flash } = useFlash();
   const [subscribedTypes, setSubscribedTypes] = useState([]);
   const [showGuestAlertModal, setShowGuestAlertModal] = useState(false);
+  const [unsubscribing, setUnsubscribing] = useState(false);
 
   const inStock = product?.availability?.inStock ?? product?.inStock;
   const type = inStock ? 'price_change' : 'back_in_stock';
@@ -49,6 +50,7 @@ function WishlistAlertButton({ item }) {
             product.id,
             product.variantId,
             activeType,
+            user.email,
           ),
         );
         setSubscribedTypes(activeTypes);
@@ -68,6 +70,11 @@ function WishlistAlertButton({ item }) {
     ? type
     : subscribedTypes[0] || type;
   const subscribed = subscribedTypes.includes(activeType);
+  const alertEmail = user?.email || productAlertSubscriptions.emailFor(
+    product.id,
+    product.variantId,
+    activeType,
+  );
   const label = activeType === 'price_change'
     ? 'Obavesti me kada se cena promeni'
     : 'Obavesti me kada bude na stanju';
@@ -76,8 +83,53 @@ function WishlistAlertButton({ item }) {
     if (!subscribed) setShowGuestAlertModal(true);
   };
 
-  const handleGuestSubscription = ({ newsletterWarning }) => {
-    productAlertSubscriptions.markSubscribed(product.id, product.variantId, type);
+  const unsubscribeAlert = async () => {
+    if (!alertEmail) {
+      flash(
+        'Email nije dostupan',
+        'Prijavite se ponovo da biste isključili ovo obaveštenje.',
+        'error',
+      );
+      return;
+    }
+    setUnsubscribing(true);
+    try {
+      await productAlertsApi.unsubscribe(
+        product.id,
+        {
+          variantId: product.variantId,
+          type: activeType,
+          email: alertEmail,
+        },
+        { auth: Boolean(user?.email) },
+      );
+      productAlertSubscriptions.markUnsubscribed(
+        product.id,
+        product.variantId,
+        activeType,
+      );
+      setSubscribedTypes((current) =>
+        current.filter((currentType) => currentType !== activeType),
+      );
+      flash('Obaveštenje je isključeno', 'Više nećemo slati ovu obavest.', 'success');
+    } catch (error) {
+      flash(
+        'Isključivanje nije uspelo',
+        error?.message || 'Pokušajte ponovo.',
+        'error',
+      );
+    } finally {
+      setUnsubscribing(false);
+    }
+  };
+
+  const handleGuestSubscription = ({ email, newsletterWarning }) => {
+    productAlertSubscriptions.markSubscribed(
+      product.id,
+      product.variantId,
+      type,
+      email || user?.email,
+    );
     setSubscribedTypes((current) =>
       current.includes(type) ? current : [...current, type],
     );
@@ -97,16 +149,30 @@ function WishlistAlertButton({ item }) {
     <>
       <button
         type="button"
-        onClick={requestAlert}
-        disabled={subscribed}
+        onClick={subscribed ? unsubscribeAlert : requestAlert}
+        disabled={unsubscribing}
         className={`wishlist-alert-btn${subscribed ? ' is-subscribed' : ''}`}
+        title={subscribed ? 'Isključi obaveštenje' : undefined}
       >
-        {subscribed ? <BellRing size={15} /> : <Bell size={15} />}
-        {subscribed
-          ? activeType === 'price_change'
-            ? 'Promena cene: uključeno'
-            : 'Stanje: uključeno'
-          : label}
+        {subscribed ? (
+          <>
+            <span className="wishlist-alert-btn__status">
+              <BellRing size={15} />
+              {activeType === 'price_change'
+                ? 'Promena cene: uključeno'
+                : 'Stanje: uključeno'}
+            </span>
+            <span className="wishlist-alert-btn__unsubscribe">
+              <BellOff size={15} />
+              {unsubscribing ? 'Isključujemo…' : 'Isključi obaveštenje'}
+            </span>
+          </>
+        ) : (
+          <>
+            <Bell size={15} />
+            {label}
+          </>
+        )}
       </button>
       <ProductAlertModal
         isOpen={showGuestAlertModal}

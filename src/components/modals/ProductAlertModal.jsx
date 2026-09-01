@@ -79,7 +79,7 @@ export default function ProductAlertModal({
         }
       }
 
-      onSubscribed?.({ type, newsletterWarning });
+      onSubscribed?.({ type, email, newsletterWarning });
       onClose();
     } catch (requestError) {
       setError(requestError.message || 'Prijava za obaveštenje nije uspela.');
