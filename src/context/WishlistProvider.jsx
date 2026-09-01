@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useFlash } from '../hooks/useFlash';
 import { useAuth } from '../hooks/useAuth';
-import { customerApi, subscribePublicCatalogRealtime } from '../services/dajaPlatform';
+import { customerApi } from '../services/dajaPlatform';
 
 const WishlistContext = createContext();
 
@@ -21,8 +21,6 @@ export const WishlistProvider = ({ children }) => {
   const { user } = useAuth();
   const loadedServerWishlist = useRef(false);
   const isServerUpdate = useRef(false);
-  const invalidatedProductIds = useRef(new Set());
-  const invalidatedProductSlugs = useRef(new Set());
 
   useEffect(() => {
     loadedServerWishlist.current = false;
@@ -46,23 +44,12 @@ export const WishlistProvider = ({ children }) => {
         }
         const merged = [...serverList];
         localList.forEach((localItem) => {
-          if (
-            !invalidatedProductIds.current.has(localItem.id) &&
-            !invalidatedProductSlugs.current.has(localItem.slug) &&
-            !merged.some((item) => item.id === localItem.id)
-          ) {
-            merged.push(localItem);
-          }
+          if (!merged.some((item) => item.id === localItem.id)) merged.push(localItem);
         });
-        const validItems = merged.filter(
-          (item) =>
-            !invalidatedProductIds.current.has(item.id) &&
-            !invalidatedProductSlugs.current.has(item.slug),
-        );
         isServerUpdate.current = true;
-        setWishlist(validItems);
+        setWishlist(merged);
         loadedServerWishlist.current = true;
-        if (validItems.length !== serverList.length) customerApi.setWishlist(validItems);
+        if (merged.length !== serverList.length) customerApi.setWishlist(merged);
       })
       .catch((error) => console.error('Wishlist load error:', error));
 
@@ -72,24 +59,46 @@ export const WishlistProvider = ({ children }) => {
   }, [user]);
 
   useEffect(() => {
-    if (!user) return undefined;
-
-    return subscribePublicCatalogRealtime((event) => {
-      const productId = event?.data?.productId || event?.productId;
-      const slug = event?.data?.slug || event?.slug;
-      if (!productId && !slug) return;
-
-      if (productId) invalidatedProductIds.current.add(productId);
-      if (slug) invalidatedProductSlugs.current.add(slug);
-      setWishlist((current) =>
-        current.filter(
-          (item) =>
-            (!productId || item.id !== productId) &&
-            (!slug || item.slug !== slug),
-        ),
-      );
-    });
-  }, [user]);
+    const applyProductChange = (event) => {
+      const change = event.detail;
+      if (change?.type === 'upsert' && change.product?.id) {
+        const product = change.product;
+        setWishlist((current) =>
+          current.map((item) => {
+            if (item.id !== product.id && item.slug !== product.slug) return item;
+            return {
+              ...item,
+              id: product.id ?? item.id,
+              productId: product.productId ?? product.id ?? item.productId,
+              variantId: product.variantId ?? item.variantId,
+              name: product.name ?? item.name,
+              price: product.price ?? item.price,
+              image:
+                product.image ??
+                product.mainImageUrl ??
+                product.primaryImageUrl ??
+                item.image,
+              thumb:
+                product.thumbnailUrl ??
+                product.image ??
+                product.primaryImageUrl ??
+                item.thumb,
+              brand: product.brand !== undefined ? product.brand : item.brand,
+              slug: product.slug ?? item.slug,
+            };
+          }),
+        );
+      }
+      if (change?.type === 'delete' && change.id) {
+        setWishlist((current) => current.filter((item) => item.id !== change.id));
+      }
+      if (change?.type === 'deleteBySlug' && change.slug) {
+        setWishlist((current) => current.filter((item) => item.slug !== change.slug));
+      }
+    };
+    window.addEventListener('daja:products-changed', applyProductChange);
+    return () => window.removeEventListener('daja:products-changed', applyProductChange);
+  }, []);
 
   useEffect(() => {
     if (isServerUpdate.current) {

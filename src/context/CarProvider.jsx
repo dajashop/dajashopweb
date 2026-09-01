@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useRef } from 'react';
 import { CartCtx } from './CartContext.jsx';
 import { useAuth } from '../hooks/useAuth';
 import { customerApi, subscribePublicCatalogRealtime } from '../services/dajaPlatform';
+import { applyPublicProductRealtimeEvent } from '../services/products';
 
 const initial = () => {
   try {
@@ -30,6 +31,31 @@ function reducer(state, action) {
           (!action.productId || item.id !== action.productId) &&
           (!action.slug || item.slug !== action.slug),
       );
+    case 'UPDATE_PRODUCT':
+      return state.map((item) => {
+        const product = action.product;
+        if (item.id !== product.id && item.slug !== product.slug) return item;
+        return {
+          ...item,
+          id: product.id ?? item.id,
+          productId: product.productId ?? product.id ?? item.productId,
+          variantId: product.variantId ?? item.variantId,
+          name: product.name ?? item.name,
+          price: product.price ?? item.price,
+          image:
+            product.image ??
+            product.mainImageUrl ??
+            product.primaryImageUrl ??
+            item.image,
+          thumb:
+            product.thumbnailUrl ??
+            product.image ??
+            product.primaryImageUrl ??
+            item.thumb,
+          brand: product.brand !== undefined ? product.brand : item.brand,
+          slug: product.slug ?? item.slug,
+        };
+      });
     case 'SET_QTY':
       return state.map((x) =>
         x.id === action.id ? { ...x, qty: Math.max(1, action.qty) } : x,
@@ -48,8 +74,6 @@ export function CartProvider({ children }) {
   const { user } = useAuth();
   const loadedServerCart = useRef(false);
   const isServerUpdate = useRef(false);
-  const invalidatedProductIds = useRef(new Set());
-  const invalidatedProductSlugs = useRef(new Set());
 
   useEffect(() => {
     loadedServerCart.current = false;
@@ -68,23 +92,12 @@ export function CartProvider({ children }) {
         const localItems = initial();
         const merged = [...serverCart];
         localItems.forEach((localItem) => {
-          if (
-            !invalidatedProductIds.current.has(localItem.id) &&
-            !invalidatedProductSlugs.current.has(localItem.slug) &&
-            !merged.some((item) => item.id === localItem.id)
-          ) {
-            merged.push(localItem);
-          }
+          if (!merged.some((item) => item.id === localItem.id)) merged.push(localItem);
         });
-        const validItems = merged.filter(
-          (item) =>
-            !invalidatedProductIds.current.has(item.id) &&
-            !invalidatedProductSlugs.current.has(item.slug),
-        );
         isServerUpdate.current = true;
-        dispatch({ type: 'REPLACE', items: validItems });
+        dispatch({ type: 'REPLACE', items: merged });
         loadedServerCart.current = true;
-        if (validItems.length !== serverCart.length) customerApi.setCart(validItems);
+        if (merged.length !== serverCart.length) customerApi.setCart(merged);
       })
       .catch((error) => console.error('Cart load error:', error));
 
@@ -97,15 +110,26 @@ export function CartProvider({ children }) {
     if (!user) return undefined;
 
     return subscribePublicCatalogRealtime((event) => {
-      const productId = event?.data?.productId || event?.productId;
-      const slug = event?.data?.slug || event?.slug;
-      if (!productId && !slug) return;
-
-      if (productId) invalidatedProductIds.current.add(productId);
-      if (slug) invalidatedProductSlugs.current.add(slug);
-      dispatch({ type: 'REMOVE_PRODUCT', productId, slug });
+      void applyPublicProductRealtimeEvent(event);
     });
   }, [user]);
+
+  useEffect(() => {
+    const applyProductChange = (event) => {
+      const change = event.detail;
+      if (change?.type === 'upsert' && change.product?.id) {
+        dispatch({ type: 'UPDATE_PRODUCT', product: change.product });
+      }
+      if (change?.type === 'delete' && change.id) {
+        dispatch({ type: 'REMOVE_PRODUCT', productId: change.id });
+      }
+      if (change?.type === 'deleteBySlug' && change.slug) {
+        dispatch({ type: 'REMOVE_PRODUCT', slug: change.slug });
+      }
+    };
+    window.addEventListener('daja:products-changed', applyProductChange);
+    return () => window.removeEventListener('daja:products-changed', applyProductChange);
+  }, []);
 
   useEffect(() => {
     if (isServerUpdate.current) {
