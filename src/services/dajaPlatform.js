@@ -850,6 +850,7 @@ export const productAlertsApi = {
 };
 
 const PRODUCT_ALERTS_STORAGE_KEY = 'dajashop_product_alert_subscriptions';
+const PRODUCT_ALERT_PREFERENCES_STORAGE_KEY = 'dajashop_product_alert_preferences';
 
 function productAlertStorageId(productId, variantId, type) {
   return [productId, variantId, type].map(String).join(':');
@@ -874,6 +875,34 @@ function writeStoredProductAlerts(alerts) {
   }
 }
 
+function normalizedAlertEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function readStoredProductAlertPreferences() {
+  if (typeof window === 'undefined') return {};
+  try {
+    const value = JSON.parse(
+      window.localStorage.getItem(PRODUCT_ALERT_PREFERENCES_STORAGE_KEY) || '{}',
+    );
+    return value && typeof value === 'object' ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredProductAlertPreferences(preferences) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(
+      PRODUCT_ALERT_PREFERENCES_STORAGE_KEY,
+      JSON.stringify(preferences),
+    );
+  } catch {
+    // Preferences only simplify repeat confirmations; subscription still works.
+  }
+}
+
 export const productAlertSubscriptions = {
   typesFor(productId, variantId) {
     if (!productId || !variantId) return [];
@@ -887,6 +916,40 @@ export const productAlertSubscriptions = {
     const alerts = readStoredProductAlerts();
     alerts[productAlertStorageId(productId, variantId, type)] = true;
     writeStoredProductAlerts(alerts);
+  },
+};
+
+export const productAlertPreferences = {
+  forEmail(email) {
+    const normalizedEmail = normalizedAlertEmail(email);
+    if (!normalizedEmail) {
+      return { acceptedTerms: false, newsletterSubscribed: false };
+    }
+    const preference = readStoredProductAlertPreferences()[normalizedEmail];
+    return {
+      acceptedTerms: preference?.acceptedTerms === true,
+      newsletterSubscribed: preference?.newsletterSubscribed === true,
+    };
+  },
+  markAcceptedTerms(email) {
+    const normalizedEmail = normalizedAlertEmail(email);
+    if (!normalizedEmail) return;
+    const preferences = readStoredProductAlertPreferences();
+    preferences[normalizedEmail] = {
+      ...preferences[normalizedEmail],
+      acceptedTerms: true,
+    };
+    writeStoredProductAlertPreferences(preferences);
+  },
+  markNewsletterSubscribed(email) {
+    const normalizedEmail = normalizedAlertEmail(email);
+    if (!normalizedEmail) return;
+    const preferences = readStoredProductAlertPreferences();
+    preferences[normalizedEmail] = {
+      ...preferences[normalizedEmail],
+      newsletterSubscribed: true,
+    };
+    writeStoredProductAlertPreferences(preferences);
   },
 };
 
@@ -1055,12 +1118,14 @@ export const reviewsApi = {
 };
 
 export const newsletterApi = {
-  subscribe(email, source = 'site') {
-    return apiRequest('/newsletter/subscribe', {
+  async subscribe(email, source = 'site') {
+    const result = await apiRequest('/newsletter/subscribe', {
       method: 'POST',
       auth: false,
       body: { email, source },
     });
+    productAlertPreferences.markNewsletterSubscribed(email);
+    return result;
   },
   confirm(token) {
     return apiRequest(`/newsletter/confirm?token=${encodeURIComponent(token)}`, {

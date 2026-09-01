@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, X } from 'lucide-react';
-import { productAlertsApi, newsletterApi } from '../../services/dajaPlatform.js';
+import {
+  productAlertPreferences,
+  productAlertsApi,
+  newsletterApi,
+} from '../../services/dajaPlatform.js';
 import './ProductAlertModal.css';
 
 const ALERT_LABELS = {
@@ -13,28 +17,35 @@ export default function ProductAlertModal({
   onClose,
   product,
   type,
+  initialEmail = '',
   onSubscribed,
 }) {
   const [email, setEmail] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsPreviouslyAccepted, setTermsPreviouslyAccepted] = useState(false);
   const [subscribeToNewsletter, setSubscribeToNewsletter] = useState(false);
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!isOpen) return;
-    setEmail('');
-    setAcceptedTerms(false);
+    const nextEmail = String(initialEmail || '').trim();
+    const preferences = productAlertPreferences.forEmail(nextEmail);
+    setEmail(nextEmail);
+    setAcceptedTerms(preferences.acceptedTerms);
+    setTermsPreviouslyAccepted(preferences.acceptedTerms);
     setSubscribeToNewsletter(false);
+    setNewsletterSubscribed(preferences.newsletterSubscribed);
     setSubmitting(false);
     setError('');
-  }, [isOpen, product?.id, type]);
+  }, [initialEmail, isOpen, product?.id, type]);
 
   if (!isOpen || !product?.id || !product?.variantId || !type) return null;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!acceptedTerms) {
+    if (!termsPreviouslyAccepted && !acceptedTerms) {
       setError('Potvrdite saglasnost sa uslovima i politikom privatnosti.');
       return;
     }
@@ -49,13 +60,22 @@ export default function ProductAlertModal({
         acceptedTerms: true,
       }, { auth: false });
 
+      if (!termsPreviouslyAccepted) {
+        productAlertPreferences.markAcceptedTerms(email);
+      }
+
       let newsletterWarning = false;
-      if (subscribeToNewsletter) {
+      if (!newsletterSubscribed && subscribeToNewsletter) {
         try {
           await newsletterApi.subscribe(email, 'product_alert');
+          productAlertPreferences.markNewsletterSubscribed(email);
         } catch (newsletterError) {
           // A duplicate subscription is already the desired outcome.
-          if (newsletterError?.status !== 409) newsletterWarning = true;
+          if (newsletterError?.status === 409) {
+            productAlertPreferences.markNewsletterSubscribed(email);
+          } else {
+            newsletterWarning = true;
+          }
         }
       }
 
@@ -100,7 +120,15 @@ export default function ProductAlertModal({
             id="product-alert-subscription-email"
             type="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => {
+              const nextEmail = event.target.value;
+              const preferences = productAlertPreferences.forEmail(nextEmail);
+              setEmail(nextEmail);
+              setAcceptedTerms(preferences.acceptedTerms);
+              setTermsPreviouslyAccepted(preferences.acceptedTerms);
+              setNewsletterSubscribed(preferences.newsletterSubscribed);
+              setSubscribeToNewsletter(false);
+            }}
             placeholder="vas@email.com"
             autoComplete="email"
             required
@@ -108,33 +136,37 @@ export default function ProductAlertModal({
             autoFocus
           />
 
-          <label className="product-alert-modal__check">
-            <input
-              type="checkbox"
-              checked={acceptedTerms}
-              onChange={(event) => setAcceptedTerms(event.target.checked)}
-              disabled={submitting}
-            />
-            <span>
-              Prihvatam <a href="/terms">uslove korišćenja</a> i{' '}
-              <a href="/privacy">politiku privatnosti</a>.
-            </span>
-          </label>
+          {!termsPreviouslyAccepted && (
+            <label className="product-alert-modal__check">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(event) => setAcceptedTerms(event.target.checked)}
+                disabled={submitting}
+              />
+              <span>
+                Prihvatam <a href="/terms">uslove korišćenja</a> i{' '}
+                <a href="/privacy">politiku privatnosti</a>.
+              </span>
+            </label>
+          )}
 
-          <label className="product-alert-modal__check">
-            <input
-              type="checkbox"
-              checked={subscribeToNewsletter}
-              onChange={(event) => setSubscribeToNewsletter(event.target.checked)}
-              disabled={submitting}
-            />
-            <span>Želim da dobijam novosti, ponude i savete emailom.</span>
-          </label>
+          {!newsletterSubscribed && (
+            <label className="product-alert-modal__check">
+              <input
+                type="checkbox"
+                checked={subscribeToNewsletter}
+                onChange={(event) => setSubscribeToNewsletter(event.target.checked)}
+                disabled={submitting}
+              />
+              <span>Želim da dobijam novosti, ponude i savete emailom.</span>
+            </label>
+          )}
 
           {error && <p className="product-alert-modal__error">{error}</p>}
 
           <button type="submit" disabled={submitting}>
-            {submitting ? 'Čuvamo…' : 'Uključi obaveštenje'}
+            {submitting ? 'Čuvamo…' : 'Potvrdi obaveštenje'}
           </button>
         </form>
       </div>

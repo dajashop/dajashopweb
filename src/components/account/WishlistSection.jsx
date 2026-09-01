@@ -10,7 +10,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
 import useProduct from '../../hooks/useProduct.js';
 import {
-  productAlertsApi,
   productAlertSubscriptions,
 } from '../../services/dajaPlatform.js';
 import './WishlistSection.css';
@@ -21,7 +20,6 @@ function WishlistAlertButton({ item }) {
   const { product, loading } = useProduct(item.slug);
   const { user } = useAuth();
   const { flash } = useFlash();
-  const [subscribing, setSubscribing] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [showGuestAlertModal, setShowGuestAlertModal] = useState(false);
 
@@ -42,34 +40,8 @@ function WishlistAlertButton({ item }) {
     ? 'Obavesti me kada se cena promeni'
     : 'Obavesti me kada bude na stanju';
 
-  const subscribe = async () => {
-    if (subscribing || subscribed) return;
-    if (!user?.email) {
-      setShowGuestAlertModal(true);
-      return;
-    }
-
-    setSubscribing(true);
-    try {
-      await productAlertsApi.subscribe(product.id, {
-        type,
-        variantId: product.variantId,
-        email: user.email,
-      });
-      productAlertSubscriptions.markSubscribed(product.id, product.variantId, type);
-      setSubscribed(true);
-      flash(
-        'Obaveštenje je uključeno',
-        inStock
-          ? 'Javićemo vam emailom kada se cena promeni.'
-          : 'Javićemo vam emailom kada proizvod ponovo bude na stanju.',
-        'success',
-      );
-    } catch (error) {
-      flash('Nismo uspeli', error.message || 'Pokušajte ponovo za trenutak.', 'error');
-    } finally {
-      setSubscribing(false);
-    }
+  const requestAlert = () => {
+    if (!subscribed) setShowGuestAlertModal(true);
   };
 
   const handleGuestSubscription = ({ newsletterWarning }) => {
@@ -91,8 +63,8 @@ function WishlistAlertButton({ item }) {
     <>
       <button
         type="button"
-        onClick={subscribe}
-        disabled={subscribing || subscribed}
+        onClick={requestAlert}
+        disabled={subscribed}
         className={`wishlist-alert-btn${subscribed ? ' is-subscribed' : ''}`}
       >
         {subscribed ? <BellRing size={15} /> : <Bell size={15} />}
@@ -103,6 +75,7 @@ function WishlistAlertButton({ item }) {
         onClose={() => setShowGuestAlertModal(false)}
         product={product}
         type={type}
+        initialEmail={user?.email ?? ''}
         onSubscribed={handleGuestSubscription}
       />
     </>
