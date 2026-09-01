@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { BellOff, Check, Cookie, Loader2, Mail, Settings2 } from 'lucide-react';
 import { privacyApi, newsletterApi } from '../../services/dajaPlatform.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
+import { money } from '../../utils/currency.js';
 import './PrivacySection.css';
 
 const alertLabel = {
@@ -142,14 +143,32 @@ export default function PrivacySection({ user }) {
           <p>Nemate aktivna obaveštenja o artiklima.</p>
         ) : (
           <ul className="privacy-section__alerts">
-            {alerts.map((alert) => (
-              <li key={alert.id}>
-                <span>{alertLabel[alert.type] || 'Obaveštenje'} <small>({String(alert.productId).slice(0, 8)})</small></span>
-                <button type="button" onClick={() => void unsubscribeAlert(alert.id)} disabled={busy === `alert:${alert.id}`}>
-                  {busy === `alert:${alert.id}` ? 'Odjavljujemo…' : 'Isključi'}
-                </button>
-              </li>
-            ))}
+            {alerts.map((alert) => {
+              const name = [alert.brand, alert.name].filter(Boolean).join(' ') || 'Artikal';
+              const hasPrice = Number.isFinite(Number(alert.price));
+              return (
+                <li key={alert.id}>
+                  <div className="privacy-section__alert-product">
+                    <img
+                      src={alert.image || '/images/product-placeholder.svg'}
+                      alt={name}
+                      className="privacy-section__alert-image"
+                      onError={(event) => {
+                        event.currentTarget.src = '/images/product-placeholder.svg';
+                      }}
+                    />
+                    <div className="privacy-section__alert-details">
+                      <strong>{name}</strong>
+                      <span>{alertLabel[alert.type] || 'Obaveštenje'}</span>
+                      {hasPrice && <b>{money(Number(alert.price))}</b>}
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => void unsubscribeAlert(alert.id)} disabled={busy === `alert:${alert.id}`}>
+                    {busy === `alert:${alert.id}` ? 'Odjavljujemo…' : 'Isključi'}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </article>

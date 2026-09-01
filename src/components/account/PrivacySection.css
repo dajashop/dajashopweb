@@ -104,10 +104,18 @@
 .privacy-section__alerts li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--color-border, #e5e7eb); }
 .privacy-section__alerts button { margin: 0; padding: 7px 10px; font-size: .82rem; }
 .privacy-section__alerts small { color: var(--color-muted, #6b7280); }
+.privacy-section__alert-product { display: flex; align-items: center; min-width: 0; gap: 12px; }
+.privacy-section__alert-image { width: 56px; height: 56px; flex: 0 0 56px; border: 1px solid var(--color-border, #e5e7eb); border-radius: 10px; background: var(--color-surface, #fff); object-fit: contain; }
+.privacy-section__alert-details { display: grid; min-width: 0; gap: 2px; }
+.privacy-section__alert-details strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.privacy-section__alert-details span { color: var(--color-muted, #6b7280); font-size: .86rem; }
+.privacy-section__alert-details b { font-size: .9rem; }
 .privacy-section__error { margin: 0; color: #b91c1c; }
 .privacy-section__loading { display: flex; align-items: center; gap: 8px; color: var(--color-muted, #6b7280); }
 
 @media (max-width: 640px) {
   .privacy-section__header { flex-direction: column; }
   .privacy-section__choices { grid-template-columns: 1fr; }
+  .privacy-section__alerts li { align-items: flex-start; }
+  .privacy-section__alerts button { flex: 0 0 auto; }
 }
