@@ -847,6 +847,13 @@ export const productAlertsApi = {
       body: payload,
     });
   },
+  status(productId, { variantId, email }) {
+    return apiRequest(`/products/${encodeURIComponent(productId)}/alerts/status`, {
+      method: 'POST',
+      auth: false,
+      body: { variantId, email },
+    });
+  },
 };
 
 const PRODUCT_ALERTS_STORAGE_KEY = 'dajashop_product_alert_subscriptions';

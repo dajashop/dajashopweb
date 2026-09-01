@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
 import useProduct from '../../hooks/useProduct.js';
 import {
+  productAlertsApi,
   productAlertSubscriptions,
 } from '../../services/dajaPlatform.js';
 import './WishlistSection.css';
@@ -27,12 +28,39 @@ function WishlistAlertButton({ item }) {
   const type = inStock ? 'price_change' : 'back_in_stock';
 
   useEffect(() => {
-    setSubscribed(
-      productAlertSubscriptions
-        .typesFor(product?.id, product?.variantId)
-        .includes(type),
+    const storedTypes = productAlertSubscriptions.typesFor(
+      product?.id,
+      product?.variantId,
     );
-  }, [product?.id, product?.variantId, type]);
+    setSubscribed(storedTypes.includes(type));
+
+    if (!user?.email || !product?.id || !product?.variantId) return undefined;
+    let cancelled = false;
+    productAlertsApi
+      .status(product.id, {
+        variantId: product.variantId,
+        email: user.email,
+      })
+      .then((response) => {
+        if (cancelled) return;
+        const activeTypes = Array.isArray(response?.types) ? response.types : [];
+        activeTypes.forEach((activeType) =>
+          productAlertSubscriptions.markSubscribed(
+            product.id,
+            product.variantId,
+            activeType,
+          ),
+        );
+        setSubscribed(activeTypes.includes(type));
+      })
+      .catch(() => {
+        // The locally saved state remains available if the status lookup fails.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.id, product?.variantId, type, user?.email]);
 
   if (loading || !product?.id || !product.variantId) return null;
 

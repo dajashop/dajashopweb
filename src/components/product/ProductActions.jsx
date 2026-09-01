@@ -3,6 +3,7 @@ import { Bell, BellRing, Heart, Tag } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFlash } from '../../hooks/useFlash.js';
 import {
+  productAlertsApi,
   productAlertSubscriptions,
 } from '../../services/dajaPlatform.js';
 import ProductAlertModal from '../modals/ProductAlertModal.jsx';
@@ -17,10 +18,39 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
 
   useEffect(() => {
     setGuestAlertType(null);
-    setSubscribedTypes(
-      productAlertSubscriptions.typesFor(product.id, product.variantId),
+    const storedTypes = productAlertSubscriptions.typesFor(
+      product.id,
+      product.variantId,
     );
-  }, [product.id, product.variantId]);
+    setSubscribedTypes(storedTypes);
+
+    if (!user?.email) return undefined;
+    let cancelled = false;
+    productAlertsApi
+      .status(product.id, {
+        variantId: product.variantId,
+        email: user.email,
+      })
+      .then((response) => {
+        if (cancelled) return;
+        const activeTypes = Array.isArray(response?.types) ? response.types : [];
+        activeTypes.forEach((type) =>
+          productAlertSubscriptions.markSubscribed(
+            product.id,
+            product.variantId,
+            type,
+          ),
+        );
+        setSubscribedTypes(activeTypes);
+      })
+      .catch(() => {
+        // The locally saved state remains available if the status lookup fails.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product.id, product.variantId, user?.email]);
 
   const requestAlert = (type) => {
     if (subscribedTypes.includes(type)) return;
