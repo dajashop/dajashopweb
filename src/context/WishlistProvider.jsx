@@ -21,9 +21,17 @@ export const WishlistProvider = ({ children }) => {
   const { user } = useAuth();
   const loadedServerWishlist = useRef(false);
   const isServerUpdate = useRef(false);
+  const wishlistChannel = useRef(null);
+  const latestWishlist = useRef(wishlist);
+  const hasCrossTabState = useRef(false);
+
+  useEffect(() => {
+    latestWishlist.current = wishlist;
+  }, [wishlist]);
 
   useEffect(() => {
     loadedServerWishlist.current = false;
+    hasCrossTabState.current = false;
 
     if (!user) {
       setWishlist([]);
@@ -36,6 +44,10 @@ export const WishlistProvider = ({ children }) => {
       .getWishlist()
       .then((serverList) => {
         if (cancelled) return;
+        if (hasCrossTabState.current) {
+          loadedServerWishlist.current = true;
+          return;
+        }
         let localList = [];
         try {
           localList = JSON.parse(localStorage.getItem('daja_wishlist') || '[]');
@@ -57,6 +69,39 @@ export const WishlistProvider = ({ children }) => {
       cancelled = true;
     };
   }, [user]);
+
+  useEffect(() => {
+    const userId = user?.uid || user?.id;
+    if (
+      !userId ||
+      typeof window === 'undefined' ||
+      !('BroadcastChannel' in window)
+    ) {
+      return undefined;
+    }
+
+    const channel = new window.BroadcastChannel(`daja:wishlist:${userId}`);
+    wishlistChannel.current = channel;
+    channel.onmessage = ({ data }) => {
+      if (data?.type === 'request-state') {
+        if (loadedServerWishlist.current) {
+          channel.postMessage({ type: 'replace-state', wishlist: latestWishlist.current });
+        }
+        return;
+      }
+      if (data?.type === 'replace-state' && Array.isArray(data.wishlist)) {
+        hasCrossTabState.current = true;
+        isServerUpdate.current = true;
+        setWishlist(data.wishlist);
+      }
+    };
+    channel.postMessage({ type: 'request-state' });
+
+    return () => {
+      if (wishlistChannel.current === channel) wishlistChannel.current = null;
+      channel.close();
+    };
+  }, [user?.id, user?.uid]);
 
   useEffect(() => {
     const applyProductChange = (event) => {
@@ -108,6 +153,10 @@ export const WishlistProvider = ({ children }) => {
 
     if (user) {
       if (!loadedServerWishlist.current) return;
+      wishlistChannel.current?.postMessage({
+        type: 'replace-state',
+        wishlist,
+      });
       const t = setTimeout(() => {
         customerApi.setWishlist(wishlist).catch((error) =>
           console.error('Wishlist save error:', error),

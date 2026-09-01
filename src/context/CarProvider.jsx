@@ -74,9 +74,17 @@ export function CartProvider({ children }) {
   const { user } = useAuth();
   const loadedServerCart = useRef(false);
   const isServerUpdate = useRef(false);
+  const cartChannel = useRef(null);
+  const latestItems = useRef(items);
+  const hasCrossTabState = useRef(false);
+
+  useEffect(() => {
+    latestItems.current = items;
+  }, [items]);
 
   useEffect(() => {
     loadedServerCart.current = false;
+    hasCrossTabState.current = false;
 
     if (!user) {
       dispatch({ type: 'CLEAR' });
@@ -89,6 +97,10 @@ export function CartProvider({ children }) {
       .getCart()
       .then((serverCart) => {
         if (cancelled) return;
+        if (hasCrossTabState.current) {
+          loadedServerCart.current = true;
+          return;
+        }
         const localItems = initial();
         const merged = [...serverCart];
         localItems.forEach((localItem) => {
@@ -115,6 +127,39 @@ export function CartProvider({ children }) {
   }, [user]);
 
   useEffect(() => {
+    const userId = user?.uid || user?.id;
+    if (
+      !userId ||
+      typeof window === 'undefined' ||
+      !('BroadcastChannel' in window)
+    ) {
+      return undefined;
+    }
+
+    const channel = new window.BroadcastChannel(`daja:cart:${userId}`);
+    cartChannel.current = channel;
+    channel.onmessage = ({ data }) => {
+      if (data?.type === 'request-state') {
+        if (loadedServerCart.current) {
+          channel.postMessage({ type: 'replace-state', items: latestItems.current });
+        }
+        return;
+      }
+      if (data?.type === 'replace-state' && Array.isArray(data.items)) {
+        hasCrossTabState.current = true;
+        isServerUpdate.current = true;
+        dispatch({ type: 'REPLACE', items: data.items });
+      }
+    };
+    channel.postMessage({ type: 'request-state' });
+
+    return () => {
+      if (cartChannel.current === channel) cartChannel.current = null;
+      channel.close();
+    };
+  }, [user?.id, user?.uid]);
+
+  useEffect(() => {
     const applyProductChange = (event) => {
       const change = event.detail;
       if (change?.type === 'upsert' && change.product?.id) {
@@ -139,6 +184,10 @@ export function CartProvider({ children }) {
 
     if (user) {
       if (!loadedServerCart.current) return;
+      cartChannel.current?.postMessage({
+        type: 'replace-state',
+        items,
+      });
       const t = setTimeout(() => {
         customerApi.setCart(items).catch((error) =>
           console.error('Cart save error:', error),
@@ -157,7 +206,7 @@ export function CartProvider({ children }) {
   const count = useMemo(() => items.reduce((sum, item) => sum + item.qty, 0), [items]);
 
   return (
-    <CartCtx.Provider value={{ items, dispatch, total, count }}>
+    <CartCtx.Provider value={{ items, cart: items, dispatch, total, count }}>
       {children}
     </CartCtx.Provider>
   );
