@@ -1,6 +1,7 @@
 import React from "react";
 import "./ThemeSwitcher.css";
 import { useTheme } from "../hooks/useTheme.js";
+import { themes } from '../config/themes.js';
 
 export default function ThemeSwitcher() {
   const { theme, setTheme, available } = useTheme();
@@ -12,7 +13,7 @@ export default function ThemeSwitcher() {
     >
       {available.map((t) => (
         <option key={t} value={t}>
-          {t}
+          {themes[t]?.name || t}
         </option>
       ))}
     </select>

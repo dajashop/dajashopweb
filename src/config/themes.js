@@ -1,7 +1,7 @@
 // Svaka tema ima: primary, accent, bg, surface, text, muted
 export const themes = {
   appleMono: {
-    name: 'appleMono',
+    name: 'Svetla',
     primary: '#9b9b9bff', // crna za akcente/dugmad
     accent: '#D2D2D7', // svetlosiva linije/ivice
     bg: '#FFFFFF', // bela pozadina
