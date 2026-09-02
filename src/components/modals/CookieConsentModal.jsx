@@ -128,8 +128,8 @@ export default function CookieConsentModal({
     return (
       <div className="cookie-consent__panel" id="cookie-consent-panel" role="tabpanel" aria-labelledby="cookie-consent-tab">
         <div className="cookie-consent__panel-heading">
-          <h1 id="cookie-consent-title">Sajt koristi kolačiće</h1>
-          <p>Koristimo neophodnu memoriju kako bi DajaShop radio ispravno. Uz vašu saglasnost možemo uključiti funkcionalne opcije — poput pamćenja podešavanja, Google mape i predloga adrese — kao i analitiku.</p>
+          <h1 id="cookie-consent-title">Vaša privatnost</h1>
+          <p>Koristimo neophodne kolačiće za pouzdan rad sajta. Uz vašu dozvolu uključujemo funkcionalne opcije i analitiku radi boljeg iskustva kupovine.</p>
         </div>
         <p className="cookie-consent__subcopy">Svoj izbor možete promeniti u bilo kom trenutku u podešavanjima privatnosti.</p>
       </div>
