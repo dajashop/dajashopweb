@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   BarChart3,
   Check,
-  ChevronRight,
   Cookie,
   Info,
   Settings2,
@@ -23,7 +22,6 @@ export default function CookieConsentModal({
   forceSettings = false,
   initialCategories,
   onCloseSettings,
-  onNecessary,
   onAll,
   onSave,
 }) {
@@ -134,9 +132,6 @@ export default function CookieConsentModal({
           <p>Koristimo neophodnu memoriju kako bi DajaShop radio ispravno. Uz vašu saglasnost možemo uključiti funkcionalne opcije — poput pamćenja podešavanja, Google mape i predloga adrese — kao i analitiku.</p>
         </div>
         <p className="cookie-consent__subcopy">Svoj izbor možete promeniti u bilo kom trenutku u podešavanjima privatnosti.</p>
-        <button type="button" className="cookie-consent__text-action" disabled={saving} onClick={() => selectPanel(PANELS.details)}>
-          Podesi izbor <ChevronRight size={18} />
-        </button>
       </div>
     );
   };
@@ -179,8 +174,8 @@ export default function CookieConsentModal({
             </button>
           ) : (
             <div className="cookie-consent__actions">
-              <button type="button" className="cookie-consent__secondary" disabled={saving} onClick={() => run(onNecessary)}>
-                Samo neophodno
+              <button type="button" className="cookie-consent__secondary" disabled={saving} onClick={() => selectPanel(PANELS.details)}>
+                <Settings2 size={18} /> Podešavanja
               </button>
               <button type="button" className="cookie-consent__primary" disabled={saving} onClick={() => run(onAll)}>
                 {saving ? 'Čuvamo…' : 'Prihvati sve'}

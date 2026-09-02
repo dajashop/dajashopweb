@@ -190,7 +190,6 @@ export function ConsentProvider({ children }) {
         forceSettings={Boolean(decision && settingsOpen)}
         initialCategories={decision?.categories}
         onCloseSettings={() => setSettingsOpen(false)}
-        onNecessary={() => save({ preferences: false, externalGoogle: false, analytics: false })}
         onAll={() => save({ preferences: true, externalGoogle: true, analytics: true })}
         onSave={(categories) => save(categories)}
       />
