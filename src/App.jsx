@@ -18,6 +18,7 @@ export default function App() {
     pathname === '/logout' ||
     pathname === '/verify-email';
   const isFullBleedPage = pathname === '/logout' || pathname === '/verify-email';
+  const isPolicyPage = pathname === '/privacy' || pathname === '/cookies';
 
   // Resetovanje skrola na vrh pri promeni stranice (samo za PUSH/REPLACE)
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function App() {
         style={isFullBleedPage ? undefined : { padding: '20px 0 48px' }}
       >
         <AuthModal />
-        <NewsletterModal />
+        {!isPolicyPage && <NewsletterModal />}
         <AppRoutes />
       </main>
       <Footer />

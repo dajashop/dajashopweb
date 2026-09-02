@@ -42,7 +42,12 @@ export function ConsentProvider({ children }) {
   const googleResolver = useRef(null);
   const analyticsWasAllowed = useRef(false);
   const isPolicyPage = pathname === '/privacy' || pathname === '/cookies';
+  const isPolicyPageRef = useRef(isPolicyPage);
   const showConsentModal = !loading && (settingsOpen || (!decision && !isPolicyPage));
+
+  useEffect(() => {
+    isPolicyPageRef.current = isPolicyPage;
+  }, [isPolicyPage]);
 
   const applyDecision = useCallback((nextDecision, { persist = true } = {}) => {
     const categories = normalizeCategories(nextDecision.categories);
@@ -92,12 +97,14 @@ export function ConsentProvider({ children }) {
             receipt: saved.receipt,
             version: resolvedPolicy.version,
             categories: saved.categories,
-          });
+          }, { persist: false });
         } else {
           // The rollout deliberately drops old optional browser state. A cart,
           // wishlist and an alert-management token are functional data and are
           // therefore kept until the customer explicitly removes them.
-          clearOptionalStorage();
+          // Legal notices must be readable without creating or mutating
+          // browser storage before the visitor makes a choice.
+          if (!isPolicyPageRef.current) clearOptionalStorage();
         }
         setLoading(false);
       });
@@ -121,8 +128,12 @@ export function ConsentProvider({ children }) {
   }, [applyDecision]);
 
   useEffect(() => {
+    if (isPolicyPage) {
+      removeCloudflareWebAnalyticsScript();
+      return;
+    }
     if (decision?.categories?.analytics) loadCloudflareWebAnalytics();
-  }, [decision?.categories?.analytics]);
+  }, [decision?.categories?.analytics, isPolicyPage]);
 
   const save = useCallback(async (categories, action = 'granted') => {
     const response = await privacyApi.recordConsent(
