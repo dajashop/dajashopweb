@@ -97,7 +97,7 @@ export default function NewsletterModal() {
             {(status === 'idle' || status === 'loading' || status === 'error') && (
               <div className="newsletter-content">
                 <h2>10% Popusta</h2>
-                <p>Prijavite se na naš newsletter i ostvarite 10% popusta na prvu porudžbinu. Kod stiže na vašu email adresu — proverite Inbox, a za svaki slučaj i Spam folder.</p>
+                <p>Prijavite se za 10% popusta na prvu porudžbinu. Kod stiže na email — proverite Inbox i Spam.</p>
                 <form className="newsletter-form" onSubmit={handleSubmit}>
                   <input
                     type="email"
@@ -108,7 +108,7 @@ export default function NewsletterModal() {
                     disabled={status === 'loading'}
                   />
                   <p className="newsletter-consent-notice">
-                    Klikom na „Prijavi me” saglasni ste da vam DajaShop šalje email obaveštenja o akcijama i ponudama. Saglasnost možete povući u svakom trenutku. Više u <a href="/privacy">Politici privatnosti</a>.
+                    Klikom na „Prijavi me” saglasni ste da vam DajaShop šalje email obaveštenja o akcijama i ponudama. Više u <a href="/privacy">Politici privatnosti</a>.
                   </p>
                   {(errorMsg || status === 'error') && (
                     <span className="newsletter-message error-message">
