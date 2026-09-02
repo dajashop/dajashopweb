@@ -20,9 +20,9 @@ export default function GoogleMapEmbed({ src, title, className = '', ...iframePr
     return (
       <div className={`google-map-consent-placeholder ${className}`.trim()}>
         <MapPinned size={25} aria-hidden="true" />
-        <p>Mapa se ne učitava dok ne dozvolite Google funkcionalnosti.</p>
+        <p>Mapa se ne učitava dok ne dozvolite funkcionalne kolačiće i usluge.</p>
         <button type="button" onClick={() => void allowGoogle()} disabled={requesting}>
-          {requesting ? 'Otvaramo izbor…' : 'Uključi Google mapu'}
+          {requesting ? 'Otvaramo izbor…' : 'Uključi funkcionalne usluge'}
         </button>
       </div>
     );

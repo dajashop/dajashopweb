@@ -4,7 +4,7 @@ import {
   Check,
   ChevronRight,
   Cookie,
-  MapPinned,
+  Info,
   Settings2,
   ShieldCheck,
   X,
@@ -61,32 +61,46 @@ export default function CookieConsentModal({
     if (!saving) setPanel(nextPanel);
   };
 
+  const functionalEnabled = preferences && externalGoogle;
+
   const renderPanel = () => {
     if (panel === PANELS.details) {
       return (
         <div className="cookie-consent__panel" id="cookie-details-panel" role="tabpanel" aria-labelledby="cookie-details-tab">
           <div className="cookie-consent__panel-heading">
             <h1 id="cookie-consent-title">Podesite kolačiće</h1>
-            <p>Neophodni kolačići su uvek uključeni kako bi sajt zapamtio vaš izbor i omogućio funkcije koje koristite. Funkcionalne opcije i analitika su dobrovoljne i možete ih uključiti ili isključiti u nastavku.</p>
+            <p>Neophodni kolačići su uvek uključeni kako bi sajt zapamtio vaš izbor i omogućio funkcije koje koristite. Ostale kategorije su dobrovoljne i možete ih uključiti ili isključiti u nastavku.</p>
           </div>
           <div className="cookie-consent__categories">
             <label className="cookie-consent__category cookie-consent__category--locked">
               <span><ShieldCheck size={20} /><strong>Neophodno</strong><small>Pristanak, prijava, korpa, lista želja i promo poruke nakon vaše radnje.</small></span>
               <input type="checkbox" checked readOnly aria-label="Neophodno je uključeno" />
             </label>
-            <p className="cookie-consent__category-group">Funkcionalni kolačići i usluge</p>
             <label className="cookie-consent__category">
-              <span><Settings2 size={20} /><strong>Podešavanja sajta</strong><small>Tema, zapamćena prijava, prikaz newsletter ponude i pozicija u katalogu.</small></span>
-              <input type="checkbox" checked={preferences} onChange={(event) => setPreferences(event.target.checked)} disabled={saving} />
-            </label>
-            <label className="cookie-consent__category">
-              <span><MapPinned size={20} /><strong>Google mapa i predlog adrese</strong><small>Prikaz naše lokacije i dobrovoljni predlog adrese. Google može obraditi tehničke podatke pregledača i adresu koju unesete.</small></span>
-              <input type="checkbox" checked={externalGoogle} onChange={(event) => setExternalGoogle(event.target.checked)} disabled={saving} />
+              <span><Settings2 size={20} /><strong>Funkcionalni</strong><small>Pamćenje teme, prijave, prikaza newsletter ponude i pozicije u katalogu, Google mapa naše lokacije i predlog adrese. Google može obraditi tehničke podatke pregledača i adresu koju unesete.</small></span>
+              <input
+                type="checkbox"
+                checked={functionalEnabled}
+                onChange={(event) => {
+                  setPreferences(event.target.checked);
+                  setExternalGoogle(event.target.checked);
+                }}
+                disabled={saving}
+                aria-label="Funkcionalni kolačići i usluge"
+              />
             </label>
             <label className="cookie-consent__category">
               <span><BarChart3 size={20} /><strong>Analitika</strong><small>Cloudflare Web Analytics meri posete i performanse sajta tek nakon vašeg pristanka.</small></span>
               <input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} disabled={saving} />
             </label>
+            <div className="cookie-consent__category cookie-consent__category--empty">
+              <span><Info size={20} /><strong>Marketing</strong><small>Trenutno ne koristimo marketinške kolačiće niti personalizovano oglašavanje.</small></span>
+              <em>Nema kolačića</em>
+            </div>
+            <div className="cookie-consent__category cookie-consent__category--empty">
+              <span><Info size={20} /><strong>Neklasifikovani</strong><small>Trenutno nema kolačića koje još nismo svrstali u neku od kategorija.</small></span>
+              <em>Nema kolačića</em>
+            </div>
           </div>
         </div>
       );
@@ -101,9 +115,9 @@ export default function CookieConsentModal({
           </div>
           <div className="cookie-consent__info-list">
             <div><ShieldCheck size={20} /><p><strong>Neophodno</strong> omogućava bezbedan rad korpe, naloga i vašeg izbora privatnosti.</p></div>
-            <div><Settings2 size={20} /><p><strong>Funkcionalna podešavanja</strong> pamte temu, prijavu, prikaz newsletter ponude i poziciju u katalogu.</p></div>
-            <div><MapPinned size={20} /><p><strong>Google funkcionalnosti</strong> prikazuju našu lokaciju i nude predlog adrese; možete nastaviti i ručnim unosom adrese.</p></div>
+            <div><Settings2 size={20} /><p><strong>Funkcionalni</strong> pamte temu, prijavu, prikaz newsletter ponude i poziciju u katalogu, kao i omogućavaju Google mapu naše lokacije i predlog adrese.</p></div>
             <div><BarChart3 size={20} /><p><strong>Analitika</strong> nam pokazuje kako posetioci koriste sajt, bez prikazivanja oglasa.</p></div>
+            <div><Info size={20} /><p><strong>Marketing i neklasifikovani kolačići</strong> trenutno se ne koriste na sajtu.</p></div>
           </div>
           <p className="cookie-consent__links">
             Pročitajte <a href="/cookies">politiku kolačića</a> i <a href="/privacy">politiku privatnosti</a>.
@@ -159,7 +173,7 @@ export default function CookieConsentModal({
               type="button"
               className="cookie-consent__primary cookie-consent__save"
               disabled={saving}
-              onClick={() => run(() => onSave({ preferences, externalGoogle, analytics }))}
+              onClick={() => run(() => onSave({ preferences: functionalEnabled, externalGoogle: functionalEnabled, analytics }))}
             >
               <Check size={18} /> {saving ? 'Čuvamo…' : 'Sačuvaj izbor'}
             </button>

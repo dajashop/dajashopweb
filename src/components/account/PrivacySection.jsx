@@ -116,9 +116,10 @@ export default function PrivacySection({ user }) {
         <div className="privacy-section__title"><Cookie size={19} /><h4>Kolačići i lokalna memorija</h4></div>
         <dl className="privacy-section__choices">
           <div><dt>Neophodno</dt><dd><Check size={16} /> Uključeno</dd></div>
-          <div><dt>Funkcionalna podešavanja</dt><dd>{categories.preferences ? <><Check size={16} /> Uključeno</> : 'Isključeno'}</dd></div>
-          <div><dt>Google funkcionalnosti</dt><dd>{categories.externalGoogle ? <><Check size={16} /> Uključeno</> : 'Isključeno'}</dd></div>
+          <div><dt>Funkcionalni</dt><dd>{categories.preferences && categories.externalGoogle ? <><Check size={16} /> Uključeno</> : 'Isključeno'}</dd></div>
           <div><dt>Analitika</dt><dd>{categories.analytics ? <><Check size={16} /> Uključeno</> : 'Isključeno'}</dd></div>
+          <div><dt>Marketing</dt><dd>Trenutno nema kolačića</dd></div>
+          <div><dt>Neklasifikovani</dt><dd>Trenutno nema kolačića</dd></div>
         </dl>
       </article>
 

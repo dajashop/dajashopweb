@@ -124,13 +124,14 @@
 
 .cookie-consent__categories { margin-top: 20px; border-bottom: 1px solid #e3e5e8; }
 .cookie-consent__category { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 14px 1px; border-top: 1px solid #e3e5e8; cursor: pointer; }
-.cookie-consent__category-group { margin: 17px 0 3px !important; color: #1d43d6 !important; font-size: .76rem !important; font-weight: 800; letter-spacing: .045em; text-transform: uppercase; }
 .cookie-consent__category span { display: grid; grid-template-columns: 22px 1fr; column-gap: 10px; }
 .cookie-consent__category strong { grid-column: 2; color: #1c2027; font-size: .94rem; }
 .cookie-consent__category svg { grid-row: span 2; color: #1d43d6; }
 .cookie-consent__category small { grid-column: 2; margin-top: 3px; color: #686f79; font-size: .82rem; line-height: 1.38; }
 .cookie-consent__category input { width: 19px; height: 19px; margin-top: 2px; accent-color: #1d43d6; }
 .cookie-consent__category--locked { cursor: default; }
+.cookie-consent__category--empty { cursor: default; }
+.cookie-consent__category--empty em { margin-top: 2px; color: #737984; font-size: .76rem; font-style: normal; font-weight: 700; white-space: nowrap; }
 
 .cookie-consent__about { min-height: 196px; }
 .cookie-consent__info-list { display: grid; gap: 13px; margin-top: 21px; }
