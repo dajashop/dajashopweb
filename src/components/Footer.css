@@ -56,22 +56,15 @@
   max-width: 500px;
 }
 
-.footer-newsletter-consent {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+.footer-newsletter-consent-notice {
   margin: 10px 14px 0;
   color: var(--color-muted, #6e6e73);
-  font-size: .78rem;
+  font-size: .74rem;
   line-height: 1.35;
+  text-align: center;
 }
 
-.footer-newsletter-consent input {
-  margin-top: 2px;
-  accent-color: var(--color-primary, #111);
-}
-
-.footer-newsletter-consent a {
+.footer-newsletter-consent-notice a {
   color: inherit;
   font-weight: 700;
   text-decoration: underline;

@@ -24,7 +24,6 @@ export default function Footer() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [acceptedMarketing, setAcceptedMarketing] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,11 +31,6 @@ export default function Footer() {
       flash('Greška', 'Molimo unesite validnu email adresu.', 'error');
       return;
     }
-    if (!acceptedMarketing) {
-      flash('Saglasnost je potrebna', 'Potvrdite da želite da primate novosti emailom.', 'error');
-      return;
-    }
-
     setLoading(true);
     try {
       await newsletterApi.subscribe(email, {
@@ -52,7 +46,6 @@ export default function Footer() {
         'success',
       );
       setEmail('');
-      setAcceptedMarketing(false);
 
       setTimeout(() => setSuccess(false), 3500);
     } catch (error) {
@@ -114,7 +107,7 @@ export default function Footer() {
               <button
                 type="submit"
                 className="footer-submit-btn"
-                aria-label="Prijavi se"
+                aria-label="Prijavi me"
                 disabled={loading || success}
                 style={
                   success
@@ -136,23 +129,14 @@ export default function Footer() {
                 ) : (
                   <>
                     <ArrowRight size={18} />
-                    <span className="btn-text">Prijavi se</span>
+                    <span className="btn-text">Prijavi me</span>
                   </>
                 )}
               </button>
             </div>
-            <label className="footer-newsletter-consent">
-              <input
-                type="checkbox"
-                checked={acceptedMarketing}
-                onChange={(event) => setAcceptedMarketing(event.target.checked)}
-                disabled={loading || success}
-              />
-              <span>
-                Želim da primam novosti emailom i prihvatam{' '}
-                <Link to="/privacy">politiku privatnosti</Link>.
-              </span>
-            </label>
+            <p className="footer-newsletter-consent-notice">
+              Klikom na „Prijavi me” saglasni ste da vam DajaShop šalje email obaveštenja o akcijama i ponudama. Više u <Link to="/privacy">Politici privatnosti</Link>.
+            </p>
           </form>
         </div>
       </div>
