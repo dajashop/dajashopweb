@@ -97,7 +97,7 @@ export default function NewsletterModal() {
             {(status === 'idle' || status === 'loading' || status === 'error') && (
               <div className="newsletter-content">
                 <h2>10% Popusta</h2>
-                <p>Prijavite se za 10% popusta na prvu porudžbinu. Kod stiže na email — proverite Inbox i Spam.</p>
+                <p>Prijavite se na naš newsletter i ostvarite 10% popusta na prvu porudžbinu. Kod stiže na email. Proverite Inbox i Spam.</p>
                 <form className="newsletter-form" onSubmit={handleSubmit}>
                   <input
                     type="email"
