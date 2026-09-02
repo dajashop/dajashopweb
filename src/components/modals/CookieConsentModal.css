@@ -136,7 +136,7 @@
   background: #fcfcfd;
 }
 
-.cookie-consent__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.cookie-consent__actions { display: grid; grid-template-columns: repeat(2, minmax(220px, 282px)); justify-content: end; gap: 9px; }
 .cookie-consent button { min-height: 48px; border-radius: 4px; font: inherit; font-weight: 780; cursor: pointer; }
 .cookie-consent button:disabled { cursor: wait; opacity: .62; }
 .cookie-consent__primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #1d43d6; background: #1d43d6; color: #fff; padding: 11px 17px; }
