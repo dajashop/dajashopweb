@@ -16,7 +16,7 @@ import {
 import { unloadGoogleMaps } from '../services/googleMaps.js';
 
 const FALLBACK_POLICY = {
-  version: '2026-09-01-analytics-draft',
+  version: '2026-09-02-functional-services-draft',
   material: true,
   changeSummary: '',
   ready: false,
@@ -211,11 +211,11 @@ function GooglePermissionDialog({ onAccept, onDecline, saving }) {
       <section className="google-consent__dialog" role="dialog" aria-modal="true" aria-labelledby="google-consent-title">
         <button type="button" className="google-consent__close" onClick={onDecline} disabled={saving} aria-label="Zatvori"><X size={19} /></button>
         <div className="google-consent__icon"><MapPinned size={23} /></div>
-        <h2 id="google-consent-title">Uključi Google Maps?</h2>
-        <p>Google može obraditi tehničke podatke pregledača kada učita mapu ili predlog adrese. Možete nastaviti i ručnim unosom adrese.</p>
+        <h2 id="google-consent-title">Uključi Google funkcionalnosti?</h2>
+        <p>Google mapa prikazuje našu lokaciju, a predlog adrese može ubrzati unos dostave. Google pri tome može obraditi tehničke podatke pregledača i adresu koju unesete. Možete nastaviti i ručnim unosom adrese.</p>
         <div className="google-consent__actions">
           <button type="button" className="google-consent__secondary" onClick={onDecline} disabled={saving}>Nastavi ručno</button>
-          <button type="button" className="google-consent__primary" onClick={onAccept} disabled={saving}>{saving ? 'Čuvamo…' : 'Dozvoli Google Maps'}</button>
+          <button type="button" className="google-consent__primary" onClick={onAccept} disabled={saving}>{saving ? 'Čuvamo…' : 'Dozvoli Google funkcionalnosti'}</button>
         </div>
       </section>
     </div>

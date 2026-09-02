@@ -67,19 +67,20 @@ export default function CookieConsentModal({
         <div className="cookie-consent__panel" id="cookie-details-panel" role="tabpanel" aria-labelledby="cookie-details-tab">
           <div className="cookie-consent__panel-heading">
             <h1 id="cookie-consent-title">Podesite kolačiće</h1>
-            <p>Neophodni kolačići su uvek uključeni kako bi sajt zapamtio vaš izbor i omogućio funkcije koje koristite.</p>
+            <p>Neophodni kolačići su uvek uključeni kako bi sajt zapamtio vaš izbor i omogućio funkcije koje koristite. Funkcionalne opcije i analitika su dobrovoljne i možete ih uključiti ili isključiti u nastavku.</p>
           </div>
           <div className="cookie-consent__categories">
             <label className="cookie-consent__category cookie-consent__category--locked">
               <span><ShieldCheck size={20} /><strong>Neophodno</strong><small>Pristanak, prijava, korpa, lista želja i promo poruke nakon vaše radnje.</small></span>
               <input type="checkbox" checked readOnly aria-label="Neophodno je uključeno" />
             </label>
+            <p className="cookie-consent__category-group">Funkcionalni kolačići i usluge</p>
             <label className="cookie-consent__category">
-              <span><Settings2 size={20} /><strong>Podešavanja</strong><small>Tema, zapamćena prijava, newsletter modal i pozicija skrola.</small></span>
+              <span><Settings2 size={20} /><strong>Podešavanja sajta</strong><small>Tema, zapamćena prijava, prikaz newsletter ponude i pozicija u katalogu.</small></span>
               <input type="checkbox" checked={preferences} onChange={(event) => setPreferences(event.target.checked)} disabled={saving} />
             </label>
             <label className="cookie-consent__category">
-              <span><MapPinned size={20} /><strong>Google Maps</strong><small>Mapa i automatski unos adrese preko Google-a.</small></span>
+              <span><MapPinned size={20} /><strong>Google mapa i predlog adrese</strong><small>Prikaz naše lokacije i dobrovoljni predlog adrese. Google može obraditi tehničke podatke pregledača i adresu koju unesete.</small></span>
               <input type="checkbox" checked={externalGoogle} onChange={(event) => setExternalGoogle(event.target.checked)} disabled={saving} />
             </label>
             <label className="cookie-consent__category">
@@ -100,7 +101,8 @@ export default function CookieConsentModal({
           </div>
           <div className="cookie-consent__info-list">
             <div><ShieldCheck size={20} /><p><strong>Neophodno</strong> omogućava bezbedan rad korpe, naloga i vašeg izbora privatnosti.</p></div>
-            <div><MapPinned size={20} /><p><strong>Google Maps</strong> prikazuje mapu i pomaže pri unosu adrese isporuke.</p></div>
+            <div><Settings2 size={20} /><p><strong>Funkcionalna podešavanja</strong> pamte temu, prijavu, prikaz newsletter ponude i poziciju u katalogu.</p></div>
+            <div><MapPinned size={20} /><p><strong>Google funkcionalnosti</strong> prikazuju našu lokaciju i nude predlog adrese; možete nastaviti i ručnim unosom adrese.</p></div>
             <div><BarChart3 size={20} /><p><strong>Analitika</strong> nam pokazuje kako posetioci koriste sajt, bez prikazivanja oglasa.</p></div>
           </div>
           <p className="cookie-consent__links">
@@ -115,7 +117,7 @@ export default function CookieConsentModal({
       <div className="cookie-consent__panel" id="cookie-consent-panel" role="tabpanel" aria-labelledby="cookie-consent-tab">
         <div className="cookie-consent__panel-heading">
           <h1 id="cookie-consent-title">Sajt koristi kolačiće</h1>
-          <p>Koristimo neophodnu memoriju kako bi DajaShop radio ispravno. Uz vašu saglasnost možemo uključiti dodatna podešavanja, Google Maps i analitiku za bolje iskustvo kupovine.</p>
+          <p>Koristimo neophodnu memoriju kako bi DajaShop radio ispravno. Uz vašu saglasnost možemo uključiti funkcionalne opcije — poput pamćenja podešavanja, Google mape i predloga adrese — kao i analitiku.</p>
         </div>
         <p className="cookie-consent__subcopy">Svoj izbor možete promeniti u bilo kom trenutku u podešavanjima privatnosti.</p>
         <button type="button" className="cookie-consent__text-action" disabled={saving} onClick={() => selectPanel(PANELS.details)}>
