@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { themes, applyTheme } from "../config/themes.js";
+import { themes, applyTheme, DEFAULT_THEME, normalizeTheme } from "../config/themes.js";
 import { ThemeCtx } from "./ThemeContext.jsx";
 import { useConsent } from './ConsentContext.jsx';
 import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
@@ -7,22 +7,23 @@ import { readStoredValue, writeStoredValue } from '../services/consentStorage.js
 export function ThemeProvider({ children }) {
   const { hasDecision, preferencesAllowed } = useConsent();
   const [theme, setTheme] = useState(
-    () => readStoredValue("theme", 'preferences') || "appleMono"
+    () => normalizeTheme(readStoredValue("theme", 'preferences'))
   );
 
   useEffect(() => {
     if (!hasDecision) return;
     setTheme(
       preferencesAllowed
-        ? readStoredValue('theme', 'preferences') || 'appleMono'
-        : 'appleMono',
+        ? normalizeTheme(readStoredValue('theme', 'preferences'))
+        : DEFAULT_THEME,
     );
   }, [hasDecision, preferencesAllowed]);
 
   useEffect(() => {
-    applyTheme(theme);
+    const resolvedTheme = normalizeTheme(theme);
+    applyTheme(resolvedTheme);
     if (hasDecision && preferencesAllowed) {
-      writeStoredValue("theme", theme, 'preferences');
+      writeStoredValue("theme", resolvedTheme, 'preferences');
     }
   }, [hasDecision, preferencesAllowed, theme]);
 

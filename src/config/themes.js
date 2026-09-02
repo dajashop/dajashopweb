@@ -1,6 +1,8 @@
 // Svaka tema ima: primary, accent, bg, surface, text, muted
+export const DEFAULT_THEME = 'light';
+
 export const themes = {
-  appleMono: {
+  light: {
     name: 'Svetla',
     primary: '#9b9b9bff', // crna za akcente/dugmad
     accent: '#D2D2D7', // svetlosiva linije/ivice
@@ -66,6 +68,11 @@ export const themes = {
   //   onPrimary: "#111111",
   // },
 };
+
+export function normalizeTheme(theme) {
+  if (theme === 'appleMono') return DEFAULT_THEME;
+  return themes[theme] ? theme : DEFAULT_THEME;
+}
 
 export function applyTheme(theme) {
   const t = typeof theme === 'string' ? themes[theme] : theme;
