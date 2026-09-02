@@ -49,8 +49,6 @@ export default function NewsletterModal() {
         acceptedMarketing: true,
       });
       setStatus('success');
-      writeStoredValue('dajashop_newsletter_seen', 'true', 'preferences');
-      window.setTimeout(() => setIsVisible(false), 3500);
     } catch (error) {
       if (error.status === 409) {
         setStatus('duplicate');
@@ -82,7 +80,6 @@ export default function NewsletterModal() {
               className="newsletter-close-btn"
               onClick={handleClose}
               aria-label="Zatvori"
-              disabled={status === 'success'}
             >
               <X size={24} />
             </button>
@@ -100,9 +97,6 @@ export default function NewsletterModal() {
                 <div className="success-icon"><Check size={32} /></div>
                 <h2>Već ste prijavljeni!</h2>
                 <p>Ova email adresa je već prijavljena na naš newsletter.</p>
-                <button onClick={handleClose} className="newsletter-submit" style={{ backgroundColor: '#007bff' }}>
-                  Zatvori
-                </button>
               </div>
             )}
 
