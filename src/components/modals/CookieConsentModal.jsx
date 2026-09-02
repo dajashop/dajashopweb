@@ -129,9 +129,9 @@ export default function CookieConsentModal({
       <div className="cookie-consent__panel" id="cookie-consent-panel" role="tabpanel" aria-labelledby="cookie-consent-tab">
         <div className="cookie-consent__panel-heading">
           <h1 id="cookie-consent-title">Vaša privatnost</h1>
-          <p>Koristimo neophodne kolačiće za pouzdan rad sajta. Uz vašu dozvolu uključujemo funkcionalne opcije i analitiku radi boljeg iskustva kupovine.</p>
+          <p>Koristimo neophodne kolačiće za pouzdan rad sajta. Uz vašu dozvolu uključujemo funkcionalne opcije i analitiku radi boljeg iskustva kupovine. Funkcionalne opcije pamte vaša podešavanja i omogućavaju Google mapu i predlog adrese.</p>
         </div>
-        <p className="cookie-consent__subcopy">Svoj izbor možete promeniti u bilo kom trenutku u podešavanjima privatnosti.</p>
+        <p className="cookie-consent__subcopy">Sve opcione kategorije možete uključiti, isključiti ili pregledati u Podešavanjima.</p>
       </div>
     );
   };
