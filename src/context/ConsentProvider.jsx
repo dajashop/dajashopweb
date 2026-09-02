@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapPinned, X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { ConsentContext } from './ConsentContext.jsx';
 import CookieConsentModal from '../components/modals/CookieConsentModal.jsx';
 import { privacyApi } from '../services/dajaPlatform.js';
@@ -31,6 +32,7 @@ function normalizeCategories(value) {
 }
 
 export function ConsentProvider({ children }) {
+  const { pathname } = useLocation();
   const [policy, setPolicy] = useState(FALLBACK_POLICY);
   const [decision, setDecision] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,8 @@ export function ConsentProvider({ children }) {
   const [googleSaving, setGoogleSaving] = useState(false);
   const googleResolver = useRef(null);
   const analyticsWasAllowed = useRef(false);
+  const isPolicyPage = pathname === '/privacy' || pathname === '/cookies';
+  const showConsentModal = !loading && (settingsOpen || (!decision && !isPolicyPage));
 
   const applyDecision = useCallback((nextDecision, { persist = true } = {}) => {
     const categories = normalizeCategories(nextDecision.categories);
@@ -185,7 +189,7 @@ export function ConsentProvider({ children }) {
     <ConsentContext.Provider value={value}>
       {children}
       <CookieConsentModal
-        open={!loading && (!decision || settingsOpen)}
+        open={showConsentModal}
         policy={policy}
         forceSettings={Boolean(decision && settingsOpen)}
         initialCategories={decision?.categories}

@@ -39,6 +39,7 @@ export default function CookieConsentModal({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [isPointerOverDialog, setIsPointerOverDialog] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -56,6 +57,18 @@ export default function CookieConsentModal({
     setSaving(false);
     setError('');
   }, [forceSettings, initialCategories?.analytics, initialCategories?.externalGoogle, initialCategories?.preferences, open, policy?.version]);
+
+  useEffect(() => {
+    if (!open || typeof document === 'undefined') return undefined;
+
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+    if (isPointerOverDialog) body.style.overflow = 'hidden';
+
+    return () => {
+      body.style.overflow = previousOverflow;
+    };
+  }, [isPointerOverDialog, open]);
 
   if (!open) return null;
 
@@ -170,7 +183,14 @@ export default function CookieConsentModal({
 
   return (
     <div className="cookie-consent" role="presentation">
-      <section className="cookie-consent__dialog" role="dialog" aria-modal="true" aria-labelledby="cookie-consent-title">
+      <section
+        className="cookie-consent__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cookie-consent-title"
+        onMouseEnter={() => setIsPointerOverDialog(true)}
+        onMouseLeave={() => setIsPointerOverDialog(false)}
+      >
         <header className="cookie-consent__header">
           <div className="cookie-consent__brand" aria-label="DajaShop privatnost">
             <span className="cookie-consent__brand-mark"><Cookie size={22} /></span>
