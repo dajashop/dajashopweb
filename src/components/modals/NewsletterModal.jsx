@@ -12,7 +12,6 @@ export default function NewsletterModal() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('idle');
   const [errorMsg, setErrorMsg] = useState('');
-  const [acceptedMarketing, setAcceptedMarketing] = useState(false);
 
   useEffect(() => {
     if (!preferencesAllowed) {
@@ -35,16 +34,11 @@ export default function NewsletterModal() {
       setErrorMsg('Molimo unesite validnu email adresu.');
       return;
     }
-    if (!acceptedMarketing) {
-      setErrorMsg('Potvrdite da želite da primate novosti emailom.');
-      return;
-    }
-
     setStatus('loading');
     setErrorMsg('');
     try {
       await newsletterApi.subscribe(email, {
-        source: 'newsletter_modal',
+        source: 'newsletter_corner_popup',
         policyVersion: policy?.version,
         acceptedMarketing: true,
       });
@@ -103,7 +97,7 @@ export default function NewsletterModal() {
             {(status === 'idle' || status === 'loading' || status === 'error') && (
               <div className="newsletter-content">
                 <h2>10% Popusta</h2>
-                <p>Prijavite se na naš newsletter i ostvarite 10% popusta na prvu porudžbinu. Budite prvi koji saznaje za nove akcije.</p>
+                <p>Prijavite se na naš newsletter i ostvarite 10% popusta na prvu porudžbinu. Kod stiže na vašu email adresu — proverite Inbox, a za svaki slučaj i Spam folder.</p>
                 <form className="newsletter-form" onSubmit={handleSubmit}>
                   <input
                     type="email"
@@ -113,25 +107,16 @@ export default function NewsletterModal() {
                     onChange={(event) => setEmail(event.target.value)}
                     disabled={status === 'loading'}
                   />
-                  <label className="newsletter-marketing-consent">
-                    <input
-                      type="checkbox"
-                      checked={acceptedMarketing}
-                      onChange={(event) => setAcceptedMarketing(event.target.checked)}
-                      disabled={status === 'loading'}
-                    />
-                    <span>
-                      Želim da primam novosti emailom i prihvatam{' '}
-                      <a href="/privacy">politiku privatnosti</a>.
-                    </span>
-                  </label>
+                  <p className="newsletter-consent-notice">
+                    Klikom na „Prijavi me” saglasni ste da vam DajaShop šalje email obaveštenja o akcijama i ponudama. Saglasnost možete povući u svakom trenutku. Više u <a href="/privacy">Politici privatnosti</a>.
+                  </p>
                   {(errorMsg || status === 'error') && (
                     <span className="newsletter-message error-message">
                       {errorMsg || 'Greška pri slanju. Pokušajte ponovo.'}
                     </span>
                   )}
                   <button type="submit" className="newsletter-submit" disabled={status === 'loading'}>
-                    {status === 'loading' ? 'Slanje...' : 'Preuzmi kod'}
+                    {status === 'loading' ? 'Slanje...' : 'Prijavi me'}
                   </button>
                 </form>
                 <p className="newsletter-disclaimer">Odjava je moguća u bilo kom trenutku.</p>

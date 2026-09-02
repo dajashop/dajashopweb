@@ -82,23 +82,14 @@
   gap: 12px;
 }
 
-.newsletter-marketing-consent {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  color: var(--color-muted, #6b7280);
-  font-size: .78rem;
-  line-height: 1.35;
-  text-align: left;
+.newsletter-consent-notice {
+  margin: 0 !important;
+  color: var(--color-muted) !important;
+  font-size: .74rem !important;
+  line-height: 1.4 !important;
 }
 
-.newsletter-marketing-consent input {
-  width: auto;
-  margin-top: 2px;
-  accent-color: var(--color-primary, #111);
-}
-
-.newsletter-marketing-consent a {
+.newsletter-consent-notice a {
   color: inherit;
   font-weight: 700;
   text-decoration: underline;
@@ -146,6 +137,15 @@
 .newsletter-submit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.newsletter-disclaimer {
+  margin: 10px 0 0 !important;
+  color: var(--color-muted) !important;
+  font-size: .7rem !important;
+  line-height: 1.35 !important;
+  text-align: center;
+  opacity: .66;
 }
 
 /* Success stanje */
