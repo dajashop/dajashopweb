@@ -58,6 +58,9 @@ export function usePromo() {
       const code = inputCode.trim().toUpperCase();
       if (!code) throw new Error('Unesite promo kod.');
       const verified = await promotionsApi.validate(code, cartItems, options);
+      if (verified?.valid === false) {
+        throw new Error(verified.message || 'Promo kod ne ispunjava uslove za ovu korpu.');
+      }
       const amount = Number(verified?.discountAmount ?? 0);
       const freeShipping = Boolean(verified?.freeShipping);
       if (!amount && !freeShipping) {
