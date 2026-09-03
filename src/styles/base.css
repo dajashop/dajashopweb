@@ -110,7 +110,6 @@ html.lenis body {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border: 1px solid #000;
 }
 /* =========================================
    GLOBALNI MODERN SCROLLBAR (DajaShop)
