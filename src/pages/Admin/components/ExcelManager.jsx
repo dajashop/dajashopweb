@@ -144,11 +144,11 @@ const ExcelManager = ({ products, brands, categories, onImport }) => {
           disabled={loading}
         >
           {loading ? <span className="spinner"></span> : <Upload size={18} />}
-          <span>{loading ? 'Učitavam...' : 'Uvezi Excel'}</span>
+          <span>{loading ? 'Učitavam...' : 'Uvezi tabelu'}</span>
         </motion.button>
         <input
           type="file"
-          accept=".xlsx, .xls"
+          accept=".xlsx,.csv,text/csv"
           ref={fileInputRef}
           hidden
           onChange={handleFileImport}
