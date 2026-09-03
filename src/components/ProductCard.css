@@ -39,7 +39,7 @@
   justify-content: center;
 }
 .catalog-image-dots-wrap {
-  width: min(172px, 68%);
+  width: min(126px, 54%);
 }
 .catalog-image-dots {
   position: relative;
@@ -53,18 +53,16 @@
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.15) 44%, rgba(255, 255, 255, 0.04) 100%),
-    rgba(255, 255, 255, 0.12);
+  background: transparent;
   box-shadow:
-    0 5px 15px rgba(0, 0, 0, 0.2),
-    0 1px 1px rgba(255, 255, 255, 0.72),
-    inset 0 1px 1px rgba(255, 255, 255, 0.96),
-    inset 1px 0 1px rgba(255, 255, 255, 0.46),
-    inset -1px 0 1px rgba(255, 255, 255, 0.46),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(18px) saturate(1.15) brightness(1.12);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15) brightness(1.12);
+    0 4px 12px rgba(0, 0, 0, 0.16),
+    0 1px 1px rgba(255, 255, 255, 0.68),
+    inset 0 1px 1px rgba(255, 255, 255, 0.94),
+    inset 1px 0 1px rgba(255, 255, 255, 0.5),
+    inset -1px 0 1px rgba(255, 255, 255, 0.5),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px) saturate(1.05);
+  -webkit-backdrop-filter: blur(5px) saturate(1.05);
   isolation: isolate;
 }
 .catalog-image-dots::before {
@@ -72,7 +70,7 @@
   inset: 1px 13% auto 9%;
   height: 42%;
   border-radius: inherit;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.94) 50%, transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.64) 50%, transparent);
   content: '';
   filter: blur(3px);
   opacity: 0.92;
@@ -83,7 +81,7 @@
   inset: auto 7% 1px 7%;
   height: 24%;
   border-radius: inherit;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.38), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
   content: '';
   filter: blur(4px);
   pointer-events: none;
@@ -113,15 +111,15 @@
   border: 1px solid rgba(255, 255, 255, 0.96);
   border-radius: inherit;
   background:
-    radial-gradient(circle at 31% 23%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.62) 27%, transparent 48%),
-    linear-gradient(142deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.28) 54%, rgba(0, 0, 0, 0.12));
+    radial-gradient(circle at 31% 23%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.25) 27%, transparent 48%),
+    linear-gradient(142deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.08) 54%, rgba(0, 0, 0, 0.08));
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(255, 255, 255, 0.28),
-    inset 0 1px 1px rgba(255, 255, 255, 0.96),
+    inset 0 1px 1px rgba(255, 255, 255, 0.84),
     inset 0 -3px 7px rgba(0, 0, 0, 0.14);
-  backdrop-filter: blur(12px) saturate(1.05) brightness(1.18);
-  -webkit-backdrop-filter: blur(12px) saturate(1.05) brightness(1.18);
+  backdrop-filter: blur(5px) saturate(1.05);
+  -webkit-backdrop-filter: blur(5px) saturate(1.05);
 }
 .catalog-image-dot__core {
   position: relative;
