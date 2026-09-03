@@ -12,6 +12,7 @@ import {
   CreditCard,
   Truck,
   ExternalLink,
+  Ticket,
 } from 'lucide-react';
 import { ordersService } from '../../../services/admin';
 import { money } from '../../../utils/currency';
@@ -227,7 +228,20 @@ export default function AdminOrders() {
                     </select>
                   </td>
                   <td className="p-4 font-bold text-neutral-900">
-                    {money(order.finalTotal)}
+                    <div>{money(order.finalTotal)}</div>
+                    {order.promoCode && (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                        <Ticket size={13} />
+                        <code className="rounded bg-emerald-50 px-1.5 py-0.5 text-emerald-800">
+                          {order.promoCode}
+                        </code>
+                        {Number(order.discountAmount) > 0 ? (
+                          <span>−{money(order.discountAmount)}</span>
+                        ) : (
+                          <span>Besplatna dostava</span>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="p-4 text-right">
                     <button
@@ -344,6 +358,19 @@ export default function AdminOrders() {
                                     : money(order.shippingCost)}
                                 </span>
                               </div>
+                              {order.promoCode && (
+                                <div className="mt-2 flex justify-between items-center gap-3 rounded-lg border border-emerald-100 bg-emerald-50/60 p-3 text-sm">
+                                  <span className="flex items-center gap-2 font-semibold text-emerald-800">
+                                    <Ticket size={15} /> Promo kod
+                                  </span>
+                                  <span className="flex flex-wrap items-center justify-end gap-2 text-right font-bold text-emerald-800">
+                                    <code className="rounded bg-white/80 px-2 py-1">{order.promoCode}</code>
+                                    {Number(order.discountAmount) > 0
+                                      ? `−${money(order.discountAmount)}`
+                                      : 'Besplatna dostava'}
+                                  </span>
+                                </div>
+                              )}
                               <div className="flex justify-between items-center text-lg mt-2 pt-2 border-t border-neutral-100">
                                 <span className="font-bold text-neutral-900">
                                   Ukupno:
