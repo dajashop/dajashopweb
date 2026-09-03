@@ -33,7 +33,7 @@ import { customerApi } from '../../services/dajaPlatform';
 import { loadGoogleMapsPlaces } from '../../services/googleMaps';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import { getFlagUrl } from '../../utils/flags.js';
-import { PHONE_COUNTRIES as COUNTRY_CODES } from '../../data/phoneCountries.js';
+import { filterPhoneCountries, PHONE_COUNTRIES as COUNTRY_CODES } from '../../data/phoneCountries.js';
 import {
   ADDRESS_ICONS,
   ADDRESS_ICON_ORDER,
@@ -89,6 +89,7 @@ export default function DeliveryForm({
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const [prediction, setPrediction] = useState('');
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
   const [mapsScriptLoaded, setMapsScriptLoaded] = useState(false);
 
   // --- STATE ZA ADRESE ---
@@ -131,6 +132,7 @@ export default function DeliveryForm({
   const selectedCountry =
     COUNTRY_CODES.find((c) => c.dial === phonePrefix) ||
     COUNTRY_CODES.find((c) => c.code === 'RS');
+  const visibleCountries = filterPhoneCountries(countrySearch);
 
   // --- LOGIKA POPUNJAVANJA POLJA (AUTOFILL) ---
   const selectAddress = (addr) => {
@@ -531,6 +533,7 @@ export default function DeliveryForm({
     const full = `${country.dial} ${localPhone}`;
     handleChange({ target: { name: 'phone', value: full } });
     setIsCountryDropdownOpen(false);
+    setCountrySearch('');
   };
   const handleLocalPhoneChange = (e) => {
     const val = e.target.value;
@@ -797,7 +800,10 @@ export default function DeliveryForm({
               <button
                 type="button"
                 className="w-full p-3 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-primary)] flex items-center justify-between gap-2 transition-colors hover:bg-[var(--color-bg-subtle)] h-full"
-                onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                onClick={() => {
+                  setCountrySearch('');
+                  setIsCountryDropdownOpen((open) => !open);
+                }}
               >
                 <div className="flex items-center gap-2 overflow-hidden">
                   <img
@@ -822,10 +828,21 @@ export default function DeliveryForm({
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 5 }}
-                    className="absolute top-full left-0 mt-1 w-[240px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-xl z-50 max-h-[250px] overflow-y-auto country-dropdown-scroll"
-                    data-lenis-prevent
+                    className="absolute top-full left-0 mt-1 w-[270px] overflow-hidden bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-xl z-50"
                   >
-                    {COUNTRY_CODES.map((country) => (
+                    <div className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-surface)] p-2">
+                      <input
+                        autoFocus
+                        type="search"
+                        value={countrySearch}
+                        onChange={(event) => setCountrySearch(event.target.value)}
+                        placeholder="Pronađi državu ili pozivni broj"
+                        aria-label="Pretraži države"
+                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+                      />
+                    </div>
+                    <div className="country-dropdown-scroll max-h-[250px] overflow-y-auto" data-lenis-prevent>
+                    {visibleCountries.map((country) => (
                       <button
                         key={country.code}
                         type="button"
@@ -853,6 +870,10 @@ export default function DeliveryForm({
                         )}
                       </button>
                     ))}
+                    {visibleCountries.length === 0 && (
+                      <p className="px-4 py-4 text-sm text-[var(--color-muted)]">Nema odgovarajuće države.</p>
+                    )}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

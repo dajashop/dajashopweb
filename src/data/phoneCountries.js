@@ -1,36 +1,44 @@
-// Balkan i najčešće zemlje naše dijaspore. Zastavice su lokalne PNG datoteke.
-export const PHONE_COUNTRIES = Object.freeze([
-  { code: 'RS', dial: '+381', label: 'Srbija' },
-  { code: 'XK', dial: '+383', label: 'Kosovo' },
-  { code: 'ME', dial: '+382', label: 'Crna Gora' },
-  { code: 'BA', dial: '+387', label: 'Bosna i Hercegovina' },
-  { code: 'HR', dial: '+385', label: 'Hrvatska' },
-  { code: 'SI', dial: '+386', label: 'Slovenija' },
-  { code: 'MK', dial: '+389', label: 'Severna Makedonija' },
-  { code: 'AL', dial: '+355', label: 'Albanija' },
-  { code: 'BG', dial: '+359', label: 'Bugarska' },
-  { code: 'RO', dial: '+40', label: 'Rumunija' },
-  { code: 'GR', dial: '+30', label: 'Grčka' },
-  { code: 'HU', dial: '+36', label: 'Mađarska' },
-  { code: 'TR', dial: '+90', label: 'Turska' },
-  { code: 'AT', dial: '+43', label: 'Austrija' },
-  { code: 'CH', dial: '+41', label: 'Švajcarska' },
-  { code: 'DE', dial: '+49', label: 'Nemačka' },
-  { code: 'LU', dial: '+352', label: 'Luksemburg' },
-  { code: 'BE', dial: '+32', label: 'Belgija' },
-  { code: 'NL', dial: '+31', label: 'Holandija' },
-  { code: 'FR', dial: '+33', label: 'Francuska' },
-  { code: 'IT', dial: '+39', label: 'Italija' },
-  { code: 'ES', dial: '+34', label: 'Španija' },
-  { code: 'PT', dial: '+351', label: 'Portugal' },
-  { code: 'DK', dial: '+45', label: 'Danska' },
-  { code: 'NO', dial: '+47', label: 'Norveška' },
-  { code: 'SE', dial: '+46', label: 'Švedska' },
-  { code: 'FI', dial: '+358', label: 'Finska' },
-  { code: 'GB', dial: '+44', label: 'Ujedinjeno Kraljevstvo' },
-  { code: 'IE', dial: '+353', label: 'Irska' },
-  { code: 'US', dial: '+1', label: 'Sjedinjene Američke Države' },
-  { code: 'CA', dial: '+1', label: 'Kanada' },
-  { code: 'AU', dial: '+61', label: 'Australija' },
-  { code: 'NZ', dial: '+64', label: 'Novi Zeland' },
-]);
+import { getCountries, getCountryCallingCode } from 'libphonenumber-js/min';
+
+const PRIORITY_COUNTRIES = [
+  'RS', 'XK', 'ME', 'BA', 'HR', 'SI', 'MK', 'AL', 'BG', 'RO', 'GR', 'HU', 'TR',
+  'AT', 'CH', 'DE', 'LU', 'BE', 'NL', 'FR', 'IT', 'ES', 'PT', 'DK', 'NO', 'SE',
+  'FI', 'GB', 'IE', 'US', 'CA', 'AU', 'NZ',
+];
+const CODES_WITHOUT_LOCAL_FLAG = new Set(['AC', 'TA']);
+
+const priority = new Map(PRIORITY_COUNTRIES.map((code, index) => [code, index]));
+const countryNames = new Intl.DisplayNames(['sr-Latn'], { type: 'region', fallback: 'code' });
+
+export const PHONE_COUNTRIES = Object.freeze(
+  getCountries()
+    .filter((code) => !CODES_WITHOUT_LOCAL_FLAG.has(code))
+    .map((code) => ({
+      code,
+      dial: `+${getCountryCallingCode(code)}`,
+      label: countryNames.of(code) || code,
+    }))
+    .sort((left, right) => {
+      const leftPriority = priority.get(left.code);
+      const rightPriority = priority.get(right.code);
+      if (leftPriority !== undefined || rightPriority !== undefined) {
+        return (leftPriority ?? Number.MAX_SAFE_INTEGER) - (rightPriority ?? Number.MAX_SAFE_INTEGER);
+      }
+      return left.label.localeCompare(right.label, 'sr-Latn');
+    })
+);
+
+function normalizeForSearch(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('sr-Latn');
+}
+
+export function filterPhoneCountries(query) {
+  const needle = normalizeForSearch(query).trim();
+  if (!needle) return PHONE_COUNTRIES;
+  return PHONE_COUNTRIES.filter(({ code, dial, label }) =>
+    normalizeForSearch(`${label} ${code} ${dial}`).includes(needle)
+  );
+}

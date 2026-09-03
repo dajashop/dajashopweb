@@ -29,6 +29,7 @@ import {
   getFlagUrl,
   getInitials,
 } from '../../utils/accountHelpers.jsx';
+import { filterPhoneCountries } from '../../data/phoneCountries.js';
 
 // Ovo mora biti izvučeno iz ErrorMessage.jsx
 import ErrorMessage from '../ui/ErrorMessage.jsx';
@@ -44,6 +45,7 @@ function ProfileSection({ user }) {
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
   const [localPhone, setLocalPhone] = useState('');
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
 
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -51,6 +53,7 @@ function ProfileSection({ user }) {
   const [verificationId, setVerificationId] = useState(null);
   const [smsCode, setSmsCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const visibleCountries = filterPhoneCountries(countrySearch);
 
   useEffect(() => {
     setNewName(user.displayName || '');
@@ -443,9 +446,10 @@ function ProfileSection({ user }) {
                       <div className="relative" ref={dropdownRef}>
                         <button
                           type="button"
-                          onClick={() =>
-                            setIsCountryDropdownOpen(!isCountryDropdownOpen)
-                          }
+                          onClick={() => {
+                            setCountrySearch('');
+                            setIsCountryDropdownOpen((open) => !open);
+                          }}
                           className="h-full bg-white border border-gray-200 rounded-lg px-2 flex items-center gap-2 text-gray-900 text-sm hover:bg-gray-50 transition-colors outline-none min-w-[100px] justify-between"
                         >
                           <span className="flex items-center gap-2">
@@ -472,14 +476,27 @@ function ProfileSection({ user }) {
                               initial={{ opacity: 0, y: 5 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: 5 }}
-                              className="absolute top-full left-0 mt-1 w-[280px] max-h-[210px] bg-white border border-gray-200 rounded-lg shadow-2xl z-[60] country-dropdown-scroll"
+                              className="absolute top-full left-0 mt-1 w-[280px] overflow-hidden bg-white border border-gray-200 rounded-lg shadow-2xl z-[60]"
                             >
-                              {COUNTRY_CODES.map((country) => (
+                              <div className="sticky top-0 z-10 border-b border-gray-100 bg-white p-2">
+                                <input
+                                  autoFocus
+                                  type="search"
+                                  value={countrySearch}
+                                  onChange={(event) => setCountrySearch(event.target.value)}
+                                  placeholder="Pronađi državu ili pozivni broj"
+                                  aria-label="Pretraži države"
+                                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-[var(--color-primary)]"
+                                />
+                              </div>
+                              <div className="country-dropdown-scroll max-h-[210px] overflow-y-auto" data-lenis-prevent>
+                              {visibleCountries.map((country) => (
                                 <button
                                   key={country.code}
                                   type="button"
                                   onClick={() => {
                                     setSelectedCountry(country);
+                                    setCountrySearch('');
                                     setIsCountryDropdownOpen(false);
                                   }}
                                   className="w-full flex items-center gap-4 px-4 py-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
@@ -505,6 +522,10 @@ function ProfileSection({ user }) {
                                   )}
                                 </button>
                               ))}
+                              {visibleCountries.length === 0 && (
+                                <p className="px-4 py-4 text-sm text-gray-500">Nema odgovarajuće države.</p>
+                              )}
+                              </div>
                             </motion.div>
                           )}
                         </AnimatePresence>

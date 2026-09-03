@@ -447,8 +447,7 @@
   top: calc(100% + 6px);
   left: 0;
   width: 260px;
-  max-height: 180px;
-  overflow-y: auto;
+  overflow: hidden;
   overflow-x: hidden; /* SPREČAVA HORIZONTALNI SKROL */
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.1);
@@ -456,6 +455,33 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   z-index: 100;
   padding: 4px;
+}
+.flag-dropdown__search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 4px;
+  background: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.flag-dropdown__search input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #111;
+  font-size: 12px;
+}
+.flag-dropdown__results {
+  max-height: 210px;
+  overflow-y: auto;
+}
+.flag-dropdown__empty {
+  margin: 0;
+  padding: 14px 12px;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .flag-item {

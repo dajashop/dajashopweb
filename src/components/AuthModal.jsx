@@ -20,7 +20,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import './AuthModal.css';
 import FlashModal from './modals/FlashModal.jsx';
 import { getFlagUrl } from '../utils/flags.js';
-import { PHONE_COUNTRIES as COUNTRY_CODES } from '../data/phoneCountries.js';
+import { filterPhoneCountries, PHONE_COUNTRIES as COUNTRY_CODES } from '../data/phoneCountries.js';
 import { useConsent } from '../context/ConsentContext.jsx';
 import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 
@@ -138,6 +138,7 @@ export default function AuthModal() {
 
   // Dropdown States & Refs
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
   const loginWrapperRef = useRef(null);
   const regWrapperRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -158,6 +159,7 @@ export default function AuthModal() {
     if (found) return found;
     return COUNTRY_CODES.find((c) => c.code === 'RS');
   }, [identity, idType]);
+  const visibleCountries = filterPhoneCountries(countrySearch);
 
   useEffect(() => {
     if (!authOpen) return;
@@ -238,6 +240,7 @@ export default function AuthModal() {
     setIdentity(newValue);
 
     setIsCountryDropdownOpen(false);
+    setCountrySearch('');
     setErrors((prev) => ({ ...prev, identity: null }));
 
     const activeRef = isLogin ? loginWrapperRef : regWrapperRef;
@@ -778,11 +781,10 @@ export default function AuthModal() {
                                     <button
                                       type="button"
                                       className="flag-btn"
-                                      onClick={() =>
-                                        setIsCountryDropdownOpen(
-                                          !isCountryDropdownOpen
-                                        )
-                                      }
+                                      onClick={() => {
+                                        setCountrySearch('');
+                                        setIsCountryDropdownOpen((open) => !open);
+                                      }}
                                     >
                                       <img
                                         src={getFlagUrl(currentCountry.code)}
@@ -805,10 +807,20 @@ export default function AuthModal() {
                                           initial={{ opacity: 0, y: 5 }}
                                           animate={{ opacity: 1, y: 0 }}
                                           exit={{ opacity: 0, y: 5 }}
-                                          className="flag-dropdown country-dropdown-scroll"
-                                          data-lenis-prevent
+                                          className="flag-dropdown"
                                         >
-                                          {COUNTRY_CODES.map((country) => (
+                                          <div className="flag-dropdown__search">
+                                            <input
+                                              autoFocus
+                                              type="search"
+                                              value={countrySearch}
+                                              onChange={(event) => setCountrySearch(event.target.value)}
+                                              placeholder="Pronađi državu ili pozivni broj"
+                                              aria-label="Pretraži države"
+                                            />
+                                          </div>
+                                          <div className="flag-dropdown__results country-dropdown-scroll" data-lenis-prevent>
+                                          {visibleCountries.map((country) => (
                                             <button
                                               key={country.code}
                                               type="button"
@@ -839,6 +851,10 @@ export default function AuthModal() {
                                               )}
                                             </button>
                                           ))}
+                                          {visibleCountries.length === 0 && (
+                                            <p className="flag-dropdown__empty">Nema odgovarajuće države.</p>
+                                          )}
+                                          </div>
                                         </motion.div>
                                       )}
                                     </AnimatePresence>

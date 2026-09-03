@@ -23,7 +23,7 @@ import { useConsent } from '../../context/ConsentContext.jsx';
 import { FORM_RULES } from '../../data/validationRules';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
 import ErrorMessage from '../ui/ErrorMessage.jsx';
-import { PHONE_COUNTRIES } from '../../data/phoneCountries.js';
+import { filterPhoneCountries, PHONE_COUNTRIES } from '../../data/phoneCountries.js';
 import {
   ADDRESS_ICONS,
   renderIcon,
@@ -51,11 +51,17 @@ function AddressSection({ user }) {
 
   // State i Ref za custom dropdown
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
   const dropdownRef = useRef(null);
 
   // State za prefiks telefona
   const [phonePrefix, setPhonePrefix] = useState('+381');
   const [mapsLoaded, setMapsLoaded] = useState(false);
+  const visibleCountries = filterPhoneCountries(countrySearch).map(({ code, dial, label }) => ({
+    code: dial,
+    country: code,
+    label,
+  }));
 
   // Pomoćna funkcija za razdvajanje broja
   const parsePhoneNumber = (fullNumber) => {
@@ -535,9 +541,10 @@ function AddressSection({ user }) {
                   >
                     <button
                       type="button"
-                      onClick={() =>
-                        setIsCountryDropdownOpen(!isCountryDropdownOpen)
-                      }
+                      onClick={() => {
+                        setCountrySearch('');
+                        setIsCountryDropdownOpen((open) => !open);
+                      }}
                       className="w-full p-3 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-primary)] flex items-center justify-between gap-2 transition-colors hover:bg-[var(--color-bg-subtle)]"
                     >
                       <div className="flex items-center gap-2 overflow-hidden">
@@ -567,15 +574,27 @@ function AddressSection({ user }) {
                           initial={{ opacity: 0, y: 5 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 5 }}
-                          className="absolute top-full left-0 mt-1 w-[240px] max-h-[200px] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-xl z-50 country-dropdown-scroll"
-                          data-lenis-prevent
+                          className="absolute top-full left-0 mt-1 w-[270px] overflow-hidden bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-xl z-50"
                         >
-                          {COUNTRY_CODES.map((country) => (
+                          <div className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-surface)] p-2">
+                            <input
+                              autoFocus
+                              type="search"
+                              value={countrySearch}
+                              onChange={(event) => setCountrySearch(event.target.value)}
+                              placeholder="Pronađi državu ili pozivni broj"
+                              aria-label="Pretraži države"
+                              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+                            />
+                          </div>
+                          <div className="country-dropdown-scroll max-h-[220px] overflow-y-auto" data-lenis-prevent>
+                          {visibleCountries.map((country) => (
                             <button
                               key={country.code}
                               type="button"
                               onClick={() => {
                                 setPhonePrefix(country.code);
+                                setCountrySearch('');
                                 setIsCountryDropdownOpen(false);
                               }}
                               className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] transition-all rounded-md"
@@ -601,6 +620,10 @@ function AddressSection({ user }) {
                               )}
                             </button>
                           ))}
+                          {visibleCountries.length === 0 && (
+                            <p className="px-4 py-4 text-sm text-[var(--color-muted)]">Nema odgovarajuće države.</p>
+                          )}
+                          </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
