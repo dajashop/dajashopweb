@@ -336,6 +336,10 @@ export default function AuthModal() {
   const getLiveValidationError = (fieldName, value) => {
     const cleanVal = value ? value.trim() : '';
 
+    // Format emaila i telefona proveravamo tek nakon prvog pokušaja prijave.
+    // Posle toga poruka ostaje korisna dok korisnik ispravlja unos.
+    if (fieldName === 'identity' && submitCount === 0) return null;
+
     if (!cleanVal) {
       return submitCount > 0 ? validateField(fieldName, value) : null;
     }
