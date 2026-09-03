@@ -175,12 +175,10 @@ export function AuthProvider({ children }) {
     async ({ identity, password, name }) => {
       const id = detectIdentity(identity);
       if (id.type === 'phone') {
-        await authApi.requestPhoneOtp(id.value);
-        setPendingPhone(id.value);
-        return 'phone-code';
+        throw new Error('Registracija brojem telefona još nije dostupna. Koristite email, a broj potom potvrdite u profilu.');
       }
       if (id.type !== 'email') {
-        throw new Error('Za registraciju koristite email ili broj telefona.');
+        throw new Error('Za registraciju koristite email adresu.');
       }
 
       const me = await authApi.register({

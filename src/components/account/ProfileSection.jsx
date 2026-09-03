@@ -35,6 +35,7 @@ import ErrorMessage from '../ui/ErrorMessage.jsx';
 
 function ProfileSection({ user }) {
   const { flash } = useFlash();
+  const { refreshUser } = useAuth();
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState(user.displayName || '');
 
@@ -168,6 +169,7 @@ function ProfileSection({ user }) {
     try {
       const fullNumber = selectedCountry.dial + localPhone.replace(/^0+/, '');
       await customerApi.verifyPhoneLinkOtp(fullNumber, smsCode);
+      await refreshUser();
       flash('Uspeh', 'Broj telefona povezan!', 'success');
       setIsEditingPhone(false);
       setPhoneStep('input');
@@ -397,7 +399,7 @@ function ProfileSection({ user }) {
         >
           <div className="flex justify-between items-start">
             <div className="info-label">Telefon</div>
-            {user.phoneNumber ? (
+            {user.phoneNumber && user.phoneVerified ? (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-bold uppercase tracking-wider cursor-default select-none">
                 <ShieldCheck size={12} />
                 <span>Verifikovan</span>
