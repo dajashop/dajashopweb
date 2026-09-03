@@ -101,37 +101,21 @@
   cursor: pointer;
   z-index: 1;
 }
-.catalog-image-dot::before {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 50%;
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.48),
-    0 1px 2px rgba(0, 0, 0, 0.16);
-  content: '';
-  z-index: 0;
-}
 .catalog-image-dot:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
 .catalog-image-dot__liquid {
   position: absolute;
-  inset: -1px;
-  border: 1px solid rgba(255, 255, 255, 0.82);
+  inset: -2px;
+  border: 1px solid rgba(113, 113, 122, 0.62);
   border-radius: inherit;
-  background:
-    radial-gradient(circle at 31% 23%, rgba(255, 255, 255, 0.48) 0%, rgba(255, 255, 255, 0.14) 27%, transparent 48%),
-    linear-gradient(142deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 54%, rgba(0, 0, 0, 0.04));
+  background: rgba(113, 113, 122, 0.1);
   box-shadow:
-    0 2px 5px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(255, 255, 255, 0.16),
-    inset 0 1px 1px rgba(255, 255, 255, 0.68),
-    inset 0 -3px 7px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(2px) saturate(1.02);
-  -webkit-backdrop-filter: blur(2px) saturate(1.02);
+    0 1px 3px rgba(0, 0, 0, 0.14),
+    inset 0 1px 1px rgba(255, 255, 255, 0.26);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
   z-index: 1;
 }
 .catalog-image-dot__core {
@@ -145,8 +129,8 @@
   z-index: 2;
 }
 .catalog-image-dot.is-active .catalog-image-dot__core {
-  background: rgba(63, 63, 70, 0.92);
-  transform: scale(1.12);
+  background: rgba(82, 82, 91, 0.94);
+  transform: scale(1.05);
 }
 @media (prefers-reduced-motion: reduce) {
   .catalog-image-dot__core {
