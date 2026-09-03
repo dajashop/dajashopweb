@@ -439,7 +439,7 @@ export default function Cart() {
                   style={{ color: '#ef4444' }}
                 >
                   <span className="muted" style={{ color: '#ef4444' }}>
-                    Popust ({appliedPromo.percent * 100}%):
+                    Popust ({appliedPromo.code}):
                   </span>
                   <span>-{money(discountAmount)}</span>
                 </div>
