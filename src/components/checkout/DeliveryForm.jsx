@@ -82,7 +82,7 @@ export default function DeliveryForm({
 }) {
   const emailInputRef = useRef(null);
   const addressSelectorRef = useRef(null);
-  const { googleAllowed, requestGooglePermission } = useConsent();
+  const { googleAllowed } = useConsent();
 
   // --- REF ZA PRAĆENJE AUTOMATSKE SELEKCIJE ---
   const hasAutoSelected = useRef(false);
@@ -831,9 +831,6 @@ export default function DeliveryForm({
                     onBlur={(event) => {
                       handleBlur(event);
                       window.setTimeout(clearGoogleAddressSuggestions, 120);
-                    }}
-                    onFocus={() => {
-                      if (!googleAllowed) void requestGooglePermission();
                     }}
                     required={requiredForCourier}
                     autoComplete="new-password"

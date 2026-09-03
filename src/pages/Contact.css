@@ -94,22 +94,24 @@
   color: var(--color-text);
 }
 
-/* NOVO: Stil za embedded mapu - Responzivni 4:3 odnos (padding-top: 75%) */
+/* Mapa i stanje bez saglasnosti dele isti responzivni prostor. */
 .map-embed-container {
   overflow: hidden;
   position: relative;
   width: 100%;
-  padding-top: 75%;
+  min-height: 240px;
+  aspect-ratio: 4 / 3;
   border-radius: 12px;
   margin-top: 15px;
+  background: var(--color-bg-subtle);
 }
-.map-embed-container iframe {
+
+.map-embed-container > .map-iframe {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 12px; /* Ponoviti border radius za iframe */
+  border-radius: inherit;
 }
 
 /* FORM SECTION */

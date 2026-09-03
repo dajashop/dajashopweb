@@ -39,7 +39,7 @@ const COUNTRY_CODES = PHONE_COUNTRIES;
 
 function AddressSection({ user }) {
   const { flash } = useFlash();
-  const { googleAllowed, requestGooglePermission } = useConsent();
+  const { googleAllowed } = useConsent();
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -404,9 +404,6 @@ function AddressSection({ user }) {
                   onBlur={(event) => {
                     handleBlur(event);
                     window.setTimeout(clearGoogleAddressSuggestions, 120);
-                  }}
-                  onFocus={() => {
-                    if (!googleAllowed) void requestGooglePermission();
                   }}
                   placeholder="Počnite da kucate adresu..."
                   autoComplete="off"
