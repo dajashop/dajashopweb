@@ -51,18 +51,20 @@
   height: 25px;
   padding: 3px 7px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 999px;
   background:
-    linear-gradient(112deg, rgba(255, 255, 255, 0.48) 0%, rgba(232, 247, 255, 0.22) 31%, rgba(82, 153, 239, 0.18) 72%, rgba(255, 255, 255, 0.3) 100%),
-    rgba(175, 209, 240, 0.18);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.15) 44%, rgba(255, 255, 255, 0.04) 100%),
+    rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 7px 18px rgba(10, 44, 91, 0.24),
-    0 1px 2px rgba(255, 255, 255, 0.54),
-    inset 0 1px 1px rgba(255, 255, 255, 0.88),
-    inset 0 -1px 2px rgba(28, 92, 159, 0.18);
-  backdrop-filter: blur(18px) saturate(1.75) brightness(1.08);
-  -webkit-backdrop-filter: blur(18px) saturate(1.75) brightness(1.08);
+    0 5px 15px rgba(0, 0, 0, 0.2),
+    0 1px 1px rgba(255, 255, 255, 0.72),
+    inset 0 1px 1px rgba(255, 255, 255, 0.96),
+    inset 1px 0 1px rgba(255, 255, 255, 0.46),
+    inset -1px 0 1px rgba(255, 255, 255, 0.46),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(18px) saturate(1.15) brightness(1.12);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15) brightness(1.12);
   isolation: isolate;
 }
 .catalog-image-dots::before {
@@ -70,7 +72,7 @@
   inset: 1px 13% auto 9%;
   height: 42%;
   border-radius: inherit;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.88) 50%, transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.94) 50%, transparent);
   content: '';
   filter: blur(3px);
   opacity: 0.92;
@@ -78,10 +80,10 @@
 }
 .catalog-image-dots::after {
   position: absolute;
-  inset: auto 10% 1px 22%;
-  height: 28%;
+  inset: auto 7% 1px 7%;
+  height: 24%;
   border-radius: inherit;
-  background: linear-gradient(90deg, transparent, rgba(61, 140, 229, 0.18), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.38), transparent);
   content: '';
   filter: blur(4px);
   pointer-events: none;
@@ -108,18 +110,18 @@
 .catalog-image-dot__liquid {
   position: absolute;
   inset: 0;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.96);
   border-radius: inherit;
   background:
-    radial-gradient(circle at 31% 23%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.57) 27%, transparent 48%),
-    linear-gradient(142deg, rgba(255, 255, 255, 0.7), rgba(157, 215, 255, 0.42) 54%, rgba(64, 138, 236, 0.42));
+    radial-gradient(circle at 31% 23%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.62) 27%, transparent 48%),
+    linear-gradient(142deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.28) 54%, rgba(0, 0, 0, 0.12));
   box-shadow:
-    0 2px 8px rgba(6, 52, 111, 0.32),
-    0 0 0 1px rgba(105, 190, 255, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.28),
     inset 0 1px 1px rgba(255, 255, 255, 0.96),
-    inset 0 -3px 7px rgba(52, 133, 222, 0.26);
-  backdrop-filter: blur(12px) saturate(1.8) brightness(1.15);
-  -webkit-backdrop-filter: blur(12px) saturate(1.8) brightness(1.15);
+    inset 0 -3px 7px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(12px) saturate(1.05) brightness(1.18);
+  -webkit-backdrop-filter: blur(12px) saturate(1.05) brightness(1.18);
 }
 .catalog-image-dot__core {
   position: relative;
@@ -127,12 +129,12 @@
   height: 4px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 1px 3px rgba(6, 52, 111, 0.36);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.32);
   transition: transform 180ms ease, background-color 180ms ease;
   z-index: 1;
 }
 .catalog-image-dot.is-active .catalog-image-dot__core {
-  background: rgba(15, 65, 129, 0.88);
+  background: rgba(34, 38, 45, 0.88);
   transform: scale(1.12);
 }
 @media (prefers-reduced-motion: reduce) {
