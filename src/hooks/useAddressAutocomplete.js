@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { loadGoogleMapsPlaces } from '../services/googleMaps.js';
 
-const MINIMUM_QUERY_LENGTH = 3;
+const MINIMUM_QUERY_LENGTH = 1;
 const SEARCH_DEBOUNCE_MS = 220;
 
 /**
