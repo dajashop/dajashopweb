@@ -39,7 +39,7 @@
   justify-content: center;
 }
 .catalog-image-dots-wrap {
-  width: min(126px, 54%);
+  width: min(126px, 54%, calc(14px + (var(--gallery-dot-count) * 22px)));
 }
 .catalog-image-dots {
   position: relative;
