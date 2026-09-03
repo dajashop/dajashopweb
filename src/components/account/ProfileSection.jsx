@@ -131,7 +131,7 @@ function ProfileSection({ user }) {
   };
 
   const handleSendCode = async () => {
-    const fullNumber = selectedCountry.dial + localPhone.replace(/^0+/, '');
+    const fullNumber = selectedCountry.dial + localPhone.replace(/\D/g, '').replace(/^0+/, '');
     if (localPhone.length < 5) {
       flash('Greška', 'Unesite ispravan broj telefona.', 'error');
       return;
@@ -167,7 +167,7 @@ function ProfileSection({ user }) {
     }
     setLoading(true);
     try {
-      const fullNumber = selectedCountry.dial + localPhone.replace(/^0+/, '');
+      const fullNumber = selectedCountry.dial + localPhone.replace(/\D/g, '').replace(/^0+/, '');
       await customerApi.verifyPhoneLinkOtp(fullNumber, smsCode);
       await refreshUser();
       flash('Uspeh', 'Broj telefona povezan!', 'success');
