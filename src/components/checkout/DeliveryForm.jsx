@@ -33,23 +33,12 @@ import { customerApi } from '../../services/dajaPlatform';
 import { loadGoogleMapsPlaces } from '../../services/googleMaps';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import { getFlagUrl } from '../../utils/flags.js';
+import { PHONE_COUNTRIES as COUNTRY_CODES } from '../../data/phoneCountries.js';
 import {
   ADDRESS_ICONS,
   ADDRESS_ICON_ORDER,
 } from '../../utils/accountHelpers';
 
-// Konstante
-const COUNTRY_CODES = [
-  { code: 'RS', dial: '+381', label: 'Srbija' },
-  { code: 'ME', dial: '+382', label: 'Crna Gora' },
-  { code: 'BA', dial: '+387', label: 'BiH' },
-  { code: 'HR', dial: '+385', label: 'Hrvatska' },
-  { code: 'MK', dial: '+389', label: 'S. Makedonija' },
-  { code: 'SI', dial: '+386', label: 'Slovenija' },
-  { code: 'DE', dial: '+49', label: 'Nemačka' },
-  { code: 'AT', dial: '+43', label: 'Austrija' },
-  { code: 'CH', dial: '+41', label: 'Švajcarska' },
-];
 const POPULAR_DOMAINS = [
   'gmail.com',
   'yahoo.com',

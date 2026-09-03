@@ -14,6 +14,7 @@ import {
   Dumbbell,
 } from 'lucide-react';
 import { getFlagUrl as firstPartyFlagUrl } from './flags.js';
+import { PHONE_COUNTRIES } from '../data/phoneCountries.js';
 
 // --- CONFIGURATION CONSTANTS ---
 export const ADDRESS_ICONS = {
@@ -44,17 +45,7 @@ export const ADDRESS_ICON_ORDER = [
   'gym',
 ];
 
-export const COUNTRY_CODES = [
-  { code: 'RS', dial: '+381', label: 'Srbija' },
-  { code: 'ME', dial: '+382', label: 'Crna Gora' },
-  { code: 'BA', dial: '+387', label: 'BiH' },
-  { code: 'HR', dial: '+385', label: 'Hrvatska' },
-  { code: 'MK', dial: '+389', label: 'S. Makedonija' },
-  { code: 'SI', dial: '+386', label: 'Slovenija' },
-  { code: 'DE', dial: '+49', label: 'Nemačka' },
-  { code: 'AT', dial: '+43', label: 'Austrija' },
-  { code: 'CH', dial: '+41', label: 'Švajcarska' },
-];
+export const COUNTRY_CODES = PHONE_COUNTRIES;
 
 // --- HELPER FUNCTIONS ---
 

@@ -23,6 +23,7 @@ import { useConsent } from '../../context/ConsentContext.jsx';
 import { FORM_RULES } from '../../data/validationRules';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
 import ErrorMessage from '../ui/ErrorMessage.jsx';
+import { PHONE_COUNTRIES } from '../../data/phoneCountries.js';
 import {
   ADDRESS_ICONS,
   renderIcon,
@@ -30,17 +31,11 @@ import {
 } from '../../utils/accountHelpers.jsx';
 
 // --- LISTA POZIVNIH BROJEVA ---
-const COUNTRY_CODES = [
-  { code: '+381', country: 'RS', label: '🇷🇸 +381' },
-  { code: '+382', country: 'ME', label: '🇲🇪 +382' },
-  { code: '+387', country: 'BA', label: '🇧🇦 +387' },
-  { code: '+385', country: 'HR', label: '🇭🇷 +385' },
-  { code: '+389', country: 'MK', label: '🇲🇰 +389' },
-  { code: '+386', country: 'SI', label: '🇸🇮 +386' },
-  { code: '+43', country: 'AT', label: '🇦🇹 +43' },
-  { code: '+49', country: 'DE', label: '🇩🇪 +49' },
-  { code: '+41', country: 'CH', label: '🇨🇭 +41' },
-];
+const COUNTRY_CODES = PHONE_COUNTRIES.map(({ code, dial, label }) => ({
+  code: dial,
+  country: code,
+  label,
+}));
 
 function AddressSection({ user }) {
   const { flash } = useFlash();
@@ -592,7 +587,7 @@ function AddressSection({ user }) {
                               />
                               <div className="flex flex-col">
                                 <span className="text-sm font-semibold text-[var(--color-text)]">
-                                  {country.label.split(' ')[0]}
+                                  {country.label}
                                 </span>
                                 <span className="text-xs text-[var(--color-muted)] font-medium">
                                   {country.code}
