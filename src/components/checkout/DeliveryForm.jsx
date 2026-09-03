@@ -786,7 +786,9 @@ export default function DeliveryForm({
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25 }}
-              style={{ gridColumn: '1 / -1', overflow: 'hidden' }}
+              // Senka fokusiranog polja i lista predloga moraju ostati vidljive.
+              // checkout-section već kontroliše slojeve iznad narednih sekcija.
+              style={{ gridColumn: '1 / -1', overflow: 'visible' }}
             >
               <div className="input-wrapper-col full-width">
                 <div
