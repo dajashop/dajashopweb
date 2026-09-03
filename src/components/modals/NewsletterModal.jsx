@@ -37,12 +37,16 @@ export default function NewsletterModal() {
     setStatus('loading');
     setErrorMsg('');
     try {
-      await newsletterApi.subscribe(email, {
+      const subscription = await newsletterApi.subscribe(email, {
         source: 'newsletter_corner_popup',
         policyVersion: policy?.version,
         acceptedMarketing: true,
       });
-      setStatus('success');
+      if (subscription?.alreadySubscribed) {
+        setStatus('duplicate');
+      } else {
+        setStatus(subscription?.welcomeOfferEligible ? 'welcome' : 'success');
+      }
     } catch (error) {
       if (error.status === 409) {
         setStatus('duplicate');
@@ -78,11 +82,19 @@ export default function NewsletterModal() {
               <X size={24} />
             </button>
 
-            {status === 'success' && (
+            {status === 'welcome' && (
               <div className="newsletter-success">
                 <div className="success-icon"><Check size={32} /></div>
                 <h2>Uspešno!</h2>
                 <p>Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i kod za popust.</p>
+              </div>
+            )}
+
+            {status === 'success' && (
+              <div className="newsletter-success">
+                <div className="success-icon"><Check size={32} /></div>
+                <h2>Uspešno!</h2>
+                <p>Prijavljeni ste na newsletter. Uskoro ćete dobijati novitete, ponude i savete.</p>
               </div>
             )}
 

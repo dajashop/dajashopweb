@@ -33,16 +33,28 @@ export default function Footer() {
     }
     setLoading(true);
     try {
-      await newsletterApi.subscribe(email, {
+      const subscription = await newsletterApi.subscribe(email, {
         source: 'footer',
         policyVersion: policy?.version,
         acceptedMarketing: true,
       });
 
+      if (subscription?.alreadySubscribed) {
+        setSuccess(false);
+        flash(
+          'Već ste prijavljeni',
+          'Ova email adresa je već prijavljena na newsletter.',
+          'info',
+        );
+        return;
+      }
+
       setSuccess(true);
       flash(
         'Uspeh',
-        'Uspešno ste prijavljeni na newsletter. Proverite email za poruku dobrodošlice.',
+        subscription?.welcomeOfferEligible
+          ? 'Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i promo kod.'
+          : 'Uspešno ste prijavljeni na newsletter. Uskoro ćete primati novitete i ponude.',
         'success',
       );
       setEmail('');
