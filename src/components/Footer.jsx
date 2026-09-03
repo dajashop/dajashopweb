@@ -54,7 +54,9 @@ export default function Footer() {
         'Uspeh',
         subscription?.welcomeOfferEligible
           ? 'Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i promo kod.'
-          : 'Uspešno ste prijavljeni na newsletter. Uskoro ćete primati novitete i ponude.',
+          : subscription?.welcomeEmailSent
+            ? 'Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice.'
+            : 'Uspešno ste prijavljeni na newsletter. Uskoro ćete primati novitete i ponude.',
         'success',
       );
       setEmail('');

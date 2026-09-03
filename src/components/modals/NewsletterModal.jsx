@@ -45,7 +45,13 @@ export default function NewsletterModal() {
       if (subscription?.alreadySubscribed) {
         setStatus('duplicate');
       } else {
-        setStatus(subscription?.welcomeOfferEligible ? 'welcome' : 'success');
+        setStatus(
+          subscription?.welcomeOfferEligible
+            ? 'welcome-offer'
+            : subscription?.welcomeEmailSent
+              ? 'welcome'
+              : 'success',
+        );
       }
     } catch (error) {
       if (error.status === 409) {
@@ -82,11 +88,19 @@ export default function NewsletterModal() {
               <X size={24} />
             </button>
 
-            {status === 'welcome' && (
+            {status === 'welcome-offer' && (
               <div className="newsletter-success">
                 <div className="success-icon"><Check size={32} /></div>
                 <h2>Uspešno!</h2>
                 <p>Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i kod za popust.</p>
+              </div>
+            )}
+
+            {status === 'welcome' && (
+              <div className="newsletter-success">
+                <div className="success-icon"><Check size={32} /></div>
+                <h2>Dobro došli!</h2>
+                <p>Proverite inbox i spam folder za poruku dobrodošlice.</p>
               </div>
             )}
 
