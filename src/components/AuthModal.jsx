@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Mail,
@@ -14,15 +13,15 @@ import {
   ArrowRightToLine,
   AlertCircle,
   ChevronDown,
-  Check,
   Fingerprint,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.js';
 import './AuthModal.css';
 import FlashModal from './modals/FlashModal.jsx';
 import { getFlagUrl } from '../utils/flags.js';
-import { filterPhoneCountries, PHONE_COUNTRIES as COUNTRY_CODES } from '../data/phoneCountries.js';
+import { PHONE_COUNTRIES as COUNTRY_CODES } from '../data/phoneCountries.js';
 import { useConsent } from '../context/ConsentContext.jsx';
+import PhoneCountryPicker from './ui/PhoneCountryPicker.jsx';
 import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 
 const POPULAR_DOMAINS = [
@@ -39,18 +38,6 @@ const REGEX = {
   phone: /^(\+|0)[0-9\s]{8,20}$/,
   passwordStrong: /^(?=.*[A-Z])(?=.*\d).{8,}$/,
 };
-
-function getCountryMenuPosition(target) {
-  const rect = target.getBoundingClientRect();
-  const width = Math.min(280, window.innerWidth - 16);
-  const height = 298;
-  const openUpward = window.innerHeight - rect.bottom < height && rect.top > height;
-  return {
-    top: openUpward ? Math.max(8, rect.top - height) : rect.bottom + 6,
-    left: Math.min(Math.max(8, rect.left), window.innerWidth - width - 8),
-    width,
-  };
-}
 
 const LAST_LOGIN_STORAGE_KEY = 'daja_last_login';
 const LAST_LOGIN_PROVIDERS = ['password', 'google', 'facebook', 'passkey'];
@@ -150,13 +137,8 @@ export default function AuthModal() {
   const [prediction, setPrediction] = useState('');
 
   // Dropdown States & Refs
-  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
-  const [countrySearch, setCountrySearch] = useState('');
-  const [countryMenuPosition, setCountryMenuPosition] = useState(null);
   const loginWrapperRef = useRef(null);
   const regWrapperRef = useRef(null);
-  const dropdownRef = useRef(null);
-  const countryMenuRef = useRef(null);
 
   const [flashOpen, setFlashOpen] = useState(false);
   const [flashTitle, setFlashTitle] = useState('');
@@ -174,7 +156,6 @@ export default function AuthModal() {
     if (found) return found;
     return COUNTRY_CODES.find((c) => c.code === 'RS');
   }, [identity, idType]);
-  const visibleCountries = filterPhoneCountries(countrySearch);
 
   useEffect(() => {
     if (!authOpen) return;
@@ -205,8 +186,6 @@ export default function AuthModal() {
     setPrediction('');
     setErrors({});
     setSubmitCount(0);
-    setIsCountryDropdownOpen(false);
-    setCountryMenuPosition(null);
     setOauthWaking(false);
     setOauthWakeupAttempt(0);
     setOauthProvider('');
@@ -224,31 +203,12 @@ export default function AuthModal() {
       if (!inLogin && !inReg) {
         setShowSuggestions(false);
       }
-      const clickedCountryMenu = countryMenuRef.current?.contains(event.target);
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target) && !clickedCountryMenu) {
-        setIsCountryDropdownOpen(false);
-        setCountryMenuPosition(null);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  useEffect(() => {
-    if (!isCountryDropdownOpen) return undefined;
-    const updatePosition = () => {
-      if (dropdownRef.current) setCountryMenuPosition(getCountryMenuPosition(dropdownRef.current));
-    };
-    updatePosition();
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
-    return () => {
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
-    };
-  }, [isCountryDropdownOpen]);
 
   const isPhone = idType === 'phone';
   const showPassword = !isPhone;
@@ -271,9 +231,6 @@ export default function AuthModal() {
     const newValue = `${country.dial} ${localPart}`;
     setIdentity(newValue);
 
-    setIsCountryDropdownOpen(false);
-    setCountrySearch('');
-    setCountryMenuPosition(null);
     setErrors((prev) => ({ ...prev, identity: null }));
 
     const activeRef = isLogin ? loginWrapperRef : regWrapperRef;
@@ -393,7 +350,7 @@ export default function AuthModal() {
   };
 
   const handleBlur = (e) => {
-    if (dropdownRef.current && dropdownRef.current.contains(e.relatedTarget)) {
+    if (e.relatedTarget?.closest('.phone-country-picker, .phone-country-picker__menu')) {
       return;
     }
 
@@ -807,41 +764,24 @@ export default function AuthModal() {
                                 </div>
 
                                 {isPhone && currentCountry ? (
-                                  <div
+                                  <PhoneCountryPicker
                                     className="flag-trigger-wrapper"
-                                    ref={dropdownRef}
-                                  >
-                                    <button
-                                      type="button"
-                                      className="flag-btn"
-                                      onClick={() => {
-                                        if (isCountryDropdownOpen) {
-                                          setIsCountryDropdownOpen(false);
-                                          setCountryMenuPosition(null);
-                                          return;
-                                        }
-                                        setCountrySearch('');
-                                        if (dropdownRef.current) {
-                                          setCountryMenuPosition(getCountryMenuPosition(dropdownRef.current));
-                                        }
-                                        setIsCountryDropdownOpen(true);
-                                      }}
-                                    >
-                                      <img
-                                        src={getFlagUrl(currentCountry.code)}
-                                        alt={currentCountry.code}
-                                        className="w-5 h-auto rounded-[2px]"
-                                      />
-                                      <ChevronDown
-                                        size={12}
-                                        className={`transition-transform ${
-                                          isCountryDropdownOpen
-                                            ? 'rotate-180'
-                                            : ''
-                                        }`}
-                                      />
-                                    </button>
-                                  </div>
+                                    country={currentCountry}
+                                    onSelect={handleCountrySelect}
+                                    renderTrigger={({ isOpen, toggle }) => (
+                                      <button type="button" className="flag-btn" onClick={toggle}>
+                                        <img
+                                          src={getFlagUrl(currentCountry.code)}
+                                          alt={currentCountry.code}
+                                          className="w-5 h-auto rounded-[2px]"
+                                        />
+                                        <ChevronDown
+                                          size={12}
+                                          className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                                        />
+                                      </button>
+                                    )}
+                                  />
                                 ) : (
                                   <Mail className="ico" size={18} />
                                 )}
@@ -1120,54 +1060,6 @@ export default function AuthModal() {
           </motion.div>
         )}
       </AnimatePresence>
-      {createPortal(
-        <AnimatePresence>
-          {authOpen && isCountryDropdownOpen && countryMenuPosition && currentCountry && (
-            <motion.div
-              ref={countryMenuRef}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 5 }}
-              className="flag-dropdown flag-dropdown--portal"
-              style={countryMenuPosition}
-            >
-              <div className="flag-dropdown__search">
-                <input
-                  autoFocus
-                  type="search"
-                  value={countrySearch}
-                  onChange={(event) => setCountrySearch(event.target.value)}
-                  placeholder="Pronađi državu ili pozivni broj"
-                  aria-label="Pretraži države"
-                />
-              </div>
-              <div className="flag-dropdown__results country-dropdown-scroll" data-lenis-prevent>
-                {visibleCountries.map((country) => (
-                  <button
-                    key={country.code}
-                    type="button"
-                    className="flag-item"
-                    onClick={() => handleCountrySelect(country)}
-                  >
-                    <img src={getFlagUrl(country.code)} alt={country.code} className="w-5" />
-                    <div className="flag-text">
-                      <span className="font-bold text-gray-900">{country.label}</span>
-                      <span className="text-xs text-gray-500">{country.dial}</span>
-                    </div>
-                    {currentCountry.code === country.code && (
-                      <Check size={14} className="text-green-600 ml-auto" />
-                    )}
-                  </button>
-                ))}
-                {visibleCountries.length === 0 && (
-                  <p className="flag-dropdown__empty">Nema odgovarajuće države.</p>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
     </>
   );
 }

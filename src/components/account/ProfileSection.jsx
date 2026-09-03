@@ -9,8 +9,6 @@ import {
   User,
   Plus,
   Edit2,
-  ChevronDown,
-  Check,
   Loader2,
   Heart,
   AlertCircle,
@@ -29,7 +27,7 @@ import {
   getFlagUrl,
   getInitials,
 } from '../../utils/accountHelpers.jsx';
-import { filterPhoneCountries } from '../../data/phoneCountries.js';
+import PhoneCountryPicker from '../ui/PhoneCountryPicker.jsx';
 
 // Ovo mora biti izvučeno iz ErrorMessage.jsx
 import ErrorMessage from '../ui/ErrorMessage.jsx';
@@ -44,16 +42,12 @@ function ProfileSection({ user }) {
   const [newPhone, setNewPhone] = useState(user.phoneNumber || '');
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
   const [localPhone, setLocalPhone] = useState('');
-  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
-  const [countrySearch, setCountrySearch] = useState('');
 
-  const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const [verificationId, setVerificationId] = useState(null);
   const [smsCode, setSmsCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const visibleCountries = filterPhoneCountries(countrySearch);
 
   useEffect(() => {
     setNewName(user.displayName || '');
@@ -71,18 +65,6 @@ function ProfileSection({ user }) {
       setLocalPhone('');
     }
   }, [user]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsCountryDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   // --- E-MAIL VERIFIKACIJA HANDLER ---
   const handleSendVerification = async () => {
@@ -443,93 +425,24 @@ function ProfileSection({ user }) {
                 {phoneStep === 'input' ? (
                   <div className="flex flex-col gap-3">
                     <div className="flex gap-2">
-                      <div className="relative" ref={dropdownRef}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCountrySearch('');
-                            setIsCountryDropdownOpen((open) => !open);
-                          }}
-                          className="h-full bg-white border border-gray-200 rounded-lg px-2 flex items-center gap-2 text-gray-900 text-sm hover:bg-gray-50 transition-colors outline-none min-w-[100px] justify-between"
-                        >
-                          <span className="flex items-center gap-2">
-                            <img
-                              src={getFlagUrl(selectedCountry.code)}
-                              alt={selectedCountry.code}
-                              className="w-6 h-auto object-cover rounded-sm shadow-sm"
-                            />
-                            <span className="text-xs font-bold text-gray-600">
-                              {selectedCountry.dial}
+                      <PhoneCountryPicker
+                        className="relative"
+                        country={selectedCountry}
+                        onSelect={setSelectedCountry}
+                        renderTrigger={({ isOpen, toggle }) => (
+                          <button
+                            type="button"
+                            onClick={toggle}
+                            className="h-full min-w-[100px] justify-between rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-900 outline-none transition-colors hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <span className="flex items-center gap-2">
+                              <img src={getFlagUrl(selectedCountry.code)} alt={selectedCountry.code} className="w-6 h-auto rounded-sm object-cover shadow-sm" />
+                              <span className="text-xs font-bold text-gray-600">{selectedCountry.dial}</span>
                             </span>
-                          </span>
-                          <ChevronDown
-                            size={14}
-                            className={`text-gray-400 transition-transform duration-200 ${
-                              isCountryDropdownOpen ? 'rotate-180' : ''
-                            }`}
-                          />
-                        </button>
-
-                        <AnimatePresence>
-                          {isCountryDropdownOpen && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 5 }}
-                              className="absolute top-full left-0 mt-1 w-[280px] overflow-hidden bg-white border border-gray-200 rounded-lg shadow-2xl z-[60]"
-                            >
-                              <div className="sticky top-0 z-10 border-b border-gray-100 bg-white p-2">
-                                <input
-                                  autoFocus
-                                  type="search"
-                                  value={countrySearch}
-                                  onChange={(event) => setCountrySearch(event.target.value)}
-                                  placeholder="Pronađi državu ili pozivni broj"
-                                  aria-label="Pretraži države"
-                                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-[var(--color-primary)]"
-                                />
-                              </div>
-                              <div className="country-dropdown-scroll max-h-[210px] overflow-y-auto" data-lenis-prevent>
-                              {visibleCountries.map((country) => (
-                                <button
-                                  key={country.code}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedCountry(country);
-                                    setCountrySearch('');
-                                    setIsCountryDropdownOpen(false);
-                                  }}
-                                  className="w-full flex items-center gap-4 px-4 py-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
-                                >
-                                  <img
-                                    src={getFlagUrl(country.code)}
-                                    alt={country.code}
-                                    className="w-6 h-auto object-cover rounded-sm shadow-sm"
-                                  />
-                                  <div className="flex flex-col">
-                                    <span className="text-sm font-semibold text-gray-900">
-                                      {country.label}
-                                    </span>
-                                    <span className="text-xs text-gray-500 font-medium">
-                                      {country.dial}
-                                    </span>
-                                  </div>
-                                  {selectedCountry.code === country.code && (
-                                    <Check
-                                      size={18}
-                                      className="ml-auto text-green-600"
-                                    />
-                                  )}
-                                </button>
-                              ))}
-                              {visibleCountries.length === 0 && (
-                                <p className="px-4 py-4 text-sm text-gray-500">Nema odgovarajuće države.</p>
-                              )}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
+                            <span className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>⌄</span>
+                          </button>
+                        )}
+                      />
 
                       <div className="relative flex-1 min-w-0">
                         <input

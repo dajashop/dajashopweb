@@ -12,8 +12,6 @@ import {
   PenTool,
   Loader2,
   Phone,
-  ChevronDown,
-  Check,
 } from 'lucide-react';
 
 import { customerApi } from '../../services/dajaPlatform';
@@ -23,19 +21,15 @@ import { useConsent } from '../../context/ConsentContext.jsx';
 import { FORM_RULES } from '../../data/validationRules';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
 import ErrorMessage from '../ui/ErrorMessage.jsx';
-import { filterPhoneCountries, PHONE_COUNTRIES } from '../../data/phoneCountries.js';
+import { PHONE_COUNTRIES } from '../../data/phoneCountries.js';
+import PhoneCountryPicker from '../ui/PhoneCountryPicker.jsx';
 import {
   ADDRESS_ICONS,
   renderIcon,
   getFlagUrl,
 } from '../../utils/accountHelpers.jsx';
 
-// --- LISTA POZIVNIH BROJEVA ---
-const COUNTRY_CODES = PHONE_COUNTRIES.map(({ code, dial, label }) => ({
-  code: dial,
-  country: code,
-  label,
-}));
+const COUNTRY_CODES = PHONE_COUNTRIES;
 
 function AddressSection({ user }) {
   const { flash } = useFlash();
@@ -49,31 +43,21 @@ function AddressSection({ user }) {
   const [deleteId, setDeleteId] = useState(null);
   const addressInputRef = useRef(null);
 
-  // State i Ref za custom dropdown
-  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
-  const [countrySearch, setCountrySearch] = useState('');
-  const dropdownRef = useRef(null);
-
   // State za prefiks telefona
   const [phonePrefix, setPhonePrefix] = useState('+381');
   const [mapsLoaded, setMapsLoaded] = useState(false);
-  const visibleCountries = filterPhoneCountries(countrySearch).map(({ code, dial, label }) => ({
-    code: dial,
-    country: code,
-    label,
-  }));
 
   // Pomoćna funkcija za razdvajanje broja
   const parsePhoneNumber = (fullNumber) => {
     if (!fullNumber) return { prefix: '+381', number: '' };
     const sortedCodes = [...COUNTRY_CODES].sort(
-      (a, b) => b.code.length - a.code.length
+      (a, b) => b.dial.length - a.dial.length
     );
-    const found = sortedCodes.find((c) => fullNumber.startsWith(c.code));
+    const found = sortedCodes.find((c) => fullNumber.startsWith(c.dial));
     if (found) {
       return {
-        prefix: found.code,
-        number: fullNumber.replace(found.code, '').trim(),
+        prefix: found.dial,
+        number: fullNumber.replace(found.dial, '').trim(),
       };
     }
     return { prefix: '+381', number: fullNumber };
@@ -99,19 +83,6 @@ function AddressSection({ user }) {
       setForm((f) => ({ ...f, phone: number }));
     }
   }, [user.phoneNumber]);
-
-  // Zatvaranje dropdown-a na klik sa strane
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsCountryDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   // --- DATA FETCHING ---
   useEffect(() => {
@@ -535,99 +506,27 @@ function AddressSection({ user }) {
               <label className="full">
                 <span>Telefon</span>
                 <div className="flex gap-2">
-                  <div
+                  <PhoneCountryPicker
                     className="relative w-[110px] shrink-0"
-                    ref={dropdownRef}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCountrySearch('');
-                        setIsCountryDropdownOpen((open) => !open);
-                      }}
-                      className="w-full p-3 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-primary)] flex items-center justify-between gap-2 transition-colors hover:bg-[var(--color-bg-subtle)]"
-                    >
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <img
-                          src={getFlagUrl(
-                            COUNTRY_CODES.find((c) => c.code === phonePrefix)
-                              ?.country || 'RS'
-                          )}
-                          alt="flag"
-                          className="w-5 h-auto object-cover rounded-sm"
-                        />
-                        <span className="font-medium text-[var(--color-text)] text-sm">
-                          {phonePrefix}
-                        </span>
-                      </div>
-                      <ChevronDown
-                        size={16}
-                        className={`text-[var(--color-muted)] transition-transform duration-200 ${
-                          isCountryDropdownOpen ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </button>
-
-                    <AnimatePresence>
-                      {isCountryDropdownOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 5 }}
-                          className="absolute top-full left-0 mt-1 w-[270px] overflow-hidden bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-xl z-50"
+                    country={COUNTRY_CODES.find((country) => country.dial === phonePrefix) || COUNTRY_CODES[0]}
+                    onSelect={(country) => setPhonePrefix(country.dial)}
+                    renderTrigger={({ isOpen, toggle }) => {
+                      const selectedCountry = COUNTRY_CODES.find((country) => country.dial === phonePrefix) || COUNTRY_CODES[0];
+                      return (
+                        <button
+                          type="button"
+                          onClick={toggle}
+                          className="flex w-full items-center justify-between gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition-colors hover:bg-[var(--color-bg-subtle)] focus:outline-none focus:border-[var(--color-primary)]"
                         >
-                          <div className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-surface)] p-2">
-                            <input
-                              autoFocus
-                              type="search"
-                              value={countrySearch}
-                              onChange={(event) => setCountrySearch(event.target.value)}
-                              placeholder="Pronađi državu ili pozivni broj"
-                              aria-label="Pretraži države"
-                              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
-                            />
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <img src={getFlagUrl(selectedCountry.code)} alt={selectedCountry.code} className="w-5 h-auto rounded-sm object-cover" />
+                            <span className="text-sm font-medium text-[var(--color-text)]">{phonePrefix}</span>
                           </div>
-                          <div className="country-dropdown-scroll max-h-[220px] overflow-y-auto" data-lenis-prevent>
-                          {visibleCountries.map((country) => (
-                            <button
-                              key={country.code}
-                              type="button"
-                              onClick={() => {
-                                setPhonePrefix(country.code);
-                                setCountrySearch('');
-                                setIsCountryDropdownOpen(false);
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] transition-all rounded-md"
-                            >
-                              <img
-                                src={getFlagUrl(country.country)}
-                                alt={country.country}
-                                className="w-5 h-auto object-cover rounded-sm shadow-sm"
-                              />
-                              <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-[var(--color-text)]">
-                                  {country.label}
-                                </span>
-                                <span className="text-xs text-[var(--color-muted)] font-medium">
-                                  {country.code}
-                                </span>
-                              </div>
-                              {phonePrefix === country.code && (
-                                <Check
-                                  size={16}
-                                  className="ml-auto text-[var(--color-primary)]"
-                                />
-                              )}
-                            </button>
-                          ))}
-                          {visibleCountries.length === 0 && (
-                            <p className="px-4 py-4 text-sm text-[var(--color-muted)]">Nema odgovarajuće države.</p>
-                          )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                          <span className={`text-[var(--color-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`}>⌄</span>
+                        </button>
+                      );
+                    }}
+                  />
 
                   <div className="relative flex-1">
                     <Phone

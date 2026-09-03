@@ -33,7 +33,8 @@ import { customerApi } from '../../services/dajaPlatform';
 import { loadGoogleMapsPlaces } from '../../services/googleMaps';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import { getFlagUrl } from '../../utils/flags.js';
-import { filterPhoneCountries, PHONE_COUNTRIES as COUNTRY_CODES } from '../../data/phoneCountries.js';
+import { PHONE_COUNTRIES as COUNTRY_CODES } from '../../data/phoneCountries.js';
+import PhoneCountryPicker from '../ui/PhoneCountryPicker.jsx';
 import {
   ADDRESS_ICONS,
   ADDRESS_ICON_ORDER,
@@ -74,7 +75,6 @@ export default function DeliveryForm({
   // NOVO: Props za napomenu
 }) {
   const emailInputRef = useRef(null);
-  const countryDropdownRef = useRef(null);
   const autocompleteInstance = useRef(null);
   const addressInputRef = useRef(null);
   const addressSelectorRef = useRef(null);
@@ -88,8 +88,6 @@ export default function DeliveryForm({
   const [emailSuggestions, setEmailSuggestions] = useState([]);
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const [prediction, setPrediction] = useState('');
-  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
-  const [countrySearch, setCountrySearch] = useState('');
   const [mapsScriptLoaded, setMapsScriptLoaded] = useState(false);
 
   // --- STATE ZA ADRESE ---
@@ -132,7 +130,6 @@ export default function DeliveryForm({
   const selectedCountry =
     COUNTRY_CODES.find((c) => c.dial === phonePrefix) ||
     COUNTRY_CODES.find((c) => c.code === 'RS');
-  const visibleCountries = filterPhoneCountries(countrySearch);
 
   // --- LOGIKA POPUNJAVANJA POLJA (AUTOFILL) ---
   const selectAddress = (addr) => {
@@ -387,11 +384,6 @@ export default function DeliveryForm({
       )
         setShowEmailSuggestions(false);
       if (
-        countryDropdownRef.current &&
-        !countryDropdownRef.current.contains(e.target)
-      )
-        setIsCountryDropdownOpen(false);
-      if (
         addressSelectorRef.current &&
         !addressSelectorRef.current.contains(e.target)
       )
@@ -532,8 +524,6 @@ export default function DeliveryForm({
   const handleCountrySelect = (country) => {
     const full = `${country.dial} ${localPhone}`;
     handleChange({ target: { name: 'phone', value: full } });
-    setIsCountryDropdownOpen(false);
-    setCountrySearch('');
   };
   const handleLocalPhoneChange = (e) => {
     const val = e.target.value;
@@ -793,91 +783,24 @@ export default function DeliveryForm({
         {/* TELEFON */}
         <div className="input-wrapper-col full-width">
           <div className="flex gap-2">
-            <div
+            <PhoneCountryPicker
               className="relative w-[110px] shrink-0"
-              ref={countryDropdownRef}
-            >
-              <button
-                type="button"
-                className="w-full p-3 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-primary)] flex items-center justify-between gap-2 transition-colors hover:bg-[var(--color-bg-subtle)] h-full"
-                onClick={() => {
-                  setCountrySearch('');
-                  setIsCountryDropdownOpen((open) => !open);
-                }}
-              >
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <img
-                    src={getFlagUrl(selectedCountry.code)}
-                    alt={selectedCountry.code}
-                    className="w-5 h-auto rounded-[2px]"
-                  />
-                  <span className="text-sm font-medium text-[var(--color-text)]">
-                    {selectedCountry.dial}
-                  </span>
-                </div>
-                <ChevronDown
-                  size={14}
-                  className={`text-[var(--color-muted)] transition-transform ${
-                    isCountryDropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              <AnimatePresence>
-                {isCountryDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 5 }}
-                    className="absolute top-full left-0 mt-1 w-[270px] overflow-hidden bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-xl z-50"
-                  >
-                    <div className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-surface)] p-2">
-                      <input
-                        autoFocus
-                        type="search"
-                        value={countrySearch}
-                        onChange={(event) => setCountrySearch(event.target.value)}
-                        placeholder="Pronađi državu ili pozivni broj"
-                        aria-label="Pretraži države"
-                        className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-subtle)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
-                      />
-                    </div>
-                    <div className="country-dropdown-scroll max-h-[250px] overflow-y-auto" data-lenis-prevent>
-                    {visibleCountries.map((country) => (
-                      <button
-                        key={country.code}
-                        type="button"
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] transition-all rounded-md"
-                        onClick={() => handleCountrySelect(country)}
-                      >
-                        <img
-                          src={getFlagUrl(country.code)}
-                          alt={country.code}
-                          className="w-5 h-auto rounded-[2px]"
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-[var(--color-text)]">
-                            {country.label}
-                          </span>
-                          <span className="text-xs text-[var(--color-muted)]">
-                            {country.dial}
-                          </span>
-                        </div>
-                        {selectedCountry.code === country.code && (
-                          <Check
-                            size={16}
-                            className="text-[var(--color-primary)] ml-auto"
-                          />
-                        )}
-                      </button>
-                    ))}
-                    {visibleCountries.length === 0 && (
-                      <p className="px-4 py-4 text-sm text-[var(--color-muted)]">Nema odgovarajuće države.</p>
-                    )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+              country={selectedCountry}
+              onSelect={handleCountrySelect}
+              renderTrigger={({ isOpen, toggle }) => (
+                <button
+                  type="button"
+                  className="flex h-full w-full items-center justify-between gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition-colors hover:bg-[var(--color-bg-subtle)] focus:outline-none focus:border-[var(--color-primary)]"
+                  onClick={toggle}
+                >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <img src={getFlagUrl(selectedCountry.code)} alt={selectedCountry.code} className="w-5 h-auto rounded-[2px]" />
+                    <span className="text-sm font-medium text-[var(--color-text)]">{selectedCountry.dial}</span>
+                  </div>
+                  <ChevronDown size={14} className={`text-[var(--color-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+              )}
+            />
             <div className="relative flex-1">
               <Phone
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]"
