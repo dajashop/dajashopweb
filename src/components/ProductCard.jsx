@@ -288,8 +288,8 @@ export default function ProductCard({ p }) {
           </AnimatePresence>
 
           <LayoutGroup>
-            <div className="slider-dots absolute inset-x-0 bottom-0 p-3 pointer-events-none">
-              <div className="pointer-events-auto">
+            <div className="slider-dots absolute inset-x-0 bottom-0 px-3 pb-3 pt-2 pointer-events-none">
+              <div className="catalog-image-dots-wrap pointer-events-auto">
                 {imgs.length > 1 && (
                   <div
                     className="catalog-image-dots"
