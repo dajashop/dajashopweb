@@ -17,6 +17,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
   const [subscribedTypes, setSubscribedTypes] = useState([]);
   const inStock = product.availability?.inStock ?? product.inStock;
   const useStockAwareActions = storefrontFeatures.customerStockVisibility;
+  const showPriceAlerts = storefrontFeatures.customerPriceAlerts;
   const outOfStockAlertType = subscribedTypes.includes('price_change')
     ? 'price_change'
     : 'back_in_stock';
@@ -24,7 +25,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
 
   useEffect(() => {
     setGuestAlertType(null);
-    if (!useStockAwareActions) {
+    if (!useStockAwareActions && !showPriceAlerts) {
       setSubscribedTypes([]);
       return undefined;
     }
@@ -57,7 +58,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
     return () => {
       cancelled = true;
     };
-  }, [product.id, product.variantId, useStockAwareActions, user?.email]);
+  }, [product.id, product.variantId, showPriceAlerts, useStockAwareActions, user?.email]);
 
   const requestAlert = (type) => {
     if (subscribedTypes.includes(type)) return;
@@ -125,7 +126,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
         </button>
       </div>
 
-      {useStockAwareActions && inStock && (
+      {showPriceAlerts && (
         <button
           type="button"
           className={`price-alert-button${subscribedTypes.includes('price_change') ? ' is-subscribed' : ''}`}

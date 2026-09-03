@@ -3,4 +3,5 @@
 // and used for storefront actions again.
 export const storefrontFeatures = Object.freeze({
   customerStockVisibility: false,
+  customerPriceAlerts: true,
 });
