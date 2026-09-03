@@ -433,10 +433,10 @@ function ProfileSection({ user }) {
                           <button
                             type="button"
                             onClick={toggle}
-                            className="h-full min-w-[100px] justify-between rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-900 outline-none transition-colors hover:bg-gray-50 flex items-center gap-2"
+                            className="h-full min-w-[100px] justify-between rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-900 outline-none transition-colors hover:bg-gray-50 flex items-center gap-2"
                           >
                             <span className="flex items-center gap-2">
-                              <img src={getFlagUrl(selectedCountry.code)} alt={selectedCountry.code} className="w-6 h-auto rounded-sm object-cover shadow-sm" />
+                              <img src={getFlagUrl(selectedCountry.code)} alt={selectedCountry.code} className="w-6 h-4 shrink-0 rounded-sm object-cover shadow-sm" />
                               <span className="text-xs font-bold text-gray-600">{selectedCountry.dial}</span>
                             </span>
                             <span className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>⌄</span>

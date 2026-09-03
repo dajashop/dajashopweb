@@ -54,14 +54,17 @@ export default function PhoneCountryPicker({
     };
     const closeOnOutsideClick = (event) => {
       if (triggerRef.current?.contains(event.target) || menuRef.current?.contains(event.target)) return;
-      close();
+      // Zatvori pre React "click" handlera na elementu ispod portala.
+      // Tako klik van menija ne može ponovo da aktivira okidač pri istom kliku.
+      setIsOpen(false);
+      setPosition(null);
     };
     updatePosition();
-    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('pointerdown', closeOnOutsideClick, true);
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition, true);
     return () => {
-      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('pointerdown', closeOnOutsideClick, true);
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };

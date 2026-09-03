@@ -1,10 +1,8 @@
 import { getCountries, getCountryCallingCode } from 'libphonenumber-js/min';
 
-const PRIORITY_COUNTRIES = [
-  'RS', 'XK', 'ME', 'BA', 'HR', 'SI', 'MK', 'AL', 'BG', 'RO', 'GR', 'HU', 'TR',
-  'AT', 'CH', 'DE', 'LU', 'BE', 'NL', 'FR', 'IT', 'ES', 'PT', 'DK', 'NO', 'SE',
-  'FI', 'GB', 'IE', 'US', 'CA', 'AU', 'NZ',
-];
+// Srbija ostaje prva radi praktičnosti, a sve ostale države su po nazivu.
+// Tako je Kosovo pod slovom K, gde ga korisnik i očekuje.
+const PRIORITY_COUNTRIES = ['RS'];
 const CODES_WITHOUT_LOCAL_FLAG = new Set(['AC', 'TA']);
 
 const priority = new Map(PRIORITY_COUNTRIES.map((code, index) => [code, index]));
