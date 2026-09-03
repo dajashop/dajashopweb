@@ -10,7 +10,7 @@ export default function GoogleMapEmbed({ src, title, className = '', ...iframePr
   const allowGoogle = async () => {
     setRequesting(true);
     try {
-      await requestGooglePermission();
+      await requestGooglePermission({ force: true });
     } finally {
       setRequesting(false);
     }

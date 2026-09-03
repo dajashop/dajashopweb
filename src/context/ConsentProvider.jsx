@@ -40,6 +40,7 @@ export function ConsentProvider({ children }) {
   const [googlePromptOpen, setGooglePromptOpen] = useState(false);
   const [googleSaving, setGoogleSaving] = useState(false);
   const googleResolver = useRef(null);
+  const googlePromptWasRequested = useRef(false);
   const analyticsWasAllowed = useRef(false);
   const isPolicyPage = pathname === '/privacy' || pathname === '/cookies';
   const isPolicyPageRef = useRef(isPolicyPage);
@@ -158,8 +159,12 @@ export function ConsentProvider({ children }) {
     return next;
   }, [applyDecision, decision?.receipt, policy.version]);
 
-  const requestGooglePermission = useCallback(() => {
+  const requestGooglePermission = useCallback(({ force = false } = {}) => {
     if (decision?.categories?.externalGoogle) return Promise.resolve(true);
+    // Focusing the address field should ask once, then always leave manual
+    // entry usable. An explicit map button can still reopen the choice.
+    if (!force && googlePromptWasRequested.current) return Promise.resolve(false);
+    googlePromptWasRequested.current = true;
     setGooglePromptOpen(true);
     return new Promise((resolve) => {
       googleResolver.current = resolve;
