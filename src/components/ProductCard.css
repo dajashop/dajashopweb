@@ -35,6 +35,88 @@
 .slider-dots {
   z-index: 4;
 }
+.catalog-image-dots {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(216, 223, 235, 0.16)),
+    rgba(34, 38, 47, 0.24);
+  box-shadow:
+    0 8px 24px rgba(10, 14, 22, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.56);
+  backdrop-filter: blur(14px) saturate(1.45);
+  -webkit-backdrop-filter: blur(14px) saturate(1.45);
+  isolation: isolate;
+}
+.catalog-image-dots::before {
+  position: absolute;
+  inset: 1px 28% auto 8%;
+  height: 42%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  content: '';
+  filter: blur(3px);
+  opacity: 0.8;
+  pointer-events: none;
+}
+.catalog-image-dot {
+  position: relative;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  z-index: 1;
+}
+.catalog-image-dot:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.catalog-image-dot__liquid {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 31% 25%, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.42) 31%, transparent 46%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(172, 198, 235, 0.3));
+  box-shadow:
+    0 3px 10px rgba(6, 10, 18, 0.28),
+    inset 0 1px 1px rgba(255, 255, 255, 0.92),
+    inset 0 -3px 7px rgba(116, 146, 191, 0.2);
+  backdrop-filter: blur(9px) saturate(1.6);
+  -webkit-backdrop-filter: blur(9px) saturate(1.6);
+}
+.catalog-image-dot__core {
+  position: relative;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 1px 3px rgba(6, 10, 18, 0.28);
+  transition: transform 180ms ease, background-color 180ms ease;
+  z-index: 1;
+}
+.catalog-image-dot.is-active .catalog-image-dot__core {
+  background: rgba(20, 29, 45, 0.85);
+  transform: scale(1.16);
+}
+@media (prefers-reduced-motion: reduce) {
+  .catalog-image-dot__core {
+    transition: none;
+  }
+}
 .product-card__brand {
   color: var(--color-muted);
   font-size: 0.85rem;

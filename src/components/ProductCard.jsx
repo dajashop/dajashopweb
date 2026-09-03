@@ -81,6 +81,13 @@ export default function ProductCard({ p }) {
     setPage([index, newDirection]);
   };
 
+  const selectImageFromPointer = (event) => {
+    const { left, width } = event.currentTarget.getBoundingClientRect();
+    if (!width || imgs.length < 2) return;
+    const progress = Math.max(0, Math.min(1, (event.clientX - left) / width));
+    setIndex(Math.round(progress * (imgs.length - 1)));
+  };
+
   const showSliderControls = imgs.length > 1;
   const imageAlt =
     `${p.brand || ''} ${p.name || ''}`.trim() || p.name || 'Proizvod';
@@ -284,13 +291,17 @@ export default function ProductCard({ p }) {
             <div className="slider-dots absolute inset-x-0 bottom-0 p-3 pointer-events-none">
               <div className="pointer-events-auto">
                 {imgs.length > 1 && (
-                  <div className="flex justify-center items-center gap-2">
+                  <div
+                    className="catalog-image-dots"
+                    onMouseMove={selectImageFromPointer}
+                    role="tablist"
+                    aria-label={`Galerija slika proizvoda ${p.name}`}
+                  >
                     {imgs.map((_, idx) => {
                       const active = idx === imageIndex;
                       return (
                         <motion.button
                           key={idx}
-                          layout
                           type="button"
                           onMouseEnter={() => setIndex(idx)}
                           onFocus={() => setIndex(idx)}
@@ -298,14 +309,20 @@ export default function ProductCard({ p }) {
                             e.preventDefault();
                             setIndex(idx);
                           }}
-                          className="relative h-2.5 rounded-full backdrop-blur-sm shadow-sm transition-all duration-300 border border-zinc-500"
-                          animate={{
-                            width: active ? 24 : 6,
-                            backgroundColor: active
-                              ? 'rgba(255, 255, 255, 1)'
-                              : 'rgba(255, 255, 255, 0.4)',
-                          }}
-                        />
+                          className={`catalog-image-dot${active ? ' is-active' : ''}`}
+                          aria-label={`Prikaži sliku ${idx + 1} od ${imgs.length}`}
+                          aria-selected={active}
+                          role="tab"
+                        >
+                          {active && (
+                            <motion.span
+                              layoutId={`catalog-image-cursor-${p.id}`}
+                              className="catalog-image-dot__liquid"
+                              transition={{ type: 'spring', stiffness: 520, damping: 34, mass: 0.55 }}
+                            />
+                          )}
+                          <span className="catalog-image-dot__core" />
+                        </motion.button>
                       );
                     })}
                   </div>
