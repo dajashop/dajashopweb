@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import './Footer.css';
 import { useFlash } from '../hooks/useFlash';
-import { newsletterApi } from '../services/dajaPlatform';
+import { novostiApi } from '../services/dajaPlatform';
 import { useConsent } from '../context/ConsentContext.jsx';
 
 export default function Footer() {
@@ -33,7 +33,7 @@ export default function Footer() {
     }
     setLoading(true);
     try {
-      const subscription = await newsletterApi.subscribe(email, {
+      const subscription = await novostiApi.subscribe(email, {
         source: 'footer',
         policyVersion: policy?.version,
         acceptedMarketing: true,
@@ -43,7 +43,7 @@ export default function Footer() {
         setSuccess(false);
         flash(
           'Već ste prijavljeni',
-          'Ova email adresa je već prijavljena na newsletter.',
+          'Ova email adresa je već prijavljena na DajaShop novosti.',
           'info',
         );
         return;
@@ -52,28 +52,28 @@ export default function Footer() {
       setSuccess(true);
       flash(
         'Uspeh',
-        subscription?.welcomeOfferEligible
-          ? 'Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i promo kod.'
-          : subscription?.welcomeEmailSent
+        subscription?.imaPravoNaKodDobrodoslice
+          ? 'Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i kod dobrodošlice.'
+          : subscription?.poslatMailDobrodoslice
             ? 'Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice.'
-            : 'Uspešno ste prijavljeni na newsletter. Uskoro ćete primati novitete i ponude.',
+            : 'Uspešno ste prijavljeni na DajaShop novosti.',
         'success',
       );
       setEmail('');
 
       setTimeout(() => setSuccess(false), 3500);
     } catch (error) {
-      console.error('Newsletter error:', error);
+      console.error('Greška pri prijavi na novosti:', error);
       if (error?.status === 409) {
         flash(
           'Već ste prijavljeni',
-          'Ova email adresa je već na newsletter listi.',
+          'Ova email adresa je već prijavljena na DajaShop novosti.',
           'info',
         );
       } else {
         flash(
           'Greška',
-          error.message || 'Prijava na newsletter nije uspela.',
+          error.message || 'Prijava na novosti nije uspela.',
           'error',
         );
       }
@@ -85,19 +85,17 @@ export default function Footer() {
 
   return (
     <footer className="footer">
-      {/* === NEWSLETTER TRAKA (Preimenovane klase) === */}
+      {/* Traka za prijavu na novosti. */}
       <div className="footer-newsletter-strip">
         <div className="container footer-newsletter-content">
           <div className="footer-newsletter-text">
             <h3>Budite u toku</h3>
             <p>
-              Prijavite se za ekskluzivne ponude, novitete i savete o satovima.
+              Prijavite se za novitete, informacije o dostupnosti i savete o satovima.
             </p>
             <p>
               {' '}
-              Kao gest dobrodošlice, za Vas smo pripremili{' '}
-              <strong>10% popusta</strong> koji možete iskoristiti na prvu
-              kupovinu.
+              Pratite ono što je novo u našoj ponudi.
             </p>
             <p></p>
           </div>

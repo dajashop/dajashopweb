@@ -109,7 +109,7 @@ function PromoCodeSection({
           <Ticket size={18} className={`icon ${error ? 'text-red-500' : ''}`} />
           <input
             type="text"
-            placeholder="Promo kod"
+            placeholder="Kod"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             disabled={loading} // Onemogućeno dok se učitava
@@ -158,7 +158,7 @@ export default function Cart() {
   const { showUndo } = useUndo();
   const { user } = useAuth(); // NOVO: Uzimamo ulogovanog korisnika
   const [showClearModal, setShowClearModal] = useState(false);
-  const welcomePromoAttempted = useRef('');
+  const pokusajKodaDobrodoslice = useRef('');
 
   // NOVO: Uzimamo i 'loading' status iz hook-a
   const {
@@ -194,10 +194,10 @@ export default function Cart() {
   };
 
   useEffect(() => {
-    const pendingCode = readStoredValue('daja_pending_welcome_promo', 'necessary');
+    const pendingCode = readStoredValue('daja_kod_dobrodoslice_na_cekanju', 'necessary');
     if (
       !pendingCode ||
-      welcomePromoAttempted.current === pendingCode ||
+      pokusajKodaDobrodoslice.current === pendingCode ||
       appliedPromo ||
       !user?.email ||
       !items.length ||
@@ -205,11 +205,11 @@ export default function Cart() {
     ) {
       return;
     }
-    welcomePromoAttempted.current = pendingCode;
+    pokusajKodaDobrodoslice.current = pendingCode;
     void validateAndApply(pendingCode, total, items, user, true, { persist: true }).then(
       (promotion) => {
         if (promotion) {
-          writeStoredValue('daja_pending_welcome_promo', null, 'necessary');
+          writeStoredValue('daja_kod_dobrodoslice_na_cekanju', null, 'necessary');
         }
       },
     );

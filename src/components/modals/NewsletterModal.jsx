@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import './NewsletterModal.css';
-import { newsletterApi } from '../../services/dajaPlatform';
+import { novostiApi } from '../../services/dajaPlatform';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
 
@@ -37,8 +37,8 @@ export default function NewsletterModal() {
     setStatus('loading');
     setErrorMsg('');
     try {
-      const subscription = await newsletterApi.subscribe(email, {
-        source: 'newsletter_corner_popup',
+      const subscription = await novostiApi.subscribe(email, {
+        source: 'prozor_novosti',
         policyVersion: policy?.version,
         acceptedMarketing: true,
       });
@@ -46,10 +46,10 @@ export default function NewsletterModal() {
         setStatus('duplicate');
       } else {
         setStatus(
-          subscription?.welcomeOfferEligible
-            ? 'welcome-offer'
-            : subscription?.welcomeEmailSent
-              ? 'welcome'
+          subscription?.imaPravoNaKodDobrodoslice
+            ? 'dobrodoslica-sa-kodom'
+            : subscription?.poslatMailDobrodoslice
+              ? 'dobrodoslica'
               : 'success',
         );
       }
@@ -88,15 +88,15 @@ export default function NewsletterModal() {
               <X size={24} />
             </button>
 
-            {status === 'welcome-offer' && (
+            {status === 'dobrodoslica-sa-kodom' && (
               <div className="newsletter-success">
                 <div className="success-icon"><Check size={32} /></div>
                 <h2>Uspešno!</h2>
-                <p>Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i kod za popust.</p>
+                <p>Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i kod dobrodošlice.</p>
               </div>
             )}
 
-            {status === 'welcome' && (
+            {status === 'dobrodoslica' && (
               <div className="newsletter-success">
                 <div className="success-icon"><Check size={32} /></div>
                 <h2>Dobro došli!</h2>
@@ -108,7 +108,7 @@ export default function NewsletterModal() {
               <div className="newsletter-success">
                 <div className="success-icon"><Check size={32} /></div>
                 <h2>Uspešno!</h2>
-                <p>Prijavljeni ste na newsletter. Uskoro ćete dobijati novitete, ponude i savete.</p>
+                <p>Prijavljeni ste na DajaShop novosti. Uskoro ćete dobijati novitete i savete.</p>
               </div>
             )}
 
@@ -116,14 +116,14 @@ export default function NewsletterModal() {
               <div className="newsletter-error duplicate">
                 <div className="success-icon"><Check size={32} /></div>
                 <h2>Već ste prijavljeni!</h2>
-                <p>Ova email adresa je već prijavljena na naš newsletter.</p>
+                <p>Ova email adresa je već prijavljena na DajaShop novosti.</p>
               </div>
             )}
 
             {(status === 'idle' || status === 'loading' || status === 'error') && (
               <div className="newsletter-content">
-                <h2>10% Popusta</h2>
-                <p>Budite prvi obavešteni. Prijavite se na naš newsletter i ostvarite 10% popusta na prvu porudžbinu. Kod stiže na email. Proverite Inbox i Spam.</p>
+                <h2>Budite u toku</h2>
+                <p>Prijavite se na DajaShop novosti i primajte informacije o dostupnosti, novitetima i savetima o satovima.</p>
                 <form className="newsletter-form" onSubmit={handleSubmit}>
                   <input
                     type="email"

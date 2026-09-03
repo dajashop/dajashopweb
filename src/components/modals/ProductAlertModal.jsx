@@ -4,7 +4,7 @@ import { Bell, X } from 'lucide-react';
 import {
   productAlertSubscriptions,
   productAlertsApi,
-  newsletterApi,
+  novostiApi,
 } from '../../services/dajaPlatform.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import './ProductAlertModal.css';
@@ -110,7 +110,7 @@ export default function ProductAlertModal({
       let newsletterWarning = false;
       if (!newsletterSubscribed && subscribeToNewsletter) {
         try {
-          await newsletterApi.subscribe(
+          await novostiApi.subscribe(
             reusableGuestContact ? undefined : selectedEmail,
             {
               source: 'product_alert',

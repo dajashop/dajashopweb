@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BellOff, Check, Cookie, Loader2, Mail, Settings2, X } from 'lucide-react';
-import { privacyApi, newsletterApi } from '../../services/dajaPlatform.js';
+import { privacyApi, novostiApi } from '../../services/dajaPlatform.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import { money } from '../../utils/currency.js';
 import './PrivacySection.css';
@@ -44,10 +44,10 @@ export default function PrivacySection({ user }) {
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [preview]);
 
-  const unsubscribeNewsletter = async () => {
+  const odjaviNovosti = async () => {
     setBusy('newsletter');
     try {
-      await privacyApi.unsubscribeNewsletter();
+      await privacyApi.odjaviNovosti();
       await refresh();
     } catch (requestError) {
       setError(requestError.message || 'Odjava sa novosti nije uspela.');
@@ -56,14 +56,14 @@ export default function PrivacySection({ user }) {
     }
   };
 
-  const subscribeNewsletter = async () => {
+  const prijaviNaNovosti = async () => {
     if (!marketingOptIn) {
       setError('Potvrdite da želite da primate novosti emailom.');
       return;
     }
     setBusy('newsletter');
     try {
-      await newsletterApi.subscribe(user.email, {
+      await novostiApi.subscribe(user.email, {
         source: 'account_privacy',
         policyVersion: policy?.version,
         acceptedMarketing: true,
@@ -130,7 +130,7 @@ export default function PrivacySection({ user }) {
         ) : newsletterActive ? (
           <>
             <p>Prijavljeni ste na novosti za adresu {user.email}.</p>
-            <button type="button" className="privacy-section__danger" onClick={() => void unsubscribeNewsletter()} disabled={busy === 'newsletter'}>
+            <button type="button" className="privacy-section__danger" onClick={() => void odjaviNovosti()} disabled={busy === 'newsletter'}>
               {busy === 'newsletter' ? 'Odjavljujemo…' : 'Odjavi me sa novosti'}
             </button>
           </>
@@ -141,7 +141,7 @@ export default function PrivacySection({ user }) {
               <input type="checkbox" checked={marketingOptIn} onChange={(event) => setMarketingOptIn(event.target.checked)} disabled={busy === 'newsletter'} />
               <span>Želim da primam novosti, ponude i savete emailom.</span>
             </label>
-            <button type="button" className="privacy-section__primary" onClick={() => void subscribeNewsletter()} disabled={busy === 'newsletter'}>
+            <button type="button" className="privacy-section__primary" onClick={() => void prijaviNaNovosti()} disabled={busy === 'newsletter'}>
               {busy === 'newsletter' ? 'Prijavljujemo…' : 'Prijavi me na novosti'}
             </button>
           </>

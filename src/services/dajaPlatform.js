@@ -1104,7 +1104,7 @@ export const reviewsApi = {
   },
 };
 
-export const newsletterApi = {
+export const novostiApi = {
   async subscribe(email, {
     source = 'site',
     policyVersion,
@@ -1126,8 +1126,8 @@ export const newsletterApi = {
         ...(policyVersion ? { policyVersion } : {}),
       },
     });
-    if (subscription?.welcomePromoCode) {
-      writeStoredValue('daja_pending_welcome_promo', subscription.welcomePromoCode, 'necessary');
+    if (subscription?.kodDobrodoslice) {
+      writeStoredValue('daja_kod_dobrodoslice_na_cekanju', subscription.kodDobrodoslice, 'necessary');
     }
     return subscription;
   },
@@ -1159,7 +1159,7 @@ export const privacyApi = {
   mine() {
     return apiRequest('/privacy/me');
   },
-  unsubscribeNewsletter() {
+  odjaviNovosti() {
     return apiRequest('/privacy/me/newsletter', { method: 'DELETE' });
   },
   unsubscribeAlert(id) {
