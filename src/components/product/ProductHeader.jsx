@@ -1,9 +1,13 @@
 import React from 'react';
 import Breadcrumbs from '../Breadcrumbs.jsx';
 import { money } from '../../utils/currency.js';
+import { useAuth } from '../../hooks/useAuth.js';
+import { isAdminEmail } from '../../services/dajaPlatform.js';
+import { storefrontFeatures } from '../../config/storefrontFeatures.js';
 import './ProductHeader.css'; // OBAVEZNO: Uvozi svoj CSS
 
 export default function ProductHeader({ product }) {
+  const { user } = useAuth();
   if (!product) return null;
   const legacyRegularPrice =
     product.regularPrice ??
@@ -23,6 +27,8 @@ export default function ProductHeader({ product }) {
   const inStock = product.availability?.inStock ?? product.inStock;
   const availableQuantity =
     product.availability?.availableQuantity ?? product.availableQuantity;
+  const showStock =
+    isAdminEmail(user?.email) || storefrontFeatures.customerStockVisibility;
   const hasPublicIdentifiers = product.barcode || product.mpn;
 
   return (
@@ -54,13 +60,15 @@ export default function ProductHeader({ product }) {
         )}
       </div>
 
-      <p
-        className={`product-stock ${inStock ? 'is-in-stock' : 'is-out-of-stock'}`}
-      >
-        {inStock
-          ? `Na stanju${Number.isFinite(Number(availableQuantity)) ? `: ${availableQuantity} kom` : ''}`
-          : 'Trenutno nije na stanju'}
-      </p>
+      {showStock && (
+        <p
+          className={`product-stock ${inStock ? 'is-in-stock' : 'is-out-of-stock'}`}
+        >
+          {inStock
+            ? `Na stanju${Number.isFinite(Number(availableQuantity)) ? `: ${availableQuantity} kom` : ''}`
+            : 'Trenutno nije na stanju'}
+        </p>
+      )}
 
       {hasPublicIdentifiers && (
         <dl className="product-identifiers">

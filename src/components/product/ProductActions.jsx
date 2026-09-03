@@ -6,6 +6,7 @@ import {
   productAlertsApi,
   productAlertSubscriptions,
 } from '../../services/dajaPlatform.js';
+import { storefrontFeatures } from '../../config/storefrontFeatures.js';
 import ProductAlertModal from '../modals/ProductAlertModal.jsx';
 import './ProductActions.css';
 
@@ -15,6 +16,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
   const [guestAlertType, setGuestAlertType] = useState(null);
   const [subscribedTypes, setSubscribedTypes] = useState([]);
   const inStock = product.availability?.inStock ?? product.inStock;
+  const useStockAwareActions = storefrontFeatures.customerStockVisibility;
   const outOfStockAlertType = subscribedTypes.includes('price_change')
     ? 'price_change'
     : 'back_in_stock';
@@ -22,6 +24,10 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
 
   useEffect(() => {
     setGuestAlertType(null);
+    if (!useStockAwareActions) {
+      setSubscribedTypes([]);
+      return undefined;
+    }
     const authenticated = Boolean(user?.email);
     const storedTypes = authenticated
       ? []
@@ -51,7 +57,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
     return () => {
       cancelled = true;
     };
-  }, [product.id, product.variantId, user?.email]);
+  }, [product.id, product.variantId, useStockAwareActions, user?.email]);
 
   const requestAlert = (type) => {
     if (subscribedTypes.includes(type)) return;
@@ -83,11 +89,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
   return (
     <div className="product-actions">
       <div className="actions-container">
-        {inStock ? (
-          <button className="cta-button" onClick={onAdd}>
-            Dodaj u korpu
-          </button>
-        ) : (
+        {useStockAwareActions && !inStock ? (
           <button
             type="button"
             className={`stock-alert-button${outOfStockSubscribed ? ' is-subscribed' : ''}`}
@@ -105,6 +107,10 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
                 : 'Obaveštenje je uključeno'
               : 'Obavesti me kada bude na stanju'}
           </button>
+        ) : (
+          <button className="cta-button" onClick={onAdd}>
+            Dodaj u korpu
+          </button>
         )}
 
         <button
@@ -119,7 +125,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
         </button>
       </div>
 
-      {inStock && (
+      {useStockAwareActions && inStock && (
         <button
           type="button"
           className={`price-alert-button${subscribedTypes.includes('price_change') ? ' is-subscribed' : ''}`}
