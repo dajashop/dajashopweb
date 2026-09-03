@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Cart.css';
 import { Link } from 'react-router-dom';
 import { useCart } from '../hooks/useCart.js';
@@ -6,6 +6,7 @@ import { useUndo } from '../hooks/useUndo.js';
 import { usePromo } from '../hooks/usePromo.js';
 import { useAuth } from '../hooks/useAuth.js'; // NOVO: Importujemo Auth
 import { money } from '../utils/currency.js';
+import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmModal from '../components/modals/ConfirmModal.jsx';
@@ -157,6 +158,7 @@ export default function Cart() {
   const { showUndo } = useUndo();
   const { user } = useAuth(); // NOVO: Uzimamo ulogovanog korisnika
   const [showClearModal, setShowClearModal] = useState(false);
+  const welcomePromoAttempted = useRef('');
 
   // NOVO: Uzimamo i 'loading' status iz hook-a
   const {
@@ -190,6 +192,28 @@ export default function Cart() {
     // NOVO: Prosleđujemo 'user' kao četvrti argument za proveru u bazi
     validateAndApply(code, total, items, user, false);
   };
+
+  useEffect(() => {
+    const pendingCode = readStoredValue('daja_pending_welcome_promo', 'necessary');
+    if (
+      !pendingCode ||
+      welcomePromoAttempted.current === pendingCode ||
+      appliedPromo ||
+      !user?.email ||
+      !items.length ||
+      loading
+    ) {
+      return;
+    }
+    welcomePromoAttempted.current = pendingCode;
+    void validateAndApply(pendingCode, total, items, user, true, { persist: true }).then(
+      (promotion) => {
+        if (promotion) {
+          writeStoredValue('daja_pending_welcome_promo', null, 'necessary');
+        }
+      },
+    );
+  }, [appliedPromo, items, loading, total, user, validateAndApply]);
 
   const performRemove = (item) => {
     dispatch({ type: 'REMOVE', id: item.id });

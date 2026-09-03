@@ -66,7 +66,7 @@ export function usePromo() {
       if (!amount && !freeShipping) {
         throw new Error('Ovaj promo kod trenutno ne daje popust za izabranu korpu.');
       }
-      if (!isAuto) promoPersistence.current = true;
+      if (!isAuto || options.persist === true) promoPersistence.current = true;
       setAppliedPromo({
         code: verified?.code || code,
         amount,

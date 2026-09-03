@@ -1115,7 +1115,7 @@ export const newsletterApi = {
     if (!acceptedMarketing) {
       throw new Error('Potvrdite saglasnost za prijavu na novosti.');
     }
-    return apiRequest('/newsletter/subscribe', {
+    const subscription = await apiRequest('/newsletter/subscribe', {
       method: 'POST',
       auth: authenticated,
       body: {
@@ -1126,6 +1126,10 @@ export const newsletterApi = {
         ...(policyVersion ? { policyVersion } : {}),
       },
     });
+    if (subscription?.welcomePromoCode) {
+      writeStoredValue('daja_pending_welcome_promo', subscription.welcomePromoCode, 'necessary');
+    }
+    return subscription;
   },
   confirm(token) {
     return apiRequest(`/newsletter/confirm?token=${encodeURIComponent(token)}`, {
