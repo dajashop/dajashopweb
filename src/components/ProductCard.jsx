@@ -46,7 +46,9 @@ export default function ProductCard({ p }) {
   const [[page, direction], setPage] = useState([0, 0]);
 
   const imgs = useMemo(() => {
-    const arr = p.images ?? (p.image ? [{ url: p.image }] : []);
+    const arr = Array.isArray(p.images) && p.images.length
+      ? p.images
+      : [p.primaryImageUrl || p.mainImageUrl || p.image].filter(Boolean).map((url) => ({ url }));
     if (!Array.isArray(arr)) return [];
 
     return arr
@@ -66,7 +68,7 @@ export default function ProductCard({ p }) {
       .filter((img) => img?.url);
   }, [p.images, p.image, p.thumbnailUrl]);
 
-  const imageIndex = Math.abs(page % imgs.length);
+  const imageIndex = imgs.length ? Math.abs(page % imgs.length) : 0;
 
   const paginate = (newDirection) => {
     if (imgs.length <= 1) return;
@@ -74,6 +76,7 @@ export default function ProductCard({ p }) {
   };
 
   const setIndex = (index) => {
+    if (index === imageIndex) return;
     const newDirection = index > imageIndex ? 1 : -1;
     setPage([index, newDirection]);
   };
@@ -288,6 +291,9 @@ export default function ProductCard({ p }) {
                         <motion.button
                           key={idx}
                           layout
+                          type="button"
+                          onMouseEnter={() => setIndex(idx)}
+                          onFocus={() => setIndex(idx)}
                           onClick={(e) => {
                             e.preventDefault();
                             setIndex(idx);
