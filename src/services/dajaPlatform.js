@@ -1177,10 +1177,53 @@ export const privacyAdminApi = {
 };
 
 export const promotionsApi = {
-  validate(code, subtotal) {
+  validate(code, items, options = {}) {
     return apiRequest('/promotions/validate', {
       method: 'POST',
-      body: { code, subtotal },
+      body: {
+        code,
+        items,
+        ...(options.shippingMethod ? { shippingMethod: options.shippingMethod } : {}),
+        ...(options.paymentMethod ? { paymentMethod: options.paymentMethod } : {}),
+      },
+    });
+  },
+};
+
+export const promotionsAdminApi = {
+  list() {
+    return apiRequest('/admin/promotions', { staff: true });
+  },
+  audience(limit = 500) {
+    return apiRequest('/admin/promotions/audience', {
+      staff: true,
+      query: { limit },
+    });
+  },
+  create(payload) {
+    return apiRequest('/admin/promotions', {
+      method: 'POST',
+      staff: true,
+      body: payload,
+    });
+  },
+  update(id, payload) {
+    return apiRequest(`/admin/promotions/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      staff: true,
+      body: payload,
+    });
+  },
+  duplicate(id) {
+    return apiRequest(`/admin/promotions/${encodeURIComponent(id)}/duplicate`, {
+      method: 'POST',
+      staff: true,
+    });
+  },
+  remove(id) {
+    return apiRequest(`/admin/promotions/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      staff: true,
     });
   },
 };

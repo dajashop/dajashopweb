@@ -75,10 +75,14 @@ export default function Checkout() {
   const FREE_SHIPPING_LIMIT = 8000;
   const COURIER_COST = 380;
   // Besplatna dostava se gleda na iznos POSLE popusta (obično je tako u prodaji)
-  const isFreeShipping = subtotalAfterDiscount >= FREE_SHIPPING_LIMIT;
+  const isFreeShipping = appliedPromo?.freeShipping || subtotalAfterDiscount >= FREE_SHIPPING_LIMIT;
 
   const finalShipping =
-    shippingMethod === 'pickup' ? 0 : isFreeShipping ? 0 : COURIER_COST;
+    shippingMethod === 'pickup' || appliedPromo?.freeShipping
+      ? 0
+      : isFreeShipping
+        ? 0
+        : COURIER_COST;
 
   const finalTotal = subtotalAfterDiscount + finalShipping;
 

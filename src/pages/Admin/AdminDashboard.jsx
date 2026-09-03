@@ -30,6 +30,7 @@ import {
   ClipboardList,
   ChevronDown,
   ShieldCheck,
+  Ticket,
 } from 'lucide-react';
 import useProducts from '../../hooks/useProducts';
 import {
@@ -53,6 +54,7 @@ import {
 import { money } from '../../utils/currency';
 import SEOHead from '../../components/seo/SEOHead.jsx';
 import PolicyPublicationPanel from './components/PolicyPublicationPanel.jsx';
+import PromotionManager from './components/PromotionManager.jsx';
 
 // ... (sanitizeItem i generateSlug funkcije ostaju iste)
 
@@ -806,11 +808,26 @@ export default function AdminDashboard() {
               icon={ShieldCheck}
               label="Privatnost"
             />
+            <TabButton
+              active={activeTab === 'promotions'}
+              onClick={() => setActiveTab('promotions')}
+              icon={Ticket}
+              label="Promo kodovi"
+            />
           </div>
         </div>
       </div>
 
       <div className="container mt-8">
+        {activeTab === 'promotions' && (
+          <PromotionManager
+            products={products}
+            brands={brands}
+            categories={categories}
+            departments={departments}
+            specs={specs}
+          />
+        )}
         {activeTab === 'products' && (
           <motion.div
             initial={{ opacity: 0 }}

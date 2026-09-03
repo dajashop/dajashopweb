@@ -21,7 +21,6 @@ import {
   Truck,
   X,
 } from 'lucide-react';
-import { PROMO_CODES } from '../data/promoCodes.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
 
 function QtyInput({ value, id, dispatch }) {
@@ -158,7 +157,6 @@ export default function Cart() {
   const { showUndo } = useUndo();
   const { user } = useAuth(); // NOVO: Uzimamo ulogovanog korisnika
   const [showClearModal, setShowClearModal] = useState(false);
-  const [autoAppliedTried, setAutoAppliedTried] = useState(false); // Da ne pokušava beskonačno
 
   // NOVO: Uzimamo i 'loading' status iz hook-a
   const {
@@ -170,33 +168,13 @@ export default function Cart() {
     loading,
   } = usePromo();
 
-  // --- AUTOMATSKO PRIMENJIVANJE KODA ---
-  useEffect(() => {
-    if (appliedPromo) return;
-    if (autoAppliedTried) return;
-
-    const autoCode = PROMO_CODES.find((p) => p.autoApply === true);
-
-    if (autoCode && items.length > 0) {
-      if (total >= autoCode.minOrderValue) {
-        if (autoCode.rules?.requiresLogin && !user) return;
-
-        // IZMENA: Dodajemo 'true' na kraj kao peti argument (isAuto)
-        validateAndApply(autoCode.code, total, items, user, true);
-
-        setAutoAppliedTried(true);
-      }
-    }
-  }, [total, items, user, appliedPromo, validateAndApply, autoAppliedTried]);
-  // --------------------------------------
-
   const FREE_SHIPPING_LIMIT = 10000;
   const SHIPPING_COST = 380;
 
   const discountAmount = appliedPromo ? appliedPromo.amount : 0;
   const subtotalAfterDiscount = total - discountAmount;
 
-  const isFreeShipping = subtotalAfterDiscount >= FREE_SHIPPING_LIMIT;
+  const isFreeShipping = appliedPromo?.freeShipping || subtotalAfterDiscount >= FREE_SHIPPING_LIMIT;
   const missingForFree = FREE_SHIPPING_LIMIT - subtotalAfterDiscount;
   const progressPct = Math.min(
     100,
@@ -234,7 +212,6 @@ export default function Cart() {
     dispatch({ type: 'CLEAR' });
     setShowClearModal(false);
     removePromo();
-    setAutoAppliedTried(false);
 
     showUndo({ name: 'Sve proizvode' }, () => {
       itemsToRestore.forEach((item) => {
