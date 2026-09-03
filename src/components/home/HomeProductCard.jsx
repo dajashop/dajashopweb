@@ -24,6 +24,9 @@ export default function HomeProductCard({ product }) {
     thumbnailUrl,
     images,
     image,
+    productId,
+    variantId,
+    variants,
     gender,
     category,
   } = product;
@@ -39,6 +42,8 @@ export default function HomeProductCard({ product }) {
       type: 'ADD',
       item: {
         id,
+        productId: productId || id,
+        variantId: variantId || variants?.[0]?.id,
         name,
         price,
         image: primaryImg,

@@ -23,7 +23,15 @@ function reducer(state, action) {
         next[i] = { ...next[i], qty: next[i].qty + (action.qty || 1) };
         return next;
       }
-      return [...state, { ...action.item, qty: action.qty || 1 }];
+      return [
+        ...state,
+        {
+          ...action.item,
+          productId: action.item.productId ?? action.item.id,
+          variantId: action.item.variantId ?? action.item.variants?.[0]?.id,
+          qty: action.qty || 1,
+        },
+      ];
     }
     case 'REMOVE':
       return state.filter((x) => x.id !== action.id);

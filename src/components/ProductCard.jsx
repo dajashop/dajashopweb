@@ -114,6 +114,8 @@ export default function ProductCard({ p }) {
       type: 'ADD',
       item: {
         id: p.id,
+        productId: p.productId || p.id,
+        variantId: p.variantId || p.variants?.[0]?.id,
         name: p.name,
         price: p.price,
         image: firstImage?.url ?? p.mainImageUrl ?? p.image,

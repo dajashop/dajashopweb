@@ -113,6 +113,8 @@ export default function Product() {
       type: 'ADD',
       item: {
         id: p.id,
+        productId: p.productId || p.id,
+        variantId: p.variantId || p.variants?.[0]?.id,
         name: p.name,
         price: p.price,
         image: p.images?.[0]?.url || p.mainImageUrl || p.image,
