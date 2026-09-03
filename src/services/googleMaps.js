@@ -1,5 +1,6 @@
 const SCRIPT_ID = 'dajashop-google-maps-script';
 const LEGACY_SCRIPT_ID = 'google-maps-script';
+const CALLBACK_NAME = '__dajaGoogleMapsReady';
 
 let mapsLoadPromise = null;
 
@@ -68,9 +69,8 @@ export function loadGoogleMapsPlaces() {
       const newScript = document.createElement('script');
       newScript.id = SCRIPT_ID;
       newScript.async = true;
-      newScript.defer = true;
-      newScript.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&language=sr&region=RS`;
-      newScript.addEventListener('load', onLoad, { once: true });
+      window[CALLBACK_NAME] = () => finish();
+      newScript.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&loading=async&callback=${CALLBACK_NAME}&libraries=places&v=weekly&language=sr&region=RS`;
       newScript.addEventListener('error', onError, { once: true });
       document.head.appendChild(newScript);
     }
@@ -86,6 +86,7 @@ export function loadGoogleMapsPlaces() {
 
 export function unloadGoogleMaps() {
   mapsLoadPromise = null;
+  delete window[CALLBACK_NAME];
   if (typeof document === 'undefined') return;
   document.getElementById(SCRIPT_ID)?.remove();
   document.getElementById(LEGACY_SCRIPT_ID)?.remove();

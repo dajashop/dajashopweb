@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useFlash } from '../../hooks/useFlash.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import './AddressSection.css';
@@ -16,6 +16,12 @@ import {
 
 import { customerApi } from '../../services/dajaPlatform';
 import { loadGoogleMapsPlaces } from '../../services/googleMaps';
+import {
+  addressPredictionLabel,
+  addressPredictionPrimaryText,
+  addressPredictionSecondaryText,
+  useAddressAutocomplete,
+} from '../../hooks/useAddressAutocomplete.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 
 import { FORM_RULES } from '../../data/validationRules';
@@ -41,7 +47,6 @@ function AddressSection({ user }) {
   const [errors, setErrors] = useState({});
   const [submitCount, setSubmitCount] = useState(0);
   const [deleteId, setDeleteId] = useState(null);
-  const addressInputRef = useRef(null);
 
   // State za prefiks telefona
   const [phonePrefix, setPhonePrefix] = useState('+381');
@@ -74,6 +79,26 @@ function AddressSection({ user }) {
   };
 
   const [form, setForm] = useState(initialFormState);
+
+  const applyGoogleAddress = useCallback((address) => {
+    setForm((prev) => ({
+      ...prev,
+      address: address.address || prev.address,
+      city: address.city || prev.city,
+      zip: address.postalCode || prev.zip,
+    }));
+    setErrors((prev) => ({ ...prev, address: null, city: null, zip: null }));
+  }, []);
+  const {
+    suggestions: googleAddressSuggestions,
+    isLoading: googleAddressLoading,
+    search: searchGoogleAddress,
+    select: selectGoogleAddress,
+    clear: clearGoogleAddressSuggestions,
+  } = useAddressAutocomplete({
+    enabled: isAdding && mapsLoaded,
+    onSelect: applyGoogleAddress,
+  });
 
   // Postavi telefon korisnika pri učitavanju
   useEffect(() => {
@@ -125,65 +150,6 @@ function AddressSection({ user }) {
     };
   }, [googleAllowed, isAdding]);
 
-  // --- GOOGLE PLACES AUTOCOMPLETE ---
-  useEffect(() => {
-    if (!isAdding || !mapsLoaded) return;
-    let autocomplete = null;
-    const initGooglePlaces = () => {
-      if (!window.google || !window.google.maps || !window.google.maps.places)
-        return false;
-      if (addressInputRef.current) {
-        autocomplete = new window.google.maps.places.Autocomplete(
-          addressInputRef.current,
-          {
-            componentRestrictions: { country: 'rs' },
-            fields: ['address_components', 'formatted_address'],
-            types: ['address'],
-          }
-        );
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (!place.address_components) return;
-          let street = '',
-            number = '',
-            city = '',
-            zip = '';
-          place.address_components.forEach((comp) => {
-            const types = comp.types;
-            if (types.includes('route')) street = comp.long_name;
-            if (types.includes('street_number')) number = comp.long_name;
-            if (types.includes('locality')) city = comp.long_name;
-            if (!city && types.includes('administrative_area_level_2'))
-              city = comp.long_name;
-            if (types.includes('postal_code')) zip = comp.long_name;
-          });
-          const fullAddress = number ? `${street} ${number}` : street;
-          setForm((prev) => ({
-            ...prev,
-            address: fullAddress || prev.address,
-            city: city || prev.city,
-            zip: zip || prev.zip,
-          }));
-          setErrors((prev) => ({
-            ...prev,
-            address: null,
-            city: null,
-            zip: null,
-          }));
-        });
-        return true;
-      }
-      return false;
-    };
-    if (!initGooglePlaces()) return undefined;
-    return () => {
-      if (autocomplete)
-        window.google.maps.event.clearInstanceListeners(autocomplete);
-      const pac = document.querySelector('.pac-container');
-      if (pac) pac.remove();
-    };
-  }, [isAdding, mapsLoaded]);
-
   // --- VALIDACIJA ---
   const validateField = (name, value) => {
     if (name === 'name' && !FORM_RULES.name.regex.test(value))
@@ -215,6 +181,11 @@ function AddressSection({ user }) {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
   };
 
+  const handleAddressInputChange = (e) => {
+    handleInputChange(e);
+    searchGoogleAddress(e.target.value);
+  };
+
   const handleEdit = (addr) => {
     const { prefix, number } = parsePhoneNumber(addr.phone);
     setForm({ ...addr, phone: number });
@@ -232,7 +203,6 @@ function AddressSection({ user }) {
     setPhonePrefix(prefix || '+381');
     setErrors({});
     setSubmitCount(0);
-    setIsCountryDropdownOpen(false);
   };
 
   const handleSave = async (e) => {
@@ -428,11 +398,13 @@ function AddressSection({ user }) {
                     }`}
                   />
                   <input
-                    ref={addressInputRef}
                   name="address"
                   value={form.address}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
+                  onChange={handleAddressInputChange}
+                  onBlur={(event) => {
+                    handleBlur(event);
+                    window.setTimeout(clearGoogleAddressSuggestions, 120);
+                  }}
                   onFocus={() => {
                     if (!googleAllowed) void requestGooglePermission();
                   }}
@@ -444,7 +416,26 @@ function AddressSection({ user }) {
                   className={errors.address ? 'input-error' : ''}
                   style={{ paddingLeft: '36px' }}
                 />
-              </div>
+                  {googleAddressLoading && (
+                    <Loader2 className="google-address-loading animate-spin" size={16} />
+                  )}
+                  {googleAddressSuggestions.length > 0 && (
+                    <ul className="google-address-suggestions" role="listbox" aria-label="Predlozi adrese">
+                      {googleAddressSuggestions.map((suggestion) => (
+                        <li key={suggestion.placeId}>
+                          <button
+                            type="button"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => void selectGoogleAddress(suggestion)}
+                          >
+                            <strong>{addressPredictionPrimaryText(suggestion)}</strong>
+                            <small>{addressPredictionSecondaryText(suggestion) || addressPredictionLabel(suggestion)}</small>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               <AnimatePresence mode="wait">
                   {errors.address && (
                     <ErrorMessage

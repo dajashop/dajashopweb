@@ -31,6 +31,12 @@ import ErrorMessage from './ErrorMessage';
 
 import { customerApi } from '../../services/dajaPlatform';
 import { loadGoogleMapsPlaces } from '../../services/googleMaps';
+import {
+  addressPredictionLabel,
+  addressPredictionPrimaryText,
+  addressPredictionSecondaryText,
+  useAddressAutocomplete,
+} from '../../hooks/useAddressAutocomplete.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import { getFlagUrl } from '../../utils/flags.js';
 import { PHONE_COUNTRIES as COUNTRY_CODES } from '../../data/phoneCountries.js';
@@ -75,8 +81,6 @@ export default function DeliveryForm({
   // NOVO: Props za napomenu
 }) {
   const emailInputRef = useRef(null);
-  const autocompleteInstance = useRef(null);
-  const addressInputRef = useRef(null);
   const addressSelectorRef = useRef(null);
   const { googleAllowed, requestGooglePermission } = useConsent();
 
@@ -88,7 +92,6 @@ export default function DeliveryForm({
   const [emailSuggestions, setEmailSuggestions] = useState([]);
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const [prediction, setPrediction] = useState('');
-  const [mapsScriptLoaded, setMapsScriptLoaded] = useState(false);
 
   // --- STATE ZA ADRESE ---
   const [savedAddresses, setSavedAddresses] = useState([]);
@@ -274,12 +277,40 @@ export default function DeliveryForm({
     [savedAddresses]
   );
 
+  const applyGoogleAddress = useCallback(
+    (address) => {
+      if (setFormData) {
+        setFormData((prev) => ({
+          ...prev,
+          address: address.address || prev.address,
+          city: address.city || prev.city,
+          postalCode: address.postalCode || prev.postalCode,
+        }));
+      } else {
+        if (address.address)
+          handleChange({ target: { name: 'address', value: address.address } });
+        if (address.city)
+          handleChange({ target: { name: 'city', value: address.city } });
+        if (address.postalCode)
+          handleChange({ target: { name: 'postalCode', value: address.postalCode } });
+      }
+      buildAddressSuggestions(address.address || '');
+    },
+    [buildAddressSuggestions, handleChange, setFormData],
+  );
+  const {
+    suggestions: googleAddressSuggestions,
+    isLoading: googleAddressLoading,
+    search: searchGoogleAddress,
+    select: selectGoogleAddress,
+    clear: clearGoogleAddressSuggestions,
+  } = useAddressAutocomplete({ enabled: mapsReady, onSelect: applyGoogleAddress });
+
   // --- GOOGLE MAPS INIT ---
   useEffect(() => {
     if (!googleAllowed) {
       setMapsReady(false);
       setMapsLoadError(false);
-      setMapsScriptLoaded(false);
       return undefined;
     }
     let cancelled = false;
@@ -287,8 +318,7 @@ export default function DeliveryForm({
     loadGoogleMapsPlaces()
       .then(() => {
         if (cancelled) return;
-        setMapsScriptLoaded(true);
-        if (addressInputRef.current) initAutocomplete(addressInputRef.current);
+        setMapsReady(true);
       })
       .catch((error) => {
         console.error('Google Places nije dostupan:', error);
@@ -302,77 +332,6 @@ export default function DeliveryForm({
       cancelled = true;
     };
   }, [googleAllowed]);
-
-  const initAutocomplete = (node) => {
-    if (!window.google || !window.google.maps || !window.google.maps.places)
-      return;
-    // [FIX] Resetujemo instancu da dozvolimo ponovnu inicijalizaciju
-    if (
-      node.classList.contains('pac-target-input') ||
-      autocompleteInstance.current
-    ) {
-      setMapsReady(true);
-      return;
-    }
-
-    try {
-      const autocomplete = new window.google.maps.places.Autocomplete(node, {
-        componentRestrictions: { country: 'rs' },
-        fields: ['address_components', 'formatted_address'],
-        types: ['address'],
-      });
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (!place.address_components) return;
-        let street = '',
-          number = '',
-          city = '',
-          zip = '';
-        place.address_components.forEach((comp) => {
-          const types = comp.types;
-          if (types.includes('route')) street = comp.long_name;
-          if (types.includes('street_number')) number = comp.long_name;
-          if (types.includes('locality')) city = comp.long_name;
-          if (!city && types.includes('administrative_area_level_2'))
-            city = comp.long_name;
-          if (types.includes('postal_code')) zip = comp.long_name;
-        });
-        const fullAddress = number ? `${street} ${number}` : street;
-
-        if (setFormData) {
-          setFormData((prev) => ({
-            ...prev,
-            address: fullAddress || prev.address,
-            city: city || prev.city,
-            postalCode: zip || prev.postalCode,
-          }));
-          buildAddressSuggestions(fullAddress || '');
-        } else {
-          if (fullAddress)
-            handleChange({ target: { name: 'address', value: fullAddress } });
-          if (city) handleChange({ target: { name: 'city', value: city } });
-          if (zip) handleChange({ target: { name: 'postalCode', value: zip } });
-          if (fullAddress) buildAddressSuggestions(fullAddress);
-        }
-      });
-      autocompleteInstance.current = autocomplete;
-      setMapsReady(true);
-    } catch (error) {
-      setMapsReady(false);
-    }
-  };
-
-  const onAddressInputMount = useCallback(
-    (node) => {
-      addressInputRef.current = node;
-      if (node && mapsScriptLoaded) {
-        // Dodata linija zbog baga sa ponovnom inicijalizacijom na hot reloadu
-        autocompleteInstance.current = null;
-        initAutocomplete(node);
-      }
-    },
-    [mapsScriptLoaded]
-  );
 
   // --- CLICK OUTSIDE ---
   useEffect(() => {
@@ -533,8 +492,14 @@ export default function DeliveryForm({
   const handleAddressInput = (e) => {
     handleChange(e);
     buildAddressSuggestions(e.target.value);
+    searchGoogleAddress(e.target.value);
   };
   const handleAddressKeyDown = (e) => {
+    if (e.key === 'Tab' && googleAddressSuggestions.length > 0) {
+      e.preventDefault();
+      void selectGoogleAddress(googleAddressSuggestions[0]);
+      return;
+    }
     if (e.key === 'Tab' && addressPrediction && addressSuggestions.length > 0) {
       e.preventDefault();
       selectAddress(addressSuggestions[0]);
@@ -593,21 +558,6 @@ export default function DeliveryForm({
             color: var(--color-primary); 
         }
 
-        /* PAC (Google Maps) Container takođe prilagođen */
-        .pac-container {
-          background-color: var(--color-surface);
-          border: 1px solid var(--color-border);
-          border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-          font-family: inherit; z-index: 99999 !important; margin-top: 6px;
-        }
-        .pac-item { 
-            border-top: none; padding: 10px 14px; cursor: pointer; 
-            color: var(--color-text); 
-        }
-        .pac-item:hover { background-color: var(--color-bg-subtle); }
-        .pac-item-query { color: var(--color-text); font-weight: 700; }
-        .pac-item span { color: var(--color-muted); }
-        .pac-logo:after { filter: grayscale(1) opacity(0.5); margin: 8px 12px; }
       `}</style>
 
       <div className="section-header">
@@ -862,7 +812,6 @@ export default function DeliveryForm({
                     size={18}
                   />
                   <input
-                    ref={onAddressInputMount}
                     type="text"
                     name="address"
                     placeholder={
@@ -877,7 +826,10 @@ export default function DeliveryForm({
                     value={formData.address}
                     onChange={handleAddressInput}
                     onKeyDown={handleAddressKeyDown}
-                    onBlur={handleBlur}
+                    onBlur={(event) => {
+                      handleBlur(event);
+                      window.setTimeout(clearGoogleAddressSuggestions, 120);
+                    }}
                     onFocus={() => {
                       if (!googleAllowed) void requestGooglePermission();
                     }}
@@ -885,10 +837,31 @@ export default function DeliveryForm({
                     autoComplete="new-password"
                     className="real-input"
                   />
-                  {!mapsReady && !mapsLoadError && (
+                  {googleAddressLoading && (
                     <div style={{ position: 'absolute', right: 12 }}>
                       <Loader2 size={18} className="animate-spin text-muted" />
                     </div>
+                  )}
+                  {!mapsReady && !mapsLoadError && !googleAddressLoading && (
+                    <div style={{ position: 'absolute', right: 12 }}>
+                      <Loader2 size={18} className="animate-spin text-muted" />
+                    </div>
+                  )}
+                  {googleAddressSuggestions.length > 0 && (
+                    <ul className="checkout-google-address-suggestions" role="listbox" aria-label="Predlozi adrese">
+                      {googleAddressSuggestions.map((suggestion) => (
+                        <li key={suggestion.placeId}>
+                          <button
+                            type="button"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => void selectGoogleAddress(suggestion)}
+                          >
+                            <strong>{addressPredictionPrimaryText(suggestion)}</strong>
+                            <small>{addressPredictionSecondaryText(suggestion) || addressPredictionLabel(suggestion)}</small>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
                 <AnimatePresence mode="wait">

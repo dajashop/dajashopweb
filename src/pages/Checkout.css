@@ -1199,3 +1199,41 @@
 .address-suggest-list li button:hover {
   background: var(--color-bg-subtle);
 }
+
+.checkout-google-address-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100000;
+  width: 100%;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.checkout-google-address-suggestions button {
+  display: grid;
+  width: 100%;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.checkout-google-address-suggestions button:hover,
+.checkout-google-address-suggestions button:focus-visible {
+  outline: none;
+  background: var(--color-bg-subtle);
+}
+
+.checkout-google-address-suggestions small {
+  color: var(--color-muted);
+}
