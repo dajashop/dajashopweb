@@ -401,7 +401,8 @@ export default function AuthModal() {
 
   const handleSuggestedEmailFocus = (e) => {
     if (!isSuggestedEmail) return;
-    window.requestAnimationFrame(() => e.currentTarget.select());
+    const input = e.currentTarget;
+    window.requestAnimationFrame(() => input?.select());
     setIsSuggestedEmail(false);
   };
 
