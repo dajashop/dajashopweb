@@ -20,17 +20,19 @@ export default function ProductAlertModal({
   product,
   type,
   initialEmail = '',
+  initialPhone = '',
   authenticated = false,
   onSubscribed,
 }) {
   const { policy } = useConsent();
+  const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [managementToken, setManagementToken] = useState('');
   const [maskedEmail, setMaskedEmail] = useState('');
   const [useAnotherEmail, setUseAnotherEmail] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [termsPreviouslyAccepted, setTermsPreviouslyAccepted] = useState(false);
-  const [subscribeToNewsletter, setSubscribeToNewsletter] = useState(false);
+  const [subscribeToEmailMarketing, setSubscribeToEmailMarketing] = useState(false);
+  const [subscribeToSmsMarketing, setSubscribeToSmsMarketing] = useState(false);
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -39,13 +41,14 @@ export default function ProductAlertModal({
     if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
     const storedContact = authenticated ? {} : productAlertSubscriptions.contact();
     const token = storedContact.managementToken || '';
+    setDeliveryChannel('email');
     setEmail(String(initialEmail || '').trim());
+    setPhone(String(initialPhone || '').trim());
     setManagementToken(token);
     setMaskedEmail(storedContact.maskedEmail || '');
     setUseAnotherEmail(false);
-    setAcceptedTerms(false);
-    setTermsPreviouslyAccepted(false);
-    setSubscribeToNewsletter(false);
+    setSubscribeToEmailMarketing(false);
+    setSubscribeToSmsMarketing(false);
     setNewsletterSubscribed(false);
     setSubmitting(false);
     setError('');
@@ -60,33 +63,34 @@ export default function ProductAlertModal({
       )
       .then((status) => {
         if (cancelled) return;
-        setTermsPreviouslyAccepted(status?.termsAccepted === true);
         setNewsletterSubscribed(status?.newsletterSubscribed === true);
         if (status?.maskedEmail) setMaskedEmail(status.maskedEmail);
       })
       .catch(() => {
-        // A failed lookup never assumes consent or a newsletter subscription.
+        // The alert form remains available when the optional status lookup fails.
       });
 
     return () => {
       cancelled = true;
     };
-  }, [authenticated, initialEmail, isOpen, product?.id, product?.variantId, type]);
+  }, [authenticated, initialEmail, initialPhone, isOpen, product?.id, product?.variantId, type]);
 
   if (!isOpen || !product?.id || !product?.variantId || !type) return null;
 
-  const reusableGuestContact = !authenticated && managementToken && !useAnotherEmail;
-  const needsEmailInput = authenticated || !reusableGuestContact;
+  const isEmailChannel = deliveryChannel === 'email';
+  const reusableGuestEmail = isEmailChannel && !authenticated && managementToken && !useAnotherEmail;
+  const needsEmailInput = isEmailChannel && (authenticated || !reusableGuestEmail);
   const selectedEmail = String(email || '').trim();
+  const selectedPhone = String(phone || '').trim();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!termsPreviouslyAccepted && !acceptedTerms) {
-      setError('Potvrdite saglasnost sa uslovima i politikom privatnosti.');
-      return;
-    }
     if (needsEmailInput && !selectedEmail) {
       setError('Unesite email adresu za obaveštenje.');
+      return;
+    }
+    if (!isEmailChannel && !/^\+[1-9]\d{7,14}$/.test(selectedPhone.replace(/[\s()-]/g, ''))) {
+      setError('Unesite broj telefona u međunarodnom formatu, npr. +381601234567.');
       return;
     }
 
@@ -98,25 +102,28 @@ export default function ProductAlertModal({
         {
           type,
           variantId: product.variantId,
-          ...(authenticated ? {} : {
-            ...(reusableGuestContact ? { managementToken } : { email: selectedEmail }),
-          }),
-          acceptedTerms: true,
+          deliveryChannel,
+          ...(isEmailChannel
+            ? (authenticated
+              ? {}
+              : (reusableGuestEmail ? { managementToken } : { email: selectedEmail }))
+            : { phone: selectedPhone }),
+          acceptedSmsMarketing: !isEmailChannel && subscribeToSmsMarketing,
           ...(policy?.version ? { policyVersion: policy.version } : {}),
         },
         { auth: authenticated },
       );
 
       let newsletterWarning = false;
-      if (!newsletterSubscribed && subscribeToNewsletter) {
+      if (isEmailChannel && !newsletterSubscribed && subscribeToEmailMarketing) {
         try {
           await novostiApi.subscribe(
-            reusableGuestContact ? undefined : selectedEmail,
+            reusableGuestEmail ? undefined : selectedEmail,
             {
               source: 'product_alert',
               acceptedMarketing: true,
               authenticated,
-              ...(reusableGuestContact ? { managementToken } : {}),
+              ...(reusableGuestEmail ? { managementToken } : {}),
               ...(policy?.version ? { policyVersion: policy.version } : {}),
             },
           );
@@ -127,6 +134,7 @@ export default function ProductAlertModal({
 
       onSubscribed?.({
         type,
+        deliveryChannel,
         newsletterWarning,
         contact: {
           managementToken: result?.managementToken || managementToken,
@@ -164,7 +172,33 @@ export default function ProductAlertModal({
         <p>Javićemo vam {ALERT_LABELS[type]}.</p>
 
         <form onSubmit={handleSubmit}>
-          {reusableGuestContact ? (
+          <fieldset className="product-alert-modal__channels">
+            <legend>Način obaveštavanja</legend>
+            <label>
+              <input
+                type="radio"
+                name="product-alert-channel"
+                value="email"
+                checked={isEmailChannel}
+                onChange={() => setDeliveryChannel('email')}
+                disabled={submitting}
+              />
+              Email
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="product-alert-channel"
+                value="sms"
+                checked={!isEmailChannel}
+                onChange={() => setDeliveryChannel('sms')}
+                disabled={submitting}
+              />
+              SMS
+            </label>
+          </fieldset>
+
+          {isEmailChannel && reusableGuestEmail ? (
             <div className="product-alert-modal__saved-contact">
               <strong>Email za obaveštenje</strong>
               <span>{maskedEmail || 'Sačuvana email adresa'}</span>
@@ -172,7 +206,7 @@ export default function ProductAlertModal({
                 Koristi drugi email
               </button>
             </div>
-          ) : (
+          ) : isEmailChannel ? (
             <>
               <label htmlFor="product-alert-subscription-email">Email adresa</label>
               <input
@@ -184,7 +218,6 @@ export default function ProductAlertModal({
                   if (!authenticated) {
                     setManagementToken('');
                     setMaskedEmail('');
-                    setTermsPreviouslyAccepted(false);
                     setNewsletterSubscribed(false);
                   }
                 }}
@@ -196,32 +229,50 @@ export default function ProductAlertModal({
                 autoFocus
               />
             </>
+          ) : (
+            <>
+              <label htmlFor="product-alert-subscription-phone">Broj telefona</label>
+              <input
+                id="product-alert-subscription-phone"
+                type="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                placeholder="+381601234567"
+                autoComplete="tel"
+                inputMode="tel"
+                required
+                disabled={submitting}
+                autoFocus
+              />
+            </>
           )}
 
-          {!termsPreviouslyAccepted && (
+          <p className="product-alert-modal__privacy-note">
+            Potvrdom tražite ovo obaveštenje putem {isEmailChannel ? 'emaila' : 'SMS-a'}. Kontakt
+            koristimo samo za tu svrhu; detalji su u <a href="/privacy">politici privatnosti</a>.
+          </p>
+
+          {isEmailChannel && !newsletterSubscribed && (
             <label className="product-alert-modal__check">
               <input
                 type="checkbox"
-                checked={acceptedTerms}
-                onChange={(event) => setAcceptedTerms(event.target.checked)}
+                checked={subscribeToEmailMarketing}
+                onChange={(event) => setSubscribeToEmailMarketing(event.target.checked)}
                 disabled={submitting}
               />
-              <span>
-                Prihvatam <a href="/terms">uslove korišćenja</a> i{' '}
-                <a href="/privacy">politiku privatnosti</a>.
-              </span>
+              <span>Želim da dobijam novosti, ponude i savete putem emaila.</span>
             </label>
           )}
 
-          {!newsletterSubscribed && (
+          {!isEmailChannel && (
             <label className="product-alert-modal__check">
               <input
                 type="checkbox"
-                checked={subscribeToNewsletter}
-                onChange={(event) => setSubscribeToNewsletter(event.target.checked)}
+                checked={subscribeToSmsMarketing}
+                onChange={(event) => setSubscribeToSmsMarketing(event.target.checked)}
                 disabled={submitting}
               />
-              <span>Želim da dobijam novosti, ponude i savete emailom.</span>
+              <span>Želim da dobijam novosti i ponude putem SMS-a.</span>
             </label>
           )}
 

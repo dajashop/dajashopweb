@@ -29,7 +29,7 @@ function WishlistAlertButton({ item }) {
   const type = inStock ? 'price_change' : 'back_in_stock';
 
   useEffect(() => {
-    const authenticated = Boolean(user?.email);
+    const authenticated = Boolean(user?.email || user?.phoneNumber);
     const storedTypes = authenticated
       ? []
       : productAlertSubscriptions.typesFor(product?.id, product?.variantId);
@@ -58,7 +58,7 @@ function WishlistAlertButton({ item }) {
     return () => {
       cancelled = true;
     };
-  }, [product?.id, product?.variantId, type, user?.email]);
+  }, [product?.id, product?.variantId, type, user?.email, user?.phoneNumber]);
 
   if (loading || !product?.id || !product.variantId) return null;
 
@@ -76,7 +76,7 @@ function WishlistAlertButton({ item }) {
 
   const unsubscribeAlert = async () => {
     const contact = productAlertSubscriptions.contact();
-    const authenticated = Boolean(user?.email);
+    const authenticated = Boolean(user?.email || user?.phoneNumber);
     if (!authenticated && !contact.managementToken) {
       flash(
         'Email nije dostupan',
@@ -118,8 +118,8 @@ function WishlistAlertButton({ item }) {
     }
   };
 
-  const handleGuestSubscription = ({ newsletterWarning, contact }) => {
-    if (!user?.email) {
+  const handleGuestSubscription = ({ deliveryChannel, newsletterWarning, contact }) => {
+    if (!user?.email && !user?.phoneNumber) {
       productAlertSubscriptions.markSubscribed(
         product.id,
         product.variantId,
@@ -135,9 +135,13 @@ function WishlistAlertButton({ item }) {
       'Obaveštenje je uključeno',
       newsletterWarning
         ? 'Obaveštenje je sačuvano, ali prijava na novosti nije uspela.'
-        : inStock
-          ? 'Javićemo vam emailom kada se cena promeni.'
-          : 'Javićemo vam emailom kada proizvod ponovo bude na stanju.',
+        : deliveryChannel === 'sms'
+          ? inStock
+            ? 'Javićemo vam SMS-om kada se cena promeni.'
+            : 'Javićemo vam SMS-om kada proizvod ponovo bude na stanju.'
+          : inStock
+            ? 'Javićemo vam emailom kada se cena promeni.'
+            : 'Javićemo vam emailom kada proizvod ponovo bude na stanju.',
       newsletterWarning ? 'info' : 'success',
     );
   };
@@ -177,7 +181,8 @@ function WishlistAlertButton({ item }) {
         product={product}
         type={type}
         initialEmail={user?.email ?? ''}
-        authenticated={Boolean(user?.email)}
+        initialPhone={user?.phoneNumber ?? ''}
+        authenticated={Boolean(user?.email || user?.phoneNumber)}
         onSubscribed={handleGuestSubscription}
       />
     </>

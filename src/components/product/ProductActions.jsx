@@ -29,7 +29,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
       setSubscribedTypes([]);
       return undefined;
     }
-    const authenticated = Boolean(user?.email);
+    const authenticated = Boolean(user?.email || user?.phoneNumber);
     const storedTypes = authenticated
       ? []
       : productAlertSubscriptions.typesFor(product.id, product.variantId);
@@ -58,15 +58,15 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
     return () => {
       cancelled = true;
     };
-  }, [product.id, product.variantId, showPriceAlerts, useStockAwareActions, user?.email]);
+  }, [product.id, product.variantId, showPriceAlerts, useStockAwareActions, user?.email, user?.phoneNumber]);
 
   const requestAlert = (type) => {
     if (subscribedTypes.includes(type)) return;
     setGuestAlertType(type);
   };
 
-  const handleGuestSubscription = ({ type, newsletterWarning, contact }) => {
-    if (!user?.email) {
+  const handleGuestSubscription = ({ type, deliveryChannel, newsletterWarning, contact }) => {
+    if (!user?.email && !user?.phoneNumber) {
       productAlertSubscriptions.markSubscribed(
         product.id,
         product.variantId,
@@ -82,7 +82,9 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
       'Obaveštenje je uključeno',
       newsletterWarning
         ? 'Obaveštenje je sačuvano, ali prijava na novosti nije uspela.'
-        : 'Javićemo vam emailom čim se promeni stanje ili cena artikla.',
+        : deliveryChannel === 'sms'
+          ? 'Javićemo vam SMS-om čim se promeni stanje ili cena artikla.'
+          : 'Javićemo vam emailom čim se promeni stanje ili cena artikla.',
       newsletterWarning ? 'info' : 'success',
     );
   };
@@ -146,7 +148,8 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
         product={product}
         type={guestAlertType}
         initialEmail={user?.email ?? ''}
-        authenticated={Boolean(user?.email)}
+        initialPhone={user?.phoneNumber ?? ''}
+        authenticated={Boolean(user?.email || user?.phoneNumber)}
         onSubscribed={handleGuestSubscription}
       />
     </div>
