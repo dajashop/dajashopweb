@@ -18,7 +18,7 @@
   /* Sticky desna kolona - prati te dok skroluješ */
   .product__info {
     position: sticky;
-    top: 24px;
+    top: calc(var(--header-sticky-offset) + 16px);
     height: fit-content;
   }
 }
