@@ -6,6 +6,7 @@ const API_BASE_URL = (
 const ACCESS_KEY = 'daja_customer_access_token';
 const REFRESH_KEY = 'daja_customer_refresh_token';
 const STAFF_ACCESS_KEY = 'daja_staff_access_token';
+const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
 
 let refreshPromise = null;
 const authListeners = new Set();
@@ -139,6 +140,46 @@ async function refreshAccessToken() {
   return refreshPromise;
 }
 
+function accessTokenExpiresSoon(token) {
+  try {
+    const encodedPayload = token.split('.')[1];
+    if (!encodedPayload) return false;
+    const normalizedPayload = encodedPayload
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    const paddedPayload = normalizedPayload.padEnd(
+      Math.ceil(normalizedPayload.length / 4) * 4,
+      '=',
+    );
+    const bytes = Uint8Array.from(atob(paddedPayload), (character) =>
+      character.charCodeAt(0),
+    );
+    const payload = JSON.parse(new TextDecoder().decode(bytes));
+    const expiresAt = Number(payload?.exp) * 1000;
+    return (
+      Number.isFinite(expiresAt) &&
+      expiresAt <= Date.now() + ACCESS_TOKEN_REFRESH_WINDOW_MS
+    );
+  } catch {
+    // A token whose payload cannot be read still goes through the existing
+    // server-side authentication and retry flow.
+    return false;
+  }
+}
+
+async function currentCustomerAccessToken() {
+  const token = getAccessToken();
+  if (!token || !accessTokenExpiresSoon(token)) return token;
+
+  try {
+    await refreshAccessToken();
+    return getAccessToken();
+  } catch {
+    clearAuthTokens();
+    return null;
+  }
+}
+
 async function refreshStaffAccessToken() {
   const customerToken = getAccessToken();
   if (!customerToken) throw new Error('Customer token nije dostupan.');
@@ -186,9 +227,11 @@ export async function apiRequest(path, options = {}) {
   // Public endpoints must not touch browser storage before the visitor makes
   // a consent choice. This also prevents an old session from being attached
   // to an otherwise anonymous privacy or catalog request.
-  const token = auth
-    ? (staff ? getStaffAccessToken() || getAccessToken() : getAccessToken())
-    : null;
+  const token = !auth
+    ? null
+    : staff
+      ? getStaffAccessToken() || getAccessToken()
+      : await currentCustomerAccessToken();
   if (auth && token) requestHeaders.Authorization = `Bearer ${token}`;
 
   let requestBody = body;
