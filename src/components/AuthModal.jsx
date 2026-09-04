@@ -126,7 +126,7 @@ function PasswordResetRequest({
       </label>
       {isSent && (
         <p className="auth-password-reset-request__notice" role="status">
-          Ako nalog sa ovom adresom postoji, poslali smo link za promenu lozinke. Proverite inbox i spam folder.
+          Link za promenu lozinke je poslat na adresu {email}.
         </p>
       )}
       <motion.button
@@ -527,7 +527,12 @@ export default function AuthModal() {
     setPasswordResetError('');
     setPasswordResetStatus('sending');
     try {
-      await authApi.requestPasswordReset(email);
+      const response = await authApi.requestPasswordReset(email);
+      if (response?.status === 'not_found') {
+        setPasswordResetError('Ne postoji nalog sa ovom email adresom.');
+        setPasswordResetStatus('idle');
+        return;
+      }
       setPasswordResetStatus('sent');
     } catch (error) {
       console.error(error);

@@ -2,9 +2,14 @@ import React, { useState } from 'react';
 import { CheckCircle2, Eye, EyeOff, KeyRound, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { authApi } from '../services/dajaPlatform.js';
-import { PASSWORD_RULE } from '../data/validationRules.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import './ResetPassword.css';
+
+const PASSWORD_REQUIREMENTS = [
+  { key: 'length', label: 'Najmanje 8 karaktera', passes: (value) => value.length >= 8 },
+  { key: 'uppercase', label: 'Jedno veliko slovo', passes: (value) => /[A-Z]/.test(value) },
+  { key: 'number', label: 'Jedan broj', passes: (value) => /\d/.test(value) },
+];
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -14,11 +19,18 @@ export default function ResetPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState(token ? 'ready' : 'invalid');
   const [errors, setErrors] = useState({});
+  const passwordRequirements = PASSWORD_REQUIREMENTS.map((requirement) => ({
+    ...requirement,
+    met: requirement.passes(password),
+  }));
+  const passwordIsValid = passwordRequirements.every((requirement) => requirement.met);
+  const confirmationMatches = Boolean(confirmation) && confirmation === password;
+  const confirmationInvalid = Boolean(confirmation) && !confirmationMatches;
 
   async function submit(event) {
     event.preventDefault();
     const nextErrors = {};
-    if (!PASSWORD_RULE.regex.test(password)) nextErrors.password = PASSWORD_RULE.message;
+    if (!passwordIsValid) nextErrors.password = 'Lozinka ne ispunjava sve uslove.';
     if (confirmation !== password) nextErrors.confirmation = 'Lozinke se ne podudaraju.';
     if (!token) nextErrors.form = 'Link za promenu lozinke nije potpun.';
     setErrors(nextErrors);
@@ -77,7 +89,10 @@ export default function ResetPassword() {
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        setErrors((current) => ({ ...current, password: undefined }));
+                      }}
                       autoComplete="new-password"
                       disabled={isSaving}
                     />
@@ -85,21 +100,35 @@ export default function ResetPassword() {
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                  {errors.password && <small className="reset-password-page__error">{errors.password}</small>}
+                  <ul className="reset-password-page__requirements" aria-label="Uslovi za lozinku">
+                    {passwordRequirements.map((requirement) => (
+                      <li key={requirement.key} className={requirement.met ? 'is-met' : ''}>
+                        <span aria-hidden="true">✓</span>
+                        {requirement.label}
+                      </li>
+                    ))}
+                  </ul>
                 </label>
                 <label>
                   <span>Ponovite novu lozinku</span>
-                  <div className={errors.confirmation ? 'reset-password-page__input reset-password-page__input--error' : 'reset-password-page__input'}>
+                  <div className={errors.confirmation || confirmationInvalid ? 'reset-password-page__input reset-password-page__input--error' : 'reset-password-page__input'}>
                     <Lock size={18} aria-hidden="true" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={confirmation}
-                      onChange={(event) => setConfirmation(event.target.value)}
+                      onChange={(event) => {
+                        setConfirmation(event.target.value);
+                        setErrors((current) => ({ ...current, confirmation: undefined }));
+                      }}
                       autoComplete="new-password"
                       disabled={isSaving}
                     />
                   </div>
-                  {errors.confirmation && <small className="reset-password-page__error">{errors.confirmation}</small>}
+                  {(confirmation || errors.confirmation) && (
+                    <small className={confirmationMatches ? 'reset-password-page__match reset-password-page__match--valid' : 'reset-password-page__error'}>
+                      {confirmationMatches ? 'Lozinke se podudaraju.' : 'Lozinke se ne podudaraju.'}
+                    </small>
+                  )}
                 </label>
                 <button className="reset-password-page__button" disabled={isSaving}>
                   {isSaving ? 'Čuvamo novu lozinku...' : 'Sačuvaj novu lozinku'}
