@@ -19,6 +19,19 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const PHONE_RE = /^\+?[0-9]{8,15}$/;
 const USER_RE = /^[a-zA-Z0-9._-]{3,24}$/;
 
+function normalizePhoneIdentity(value) {
+  const compact = String(value || '').trim().replace(/[\s()./-]/g, '');
+  if (!compact) return '';
+
+  // The login field defaults to Serbia. Accept the ways people commonly type
+  // a domestic Serbian number and always send the API an E.164 number.
+  if (compact.startsWith('00')) return `+${compact.slice(2)}`;
+  if (compact.startsWith('+3810')) return `+381${compact.slice(5).replace(/^0+/, '')}`;
+  if (compact.startsWith('+0')) return `+381${compact.slice(2).replace(/^0+/, '')}`;
+  if (compact.startsWith('0')) return `+381${compact.replace(/^0+/, '')}`;
+  return compact.startsWith('+') ? compact : `+${compact}`;
+}
+
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
   const { hasDecision } = useConsent();
@@ -129,8 +142,11 @@ export function AuthProvider({ children }) {
   const detectIdentity = useCallback((id) => {
     const clean = String(id || '').replace(/\s/g, '');
     if (EMAIL_RE.test(clean)) return { type: 'email', value: clean };
-    if (PHONE_RE.test(clean))
-      return { type: 'phone', value: clean.startsWith('+') ? clean : `+${clean}` };
+    const phoneInput = clean.replace(/[()./-]/g, '');
+    const phone = normalizePhoneIdentity(phoneInput);
+    if (PHONE_RE.test(phoneInput) && /^\+[1-9]\d{7,14}$/.test(phone)) {
+      return { type: 'phone', value: phone };
+    }
     if (USER_RE.test(clean)) return { type: 'username', value: clean.toLowerCase() };
     return { type: 'unknown', value: clean };
   }, []);
