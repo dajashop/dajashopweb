@@ -4,7 +4,9 @@
 // ==============================
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom'; // <-- UVOZIMO LINK
+import { Link } from 'react-router-dom';
+import { ArrowUpRight } from 'lucide-react';
+import './AboutCTA.css';
 
 // Kreiramo Motion Link komponentu
 const MotionLink = motion(Link);
@@ -27,50 +29,22 @@ export default function AboutCTA() {
       viewport={{ once: true, amount: 0.3 }}
       variants={sectionVariants}
     >
-      <div
-        className="container card shadow"
-        style={{
-          padding: '60px 30px',
-          textAlign: 'center',
-          background: 'var(--color-primary)', // Visoki kontrast
-          color: 'var(--color-on-primary)',
-          gap: '20px',
-        }}
-      >
-        <h2 className="h2" style={{ color: 'var(--color-on-primary)' }}>
-          Ne Odugovlačite. Pronađite Sat Koji Odgovara Vašem Stilu.
+      <div className="container card shadow about-cta">
+        <h2 className="h2 about-cta__title">
+          Pronađite sat koji prati vaš stil.
         </h2>
-        <p
-          style={{
-            maxWidth: '700px',
-            margin: '0 auto',
-            fontSize: '18px',
-            opacity: 0.9,
-          }}
-        >
-          Istražite našu pažljivo odabranu kolekciju i dozvolite nam da Vam
-          pomognemo da izaberete savršeni aksesoar.
+        <p className="about-cta__description">
+          Istražite pažljivo odabrane modele i pronađite detalj koji ćete rado
+          nositi svakog dana.
         </p>
 
-        {/* ZAMENA: Koristimo MotionLink umesto motion.button */}
         <MotionLink
-          to="/catalog" // <-- OVDE JE DEFINISANA RUTA
-          className="btn-secondary"
-          whileHover={{ scale: 1.05 }}
+          to="/catalog"
+          className="btn-secondary about-cta__button"
+          whileHover={{ y: -2 }}
           whileTap={{ scale: 0.95 }}
-          style={{
-            marginTop: '20px',
-            padding: '12px 30px',
-            background: 'var(--color-on-primary)',
-            color: 'var(--color-primary)',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '17px',
-            fontWeight: 700,
-            textDecoration: 'none', // Osiguravamo da link izgleda kao dugme
-          }}
         >
-          Pogledajte Katalog
+          Pogledajte katalog <ArrowUpRight size={18} aria-hidden="true" />
         </MotionLink>
       </div>
     </motion.section>
