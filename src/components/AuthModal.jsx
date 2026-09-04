@@ -56,8 +56,7 @@ function readLastLogin() {
   }
 }
 
-function saveLastLogin(provider, email, canRemember) {
-  if (!canRemember) return null;
+function saveLastLogin(provider, email) {
   const normalizedEmail = String(email || '').trim().toLowerCase();
   if (!LAST_LOGIN_PROVIDERS.includes(provider)) return null;
   if (provider === 'password' && !REGEX.email.test(normalizedEmail)) return null;
@@ -119,7 +118,6 @@ export default function AuthModal() {
   const [name, setName] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [lastLogin, setLastLogin] = useState(readLastLogin);
-  const [rememberLogin, setRememberLogin] = useState(false);
   const [isSuggestedEmail, setIsSuggestedEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [oauthWaking, setOauthWaking] = useState(false);
@@ -189,7 +187,6 @@ export default function AuthModal() {
     setOauthWaking(false);
     setOauthWakeupAttempt(0);
     setOauthProvider('');
-    setRememberLogin(false);
   }, [authOpen, mode, preferencesAllowed]);
 
   useEffect(() => {
@@ -443,12 +440,12 @@ export default function AuthModal() {
   useEffect(() => {
     if (!oauthJustSucceeded || !user?.email) return;
 
-    const savedLogin = saveLastLogin('google', user.email, preferencesAllowed && rememberLogin);
+    const savedLogin = saveLastLogin('google', user.email);
     if (savedLogin) setLastLogin(savedLogin);
 
     openFlash('Google prijava uspešna', 'Uspešno ste prijavljeni putem Google naloga.');
     dismissOauthSuccess();
-  }, [oauthJustSucceeded, user?.email, dismissOauthSuccess, preferencesAllowed, rememberLogin]);
+  }, [oauthJustSucceeded, user?.email, dismissOauthSuccess]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -464,7 +461,7 @@ export default function AuthModal() {
           setAwaitPhoneCode(true);
           setSentTo(identity);
         } else {
-          const savedLogin = saveLastLogin('password', r?.email || identity, preferencesAllowed && rememberLogin);
+          const savedLogin = saveLastLogin('password', r?.email || identity);
           if (savedLogin) setLastLogin(savedLogin);
           hideAuth();
           openFlash('Prijava uspešna', 'Dobro došli nazad! ⌚');
@@ -523,7 +520,6 @@ export default function AuthModal() {
         const savedLogin = saveLastLogin(
           provider,
           lastLogin?.provider === provider ? lastLogin.email : undefined,
-          preferencesAllowed && rememberLogin,
         );
         if (savedLogin) setLastLogin(savedLogin);
       }
@@ -546,7 +542,7 @@ export default function AuthModal() {
     setLoading(true);
     try {
       if (isLogin) {
-        const savedLogin = saveLastLogin('passkey', undefined, preferencesAllowed && rememberLogin);
+        const savedLogin = saveLastLogin('passkey', undefined);
         if (savedLogin) setLastLogin(savedLogin);
         await passkeyLogin();
         hideAuth();
@@ -907,17 +903,6 @@ export default function AuthModal() {
                                     )
                                   )}
                                 </AnimatePresence>
-                              </label>
-                            )}
-                            {loginPane && preferencesAllowed && (
-                              <label className="auth-remember-login">
-                                <input
-                                  type="checkbox"
-                                  checked={rememberLogin}
-                                  onChange={(event) => setRememberLogin(event.target.checked)}
-                                  disabled={loading}
-                                />
-                                <span>Zapamti email i poslednji način prijave na ovom uređaju.</span>
                               </label>
                             )}
                             <motion.button
