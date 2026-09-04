@@ -44,7 +44,7 @@ export default function AboutCTA() {
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.95 }}
         >
-          Pogledajte katalog <ArrowUpRight size={18} aria-hidden="true" />
+          Pronađite svoj sat <ArrowUpRight size={18} aria-hidden="true" />
         </MotionLink>
       </div>
     </motion.section>
