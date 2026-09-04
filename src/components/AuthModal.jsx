@@ -24,6 +24,7 @@ import { useConsent } from '../context/ConsentContext.jsx';
 import PhoneCountryPicker from './ui/PhoneCountryPicker.jsx';
 import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 import { PASSWORD_RULE } from '../data/validationRules.js';
+import { authApi } from '../services/dajaPlatform.js';
 
 const POPULAR_DOMAINS = [
   'gmail.com',
@@ -86,6 +87,62 @@ const ErrorMessage = ({ message }) => (
   </motion.div>
 );
 
+function PasswordResetRequest({
+  email,
+  error,
+  status,
+  onEmailChange,
+  onSubmit,
+  onCancel,
+}) {
+  const isSending = status === 'sending';
+  const isSent = status === 'sent';
+
+  return (
+    <form className="form auth-password-reset-request" onSubmit={onSubmit} noValidate>
+      <div className="auth-password-reset-request__intro">
+        <h2>Zaboravili ste lozinku?</h2>
+        <p>Unesite email adresu i poslaćemo vam link za postavljanje nove lozinke.</p>
+      </div>
+      <label className="field">
+        <span>Email adresa</span>
+        <div className={`input ${error ? 'input-error' : ''}`}>
+          <Mail className="ico" size={18} />
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => onEmailChange(event.target.value)}
+            placeholder="ime@email.com"
+            autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            disabled={isSending || isSent}
+          />
+        </div>
+        <AnimatePresence mode="wait">
+          {error && <ErrorMessage message={error} />}
+        </AnimatePresence>
+      </label>
+      {isSent && (
+        <p className="auth-password-reset-request__notice" role="status">
+          Ako nalog sa ovom adresom postoji, poslali smo link za promenu lozinke. Proverite inbox i spam folder.
+        </p>
+      )}
+      <motion.button
+        className="btn-primary w-full"
+        disabled={isSending || isSent}
+        whileTap={{ scale: 0.97 }}
+      >
+        {isSending ? 'Šaljemo link...' : isSent ? 'Link je poslat' : 'Pošalji link za promenu'}
+      </motion.button>
+      <button type="button" className="auth-forgot-password" onClick={onCancel}>
+        Nazad na prijavu
+      </button>
+    </form>
+  );
+}
+
 export default function AuthModal() {
   const {
     user,
@@ -125,6 +182,10 @@ export default function AuthModal() {
   const [oauthProvider, setOauthProvider] = useState('');
   const [errors, setErrors] = useState({});
   const [submitCount, setSubmitCount] = useState(0);
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [passwordResetEmail, setPasswordResetEmail] = useState('');
+  const [passwordResetError, setPasswordResetError] = useState('');
+  const [passwordResetStatus, setPasswordResetStatus] = useState('idle');
 
   const [awaitPhoneCode, setAwaitPhoneCode] = useState(false);
   const [smsCode, setSmsCode] = useState('');
@@ -187,6 +248,10 @@ export default function AuthModal() {
     setOauthWaking(false);
     setOauthWakeupAttempt(0);
     setOauthProvider('');
+    setForgotPassword(false);
+    setPasswordResetEmail('');
+    setPasswordResetError('');
+    setPasswordResetStatus('idle');
   }, [authOpen, mode, preferencesAllowed]);
 
   useEffect(() => {
@@ -437,6 +502,40 @@ export default function AuthModal() {
     setFlashOpen(true);
   }
 
+  function openPasswordReset() {
+    const email = identity.trim().toLowerCase();
+    setPasswordResetEmail(REGEX.email.test(email) ? email : '');
+    setPasswordResetError('');
+    setPasswordResetStatus('idle');
+    setForgotPassword(true);
+  }
+
+  function closePasswordReset() {
+    setForgotPassword(false);
+    setPasswordResetError('');
+    setPasswordResetStatus('idle');
+  }
+
+  async function requestPasswordReset(event) {
+    event.preventDefault();
+    const email = passwordResetEmail.trim().toLowerCase();
+    if (!REGEX.email.test(email)) {
+      setPasswordResetError('Unesite ispravnu email adresu.');
+      return;
+    }
+
+    setPasswordResetError('');
+    setPasswordResetStatus('sending');
+    try {
+      await authApi.requestPasswordReset(email);
+      setPasswordResetStatus('sent');
+    } catch (error) {
+      console.error(error);
+      setPasswordResetStatus('idle');
+      setPasswordResetError('Slanje linka nije uspelo. Pokušajte ponovo za trenutak.');
+    }
+  }
+
   useEffect(() => {
     if (!oauthJustSucceeded || !user?.email) return;
 
@@ -482,10 +581,12 @@ export default function AuthModal() {
       setSubmitCount((prev) => prev + 1);
       const newErrors = {};
       if (
-        err.code === 'auth/invalid-credential' ||
-        err.message.includes('invalid-credential')
+        !isPhone &&
+        (err.status === 401 ||
+          err.code === 'auth/invalid-credential' ||
+          /invalid credentials|invalid-credential/i.test(err.message || ''))
       )
-        newErrors.password = 'Pogrešni podaci za prijavu.';
+        newErrors.password = 'Email ili lozinka nisu tačni.';
       else if (err.code === 'auth/email-already-in-use')
         newErrors.identity = 'Ovaj email je već registrovan.';
       else if (err.code === 'auth/user-not-found')
@@ -695,7 +796,19 @@ export default function AuthModal() {
                       aria-hidden={isLogin !== loginPane}
                     >
                       <div className="pane-inner">
-                        {!awaitPhoneCode &&
+                        {loginPane && forgotPassword ? (
+                          <PasswordResetRequest
+                            email={passwordResetEmail}
+                            error={passwordResetError}
+                            status={passwordResetStatus}
+                            onEmailChange={(value) => {
+                              setPasswordResetEmail(value);
+                              if (passwordResetError) setPasswordResetError('');
+                            }}
+                            onSubmit={requestPasswordReset}
+                            onCancel={closePasswordReset}
+                          />
+                        ) : !awaitPhoneCode &&
                         (!pendingEmailVerify || loginPane) ? (
                           <form className="form" onSubmit={onSubmit} noValidate>
                             {!loginPane && (
@@ -904,6 +1017,16 @@ export default function AuthModal() {
                                   )}
                                 </AnimatePresence>
                               </label>
+                            )}
+                            {loginPane && showPassword && (
+                              <button
+                                type="button"
+                                className="auth-forgot-password"
+                                onClick={openPasswordReset}
+                                disabled={loading}
+                              >
+                                Zaboravili ste lozinku?
+                              </button>
                             )}
                             <motion.button
                               className="btn-primary w-full"

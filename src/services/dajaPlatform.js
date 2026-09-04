@@ -300,6 +300,20 @@ export const authApi = {
       clearAuthTokens();
     }
   },
+  requestPasswordReset(email) {
+    return apiRequest('/customer-auth/password/reset-request', {
+      method: 'POST',
+      auth: false,
+      body: { email },
+    });
+  },
+  resetPassword(token, newPassword) {
+    return apiRequest('/customer-auth/password/reset', {
+      method: 'POST',
+      auth: false,
+      body: { token, newPassword },
+    });
+  },
   async createAdminSession() {
     const storageKey = 'daja_staff_device_id';
     let deviceId = readStoredValue(storageKey, 'necessary');

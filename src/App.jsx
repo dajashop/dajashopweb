@@ -16,8 +16,10 @@ export default function App() {
     pathname === '/baterije' ||
     pathname === '/naocare' ||
     pathname === '/logout' ||
-    pathname === '/verify-email';
-  const isFullBleedPage = pathname === '/logout' || pathname === '/verify-email';
+    pathname === '/verify-email' ||
+    pathname === '/reset-password';
+  const isFullBleedPage =
+    pathname === '/logout' || pathname === '/verify-email' || pathname === '/reset-password';
 
   // Resetovanje skrola na vrh pri promeni stranice (samo za PUSH/REPLACE)
   useEffect(() => {
