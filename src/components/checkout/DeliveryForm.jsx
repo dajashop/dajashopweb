@@ -844,11 +844,14 @@ export default function DeliveryForm({
                       <Loader2 size={18} className="animate-spin text-muted" />
                     </div>
                   )}
-                  {!mapsReady && !mapsLoadError && !googleAddressLoading && (
-                    <div style={{ position: 'absolute', right: 12 }}>
-                      <Loader2 size={18} className="animate-spin text-muted" />
-                    </div>
-                  )}
+                  {googleAllowed &&
+                    !mapsReady &&
+                    !mapsLoadError &&
+                    !googleAddressLoading && (
+                      <div style={{ position: 'absolute', right: 12 }}>
+                        <Loader2 size={18} className="animate-spin text-muted" />
+                      </div>
+                    )}
                   {googleAddressSuggestions.length > 0 && (
                     <ul className="checkout-google-address-suggestions" role="listbox" aria-label="Predlozi adrese">
                       {googleAddressSuggestions.map((suggestion) => (
