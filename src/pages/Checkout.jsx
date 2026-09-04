@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import { useFlash } from '../hooks/useFlash.js';
 import { usePromo } from '../hooks/usePromo.js';
 import { money } from '../utils/currency.js';
+import { PASSWORD_RULE } from '../data/validationRules.js';
 import { AnimatePresence } from 'framer-motion';
 import { customerApi, ordersApi } from '../services/dajaPlatform.js';
 
@@ -35,6 +36,7 @@ export default function Checkout() {
   const [showRegPopover, setShowRegPopover] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
   const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState(null);
   const [popoverDismissed, setPopoverDismissed] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
 
@@ -137,6 +139,16 @@ export default function Checkout() {
     return () => clearTimeout(t);
   }, [shippingMethod, createAccount, showRegPopover, errors]);
 
+  const getRegistrationPasswordError = (value) =>
+    PASSWORD_RULE.regex.test(String(value || '').trim())
+      ? null
+      : PASSWORD_RULE.message;
+
+  const handleRegistrationPasswordChange = (value) => {
+    setPassword(value);
+    setPasswordError(value.trim() ? getRegistrationPasswordError(value) : null);
+  };
+
   const handleConfirmReg = async () => {
     if (!formData.name.trim() || !formData.surname.trim()) {
       flash('Greška', 'Unesite ime i prezime.', 'error');
@@ -146,8 +158,10 @@ export default function Checkout() {
       flash('Greška', 'Unesite email.', 'error');
       return;
     }
-    if (password.length < 6) {
-      flash('Greška', 'Lozinka mora imati min. 6 karaktera', 'error');
+    const nextPasswordError = getRegistrationPasswordError(password);
+    if (nextPasswordError) {
+      setPasswordError(nextPasswordError);
+      flash('Greška', nextPasswordError, 'error');
       return;
     }
     setIsRegistering(true);
@@ -160,6 +174,7 @@ export default function Checkout() {
       flash('Uspeh', 'Nalog kreiran.', 'success');
       setShowRegPopover(false);
       setPassword('');
+      setPasswordError(null);
     } catch (err) {
       flash('Greška', 'Došlo je do greške pri registraciji.', 'error');
     } finally {
@@ -171,6 +186,7 @@ export default function Checkout() {
     setShowRegPopover(false);
     setPopoverDismissed(true);
     setPassword('');
+    setPasswordError(null);
   };
 
   const handlePlaceOrder = async () => {
@@ -256,7 +272,8 @@ export default function Checkout() {
             requiredForCourier={requiredForCourier}
             showSuccessModal={showSuccessModal}
             password={password}
-            setPassword={setPassword}
+            passwordError={passwordError}
+            onPasswordChange={handleRegistrationPasswordChange}
             showRegPopover={showRegPopover}
             setShowRegPopover={setShowRegPopover}
             handleDismissReg={handleDismissReg}

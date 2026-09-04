@@ -68,7 +68,8 @@ export default function DeliveryForm({
   requiredForCourier,
   showSuccessModal,
   password,
-  setPassword,
+  passwordError,
+  onPasswordChange,
   showRegPopover,
   setShowRegPopover,
   handleDismissReg,
@@ -966,7 +967,10 @@ export default function DeliveryForm({
                   <X size={18} />
                 </button>
               </div>
-              <div className="input-group" style={{ marginBottom: 0 }}>
+              <div
+                className={`input-group ${passwordError ? 'input-error' : ''}`}
+                style={{ marginBottom: 0 }}
+              >
                 <Lock
                   className="input-icon"
                   size={16}
@@ -974,12 +978,15 @@ export default function DeliveryForm({
                 />
                 <input
                   type="password"
-                  placeholder="Lozinka za novi nalog (min. 6)"
+                  placeholder="Lozinka (min. 8, veliko slovo i broj)"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => onPasswordChange(e.target.value)}
                   autoComplete="new-password"
                 />
               </div>
+              <AnimatePresence mode="wait">
+                {passwordError && <ErrorMessage message={passwordError} />}
+              </AnimatePresence>
               <button
                 type="button"
                 className="reg-confirm-btn"

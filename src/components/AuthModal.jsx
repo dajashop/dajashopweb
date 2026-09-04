@@ -23,6 +23,7 @@ import { PHONE_COUNTRIES as COUNTRY_CODES } from '../data/phoneCountries.js';
 import { useConsent } from '../context/ConsentContext.jsx';
 import PhoneCountryPicker from './ui/PhoneCountryPicker.jsx';
 import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
+import { PASSWORD_RULE } from '../data/validationRules.js';
 
 const POPULAR_DOMAINS = [
   'gmail.com',
@@ -36,7 +37,6 @@ const POPULAR_DOMAINS = [
 const REGEX = {
   email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
   phone: /^(\+|0)[0-9\s]{8,20}$/,
-  passwordStrong: /^(?=.*[A-Z])(?=.*\d).{8,}$/,
 };
 
 const LAST_LOGIN_STORAGE_KEY = 'daja_last_login';
@@ -324,8 +324,8 @@ export default function AuthModal() {
         if (isLogin) {
           if (!isPhone && !cleanVal) return 'Unesite lozinku.';
         } else {
-          if (!isPhone && !REGEX.passwordStrong.test(cleanVal))
-            return 'Min. 8 karaktera, 1 veliko slovo i 1 broj.';
+          if (!isPhone && !PASSWORD_RULE.regex.test(cleanVal))
+            return PASSWORD_RULE.message;
         }
         return null;
       default:

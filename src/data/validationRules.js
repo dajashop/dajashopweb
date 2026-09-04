@@ -1,3 +1,8 @@
+export const PASSWORD_RULE = {
+  regex: /^(?=.*[A-Z])(?=.*\d).{8,}$/,
+  message: 'Min. 8 karaktera, 1 veliko slovo i 1 broj.',
+};
+
 export const FORM_RULES = {
   email: {
     regex: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
