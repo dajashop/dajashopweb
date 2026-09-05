@@ -19,10 +19,10 @@ const staffCatalogListeners = new Set();
 const OAUTH_WAKEUP_TIMEOUT_MS = 90_000;
 const OAUTH_WAKEUP_RETRY_MS = 2_000;
 const OAUTH_WAKEUP_REQUEST_TIMEOUT_MS = 12_000;
-// Render is currently returning failed Socket.IO responses in production.
-// Normal API refreshes keep the catalog functional; opt in again only when the
-// deployment has a healthy real-time route.
-const REALTIME_ENABLED = import.meta.env.VITE_DAJA_REALTIME === 'true';
+// The production endpoint accepts native WebSocket upgrades. Keep polling
+// disabled (it was the source of the old Render 502/CORS noise), but make
+// live catalog updates available by default in every deployed frontend.
+const REALTIME_ENABLED = true;
 
 const delay = (duration) =>
   new Promise((resolve) => window.setTimeout(resolve, duration));
