@@ -558,7 +558,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     try {
       // Validate price dates before POST/PATCH. This prevents a product from
       // being saved when its accompanying sale is invalid.
-      if (pendingPrice?.amount) {
+      if (pendingPrice?.saleChanged && pendingPrice.amount) {
         const saleStart = pendingPrice.from
           ? new Date(pendingPrice.from)
           : new Date();
@@ -645,30 +645,29 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       if (savedProductId && pendingPrice) {
         const savedVariants =
           await adminCatalogApi.listVariants(savedProductId);
-        const validFrom = pendingPrice.from
-          ? new Date(pendingPrice.from).toISOString()
-          : undefined;
-        const validUntil = pendingPrice.until
-          ? new Date(pendingPrice.until).toISOString()
-          : null;
-        if (
-          validFrom &&
-          validUntil &&
-          new Date(validUntil) <= new Date(validFrom)
-        ) {
-          throw new Error('Kraj akcije mora biti posle početka akcije.');
+        const variantId = savedVariants[0]?.id;
+
+        // An edited sale always replaces the previous one.  Clearing first
+        // prevents a stale active/scheduled price from ever competing with the
+        // new action price; an empty amount means the user chose "Poništi akciju".
+        if (variantId && pendingPrice.saleChanged) {
+          await adminCatalogApi.clearVariantSale(variantId);
+          if (pendingPrice.amount) {
+            await adminCatalogApi.addVariantPrice(variantId, {
+              amountMinor: Math.round(Number(pendingPrice.amount) * 100),
+              currency: form.currency || 'RSD',
+              priceType: pendingPrice.type,
+              validFrom: pendingPrice.from
+                ? new Date(pendingPrice.from).toISOString()
+                : undefined,
+              validUntil: pendingPrice.until
+                ? new Date(pendingPrice.until).toISOString()
+                : null,
+            });
+          }
         }
-        if (savedVariants[0]?.id && pendingPrice.amount) {
-          await adminCatalogApi.addVariantPrice(savedVariants[0].id, {
-            amountMinor: Math.round(Number(pendingPrice.amount) * 100),
-            currency: form.currency || 'RSD',
-            priceType: pendingPrice.type,
-            validFrom,
-            validUntil,
-          });
-        }
-        if (savedVariants[0]?.id && pendingPrice.costAmount) {
-          await adminCatalogApi.addVariantPrice(savedVariants[0].id, {
+        if (variantId && pendingPrice.costChanged && pendingPrice.costAmount) {
+          await adminCatalogApi.addVariantPrice(variantId, {
             amountMinor: Math.round(Number(pendingPrice.costAmount) * 100),
             currency: form.currency || 'RSD',
             priceType: 'cost',

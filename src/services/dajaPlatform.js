@@ -19,6 +19,13 @@ const staffCatalogListeners = new Set();
 const OAUTH_WAKEUP_TIMEOUT_MS = 90_000;
 const OAUTH_WAKEUP_RETRY_MS = 2_000;
 const OAUTH_WAKEUP_REQUEST_TIMEOUT_MS = 12_000;
+// Render closes the direct WebSocket upgrade intermittently. Socket.IO polling
+// keeps the same real-time events working without producing a failed WSS
+// connection in the browser console.
+const REALTIME_TRANSPORT_OPTIONS = {
+  transports: ['polling'],
+  upgrade: false,
+};
 
 const delay = (duration) =>
   new Promise((resolve) => window.setTimeout(resolve, duration));
@@ -93,7 +100,7 @@ function ensureStaffCatalogSocket() {
   }
   staffCatalogSocket = io(realtimeNamespaceUrl(), {
     path: '/socket.io',
-    transports: ['websocket'],
+    ...REALTIME_TRANSPORT_OPTIONS,
     auth: { token: `Bearer ${token}` },
     reconnection: true,
   });
@@ -584,6 +591,12 @@ export const adminCatalogApi = {
       method: 'POST',
       staff: true,
       body,
+    });
+  },
+  clearVariantSale(id) {
+    return apiRequest(`/variants/${encodeURIComponent(id)}/prices/sale`, {
+      method: 'DELETE',
+      staff: true,
     });
   },
   refreshVariant(id, body) {
@@ -1268,7 +1281,7 @@ export function subscribeRealtime(channels, onEvent, onError) {
     }
     socket = io(realtimeNamespaceUrl(), {
       path: '/socket.io',
-      transports: ['websocket'],
+      ...REALTIME_TRANSPORT_OPTIONS,
       auth: { token: `Bearer ${token}` },
       reconnection: true,
       reconnectionAttempts: 3,
@@ -1294,7 +1307,7 @@ export function subscribeCustomerRealtime(onEvent, onError) {
   if (!token) return () => {};
   const socket = io(realtimeNamespaceUrl(), {
     path: '/socket.io',
-    transports: ['websocket'],
+    ...REALTIME_TRANSPORT_OPTIONS,
     auth: { token: `Bearer ${token}` },
     reconnection: true,
     reconnectionAttempts: 5,
@@ -1326,7 +1339,7 @@ export function subscribePublicCatalogRealtime(onEvent, onError) {
   if (!publicCatalogSocket) {
     publicCatalogSocket = io(realtimeNamespaceUrl(), {
       path: '/socket.io',
-      transports: ['websocket'],
+      ...REALTIME_TRANSPORT_OPTIONS,
       auth: { publicCatalog: true },
       reconnection: true,
       reconnectionAttempts: 5,
