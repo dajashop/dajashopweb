@@ -24,6 +24,7 @@ function defaultPrice() {
 
 function isCurrentOrScheduledSale(price) {
   if (price.priceType !== 'sale') return false;
+  if (price.cancelledAt) return false;
   const validUntil = price.validUntil ? new Date(price.validUntil).getTime() : null;
   return validUntil === null || validUntil > Date.now();
 }
