@@ -16,7 +16,7 @@ export default function Unsubscribe() {
       : 'Ovaj link je već iskorišćen';
   const message = productAlert
     ? success
-      ? 'Više nećete dobijati obaveštenja za ovaj artikal. Ostala obaveštenja koja pratite ostaju uključena.'
+      ? 'Više nećete dobijati obaveštenja za ovaj artikal.'
       : 'Nema aktivnog obaveštenja za ovaj artikal ili je već isključeno.'
     : success
       ? 'Više nećete primati novosti emailom.'
