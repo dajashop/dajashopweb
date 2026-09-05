@@ -60,6 +60,24 @@ function validateGtin(value) {
   return { value: code, error: undefined };
 }
 
+function regularPriceForAdmin(product, variant) {
+  const isAmount = (value) =>
+    value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+  const variantMinor = variant?.currentPriceAmount ?? variant?.current_price_amount;
+  if (isAmount(variantMinor)) return Number(variantMinor) / 100;
+
+  const productMinor = product?.currentPriceAmount ?? product?.current_price_amount;
+  if (isAmount(productMinor)) return Number(productMinor) / 100;
+
+  const normalizedRegularPrice = product?.regularPrice;
+  if (isAmount(normalizedRegularPrice)) return Number(normalizedRegularPrice);
+
+  const rawRegularPrice = product?.regular_price;
+  if (isAmount(rawRegularPrice)) return Number(rawRegularPrice) / 100;
+
+  return variant?.price ?? product?.price ?? '';
+}
+
 // --- 1. Custom Select ---
 
 // --- 3. Main Modal Component ---
@@ -237,6 +255,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
       setForm({
         ...product,
+        price: regularPriceForAdmin(product),
         images: loadedImages,
         specs: product.specs || {},
         // The admin list exposes the primary variant as flat fields. Preserve
@@ -245,11 +264,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           Array.isArray(product.variants) && product.variants.length
             ? product.variants.map((variant) => ({
                 ...variant,
-                price:
-                  variant.price ??
-                  (variant.currentPriceAmount
-                    ? variant.currentPriceAmount / 100
-                    : ''),
+                price: regularPriceForAdmin(product, variant),
               }))
             : product.variantId
               ? [
@@ -258,11 +273,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     sku: product.sku || '',
                     barcode: product.barcode || null,
                     mpn: product.mpn || null,
-                    price:
-                      product.price ??
-                      (product.currentPriceAmount
-                        ? product.currentPriceAmount / 100
-                        : ''),
+                    price: regularPriceForAdmin(product),
                     currency: product.currency || 'RSD',
                     gender: product.gender || null,
                     attributes: product.specs || {},
@@ -589,6 +600,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             // null explicitly clears the RFID relation in the variant PATCH.
             epc: epcValidation.value || null,
             price: Number(form.price),
+            currentPriceAmount: Math.round(Number(form.price) * 100),
             currency: form.currency || 'RSD',
             gender: form.gender || null,
             attributes: form.specs || {},

@@ -510,7 +510,11 @@ export const adminCatalogApi = {
         },
       }).catch(() => null);
     }
-    if (product.variantId && product.price !== undefined) {
+    if (
+      product.variantId &&
+      product.price !== undefined &&
+      !product.variants?.length
+    ) {
       await apiRequest(`/variants/${encodeURIComponent(product.variantId)}`, {
         method: 'PATCH',
         staff: true,
