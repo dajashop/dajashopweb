@@ -6,17 +6,27 @@ import './LegalDocument.css';
 export default function Unsubscribe() {
   const [params] = useSearchParams();
   const success = params.get('status') === 'success';
-  const kind = params.get('kind') === 'product-alert' ? 'obaveštenja o artiklima' : 'novosti emailom';
+  const productAlert = params.get('kind') === 'product-alert';
+  const title = productAlert
+    ? success
+      ? 'Obaveštenje za artikal je isključeno'
+      : 'Obaveštenje je već isključeno'
+    : success
+      ? 'Odjava je potvrđena'
+      : 'Ovaj link je već iskorišćen';
+  const message = productAlert
+    ? success
+      ? 'Više nećete dobijati obaveštenja za ovaj artikal. Ostala obaveštenja koja pratite ostaju uključena.'
+      : 'Nema aktivnog obaveštenja za ovaj artikal ili je već isključeno.'
+    : success
+      ? 'Više nećete primati novosti emailom.'
+      : 'Nema aktivne prijave za novosti emailom, ili je odjava već izvršena.';
   return (
     <main className="legal-document legal-document--unsubscribe container">
       <SEOHead title="Odjava" noIndex={true} />
       {success ? <CheckCircle2 size={42} /> : <MailX size={42} />}
-      <h1>{success ? 'Odjava je potvrđena' : 'Ovaj link je već iskorišćen'}</h1>
-      <p>
-        {success
-          ? `Više nećete primati ${kind}.`
-          : `Nema aktivne prijave za ${kind}, ili je odjava već izvršena.`}
-      </p>
+      <h1>{title}</h1>
+      <p>{message}</p>
     </main>
   );
 }
