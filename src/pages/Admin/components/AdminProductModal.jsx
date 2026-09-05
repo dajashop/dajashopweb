@@ -174,6 +174,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   // image or SEO field must never reconcile stock unless the quantity input
   // itself was explicitly edited during this modal session.
   const quantityEditedRef = useRef(false);
+  // An action-price save must never write a stale regular price back to the
+  // variant. Only an explicit edit of the Cena input can change it.
+  const regularPriceEditedRef = useRef(false);
   // EPCs are represented by RFID tags, not by the product PATCH payload. Keep
   // the initially loaded EPC so a removal (or replacement) can unassign its
   // tag after the product itself is saved.
@@ -222,6 +225,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     setRemovedMediaLinkIds([]);
     pendingUploadIdsRef.current.clear();
     quantityEditedRef.current = false;
+    regularPriceEditedRef.current = false;
     slugManuallyEditedRef.current = Boolean(product);
     initialEpcRef.current = validateEpcInput(product?.epc || '').value;
     const sub1 = brandService.subscribe(setBrands);
@@ -599,8 +603,12 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             mpn: form.mpn?.trim() || null,
             // null explicitly clears the RFID relation in the variant PATCH.
             epc: epcValidation.value || null,
-            price: Number(form.price),
-            currentPriceAmount: Math.round(Number(form.price) * 100),
+            ...(!product || regularPriceEditedRef.current
+              ? {
+                  price: Number(form.price),
+                  currentPriceAmount: Math.round(Number(form.price) * 100),
+                }
+              : {}),
             currency: form.currency || 'RSD',
             gender: form.gender || null,
             attributes: form.specs || {},
@@ -1979,7 +1987,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 productId={product?.id}
                 variants={form.variants || []}
                 basePrice={form.price}
-                onBasePriceChange={(value) => handleChange('price', value)}
+                onBasePriceChange={(value) => {
+                  regularPriceEditedRef.current = true;
+                  handleChange('price', value);
+                }}
                 onPendingPrice={setPendingPrice}
               />
             </div>

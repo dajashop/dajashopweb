@@ -19,13 +19,10 @@ const staffCatalogListeners = new Set();
 const OAUTH_WAKEUP_TIMEOUT_MS = 90_000;
 const OAUTH_WAKEUP_RETRY_MS = 2_000;
 const OAUTH_WAKEUP_REQUEST_TIMEOUT_MS = 12_000;
-// Render closes the direct WebSocket upgrade intermittently. Socket.IO polling
-// keeps the same real-time events working without producing a failed WSS
-// connection in the browser console.
-const REALTIME_TRANSPORT_OPTIONS = {
-  transports: ['polling'],
-  upgrade: false,
-};
+// Render is currently returning failed Socket.IO responses in production.
+// Normal API refreshes keep the catalog functional; opt in again only when the
+// deployment has a healthy real-time route.
+const REALTIME_ENABLED = import.meta.env.VITE_DAJA_REALTIME === 'true';
 
 const delay = (duration) =>
   new Promise((resolve) => window.setTimeout(resolve, duration));
@@ -100,7 +97,7 @@ function ensureStaffCatalogSocket() {
   }
   staffCatalogSocket = io(realtimeNamespaceUrl(), {
     path: '/socket.io',
-    ...REALTIME_TRANSPORT_OPTIONS,
+    transports: ['websocket'],
     auth: { token: `Bearer ${token}` },
     reconnection: true,
   });
@@ -535,9 +532,11 @@ export const adminCatalogApi = {
     }
     if (productId && Array.isArray(product.variants)) {
       for (const variant of product.variants) {
-        const currentPriceAmount =
-          variant.currentPriceAmount ??
-          Math.round(Number(variant.price || 0) * 100);
+        const hasVariantPrice =
+          variant.currentPriceAmount !== undefined || variant.price !== undefined;
+        const currentPriceAmount = hasVariantPrice
+          ? variant.currentPriceAmount ?? Math.round(Number(variant.price || 0) * 100)
+          : undefined;
         const body = {
           sku: variant.sku,
           barcode: variant.barcode || null,
@@ -545,7 +544,7 @@ export const adminCatalogApi = {
           ...(variant.epc !== undefined ? { epc: variant.epc } : {}),
           name: variant.name || null,
           gender: variant.gender || null,
-          currentPriceAmount,
+          ...(currentPriceAmount !== undefined ? { currentPriceAmount } : {}),
           currency: variant.currency || 'RSD',
           attributes: variant.attributes || {},
           active: variant.active !== false,
@@ -1264,6 +1263,7 @@ export const promotionsAdminApi = {
 };
 
 export function subscribeRealtime(channels, onEvent, onError) {
+  if (!REALTIME_ENABLED) return () => {};
   let socket = null;
 
   const disconnect = () => {
@@ -1281,7 +1281,7 @@ export function subscribeRealtime(channels, onEvent, onError) {
     }
     socket = io(realtimeNamespaceUrl(), {
       path: '/socket.io',
-      ...REALTIME_TRANSPORT_OPTIONS,
+      transports: ['websocket'],
       auth: { token: `Bearer ${token}` },
       reconnection: true,
       reconnectionAttempts: 3,
@@ -1303,11 +1303,12 @@ export function subscribeRealtime(channels, onEvent, onError) {
 }
 
 export function subscribeCustomerRealtime(onEvent, onError) {
+  if (!REALTIME_ENABLED) return () => {};
   const token = getAccessToken();
   if (!token) return () => {};
   const socket = io(realtimeNamespaceUrl(), {
     path: '/socket.io',
-    ...REALTIME_TRANSPORT_OPTIONS,
+    transports: ['websocket'],
     auth: { token: `Bearer ${token}` },
     reconnection: true,
     reconnectionAttempts: 5,
@@ -1321,6 +1322,7 @@ export function subscribeCustomerRealtime(onEvent, onError) {
 }
 
 export function subscribeStaffCatalogRealtime(onEvent, onError) {
+  if (!REALTIME_ENABLED) return () => {};
   const listener = { onEvent, onError };
   staffCatalogListeners.add(listener);
   ensureStaffCatalogSocket();
@@ -1335,11 +1337,12 @@ export function subscribeStaffCatalogRealtime(onEvent, onError) {
 }
 
 export function subscribePublicCatalogRealtime(onEvent, onError) {
+  if (!REALTIME_ENABLED) return () => {};
   publicCatalogListeners.add(onEvent);
   if (!publicCatalogSocket) {
     publicCatalogSocket = io(realtimeNamespaceUrl(), {
       path: '/socket.io',
-      ...REALTIME_TRANSPORT_OPTIONS,
+      transports: ['websocket'],
       auth: { publicCatalog: true },
       reconnection: true,
       reconnectionAttempts: 5,
