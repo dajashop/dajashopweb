@@ -3,7 +3,6 @@ import {
   BarChart3,
   Check,
   ChevronDown,
-  Cookie,
   Info,
   Settings2,
   ShieldCheck,
@@ -192,9 +191,8 @@ export default function CookieConsentModal({
         onMouseLeave={() => setIsPointerOverDialog(false)}
       >
         <header className="cookie-consent__header">
-          <div className="cookie-consent__brand" aria-label="DajaShop privatnost">
-            <span className="cookie-consent__brand-mark"><Cookie size={22} /></span>
-            <span><strong>Daja</strong>Shop<small>privatnost</small></span>
+          <div className="cookie-consent__brand">
+            <img className="cookie-consent__brand-logo" src="/images/dajashop-email-logo.png" alt="DajaShop" />
           </div>
           {forceSettings && (
             <button type="button" className="cookie-consent__close" onClick={onCloseSettings} disabled={saving} aria-label="Zatvori podešavanja">

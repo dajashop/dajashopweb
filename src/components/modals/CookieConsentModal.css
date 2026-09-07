@@ -36,25 +36,14 @@
 .cookie-consent__brand {
   display: inline-flex;
   align-items: center;
-  gap: 11px;
-  color: #15171b;
-  font-size: 1.1rem;
-  font-weight: 500;
-  letter-spacing: -0.05em;
-  line-height: 1;
+  line-height: 0;
 }
 
-.cookie-consent__brand strong { font-weight: 850; }
-.cookie-consent__brand small { display: block; margin-top: 4px; color: #737984; font-size: .59rem; font-weight: 700; letter-spacing: .01em; text-transform: uppercase; }
-
-.cookie-consent__brand-mark {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 3px solid #c8a94e;
-  border-radius: 50%;
-  color: #c8a94e;
+.cookie-consent__brand-logo {
+  display: block;
+  width: 96px;
+  height: 68px;
+  object-fit: contain;
 }
 
 .cookie-consent__close {
