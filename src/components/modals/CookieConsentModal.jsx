@@ -192,7 +192,7 @@ export default function CookieConsentModal({
       >
         <header className="cookie-consent__header">
           <div className="cookie-consent__brand">
-            <img className="cookie-consent__brand-logo" src="/images/dajashop-email-logo.png" alt="DajaShop" />
+            <img className="cookie-consent__brand-logo" src="/images/dajashop-cookie-logo-compact.png" alt="DajaShop" />
           </div>
           {forceSettings && (
             <button type="button" className="cookie-consent__close" onClick={onCloseSettings} disabled={saving} aria-label="Zatvori podešavanja">

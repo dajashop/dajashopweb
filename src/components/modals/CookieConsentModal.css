@@ -25,10 +25,10 @@
 .cookie-consent__header {
   position: relative;
   display: flex;
-  min-height: 77px;
+  min-height: 0;
   align-items: center;
   justify-content: space-between;
-  padding: 17px 22px;
+  padding: 8px 22px;
   border-bottom: 1px solid #dde0e5;
   flex: 0 0 auto;
 }
@@ -41,9 +41,8 @@
 
 .cookie-consent__brand-logo {
   display: block;
-  width: 96px;
-  height: 68px;
-  object-fit: contain;
+  width: 94px;
+  height: auto;
 }
 
 .cookie-consent__close {
@@ -155,7 +154,8 @@
 @media (max-width: 580px) {
   .cookie-consent { padding: 12px; }
   .cookie-consent__dialog { max-height: calc(100vh - 24px); border-radius: 12px; }
-  .cookie-consent__header { min-height: 65px; padding: 13px 16px; }
+  .cookie-consent__header { min-height: 0; padding: 8px 16px; }
+  .cookie-consent__brand-logo { width: 84px; }
   .cookie-consent__tabs { min-height: 54px; }
   .cookie-consent__tabs button { font-size: .8rem; }
   .cookie-consent__content { max-height: calc(100vh - 224px); padding: 20px 16px; }
