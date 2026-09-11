@@ -127,6 +127,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   const [form, setForm] = useState({
     name: '',
+    variantName: '',
     brand: '',
     category: '',
     price: '',
@@ -287,6 +288,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 ]
               : [],
         sku: product.variants?.[0]?.sku || product.sku || '',
+        variantName: product.variants?.[0]?.name || product.variantName || product.name || '',
         barcode: product.variants?.[0]?.barcode || product.barcode || '',
         mpn: product.variants?.[0]?.mpn || product.mpn || '',
         itemCondition: product.itemCondition || product.item_condition || 'new',
@@ -601,6 +603,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             sku: form.sku?.trim() || null,
             barcode: gtinValidation.value || null,
             mpn: form.mpn?.trim() || null,
+            // The UI has one internal sellable row. Blank means use the
+            // product title, never store an unnamed POS item.
+            name: form.variantName?.trim() || form.name.trim(),
             // null explicitly clears the RFID relation in the variant PATCH.
             epc: epcValidation.value || null,
             ...(!product || regularPriceEditedRef.current
@@ -1201,6 +1206,19 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                       onChange={(e) => handleChange('name', e.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-400 transition-all font-medium"
                       placeholder="Unesi naziv proizvoda..."
+                    />
+                  </label>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block">
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                      Naziv u kasi (opciono)
+                    </span>
+                    <input
+                      value={form.variantName || ''}
+                      onChange={(e) => handleChange('variantName', e.target.value)}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-400 transition-all font-medium"
+                      placeholder="Ako ostavite prazno, koristi se naziv artikla"
                     />
                   </label>
                 </div>
