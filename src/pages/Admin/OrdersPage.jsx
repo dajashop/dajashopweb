@@ -6,17 +6,19 @@ import AdminOrders from './components/AdminOrders'; // Tvoja postojeća komponen
 import SEOHead from '../../components/seo/SEOHead.jsx';
 
 export default function OrdersPage() {
-  const { user } = useAuth();
+  const { user, authReady, staffReady } = useAuth();
   const nav = useNavigate();
+  const isAuthorized = isAdminEmail(user?.email) && staffReady;
 
   // Auth Check - Vraćamo na početnu ako nije admin
   useEffect(() => {
-    if (!user || !isAdminEmail(user.email)) {
+    if (authReady && !isAuthorized) {
       nav('/');
     }
-  }, [user, nav]);
+  }, [authReady, isAuthorized, nav]);
 
-  if (!user || !isAdminEmail(user.email)) return null;
+  if (!authReady || (isAdminEmail(user?.email) && !staffReady)) return null;
+  if (!isAuthorized) return null;
 
   return (
     <div className="min-h-screen pb-20 bg-[#f5f5f7]">

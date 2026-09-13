@@ -7,7 +7,12 @@ import {
   isAdminEmail,
   subscribeCustomerRealtime,
 } from '../services/dajaPlatform';
-import { getAccessToken, onAuthTokenChange, setAuthTokens } from '../services/apiClient';
+import {
+  getAccessToken,
+  getStaffAccessToken,
+  onAuthTokenChange,
+  setAuthTokens,
+} from '../services/apiClient';
 import { useConsent } from './ConsentContext.jsx';
 import {
   browserSupportsWebAuthn,
@@ -37,6 +42,8 @@ export function AuthProvider({ children }) {
   const { hasDecision } = useConsent();
   const [user, setUser] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [staffReady, setStaffReady] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [mode, setMode] = useState('login');
   const [pendingPhone, setPendingPhone] = useState(null);
@@ -47,9 +54,14 @@ export function AuthProvider({ children }) {
     if (!getAccessToken()) {
       setUser(null);
       setUserInfo(null);
+      setStaffReady(false);
+      setAuthReady(true);
       return null;
     }
 
+    // A customer account switch must never inherit the previous account's
+    // staff-ready state while its new session is still being resolved.
+    setStaffReady(false);
     try {
       const me = await authApi.me();
 
@@ -58,6 +70,7 @@ export function AuthProvider({ children }) {
         // customer out of their normal storefront session.
         await authApi.createAdminSession().catch(() => null);
       }
+      setStaffReady(isAdminEmail(me?.email) && Boolean(getStaffAccessToken()));
 
       // Publish the admin user only after the staff-session exchange. This
       // prevents admin widgets from sending their first request with a normal
@@ -80,7 +93,10 @@ export function AuthProvider({ children }) {
     } catch {
       setUser(null);
       setUserInfo(null);
+      setStaffReady(false);
       return null;
+    } finally {
+      setAuthReady(true);
     }
   }, []);
 
@@ -88,8 +104,11 @@ export function AuthProvider({ children }) {
     if (!hasDecision) {
       setUser(null);
       setUserInfo(null);
+      setAuthReady(false);
+      setStaffReady(false);
       return undefined;
     }
+    setAuthReady(false);
     loadMe();
     return onAuthTokenChange(loadMe);
   }, [hasDecision, loadMe]);
@@ -223,6 +242,7 @@ export function AuthProvider({ children }) {
     await authApi.logout();
     setUser(null);
     setUserInfo(null);
+    setStaffReady(false);
     navigate('/logout', { replace: true });
   }
 
@@ -270,6 +290,8 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       userInfo,
+      authReady,
+      staffReady,
       authOpen,
       showAuth,
       hideAuth,
@@ -293,6 +315,8 @@ export function AuthProvider({ children }) {
     [
       user,
       userInfo,
+      authReady,
+      staffReady,
       authOpen,
       mode,
       oauthJustSucceeded,

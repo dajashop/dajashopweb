@@ -330,7 +330,7 @@ const getAuditDetailTabs = (event) => {
   })).filter((tab) => tab.changes.length > 0);
 };
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
   const { user } = useAuth();
   const nav = useNavigate();
   // The public realtime signal carries the changed product ID. The admin hook
@@ -1921,6 +1921,22 @@ export default function AdminDashboard() {
       />
     </div>
   );
+}
+
+export default function AdminDashboard() {
+  const { user, authReady, staffReady } = useAuth();
+  const nav = useNavigate();
+  const isAuthorized = isAdminEmail(user?.email) && staffReady;
+
+  useEffect(() => {
+    if (authReady && !isAuthorized) nav('/', { replace: true });
+  }, [authReady, isAuthorized, nav]);
+
+  if (!authReady || (isAdminEmail(user?.email) && !staffReady)) {
+    return <div className="p-8 text-center text-slate-500">Provera pristupa…</div>;
+  }
+  if (!isAuthorized) return null;
+  return <AdminDashboardContent />;
 }
 
 // Helper komponenta za tabove
