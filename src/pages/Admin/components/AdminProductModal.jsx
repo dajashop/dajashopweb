@@ -838,7 +838,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             }
           }
 
-          if (epcValidation.value) {
+          // An unchanged EPC already belongs to this article. Re-saving its
+          // location, price or description must not attempt to create it
+          // again; only a new article or an explicitly changed EPC needs tag
+          // registration.
+          if (epcValidation.value && (!product || epcChanged)) {
             let tag;
             try {
               // A new EPC normally does not exist yet. Creating first avoids a
