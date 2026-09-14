@@ -157,6 +157,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     active: true,
     published: true,
   });
+  // One catalog product can represent several physical pieces.  Keep the
+  // RFID, barcode and storage placement with the individual piece instead of
+  // making every piece inherit the first item's tag/location.
+  const [pieceDetails, setPieceDetails] = useState([]);
+  const [selectedPieceIndex, setSelectedPieceIndex] = useState(0);
 
   // State za Image Gallery Modal
   const [galleryIndex, setGalleryIndex] = useState(null);
@@ -312,6 +317,25 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           ...(product.seo || {}),
         },
       });
+      const storedBarcodes = product.attributes?._additionalBarcodes;
+      const storedPlacements = product.attributes?._rfidPiecePlacements;
+      let extraBarcodes = [];
+      let placements = [];
+      try {
+        extraBarcodes = storedBarcodes ? JSON.parse(storedBarcodes) : [];
+        placements = storedPlacements ? JSON.parse(storedPlacements) : [];
+      } catch {
+        // Older products have no per-piece metadata.
+      }
+      const initialQuantity = Math.max(1, Number(product.quantity ?? product.stockQuantity ?? 1));
+      setPieceDetails(Array.from({ length: initialQuantity }, (_, index) => ({
+        barcode: extraBarcodes[index] || (index === 0 ? product.barcode || '' : ''),
+        epc: index === 0 ? validateEpcInput(product.epc || '').value : '',
+        locationId: placements[index]?.locationId || product.locationId || product.location_id || '',
+        zoneId: placements[index]?.zoneId || product.zoneId || product.zone_id || '',
+        binId: placements[index]?.binId || product.binId || product.bin_id || '',
+      })));
+      setSelectedPieceIndex(0);
     } else {
       // [NOVO] Reset za novi proizvod - dodajemo jedan prazan red da bude spremno
       setForm((prev) => ({
@@ -322,6 +346,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         mainImageUrl: '',
         seo: buildSeoDefaults(),
       }));
+      setPieceDetails([{ barcode: '', epc: '', locationId: '', zoneId: '', binId: '' }]);
+      setSelectedPieceIndex(0);
     }
 
     return () => {
@@ -447,6 +473,41 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     });
   };
 
+  const updatePiece = (index, field, value) => {
+    if (index === 0 && (field === 'epc' || field === 'barcode')) {
+      setForm((current) => ({ ...current, [field]: value }));
+    }
+    setPieceDetails((current) =>
+      current.map((piece, currentIndex) => {
+        if (currentIndex !== index) return piece;
+        const next = { ...piece, [field]: value };
+        if (field === 'locationId') {
+          next.zoneId = '';
+          next.binId = '';
+        }
+        if (field === 'zoneId') next.binId = '';
+        return next;
+      }),
+    );
+  };
+
+  const handleQuantityChange = (value) => {
+    handleChange('quantity', value);
+    const quantity = Math.max(1, Number(value) || 1);
+    setPieceDetails((current) =>
+      Array.from({ length: quantity }, (_, index) =>
+        current[index] || {
+          barcode: '',
+          epc: '',
+          locationId: form.locationId || '',
+          zoneId: form.zoneId || '',
+          binId: form.binId || '',
+        },
+      ),
+    );
+    setSelectedPieceIndex((current) => Math.min(current, quantity - 1));
+  };
+
   const locationWarehouseIds = useMemo(
     () =>
       warehouseLayout.warehouses
@@ -478,6 +539,36 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           bin.zoneId === form.zoneId,
       ),
     [warehouseLayout.bins, form.zoneId],
+  );
+
+  const selectedPiece = pieceDetails[selectedPieceIndex] || {};
+  const selectedPieceWarehouseIds = useMemo(
+    () =>
+      warehouseLayout.warehouses
+        .filter(
+          (warehouse) =>
+            warehouse.active !== false && warehouse.locationId === selectedPiece.locationId,
+        )
+        .map((warehouse) => warehouse.id),
+    [warehouseLayout.warehouses, selectedPiece.locationId],
+  );
+  const selectedPieceZones = useMemo(
+    () =>
+      warehouseLayout.zones.filter(
+        (zone) =>
+          zone.active !== false && selectedPieceWarehouseIds.includes(zone.warehouseId),
+      ),
+    [warehouseLayout.zones, selectedPieceWarehouseIds],
+  );
+  const selectedPieceBins = useMemo(
+    () =>
+      warehouseLayout.bins.filter(
+        (bin) =>
+          bin.active !== false &&
+          bin.status !== 'inactive' &&
+          bin.zoneId === selectedPiece.zoneId,
+      ),
+    [warehouseLayout.bins, selectedPiece.zoneId],
   );
 
   // --- [NOVO] Funkcije za upravljanje Feature karticama ---
@@ -548,8 +639,25 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       });
       return;
     }
+    const pieces = Array.from({ length: requestedQuantity }, (_, index) => {
+      const piece = pieceDetails[index] || {};
+      return {
+        barcode: String(piece.barcode || '').trim(),
+        epc: validateEpcInput(piece.epc || '').value,
+        locationId: piece.locationId || form.locationId || '',
+        zoneId: piece.zoneId || '',
+        binId: piece.binId || '',
+      };
+    });
+    const invalidPieceEpc = pieces
+      .map((piece) => validateEpcInput(piece.epc || ''))
+      .find((result) => result.error);
     if (epcValidation.error) {
       setFlash({ open: true, title: epcValidation.error, ok: false });
+      return;
+    }
+    if (invalidPieceEpc) {
+      setFlash({ open: true, title: invalidPieceEpc.error, ok: false });
       return;
     }
     if (gtinValidation.error) {
@@ -591,7 +699,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
       const payload = {
         ...form,
-        epc: epcValidation.value,
+        epc: pieces[0]?.epc || '',
         price: Number(form.price),
         image: form.mainImageUrl || form.images[0]?.url || '',
         slug: finalSlug,
@@ -601,13 +709,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           {
             ...(form.variants?.[0]?.id ? { id: form.variants[0].id } : {}),
             sku: form.sku?.trim() || null,
-            barcode: gtinValidation.value || null,
+            barcode: pieces[0]?.barcode || gtinValidation.value || null,
             mpn: form.mpn?.trim() || null,
             // The UI has one internal sellable row. Blank means use the
             // product title, never store an unnamed POS item.
             name: form.variantName?.trim() || form.name.trim(),
             // null explicitly clears the RFID relation in the variant PATCH.
-            epc: epcValidation.value || null,
+            epc: pieces[0]?.epc || null,
             ...(!product || regularPriceEditedRef.current
               ? {
                   price: Number(form.price),
@@ -621,6 +729,20 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             published: form.published === true,
           },
         ],
+      };
+
+      payload.variants[0].attributes = {
+        ...(form.specs || {}),
+        ...(pieces.some((piece) => piece.barcode)
+          ? { _additionalBarcodes: JSON.stringify(pieces.map((piece) => piece.barcode)) }
+          : {}),
+        _rfidPiecePlacements: JSON.stringify(
+          pieces.map(({ locationId, zoneId, binId }) => ({
+            ...(locationId ? { locationId } : {}),
+            ...(zoneId ? { zoneId } : {}),
+            ...(binId ? { binId } : {}),
+          })),
+        ),
       };
 
       if (!Object.keys(payload.seo).length) {
@@ -727,17 +849,47 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
               if (error?.status !== 409) throw error;
               tag = await rfidApi.byEpc(epcValidation.value);
             }
-            if (!tag.inventoryItemId && form.locationId) {
+            const primaryPiece = pieces[0] || {};
+            if (!tag.inventoryItemId && primaryPiece.locationId) {
               taggedItem = await inventoryApi.createItem({
                 variantId: primaryVariant.id,
-                locationId: form.locationId,
-                ...(form.zoneId ? { zoneId: form.zoneId } : {}),
-                ...(form.binId ? { binId: form.binId } : {}),
+                locationId: primaryPiece.locationId,
+                ...(primaryPiece.zoneId ? { zoneId: primaryPiece.zoneId } : {}),
+                ...(primaryPiece.binId ? { binId: primaryPiece.binId } : {}),
                 status: 'in_stock',
               });
               await rfidApi.assignTag(tag.id, {
                 inventoryItemId: taggedItem.id,
                 reason: 'Unos proizvoda iz admin modala',
+              });
+            }
+          }
+          // Additional physical pieces get their own tag and precise storage
+          // placement.  They share the sellable variant, not the first
+          // piece's RFID/inventory record.
+          for (const piece of pieces.slice(1)) {
+            if (!piece.epc) continue;
+            let tag;
+            try {
+              tag = await rfidApi.createTag({
+                epc: piece.epc,
+                variantId: primaryVariant.id,
+              });
+            } catch (error) {
+              if (error?.status !== 409) throw error;
+              tag = await rfidApi.byEpc(piece.epc);
+            }
+            if (!tag.inventoryItemId && piece.locationId) {
+              const inventoryItem = await inventoryApi.createItem({
+                variantId: primaryVariant.id,
+                locationId: piece.locationId,
+                ...(piece.zoneId ? { zoneId: piece.zoneId } : {}),
+                ...(piece.binId ? { binId: piece.binId } : {}),
+                status: 'in_stock',
+              });
+              await rfidApi.assignTag(tag.id, {
+                inventoryItemId: inventoryItem.id,
+                reason: 'Unos fizičkog komada iz admin modala',
               });
             }
           }
@@ -1241,8 +1393,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                       GTIN / EAN
                     </span>
                     <input
-                      value={form.barcode || ''}
-                      onChange={(e) => handleChange('barcode', e.target.value)}
+                      value={pieceDetails[0]?.barcode || ''}
+                      onChange={(e) => updatePiece(0, 'barcode', e.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
                       placeholder="8, 12, 13 ili 14 cifara"
                     />
@@ -1254,14 +1406,15 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 <div>
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      EPC
+                      RFID EPC prvog komada
                     </span>
                     <input
-                      value={form.epc || ''}
-                      onChange={(e) => handleChange('epc', e.target.value)}
+                      value={pieceDetails[0]?.epc || ''}
+                      onChange={(e) => updatePiece(0, 'epc', e.target.value)}
                       onBlur={() => {
-                        if (!epcValidation.error && epcValidation.value) {
-                          handleChange('epc', epcValidation.value);
+                        const normalized = validateEpcInput(pieceDetails[0]?.epc || '');
+                        if (!normalized.error && normalized.value) {
+                          updatePiece(0, 'epc', normalized.value);
                         }
                       }}
                       aria-invalid={Boolean(epcValidation.error)}
@@ -1392,7 +1545,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   <input
                     type="number"
                     value={form.quantity || ''}
-                    onChange={(e) => handleChange('quantity', e.target.value)}
+                    onChange={(e) => handleQuantityChange(e.target.value)}
                     placeholder="0"
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
                   />
@@ -1431,6 +1584,97 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     />{' '}
                     Objavi proizvod
                   </label>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
+                <div className="mb-4">
+                  <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                    RFID podaci po komadima
+                  </h3>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Za svaki komad odredite barkod, EPC i njegovu lokaciju u skladištu.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-5" aria-label="Fizički komadi">
+                  {pieceDetails.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setSelectedPieceIndex(index)}
+                      className={`rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+                        selectedPieceIndex === index
+                          ? 'bg-neutral-900 text-white'
+                          : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                      }`}
+                    >
+                      Komad {index + 1}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="block">
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                      Barkod komada {selectedPieceIndex + 1} (opciono)
+                    </span>
+                    <input
+                      value={selectedPiece.barcode || ''}
+                      onChange={(event) => updatePiece(selectedPieceIndex, 'barcode', event.target.value)}
+                      placeholder="Skenirajte ili unesite barkod"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                      RFID EPC komada {selectedPieceIndex + 1}
+                    </span>
+                    <input
+                      value={selectedPiece.epc || ''}
+                      onChange={(event) => updatePiece(selectedPieceIndex, 'epc', event.target.value)}
+                      onBlur={() => {
+                        const normalized = validateEpcInput(selectedPiece.epc || '');
+                        if (!normalized.error && normalized.value) {
+                          updatePiece(selectedPieceIndex, 'epc', normalized.value);
+                        }
+                      }}
+                      placeholder="Unesite RFID EPC"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 font-mono text-sm"
+                    />
+                  </label>
+                  <CustomSelect
+                    label="Lokacija"
+                    value={selectedPiece.locationId || ''}
+                    options={locations.map((location) => ({
+                      value: location.id,
+                      label: location.name || location.code,
+                    }))}
+                    onChange={(value) => updatePiece(selectedPieceIndex, 'locationId', value)}
+                    placeholder="Nije raspoređeno"
+                  />
+                  <CustomSelect
+                    label="Zona"
+                    value={selectedPiece.zoneId || ''}
+                    options={selectedPieceZones.map((zone) => ({
+                      value: zone.id,
+                      label: zone.name || zone.code,
+                    }))}
+                    onChange={(value) => updatePiece(selectedPieceIndex, 'zoneId', value)}
+                    placeholder={selectedPiece.locationId ? 'Bez zone' : 'Prvo izaberite lokaciju'}
+                    disabled={!selectedPiece.locationId || selectedPieceZones.length === 0}
+                  />
+                  <div className="md:col-span-2">
+                    <CustomSelect
+                      label="Polica / bin"
+                      value={selectedPiece.binId || ''}
+                      options={selectedPieceBins.map((bin) => ({
+                        value: bin.id,
+                        label: bin.name || bin.code,
+                      }))}
+                      onChange={(value) => updatePiece(selectedPieceIndex, 'binId', value)}
+                      placeholder={selectedPiece.zoneId ? 'Bez određene police' : 'Prvo izaberite zonu'}
+                      disabled={!selectedPiece.zoneId || selectedPieceBins.length === 0}
+                    />
+                  </div>
                 </div>
               </div>
 
