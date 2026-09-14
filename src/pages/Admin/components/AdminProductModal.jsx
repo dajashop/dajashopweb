@@ -347,9 +347,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       setPieceDetails(Array.from({ length: initialQuantity }, (_, index) => ({
         barcode: extraBarcodes[index] || (index === 0 ? product.barcode || '' : ''),
         epc: index === 0 ? validateEpcInput(product.epc || '').value : '',
-        locationId: placements[index]?.locationId || product.locationId || product.location_id || '',
-        zoneId: placements[index]?.zoneId || product.zoneId || product.zone_id || '',
-        binId: placements[index]?.binId || product.binId || product.bin_id || '',
+        // Empty means "use the product default location". A value here is an
+        // explicit per-piece override.
+        locationId: placements[index]?.locationId || '',
+        zoneId: placements[index]?.zoneId || '',
+        binId: placements[index]?.binId || '',
       })));
       setSelectedPieceIndex(0);
     } else {
@@ -496,17 +498,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     if (index === 0 && (field === 'epc' || field === 'barcode')) {
       setForm((current) => ({ ...current, [field]: value }));
     }
-    if (index === 0 && (field === 'locationId' || field === 'zoneId' || field === 'binId')) {
+    if (field === 'locationId' || field === 'zoneId' || field === 'binId') {
       placementEditedRef.current = true;
-      setForm((current) => {
-        const next = { ...current, [field]: value };
-        if (field === 'locationId') {
-          next.zoneId = '';
-          next.binId = '';
-        }
-        if (field === 'zoneId') next.binId = '';
-        return next;
-      });
     }
     setPieceDetails((current) =>
       current.map((piece, currentIndex) => {
@@ -539,49 +532,17 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     setSelectedPieceIndex((current) => Math.min(current, quantity - 1));
   };
 
-  const locationWarehouseIds = useMemo(
-    () =>
-      warehouseLayout.warehouses
-        .filter(
-          (warehouse) =>
-            warehouse.active !== false &&
-            warehouse.locationId === form.locationId,
-        )
-        .map((warehouse) => warehouse.id),
-    [warehouseLayout.warehouses, form.locationId],
-  );
-
-  const locationZones = useMemo(
-    () =>
-      warehouseLayout.zones.filter(
-        (zone) =>
-          zone.active !== false &&
-          locationWarehouseIds.includes(zone.warehouseId),
-      ),
-    [warehouseLayout.zones, locationWarehouseIds],
-  );
-
-  const zoneBins = useMemo(
-    () =>
-      warehouseLayout.bins.filter(
-        (bin) =>
-          bin.active !== false &&
-          bin.status !== 'inactive' &&
-          bin.zoneId === form.zoneId,
-      ),
-    [warehouseLayout.bins, form.zoneId],
-  );
-
   const selectedPiece = pieceDetails[selectedPieceIndex] || {};
+  const selectedPieceLocationId = selectedPiece.locationId || form.locationId || '';
   const selectedPieceWarehouseIds = useMemo(
     () =>
       warehouseLayout.warehouses
         .filter(
           (warehouse) =>
-            warehouse.active !== false && warehouse.locationId === selectedPiece.locationId,
+            warehouse.active !== false && warehouse.locationId === selectedPieceLocationId,
         )
         .map((warehouse) => warehouse.id),
-    [warehouseLayout.warehouses, selectedPiece.locationId],
+    [warehouseLayout.warehouses, selectedPieceLocationId],
   );
   const selectedPieceZones = useMemo(
     () =>
@@ -939,15 +900,19 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           // Existing articles only change stock after the admin has edited the
           // quantity field.  A regular product save used to turn a missing or
           // stale form value into zero and silently remove stock.
-          if (form.locationId && (shouldReconcileQuantity || shouldPersistPlacement)) {
+          const primaryPlacement = pieces[0];
+          if (
+            primaryPlacement?.locationId &&
+            (shouldReconcileQuantity || shouldPersistPlacement)
+          ) {
             const balances = await inventoryApi.balances(primaryVariant.id);
             const balanceRows = Array.isArray(balances)
               ? balances
               : balances?.items || balances?.data || [];
             const locationBalances = balanceRows.filter(
                 (balance) =>
-                  balance.locationId === form.locationId ||
-                  balance.location_id === form.locationId,
+                  balance.locationId === primaryPlacement.locationId ||
+                  balance.location_id === primaryPlacement.locationId,
               );
             const currentQuantity = locationBalances
               .reduce(
@@ -968,12 +933,12 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
               ? requestedQuantity
               : currentQuantity;
             const quantityDelta = targetQuantity - currentQuantity;
-            const selectedZoneId = form.zoneId || null;
-            const selectedBinId = form.binId || null;
+            const selectedZoneId = primaryPlacement.zoneId || null;
+            const selectedBinId = primaryPlacement.binId || null;
             if (quantityDelta !== 0) {
               await inventoryApi.adjust({
                 variantId: primaryVariant.id,
-                locationId: form.locationId,
+                locationId: primaryPlacement.locationId,
                 zoneId: selectedZoneId,
                 binId: selectedBinId,
                 quantityDelta,
@@ -990,7 +955,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           if (
             epcChanged ||
             epcValidation.value ||
-            (form.locationId && (shouldReconcileQuantity || shouldPersistPlacement))
+            (primaryPlacement?.locationId && (shouldReconcileQuantity || shouldPersistPlacement))
           ) {
             await adminCatalogApi.refreshVariant(primaryVariant.id, {
               attributes: catalogAttributes,
@@ -1552,40 +1517,14 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   onChange={(v) => handleChange('gender', v)}
                 />
                 <CustomSelect
-                  label="Lokacija"
+                  label="Podrazumevana lokacija"
                   value={form.locationId || ''}
                   options={locations.map((location) => ({
                     value: location.id,
                     label: location.name || location.code,
                   }))}
                   onChange={(value) => handleChange('locationId', value)}
-                  placeholder="Izaberi lokaciju"
-                />
-                <CustomSelect
-                  label="Zona"
-                  value={form.zoneId || ''}
-                  options={locationZones.map((zone) => ({
-                    value: zone.id,
-                    label: zone.name || zone.code,
-                  }))}
-                  onChange={(value) => handleChange('zoneId', value)}
-                  placeholder={
-                    form.locationId ? 'Izaberi zonu' : 'Prvo izaberi lokaciju'
-                  }
-                  disabled={!form.locationId || locationZones.length === 0}
-                />
-                <CustomSelect
-                  label="Polica"
-                  value={form.binId || ''}
-                  options={zoneBins.map((bin) => ({
-                    value: bin.id,
-                    label: bin.name || bin.code,
-                  }))}
-                  onChange={(value) => handleChange('binId', value)}
-                  placeholder={
-                    form.zoneId ? 'Izaberi policu' : 'Prvo izaberi zonu'
-                  }
-                  disabled={!form.zoneId || zoneBins.length === 0}
+                  placeholder="Nije raspoređeno"
                 />
                 <label className="block">
                   <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
@@ -1679,7 +1618,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <CustomSelect
                       label="Lokacija"
-                      value={selectedPiece.locationId || ''}
+                      value={selectedPieceLocationId}
                       options={locations.map((location) => ({
                         value: location.id,
                         label: location.name || location.code,
@@ -1695,8 +1634,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                         label: zone.name || zone.code,
                       }))}
                       onChange={(value) => updatePiece(selectedPieceIndex, 'zoneId', value)}
-                      placeholder={selectedPiece.locationId ? 'Bez zone' : 'Prvo izaberite lokaciju'}
-                      disabled={!selectedPiece.locationId || selectedPieceZones.length === 0}
+                      placeholder={selectedPieceLocationId ? 'Bez zone' : 'Prvo izaberite lokaciju'}
+                      disabled={!selectedPieceLocationId || selectedPieceZones.length === 0}
                     />
                     <CustomSelect
                       label="Polica / bin"
