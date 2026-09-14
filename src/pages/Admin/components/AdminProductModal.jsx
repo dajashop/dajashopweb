@@ -254,6 +254,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     const sub4 = departmentService.subscribe(setDepartments);
 
     if (product) {
+      const productAttributes = product.specs || product.attributes || {};
       let loadedImages = [];
       if (product.images && Array.isArray(product.images)) {
         loadedImages = product.images.map((img, idx) => {
@@ -281,7 +282,16 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         ...product,
         price: regularPriceForAdmin(product),
         images: loadedImages,
-        specs: product.specs || {},
+        specs: Object.fromEntries(
+          Object.entries(productAttributes).filter(
+            ([key]) =>
+              ![
+                'rfid_piece_placements',
+                '_rfidPiecePlacements',
+                'rfidpieceplacements',
+              ].includes(key),
+          ),
+        ),
         // The admin list exposes the primary variant as flat fields. Preserve
         // its ID so this modal updates it rather than creating a duplicate SKU.
         variants:
@@ -336,9 +346,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         },
       });
       const storedBarcodes =
-        product.attributes?.additional_barcodes || product.attributes?._additionalBarcodes;
+        productAttributes.additional_barcodes || productAttributes._additionalBarcodes;
       const storedPlacements =
-        product.attributes?.rfid_piece_placements || product.attributes?._rfidPiecePlacements;
+        productAttributes._rfidPiecePlacements ||
+        productAttributes.rfid_piece_placements ||
+        productAttributes.rfidpieceplacements;
       let extraBarcodes = [];
       let placements = [];
       try {
@@ -698,7 +710,16 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       // snake_case keys. Older products may contain display labels such as
       // "Vodootpornost" or "Water resistance", which would otherwise make
       // every variant PATCH fail before a sale can be saved.
-      const catalogAttributes = Object.entries(form.specs || {}).reduce(
+      const catalogAttributes = Object.entries(form.specs || {})
+        .filter(
+          ([key]) =>
+            ![
+              'rfid_piece_placements',
+              '_rfidPiecePlacements',
+              'rfidpieceplacements',
+            ].includes(key),
+        )
+        .reduce(
         (attributes, [key, value]) => ({
           ...attributes,
           [catalogAttributeKey(key)]: value,
@@ -745,7 +766,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         ...(pieces.some((piece) => piece.barcode)
           ? { additional_barcodes: JSON.stringify(pieces.map((piece) => piece.barcode)) }
           : {}),
-        rfid_piece_placements: JSON.stringify(
+        _rfidPiecePlacements: JSON.stringify(
           pieces.map(({ locationId, zoneId, binId }) => ({
             ...(locationId ? { locationId } : {}),
             ...(zoneId ? { zoneId } : {}),
@@ -966,8 +987,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             epcValidation.value ||
             (primaryPlacement?.locationId && (shouldReconcileQuantity || shouldPersistPlacement))
           ) {
-            await adminCatalogApi.refreshVariant(primaryVariant.id, {
-              attributes: catalogAttributes,
+          await adminCatalogApi.refreshVariant(primaryVariant.id, {
+              attributes: payload.variants[0].attributes,
             });
           }
           initialEpcRef.current = epcValidation.value;
