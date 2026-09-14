@@ -1573,7 +1573,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-[112px_minmax(0,1fr)] gap-4">
-                  <nav className="flex flex-row md:flex-col gap-2" aria-label="Fizički komadi">
+                  <nav
+                    className="flex flex-row gap-2 md:h-[228px] md:flex-col md:overflow-y-auto md:pr-1 custom-scrollbar"
+                    aria-label="Fizički komadi"
+                  >
                     {pieceDetails.map((_, index) => (
                       <button
                         key={index}
