@@ -53,7 +53,7 @@ function CustomSelect({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full min-w-0 h-11 flex items-center justify-between gap-2 bg-white border text-left px-4 rounded-xl transition-all duration-200 
+        className={`w-full min-w-0 h-11 flex items-center justify-between gap-2 bg-white border text-left px-4 rounded-xl transition-all duration-200
           ${
             isOpen
               ? 'border-neutral-800 ring-2 ring-neutral-100'
