@@ -1421,36 +1421,6 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     </span>
                   </label>
                 </div>
-                <div>
-                  <label className="block">
-                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      RFID EPC prvog komada
-                    </span>
-                    <input
-                      value={pieceDetails[0]?.epc || ''}
-                      onChange={(e) => updatePiece(0, 'epc', e.target.value)}
-                      onBlur={() => {
-                        const normalized = validateEpcInput(pieceDetails[0]?.epc || '');
-                        if (!normalized.error && normalized.value) {
-                          updatePiece(0, 'epc', normalized.value);
-                        }
-                      }}
-                      aria-invalid={Boolean(epcValidation.error)}
-                      maxLength={188}
-                      className={`w-full bg-neutral-50 border rounded-xl px-4 py-3 font-mono ${
-                        epcValidation.error
-                          ? 'border-red-500 focus:ring-2 focus:ring-red-200'
-                          : 'border-neutral-200'
-                      }`}
-                      placeholder="RFID EPC"
-                    />
-                    {epcValidation.error ? (
-                      <span className="mt-1 block text-xs text-red-600">
-                        {epcValidation.error}
-                      </span>
-                    ) : null}
-                  </label>
-                </div>
                 <div className="md:col-span-1">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
@@ -1521,7 +1491,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   onChange={(v) => handleChange('gender', v)}
                 />
                 <CustomSelect
-                  label="Podrazumevana lokacija"
+                  label="Podr. lokacija"
                   value={form.locationId || ''}
                   options={locations.map((location) => ({
                     value: location.id,
@@ -1542,26 +1512,6 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
                   />
                 </label>
-                <div className="md:col-span-3 flex flex-wrap gap-6 text-sm pt-1">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={form.active !== false}
-                      onChange={(e) => handleChange('active', e.target.checked)}
-                    />{' '}
-                    Aktivan proizvod
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={form.published !== false}
-                      onChange={(e) =>
-                        handleChange('published', e.target.checked)
-                      }
-                    />{' '}
-                    Objavi proizvod
-                  </label>
-                </div>
               </div>
 
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
@@ -2255,7 +2205,17 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           </div>
         </div>
 
-        <div className="px-8 py-5 bg-white border-t border-neutral-100 flex justify-end gap-4">
+        <div className="px-8 py-5 bg-white border-t border-neutral-100 flex items-center justify-end gap-4">
+          <label className="mr-auto flex items-center gap-3 text-sm font-bold text-neutral-800 cursor-pointer">
+            Objavi na sajt
+            <input
+              type="checkbox"
+              checked={form.published !== false}
+              onChange={(event) => handleChange('published', event.target.checked)}
+              className="peer sr-only"
+            />
+            <span className="relative h-6 w-11 rounded-full bg-neutral-200 transition-colors peer-checked:bg-emerald-700 after:absolute after:left-1 after:top-1 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5" />
+          </label>
           <button
             onClick={closeModal}
             className="px-6 py-2.5 rounded-xl font-semibold text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
