@@ -21,6 +21,7 @@ function CustomSelect({
   onChange,
   placeholder = 'Izaberi...',
   disabled = false,
+  labelClassName = '',
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -46,7 +47,7 @@ function CustomSelect({
       className={`relative min-w-0 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
       ref={containerRef}
     >
-      <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+      <span className={`text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block ${labelClassName}`}>
         {label}
       </span>
       <button

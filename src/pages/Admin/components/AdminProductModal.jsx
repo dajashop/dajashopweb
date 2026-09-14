@@ -1370,7 +1370,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-8 flex flex-col gap-6">
-              <div className="bg-white p-5 rounded-xl shadow-none border border-neutral-200 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 [&_label>span:first-child]:mb-1 [&_label>span:first-child]:block [&_label>span:first-child]:text-sm [&_label>span:first-child]:font-medium [&_label>span:first-child]:normal-case [&_label>span:first-child]:tracking-normal [&_label>span:first-child]:text-neutral-900 [&_input]:bg-white [&_input]:border-neutral-300 [&_input]:rounded-full [&_input]:px-3 [&_input]:py-2 [&_input]:text-sm">
+              <div className="bg-white p-5 rounded-xl shadow-none border border-neutral-200 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 [&_label>span:first-child]:mb-1 [&_label>span:first-child]:block [&_label>span:first-child]:text-sm [&_label>span:first-child]:font-medium [&_label>span:first-child]:normal-case [&_label>span:first-child]:tracking-normal [&_label>span:first-child]:text-neutral-900 [&_input]:bg-white [&_input]:border-neutral-300 [&_input]:rounded-lg [&_input]:px-3 [&_input]:py-2 [&_input]:text-sm">
                 <div>
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
@@ -1421,36 +1421,6 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
                       placeholder="8, 12, 13 ili 14 cifara"
                     />
-                  </label>
-                </div>
-                <div className="order-6">
-                  <label className="block">
-                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      RFID EPC prvog komada
-                    </span>
-                    <input
-                      value={pieceDetails[0]?.epc || ''}
-                      onChange={(e) => updatePiece(0, 'epc', e.target.value)}
-                      onBlur={() => {
-                        const normalized = validateEpcInput(pieceDetails[0]?.epc || '');
-                        if (!normalized.error && normalized.value) {
-                          updatePiece(0, 'epc', normalized.value);
-                        }
-                      }}
-                      aria-invalid={Boolean(epcValidation.error)}
-                      maxLength={188}
-                      className={`w-full bg-neutral-50 border rounded-xl px-4 py-3 font-mono ${
-                        epcValidation.error
-                          ? 'border-red-500 focus:ring-2 focus:ring-red-200'
-                          : 'border-neutral-200'
-                      }`}
-                      placeholder="RFID EPC"
-                    />
-                    {epcValidation.error ? (
-                      <span className="mt-1 block text-xs text-red-600">
-                        {epcValidation.error}
-                      </span>
-                    ) : null}
                   </label>
                 </div>
                 <div className="order-4">
@@ -1522,18 +1492,17 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   options={genderOptions}
                   onChange={(v) => handleChange('gender', v)}
                 />
-                <div className="whitespace-nowrap">
-                  <CustomSelect
-                    label="Podrazumevana lokacija"
-                    value={form.locationId || ''}
-                    options={locations.map((location) => ({
-                      value: location.id,
-                      label: location.name || location.code,
-                    }))}
-                    onChange={(value) => handleChange('locationId', value)}
-                    placeholder="Nije raspoređeno"
-                  />
-                </div>
+                <CustomSelect
+                  label="Podrazumevana lokacija"
+                  labelClassName="whitespace-nowrap text-[10px] tracking-normal"
+                  value={form.locationId || ''}
+                  options={locations.map((location) => ({
+                    value: location.id,
+                    label: location.name || location.code,
+                  }))}
+                  onChange={(value) => handleChange('locationId', value)}
+                  placeholder="Nije raspoređeno"
+                />
                 <label className="block">
                   <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                     Količina
@@ -2245,7 +2214,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             role="switch"
             aria-checked={form.published === true}
             onClick={() => handleChange('published', form.published !== true)}
-            className="mr-auto flex items-center gap-3 text-sm font-semibold text-neutral-900"
+            className="flex items-center gap-3 text-sm font-semibold text-neutral-900"
           >
             Objavi na sajt
             <span
@@ -2254,8 +2223,8 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
               }`}
             >
               <span
-                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                  form.published === true ? 'translate-x-6' : 'translate-x-1'
+                className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                  form.published === true ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
             </span>
