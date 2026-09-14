@@ -43,7 +43,7 @@ function CustomSelect({
 
   return (
     <div
-      className={`relative ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
+      className={`relative min-w-0 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
       ref={containerRef}
     >
       <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
@@ -53,7 +53,7 @@ function CustomSelect({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full flex items-center justify-between bg-white border text-left px-4 py-3 rounded-xl transition-all duration-200 
+        className={`w-full min-w-0 h-11 flex items-center justify-between gap-2 bg-white border text-left px-4 rounded-xl transition-all duration-200 
           ${
             isOpen
               ? 'border-neutral-800 ring-2 ring-neutral-100'
@@ -61,7 +61,7 @@ function CustomSelect({
           }`}
       >
         <span
-          className={`text-sm ${
+          className={`min-w-0 truncate text-sm ${
             value ? 'text-neutral-900 font-medium' : 'text-neutral-400'
           }`}
         >

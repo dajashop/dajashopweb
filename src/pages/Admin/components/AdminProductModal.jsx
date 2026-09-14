@@ -1552,21 +1552,6 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
                   />
                 </label>
-                <div className="md:col-span-3">
-                  <label className="block">
-                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      3D Model URL (.glb)
-                    </span>
-                    <input
-                      value={form.model3DUrl}
-                      onChange={(e) =>
-                        handleChange('model3DUrl', e.target.value)
-                      }
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-400 transition-all font-medium"
-                      placeholder="/models/moj-sat.glb (iz Storage-a)"
-                    />
-                  </label>
-                </div>
                 <div className="md:col-span-3 flex flex-wrap gap-6 text-sm pt-1">
                   <label className="flex items-center gap-2">
                     <input
@@ -1598,7 +1583,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     Za svaki komad odredite barkod, EPC i njegovu lokaciju u skladištu.
                   </p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-[152px_minmax(0,1fr)] gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-[112px_minmax(0,1fr)] gap-4">
                   <nav className="flex flex-row md:flex-col gap-2" aria-label="Fizički komadi">
                     {pieceDetails.map((_, index) => (
                       <button
@@ -2259,6 +2244,23 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 }}
                 onPendingPrice={setPendingPrice}
               />
+              <div className="bg-white p-5 rounded-2xl border border-neutral-100">
+                <h3 className="font-bold text-neutral-900">3D model</h3>
+                <p className="text-xs text-neutral-500 mt-1 mb-4">
+                  Dodajte GLB model za prikaz proizvoda.
+                </p>
+                <label className="block">
+                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                    URL 3D modela (.glb)
+                  </span>
+                  <input
+                    value={form.model3DUrl}
+                    onChange={(event) => handleChange('model3DUrl', event.target.value)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
+                    placeholder="/models/moj-artikal.glb"
+                  />
+                </label>
+              </div>
             </div>
           </div>
         </div>
