@@ -1598,23 +1598,24 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     Za svaki komad odredite barkod, EPC i njegovu lokaciju u skladištu.
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-5" aria-label="Fizički komadi">
-                  {pieceDetails.map((_, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => setSelectedPieceIndex(index)}
-                      className={`rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
-                        selectedPieceIndex === index
-                          ? 'bg-neutral-900 text-white'
-                          : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                      }`}
-                    >
-                      Komad {index + 1}
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-[152px_minmax(0,1fr)] gap-5">
+                  <nav className="flex flex-row md:flex-col gap-2" aria-label="Fizički komadi">
+                    {pieceDetails.map((_, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => setSelectedPieceIndex(index)}
+                        className={`rounded-xl border px-3 py-3 text-left text-xs font-bold transition-colors ${
+                          selectedPieceIndex === index
+                            ? 'border-emerald-700 bg-emerald-50 text-neutral-900'
+                            : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
+                        }`}
+                      >
+                        Komad {index + 1}
+                      </button>
+                    ))}
+                  </nav>
+                  <div className="grid grid-cols-1 gap-3">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                       Barkod komada {selectedPieceIndex + 1} (opciono)
@@ -1643,28 +1644,28 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 font-mono text-sm"
                     />
                   </label>
-                  <CustomSelect
-                    label="Lokacija"
-                    value={selectedPiece.locationId || ''}
-                    options={locations.map((location) => ({
-                      value: location.id,
-                      label: location.name || location.code,
-                    }))}
-                    onChange={(value) => updatePiece(selectedPieceIndex, 'locationId', value)}
-                    placeholder="Nije raspoređeno"
-                  />
-                  <CustomSelect
-                    label="Zona"
-                    value={selectedPiece.zoneId || ''}
-                    options={selectedPieceZones.map((zone) => ({
-                      value: zone.id,
-                      label: zone.name || zone.code,
-                    }))}
-                    onChange={(value) => updatePiece(selectedPieceIndex, 'zoneId', value)}
-                    placeholder={selectedPiece.locationId ? 'Bez zone' : 'Prvo izaberite lokaciju'}
-                    disabled={!selectedPiece.locationId || selectedPieceZones.length === 0}
-                  />
-                  <div className="md:col-span-2">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <CustomSelect
+                      label="Lokacija"
+                      value={selectedPiece.locationId || ''}
+                      options={locations.map((location) => ({
+                        value: location.id,
+                        label: location.name || location.code,
+                      }))}
+                      onChange={(value) => updatePiece(selectedPieceIndex, 'locationId', value)}
+                      placeholder="Nije raspoređeno"
+                    />
+                    <CustomSelect
+                      label="Zona"
+                      value={selectedPiece.zoneId || ''}
+                      options={selectedPieceZones.map((zone) => ({
+                        value: zone.id,
+                        label: zone.name || zone.code,
+                      }))}
+                      onChange={(value) => updatePiece(selectedPieceIndex, 'zoneId', value)}
+                      placeholder={selectedPiece.locationId ? 'Bez zone' : 'Prvo izaberite lokaciju'}
+                      disabled={!selectedPiece.locationId || selectedPieceZones.length === 0}
+                    />
                     <CustomSelect
                       label="Polica / bin"
                       value={selectedPiece.binId || ''}
@@ -1676,6 +1677,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                       placeholder={selectedPiece.zoneId ? 'Bez određene police' : 'Prvo izaberite zonu'}
                       disabled={!selectedPiece.zoneId || selectedPieceBins.length === 0}
                     />
+                  </div>
                   </div>
                 </div>
               </div>
