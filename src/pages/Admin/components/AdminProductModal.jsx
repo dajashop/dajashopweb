@@ -190,6 +190,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   // image or SEO field must never reconcile stock unless the quantity input
   // itself was explicitly edited during this modal session.
   const quantityEditedRef = useRef(false);
+  // A zone/bin change is a real inventory mutation even when the quantity
+  // stays unchanged. Track it separately so an edit persists the placement.
+  const placementEditedRef = useRef(false);
   // An action-price save must never write a stale regular price back to the
   // variant. Only an explicit edit of the Cena input can change it.
   const regularPriceEditedRef = useRef(false);
@@ -241,6 +244,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     setRemovedMediaLinkIds([]);
     pendingUploadIdsRef.current.clear();
     quantityEditedRef.current = false;
+    placementEditedRef.current = false;
     regularPriceEditedRef.current = false;
     slugManuallyEditedRef.current = Boolean(product);
     initialEpcRef.current = validateEpcInput(product?.epc || '').value;
@@ -444,6 +448,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   const handleChange = (field, value) => {
     if (field === 'quantity') quantityEditedRef.current = true;
+    if (field === 'locationId' || field === 'zoneId' || field === 'binId') {
+      placementEditedRef.current = true;
+    }
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       // The storefront URL and the R2 media folder follow the product name.
@@ -488,6 +495,18 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const updatePiece = (index, field, value) => {
     if (index === 0 && (field === 'epc' || field === 'barcode')) {
       setForm((current) => ({ ...current, [field]: value }));
+    }
+    if (index === 0 && (field === 'locationId' || field === 'zoneId' || field === 'binId')) {
+      placementEditedRef.current = true;
+      setForm((current) => {
+        const next = { ...current, [field]: value };
+        if (field === 'locationId') {
+          next.zoneId = '';
+          next.binId = '';
+        }
+        if (field === 'zoneId') next.binId = '';
+        return next;
+      });
     }
     setPieceDetails((current) =>
       current.map((piece, currentIndex) => {
@@ -638,6 +657,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const handleSubmit = async () => {
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
     const shouldReconcileQuantity = !product || quantityEditedRef.current;
+    const shouldPersistPlacement = !product || placementEditedRef.current;
     const quantityInput = String(form.quantity ?? '').trim();
     const requestedQuantity = Number(quantityInput);
     if (
@@ -919,7 +939,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           // Existing articles only change stock after the admin has edited the
           // quantity field.  A regular product save used to turn a missing or
           // stale form value into zero and silently remove stock.
-          if (form.locationId && shouldReconcileQuantity) {
+          if (form.locationId && (shouldReconcileQuantity || shouldPersistPlacement)) {
             const balances = await inventoryApi.balances(primaryVariant.id);
             const balanceRows = Array.isArray(balances)
               ? balances
@@ -941,7 +961,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   ),
                 0,
               );
-            const quantityDelta = requestedQuantity - currentQuantity;
+            // Moving a stored article must retain its current count. The form
+            // quantity is authoritative only for new products or after the
+            // quantity input itself has been edited.
+            const targetQuantity = shouldReconcileQuantity
+              ? requestedQuantity
+              : currentQuantity;
+            const quantityDelta = targetQuantity - currentQuantity;
             const selectedZoneId = form.zoneId || null;
             const selectedBinId = form.binId || null;
             if (quantityDelta !== 0) {
@@ -954,7 +980,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 sourceType: 'admin_product_quantity_change',
                 metadata: {
                   previousQuantity: currentQuantity,
-                  requestedQuantity,
+                  requestedQuantity: targetQuantity,
                 },
               });
             }
@@ -964,7 +990,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           if (
             epcChanged ||
             epcValidation.value ||
-            (form.locationId && shouldReconcileQuantity && requestedQuantity > 0)
+            (form.locationId && (shouldReconcileQuantity || shouldPersistPlacement))
           ) {
             await adminCatalogApi.refreshVariant(primaryVariant.id, {
               attributes: catalogAttributes,
