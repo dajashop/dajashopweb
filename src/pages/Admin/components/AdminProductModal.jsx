@@ -1493,8 +1493,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   onChange={(v) => handleChange('gender', v)}
                 />
                 <CustomSelect
-                  label="Podrazumevana lokacija"
-                  labelClassName="whitespace-nowrap text-[10px] tracking-normal"
+                  label="Glavna lokacija"
                   value={form.locationId || ''}
                   options={locations.map((location) => ({
                     value: location.id,
@@ -1507,13 +1506,39 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                     Količina
                   </span>
-                  <input
-                    type="number"
-                    value={form.quantity || ''}
-                    onChange={(e) => handleQuantityChange(e.target.value)}
-                    placeholder="0"
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
-                  />
+                  <div className="flex h-11 overflow-hidden rounded-xl border border-neutral-200 bg-white">
+                    <button
+                      type="button"
+                      aria-label="Smanji količinu"
+                      onClick={() =>
+                        handleQuantityChange(
+                          Math.max(1, (Number(form.quantity) || 1) - 1),
+                        )
+                      }
+                      disabled={(Number(form.quantity) || 1) <= 1}
+                      className="w-10 shrink-0 border-r border-neutral-200 text-lg text-neutral-400 transition-colors hover:bg-neutral-50 hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={form.quantity || ''}
+                      onChange={(e) => handleQuantityChange(e.target.value)}
+                      placeholder="1"
+                      className="min-w-0 flex-1 appearance-none border-0 bg-transparent px-2 text-center text-sm font-medium text-neutral-900 outline-none"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Povećaj količinu"
+                      onClick={() =>
+                        handleQuantityChange((Number(form.quantity) || 1) + 1)
+                      }
+                      className="w-10 shrink-0 border-l border-neutral-200 text-lg text-neutral-400 transition-colors hover:bg-neutral-50 hover:text-neutral-700"
+                    >
+                      +
+                    </button>
+                  </div>
                 </label>
               </div>
 
