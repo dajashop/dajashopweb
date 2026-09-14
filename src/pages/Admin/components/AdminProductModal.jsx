@@ -1365,11 +1365,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-8 flex flex-col gap-6">
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-5 rounded-xl shadow-none border border-neutral-200 grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-4 [&_label>span:first-child]:mb-1 [&_label>span:first-child]:block [&_label>span:first-child]:text-sm [&_label>span:first-child]:font-semibold [&_label>span:first-child]:normal-case [&_label>span:first-child]:tracking-normal [&_label>span:first-child]:text-neutral-900 [&_input]:bg-white [&_input]:border-neutral-300 [&_input]:rounded-lg [&_input]:px-3 [&_input]:py-2 [&_input]:text-sm">
                 <div>
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      Naziv
+                      Naziv <b className="text-emerald-700">*</b>
                     </span>
                     <input
                       value={form.name}
@@ -1392,7 +1392,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     />
                   </label>
                 </div>
-                <div className="md:col-span-2">
+                <div className="order-3">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                       Šifra proizvoda
@@ -1405,7 +1405,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     />
                   </label>
                 </div>
-                <div>
+                <div className="order-5">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                       GTIN / EAN
@@ -1416,15 +1416,12 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
                       placeholder="8, 12, 13 ili 14 cifara"
                     />
-                    <span className="mt-1 block text-[10px] text-neutral-400">
-                      Za Google Shopping unesite originalni GTIN/EAN proizvođa.
-                    </span>
                   </label>
                 </div>
-                <div className="md:col-span-1">
+                <div className="order-4">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      Cena (RSD)
+                      Cena (RSD) <b className="text-emerald-700">*</b>
                     </span>
                     <input
                       type="number"
@@ -1435,7 +1432,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     />
                   </label>
                 </div>
-                <div className="md:col-span-1">
+                <div className="order-6">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                       Opis (Opciono)
