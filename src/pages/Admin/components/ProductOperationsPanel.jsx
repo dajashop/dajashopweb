@@ -166,7 +166,7 @@ export default function ProductOperationsPanel({
           </label>
         </div>
 
-        {hasCurrentSale && (
+        {(hasCurrentSale || price.amount) && (
           <button
             type="button"
             onClick={cancelSale}
