@@ -165,7 +165,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     mainImageUrl: '',
     seo: buildSeoDefaults(),
     active: true,
-    published: true,
+    published: false,
   });
   // One catalog product can represent several physical pieces.  Keep the
   // RFID, barcode and storage placement with the individual piece instead of
@@ -312,6 +312,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         mpn: product.variants?.[0]?.mpn || product.mpn || '',
         itemCondition: product.itemCondition || product.item_condition || 'new',
         currency: product.variants?.[0]?.currency || product.currency || 'RSD',
+        published:
+          product.variantPublished !== undefined
+            ? product.variantPublished
+            : product.published === true,
         locationId: product.locationId || product.location_id || '',
         zoneId: product.zoneId || product.zone_id || '',
         binId: product.binId || product.bin_id || '',
@@ -363,6 +367,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         thumbnailUrl: '',
         mainImageUrl: '',
         seo: buildSeoDefaults(),
+        published: false,
       }));
       setPieceDetails([{ barcode: '', epc: '', locationId: '', zoneId: '', binId: '' }]);
       setSelectedPieceIndex(0);
@@ -1517,16 +1522,18 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   options={genderOptions}
                   onChange={(v) => handleChange('gender', v)}
                 />
-                <CustomSelect
-                  label="Podrazumevana lokacija"
-                  value={form.locationId || ''}
-                  options={locations.map((location) => ({
-                    value: location.id,
-                    label: location.name || location.code,
-                  }))}
-                  onChange={(value) => handleChange('locationId', value)}
-                  placeholder="Nije raspoređeno"
-                />
+                <div className="whitespace-nowrap">
+                  <CustomSelect
+                    label="Podrazumevana lokacija"
+                    value={form.locationId || ''}
+                    options={locations.map((location) => ({
+                      value: location.id,
+                      label: location.name || location.code,
+                    }))}
+                    onChange={(value) => handleChange('locationId', value)}
+                    placeholder="Nije raspoređeno"
+                  />
+                </div>
                 <label className="block">
                   <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                     Količina
@@ -1539,26 +1546,6 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
                   />
                 </label>
-                <div className="md:col-span-3 flex flex-wrap gap-6 text-sm pt-1">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={form.active !== false}
-                      onChange={(e) => handleChange('active', e.target.checked)}
-                    />{' '}
-                    Aktivan proizvod
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={form.published !== false}
-                      onChange={(e) =>
-                        handleChange('published', e.target.checked)
-                      }
-                    />{' '}
-                    Objavi proizvod
-                  </label>
-                </div>
               </div>
 
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
@@ -2252,7 +2239,27 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           </div>
         </div>
 
-        <div className="px-8 py-5 bg-white border-t border-neutral-100 flex justify-end gap-4">
+        <div className="px-8 py-5 bg-white border-t border-neutral-100 flex items-center justify-end gap-4">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={form.published === true}
+            onClick={() => handleChange('published', form.published !== true)}
+            className="mr-auto flex items-center gap-3 text-sm font-semibold text-neutral-900"
+          >
+            Objavi na sajt
+            <span
+              className={`relative h-7 w-12 rounded-full transition-colors ${
+                form.published === true ? 'bg-emerald-700' : 'bg-neutral-300'
+              }`}
+            >
+              <span
+                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                  form.published === true ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </span>
+          </button>
           <button
             onClick={closeModal}
             className="px-6 py-2.5 rounded-xl font-semibold text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
