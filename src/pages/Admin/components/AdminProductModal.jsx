@@ -78,6 +78,16 @@ function regularPriceForAdmin(product, variant) {
   return variant?.price ?? product?.price ?? '';
 }
 
+function catalogAttributeKey(value) {
+  const normalized = String(value || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return normalized || 'specification';
+}
+
 // --- 1. Custom Select ---
 
 // --- 3. Main Modal Component ---
@@ -698,6 +708,17 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       const cleanFeatures = (form.features || []).filter(
         (f) => f.title && f.title.trim() !== '',
       );
+      // The Platform accepts catalog attributes only under lowercase
+      // snake_case keys. Older products may contain display labels such as
+      // "Vodootpornost" or "Water resistance", which would otherwise make
+      // every variant PATCH fail before a sale can be saved.
+      const catalogAttributes = Object.entries(form.specs || {}).reduce(
+        (attributes, [key, value]) => ({
+          ...attributes,
+          [catalogAttributeKey(key)]: value,
+        }),
+        {},
+      );
 
       const payload = {
         ...form,
@@ -726,7 +747,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
               : {}),
             currency: form.currency || 'RSD',
             gender: form.gender || null,
-            attributes: form.specs || {},
+            attributes: catalogAttributes,
             active: form.active !== false,
             published: form.published === true,
           },
@@ -734,7 +755,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       };
 
       payload.variants[0].attributes = {
-        ...(form.specs || {}),
+        ...catalogAttributes,
         ...(pieces.some((piece) => piece.barcode)
           ? { additional_barcodes: JSON.stringify(pieces.map((piece) => piece.barcode)) }
           : {}),
@@ -946,7 +967,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
             (form.locationId && shouldReconcileQuantity && requestedQuantity > 0)
           ) {
             await adminCatalogApi.refreshVariant(primaryVariant.id, {
-              attributes: form.specs || {},
+              attributes: catalogAttributes,
             });
           }
           initialEpcRef.current = epcValidation.value;
