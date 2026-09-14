@@ -21,6 +21,8 @@
     onPrimary: "#FFFFFF", // tekst na primary (belo na crnoj) */
 
 :root {
+  /* Changes the emitted Vite stylesheet filename after the cache-policy fix. */
+  --asset-revision: "2026-09-14-asset-cache-fix";
   --color-primary: #c8a94e;
   --color-accent: #1f2937;
   --color-bg: #0b0e12;
