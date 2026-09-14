@@ -766,7 +766,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         ...(pieces.some((piece) => piece.barcode)
           ? { additional_barcodes: JSON.stringify(pieces.map((piece) => piece.barcode)) }
           : {}),
-        _rfidPiecePlacements: JSON.stringify(
+        rfid_piece_placements: JSON.stringify(
           pieces.map(({ locationId, zoneId, binId }) => ({
             ...(locationId ? { locationId } : {}),
             ...(zoneId ? { zoneId } : {}),
