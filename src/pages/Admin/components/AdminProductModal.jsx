@@ -1418,7 +1418,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     />
                   </label>
                 </div>
-                <div className="order-7">
+                <div className="order-6">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                       RFID EPC prvog komada
@@ -1462,7 +1462,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                     />
                   </label>
                 </div>
-                <div className="order-6">
+                <div className="order-7">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                       Opis (Opciono)
