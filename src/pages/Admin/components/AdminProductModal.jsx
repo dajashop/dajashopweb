@@ -317,8 +317,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           ...(product.seo || {}),
         },
       });
-      const storedBarcodes = product.attributes?._additionalBarcodes;
-      const storedPlacements = product.attributes?._rfidPiecePlacements;
+      const storedBarcodes =
+        product.attributes?.additional_barcodes || product.attributes?._additionalBarcodes;
+      const storedPlacements =
+        product.attributes?.rfid_piece_placements || product.attributes?._rfidPiecePlacements;
       let extraBarcodes = [];
       let placements = [];
       try {
@@ -734,9 +736,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       payload.variants[0].attributes = {
         ...(form.specs || {}),
         ...(pieces.some((piece) => piece.barcode)
-          ? { _additionalBarcodes: JSON.stringify(pieces.map((piece) => piece.barcode)) }
+          ? { additional_barcodes: JSON.stringify(pieces.map((piece) => piece.barcode)) }
           : {}),
-        _rfidPiecePlacements: JSON.stringify(
+        rfid_piece_placements: JSON.stringify(
           pieces.map(({ locationId, zoneId, binId }) => ({
             ...(locationId ? { locationId } : {}),
             ...(zoneId ? { zoneId } : {}),
