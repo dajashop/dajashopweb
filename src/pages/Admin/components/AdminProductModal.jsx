@@ -1370,7 +1370,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-8 flex flex-col gap-6">
-              <div className="bg-white p-5 rounded-lg shadow-none border border-neutral-200 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 [&_label>span:first-child]:mb-1 [&_label>span:first-child]:block [&_label>span:first-child]:text-sm [&_label>span:first-child]:font-medium [&_label>span:first-child]:normal-case [&_label>span:first-child]:tracking-normal [&_label>span:first-child]:text-neutral-900 [&_input]:bg-white [&_input]:border-neutral-300 [&_input]:!rounded-md [&_input]:px-3 [&_input]:py-2 [&_input]:text-sm">
+              <div className="bg-white p-5 rounded-xl shadow-none border border-neutral-200 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 [&_label>span:first-child]:mb-1 [&_label>span:first-child]:block [&_label>span:first-child]:text-xs [&_label>span:first-child]:font-bold [&_label>span:first-child]:uppercase [&_label>span:first-child]:tracking-wider [&_label>span:first-child]:text-neutral-500 [&_input]:bg-neutral-50 [&_input]:border-neutral-200 [&_input]:!rounded-xl [&_input]:px-4 [&_input]:py-3 [&_input]:text-sm">
                 <div>
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
