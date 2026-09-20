@@ -559,7 +559,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     if (!readerStationId) { setScanNotice('Nema online G2 čitača. Otvorite Reader Station aplikaciju na uređaju.'); return; }
     setScanNotice('Šaljem zahtev G2 čitaču…');
     try {
-      const created = await readerStationApi.start(readerStationId, crypto.randomUUID());
+      const created = await readerStationApi.start(readerStationId, crypto.randomUUID(), {
+        name: form.name || 'Novi artikal', sku: form.sku || undefined, barcode: form.barcode || undefined,
+        imageUrl: form.mainImageUrl || form.images?.[0]?.url || form.seo?.ogImage || undefined,
+        description: form.description || undefined
+      });
       setScanSession(created);
       readerSessionUnsubscribeRef.current?.();
       readerSessionUnsubscribeRef.current = subscribeReaderSession(created.id, (event) => {

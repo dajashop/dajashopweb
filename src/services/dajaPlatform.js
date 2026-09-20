@@ -877,7 +877,7 @@ export const ordersApi = {
  * hardware; Daja Platform owns the one-active-session lock. */
 export const readerStationApi = {
   list() { return apiRequest('/rfid/reader-stations', { staff: true }); },
-  start(stationId, clientId) { return apiRequest('/rfid/reader-stations/sessions', { method: 'POST', staff: true, body: { stationId, clientId } }); },
+  start(stationId, clientId, preview) { return apiRequest('/rfid/reader-stations/sessions', { method: 'POST', staff: true, body: { stationId, clientId, ...(preview ? { preview } : {}) } }); },
   cancel(sessionId) { return apiRequest(`/rfid/reader-stations/sessions/${encodeURIComponent(sessionId)}/cancel`, { method: 'POST', staff: true }); },
 };
 
