@@ -33,7 +33,7 @@ export default function ProductCard({ p }) {
   const { dispatch } = useCart();
   const { flash } = useFlash();
   const { toggleWishlist, isInWishlist } = useWishlist();
-  const { user } = useAuth();
+  const { user, staffReady } = useAuth();
 
   const isLiked = isInWishlist(p.id);
 
@@ -120,6 +120,10 @@ export default function ProductCard({ p }) {
 
   // Admin check
   const isAdmin = useMemo(() => isAdminEmail(user?.email), [user?.email]);
+  // Catalog contributors get the same product-card editing tools as admins,
+  // while the API still limits them to products they are allowed to edit.
+  const canManageCatalog = Boolean(staffReady);
+  const canDeleteProduct = isAdmin;
   const marketingFlags = Array.isArray(p.marketingFlags) ? p.marketingFlags : [];
   const flagLabels = { new: 'Novo', popular: 'Popularno', recommended: 'Preporučeno' };
 
@@ -411,8 +415,8 @@ export default function ProductCard({ p }) {
           </div>
 
           {/* --- ADMIN KONTROLE NA KARTICI --- */}
-          {isAdmin && (
-            <div className={`mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700 grid gap-2 ${isFlagMenuOpen ? 'grid-cols-3' : 'grid-cols-4'}`}>
+          {canManageCatalog && (
+            <div className={`mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700 grid gap-2 ${isFlagMenuOpen ? 'grid-cols-3' : canDeleteProduct ? 'grid-cols-4' : 'grid-cols-3'}`}>
               {isFlagMenuOpen ? (
                 <>
                   {Object.entries(flagLabels).map(([flag, label]) => (
@@ -479,13 +483,15 @@ export default function ProductCard({ p }) {
               </button>
 
               {/* 4. Obriši */}
-              <button
-                onClick={() => setDeleteId(p.id)}
-                className="flex items-center justify-center p-2 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
-                title="Obriši"
-              >
-                <Trash2 size={16} />
-              </button>
+              {canDeleteProduct && (
+                <button
+                  onClick={() => setDeleteId(p.id)}
+                  className="flex items-center justify-center p-2 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
+                  title="Obriši"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
                 </>
               )}
             </div>
