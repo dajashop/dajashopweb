@@ -345,8 +345,7 @@ function AdminDashboardContent() {
   const [activeTab, setActiveTab] = useState('products');
   const [staffAccess, setStaffAccess] = useState(null);
   const isCatalogContributor = Boolean(
-    staffAccess && !staffAccess.isOwner &&
-    staffAccess.permissions?.includes('catalog.contributor'),
+    staffAccess?.roles?.includes('Unosilac kataloga'),
   );
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFilters, setSearchFilters] = useState([]);
