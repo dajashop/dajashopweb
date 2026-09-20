@@ -877,6 +877,9 @@ export const workforceApi = {
   list(params = {}) {
     return apiRequest('/admin/workforce', { staff: true, query: params });
   },
+  me() {
+    return apiRequest('/admin/workforce/me', { staff: true });
+  },
   settings() {
     return apiRequest('/admin/workforce/settings', { staff: true });
   },

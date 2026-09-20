@@ -364,6 +364,9 @@ function AdminDashboardContent() {
   const [workforceMembers, setWorkforceMembers] = useState([]);
   const [workforceLoading, setWorkforceLoading] = useState(false);
   const [workforceError, setWorkforceError] = useState('');
+  const [myWorkforceStats, setMyWorkforceStats] = useState(null);
+  const [myWorkforceLoading, setMyWorkforceLoading] = useState(false);
+  const [myWorkforceError, setMyWorkforceError] = useState('');
   const [selectedWorker, setSelectedWorker] = useState(null);
   const [workerDetail, setWorkerDetail] = useState(null);
   const [workerRate, setWorkerRate] = useState('');
@@ -565,6 +568,18 @@ function AdminDashboardContent() {
       .finally(() => { if (!cancelled) setWorkforceLoading(false); });
     return () => { cancelled = true; };
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'my-workforce' || !isCatalogContributor) return undefined;
+    let cancelled = false;
+    setMyWorkforceLoading(true);
+    setMyWorkforceError('');
+    workforceApi.me()
+      .then((stats) => { if (!cancelled) setMyWorkforceStats(stats); })
+      .catch((error) => { if (!cancelled) setMyWorkforceError(error?.message || 'Statistika trenutno nije dostupna.'); })
+      .finally(() => { if (!cancelled) setMyWorkforceLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeTab, isCatalogContributor]);
 
   const openWorker = async (member) => {
     setSelectedWorker(member);
@@ -831,6 +846,9 @@ function AdminDashboardContent() {
   const returnedForRevisionCount = isCatalogContributor
     ? products.filter((product) => product.qualityReviewStatus === 'changes_requested').length
     : 0;
+  const personalDailyStats = Array.isArray(myWorkforceStats?.daily) ? myWorkforceStats.daily : [];
+  const personalHourlyStats = Array.isArray(myWorkforceStats?.hourly) ? myWorkforceStats.hourly : [];
+  const personalDailyMax = Math.max(1, ...personalDailyStats.map((item) => Number(item.count || 0)));
 
   // Memoizacija (visibleBrands, visibleCategories...) ostaje ista
   const visibleBrands = useMemo(() => {
@@ -911,6 +929,14 @@ function AdminDashboardContent() {
               icon={List}
               label="Specifikacije"
             />
+            {isCatalogContributor && (
+              <TabButton
+                active={activeTab === 'my-workforce'}
+                onClick={() => setActiveTab('my-workforce')}
+                icon={ClipboardList}
+                label="Moj učinak"
+              />
+            )}
             {!isCatalogContributor && (
               <>
                 <TabButton active={activeTab === 'audit'} onClick={() => setActiveTab('audit')} icon={ClipboardList} label="Dnevnik" />
@@ -1183,6 +1209,110 @@ function AdminDashboardContent() {
               </div>
             </div>
           </motion.div>
+        )}
+
+        {activeTab === 'my-workforce' && isCatalogContributor && (
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            <div className="rounded-2xl border border-emerald-200 bg-linear-to-br from-emerald-50 to-white p-6 shadow-sm">
+              <p className="text-xs font-extrabold tracking-[0.18em] text-emerald-700 uppercase">Moj učinak</p>
+              <h2 className="mt-1 text-2xl font-black text-neutral-900">Pregled unosa i provera artikala</h2>
+              <p className="mt-2 max-w-2xl text-sm text-neutral-600">Ovde vidiš svoj učinak, stanje provere i koliko puta su artikli vraćeni na doradu.</p>
+            </div>
+
+            {myWorkforceLoading ? (
+              <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center text-neutral-500">Učitavanje statistike…</div>
+            ) : myWorkforceError ? (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700">{myWorkforceError}</div>
+            ) : (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    ['Danas', myWorkforceStats?.createdToday || 0, 'novih artikala'],
+                    ['Juče', myWorkforceStats?.createdYesterday || 0, 'novih artikala'],
+                    ['Ove nedelje', myWorkforceStats?.createdThisWeek || 0, 'novih artikala'],
+                    ['Ukupno', myWorkforceStats?.createdTotal || 0, 'svih unosa'],
+                  ].map(([label, value, hint]) => (
+                    <div key={label} className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+                      <p className="text-sm font-semibold text-neutral-500">{label}</p>
+                      <p className="mt-2 text-3xl font-black text-neutral-900">{value}</p>
+                      <p className="mt-1 text-xs text-neutral-500">{hint}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                    <p className="text-sm font-bold text-emerald-800">Odobreno za obračun</p>
+                    <p className="mt-2 text-3xl font-black text-emerald-950">{myWorkforceStats?.approvedCount || 0}</p>
+                    <p className="mt-1 text-xs text-emerald-800">Ukupno za isplatu: {money(Number(myWorkforceStats?.approvedAmountMinor || 0) / 100)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
+                    <p className="text-sm font-bold text-sky-800">Na proveri</p>
+                    <p className="mt-2 text-3xl font-black text-sky-950">{myWorkforceStats?.pendingCount || 0}</p>
+                    <p className="mt-1 text-xs text-sky-800">Čeka odluku vlasnika</p>
+                  </div>
+                  <div className="rounded-2xl border border-amber-300 bg-amber-100 p-5">
+                    <p className="text-sm font-bold text-amber-900">Trenutno na doradi</p>
+                    <p className="mt-2 text-3xl font-black text-amber-950">{myWorkforceStats?.changesRequestedCount || 0}</p>
+                    <p className="mt-1 text-xs text-amber-800">Prikaži žute redove u Proizvodima</p>
+                  </div>
+                  <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5">
+                    <p className="text-sm font-bold text-orange-800">Vraćeno na doradu</p>
+                    <p className="mt-2 text-3xl font-black text-orange-950">{myWorkforceStats?.returnedTotal || 0}</p>
+                    <p className="mt-1 text-xs text-orange-800">Danas: {myWorkforceStats?.returnedToday || 0} · Juče: {myWorkforceStats?.returnedYesterday || 0}</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <div>
+                        <h3 className="font-black text-neutral-900">Poslednjih 7 dana</h3>
+                        <p className="mt-1 text-sm text-neutral-500">Broj unetih artikala po danu</p>
+                      </div>
+                      <span className="text-sm font-bold text-neutral-700">Ovaj mesec: {myWorkforceStats?.createdThisMonth || 0}</span>
+                    </div>
+                    <div className="mt-6 flex h-44 items-end gap-3">
+                      {personalDailyStats.map((item) => {
+                        const count = Number(item.count || 0);
+                        return (
+                          <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+                            <span className="text-xs font-bold text-neutral-700">{count}</span>
+                            <div className="flex h-28 w-full items-end rounded-t-lg bg-neutral-100">
+                              <div className="w-full rounded-t-lg bg-emerald-600 transition-all" style={{ height: `${Math.max(count ? 10 : 0, (count / personalDailyMax) * 100)}%` }} />
+                            </div>
+                            <span className="text-[11px] text-neutral-500">{item.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+                    <h3 className="font-black text-neutral-900">Današnji ritam</h3>
+                    <p className="mt-1 text-sm text-neutral-500">Unosi po satu</p>
+                    <div className="mt-5 space-y-3">
+                      {personalHourlyStats.length ? personalHourlyStats.map((item) => (
+                        <div key={item.hour} className="flex items-center gap-3 text-sm">
+                          <span className="w-9 font-mono text-neutral-500">{item.hour}h</span>
+                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-neutral-100"><div className="h-full rounded-full bg-sky-500" style={{ width: `${Math.min(100, Number(item.count || 0) * 20)}%` }} /></div>
+                          <span className="w-5 text-right font-bold text-neutral-800">{item.count}</span>
+                        </div>
+                      )) : <p className="py-8 text-center text-sm text-neutral-500">Danas još nema unosa.</p>}
+                    </div>
+                    <div className="mt-6 border-t border-neutral-100 pt-4 text-sm text-neutral-600">
+                      Obrišeni artikli: <strong className="text-neutral-900">{myWorkforceStats?.deletedCount || 0}</strong>
+                      <br />Cena po odobrenom artiklu: <strong className="text-neutral-900">{money(Number(myWorkforceStats?.rateMinor || 0) / 100)}</strong>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </motion.section>
         )}
 
         {activeTab === 'audit' && (
