@@ -7,7 +7,7 @@ import { useFlash } from '../hooks/useFlash.js';
 import { useWishlist } from '../context/WishlistProvider.jsx';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { Edit3, Heart, Trash2, Star, Eye, EyeOff } from 'lucide-react'; // Dodate ikonice
-import { isAdminEmail } from '../services/dajaPlatform';
+import { adminCatalogApi, isAdminEmail } from '../services/dajaPlatform';
 import { deleteProduct, saveProduct } from '../services/products';
 import ProgressiveImage from './ui/ProgressiveImage.jsx';
 import { useAuth } from '../hooks/useAuth.js';
@@ -39,6 +39,8 @@ export default function ProductCard({ p }) {
 
   // Stanja za modale
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [isLoadingEditor, setIsLoadingEditor] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [isFlagMenuOpen, setIsFlagMenuOpen] = useState(false);
 
@@ -69,6 +71,24 @@ export default function ProductCard({ p }) {
   }, [p.images, p.image, p.thumbnailUrl]);
 
   const imageIndex = imgs.length ? Math.abs(page % imgs.length) : 0;
+
+  const openAdminEditor = async () => {
+    if (isLoadingEditor) return;
+    setIsLoadingEditor(true);
+    try {
+      // Catalog cards intentionally contain a compact public payload. The
+      // admin editor needs the complete staff record, including inventory,
+      // RFID placement, SEO and variant data.
+      const fullProduct = await adminCatalogApi.getProduct(p.id);
+      setEditingProduct(fullProduct);
+      setIsEditModalOpen(true);
+    } catch (error) {
+      console.error('Učitavanje artikla za izmenu nije uspelo:', error);
+      alert('Artikal nije moguće učitati za izmenu. Pokušajte ponovo.');
+    } finally {
+      setIsLoadingEditor(false);
+    }
+  };
 
   const paginate = (newDirection) => {
     if (imgs.length <= 1) return;
@@ -450,9 +470,10 @@ export default function ProductCard({ p }) {
 
               {/* 3. Izmeni */}
               <button
-                onClick={() => setIsEditModalOpen(true)}
+                onClick={() => void openAdminEditor()}
+                disabled={isLoadingEditor}
                 className="flex items-center justify-center p-2 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
-                title="Izmeni"
+                title={isLoadingEditor ? 'Učitavanje artikla…' : 'Izmeni'}
               >
                 <Edit3 size={16} />
               </button>
@@ -475,9 +496,15 @@ export default function ProductCard({ p }) {
       <AnimatePresence>
         {isEditModalOpen && (
           <AdminProductModal
-            product={p}
-            onClose={() => setIsEditModalOpen(false)}
-            onSuccess={() => setIsEditModalOpen(false)}
+            product={editingProduct}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              setEditingProduct(null);
+            }}
+            onSuccess={() => {
+              setIsEditModalOpen(false);
+              setEditingProduct(null);
+            }}
           />
         )}
       </AnimatePresence>
