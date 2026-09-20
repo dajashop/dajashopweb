@@ -1041,10 +1041,10 @@ function AdminDashboardContent() {
                     <tr>
                       <th className="p-4">Slika</th>
                       <th className="p-4">Naziv</th>
-                      {!isCatalogContributor && <th className="p-4">Odeljenje</th>}
-                      {!isCatalogContributor && <th className="p-4">Brend</th>}
+                      <th className="p-4">Odeljenje</th>
+                      <th className="p-4">Brend</th>
                       <th className="p-4">Cena</th>
-                      {isCatalogContributor ? <th className="p-4 min-w-[28rem]">Zadatak za doradu</th> : <th className="p-4">Kategorija</th>}
+                      <th className="p-4">Kategorija</th>
                       <th className="p-4 text-right">Akcije</th>
                     </tr>
                   </thead>
@@ -1102,40 +1102,36 @@ function AdminDashboardContent() {
                               </span>
                             </div>
                           </td>
-                          {!isCatalogContributor && (
-                            <td className="p-4">
-                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-blue-50 text-blue-700 uppercase tracking-wider">
-                                {p.department || 'satovi'}
-                              </span>
+                          {needsRevision ? (
+                            <td colSpan={2} className="p-4 min-w-[28rem] text-sm text-amber-950">
+                              <div className="leading-relaxed">
+                                <p className="font-extrabold uppercase text-xs tracking-wide">Zadatak za doradu</p>
+                                <p className="mt-1 font-medium">{revisionNote || 'Vlasnik je zatražio doradu ovog artikla. Proverite podatke, ispravite ih i sačuvajte proizvod.'}</p>
+                                <p className="mt-2 text-xs text-amber-800">Kliknite na ikonu olovke, uradite tražene izmene i sačuvajte artikal.</p>
+                              </div>
                             </td>
-                          )}
-                          {!isCatalogContributor && (
-                            <td className="p-4">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
-                                {p.brand}
-                              </span>
-                            </td>
+                          ) : (
+                            <>
+                              <td className="p-4">
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-blue-50 text-blue-700 uppercase tracking-wider">
+                                  {p.department || 'satovi'}
+                                </span>
+                              </td>
+                              <td className="p-4">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
+                                  {p.brand}
+                                </span>
+                              </td>
+                            </>
                           )}
                           <td className="p-4 font-mono font-bold text-neutral-900">
                             {money(p.price)}
                           </td>
-                          {isCatalogContributor ? (
-                            <td className="p-4 text-sm text-amber-950">
-                              {needsRevision ? (
-                                <div className="max-w-2xl leading-relaxed">
-                                  <p className="font-extrabold">Vraćeno na doradu</p>
-                                  <p className="mt-1 font-medium">{revisionNote || 'Vlasnik je zatražio doradu ovog artikla. Proverite podatke, ispravite ih i sačuvajte proizvod.'}</p>
-                                  <p className="mt-2 text-xs text-amber-800">Kliknite na ikonu olovke, uradite tražene izmene i sačuvajte. Artikal će potom ponovo biti poslat na proveru.</p>
-                                </div>
-                              ) : (
-                                <div className="flex flex-wrap gap-x-5 gap-y-1 text-neutral-600">
-                                  <span><strong className="text-neutral-800">Odeljenje:</strong> {p.department || '—'}</span>
-                                  <span><strong className="text-neutral-800">Brend:</strong> {p.brand || '—'}</span>
-                                  <span><strong className="text-neutral-800">Kategorija:</strong> {p.category || '—'}</span>
-                                </div>
-                              )}
-                            </td>
-                          ) : <td className="p-4 text-neutral-500">{p.category}</td>}
+                          {needsRevision ? (
+                            <td className="p-4 text-xs font-bold uppercase tracking-wide text-amber-800">Doraditi</td>
+                          ) : (
+                            <td className="p-4 text-neutral-500">{p.category}</td>
+                          )}
 
                           {/* --- AKCIJE --- */}
                           <td className="p-4 text-right">
