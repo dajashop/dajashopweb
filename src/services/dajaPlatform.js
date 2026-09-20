@@ -873,6 +873,26 @@ export const ordersApi = {
   },
 };
 
+/** Remote G2 stations are staff-only. The browser never talks to reader
+ * hardware; Daja Platform owns the one-active-session lock. */
+export const readerStationApi = {
+  list() { return apiRequest('/rfid/reader-stations', { staff: true }); },
+  start(stationId, clientId) { return apiRequest('/rfid/reader-stations/sessions', { method: 'POST', staff: true, body: { stationId, clientId } }); },
+  cancel(sessionId) { return apiRequest(`/rfid/reader-stations/sessions/${encodeURIComponent(sessionId)}/cancel`, { method: 'POST', staff: true }); },
+};
+
+export function subscribeReaderSession(sessionId, onEvent, onError) {
+  if (!REALTIME_ENABLED) return () => {};
+  const token = getStaffAccessToken();
+  if (!token) { onError?.(new Error('Staff token nije dostupan za Reader Station.')); return () => {}; }
+  const socket = io(realtimeNamespaceUrl(), { path: '/socket.io', transports: ['websocket'], auth: { token: `Bearer ${token}` }, reconnection: true });
+  const channels = ['reader.scan.product', 'reader.scan.completed', 'reader.scan.cancelled'];
+  socket.on('connect', () => socket.emit('reader.scan.subscribe', { sessionId }));
+  channels.forEach((channel) => socket.on(channel, onEvent));
+  socket.on('connect_error', onError || (() => {}));
+  return () => { channels.forEach((channel) => socket.off(channel, onEvent)); socket.close(); };
+}
+
 export const productAlertsApi = {
   subscribe(productId, payload, { auth = true } = {}) {
     return apiRequest(`/products/${encodeURIComponent(productId)}/alerts`, {

@@ -17,7 +17,7 @@ import {
   inventoryApi,
   rfidApi,
 } from '../../../services/dajaPlatform';
-import { adminCatalogApi } from '../../../services/dajaPlatform';
+import { adminCatalogApi, readerStationApi, subscribeReaderSession } from '../../../services/dajaPlatform';
 import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
 import ImageGalleryModal from '../../../components/modals/ImageGalleryModal.jsx';
@@ -172,6 +172,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   // making every piece inherit the first item's tag/location.
   const [pieceDetails, setPieceDetails] = useState([]);
   const [selectedPieceIndex, setSelectedPieceIndex] = useState(0);
+  const [readerStations, setReaderStations] = useState([]);
+  const [readerStationId, setReaderStationId] = useState('');
+  const [scanSession, setScanSession] = useState(null);
+  const [scanNotice, setScanNotice] = useState('');
+  const readerSessionUnsubscribeRef = useRef(null);
 
   // State za Image Gallery Modal
   const [galleryIndex, setGalleryIndex] = useState(null);
@@ -203,6 +208,17 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const slugManuallyEditedRef = useRef(false);
   const epcValidation = validateEpcInput(form.epc || '');
   const gtinValidation = validateGtin(form.barcode || '');
+
+  useEffect(() => {
+    let active = true;
+    void readerStationApi.list().then((items) => {
+      if (!active) return;
+      const online = Array.isArray(items) ? items : [];
+      setReaderStations(online);
+      if (online.length === 1) setReaderStationId(online[0].id);
+    }).catch(() => { if (active) setReaderStations([]); });
+    return () => { active = false; readerSessionUnsubscribeRef.current?.(); };
+  }, []);
 
   useEffect(() => {
     const imageUrl = form.seo?.ogImage || form.images?.[0]?.url;
@@ -530,6 +546,37 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         return next;
       }),
     );
+  };
+
+  const cancelReaderSession = async () => {
+    const id = scanSession?.id;
+    readerSessionUnsubscribeRef.current?.(); readerSessionUnsubscribeRef.current = null;
+    setScanSession(null);
+    if (id) await readerStationApi.cancel(id).catch(() => undefined);
+  };
+
+  const startReaderSession = async () => {
+    if (!readerStationId) { setScanNotice('Nema online G2 čitača. Otvorite Reader Station aplikaciju na uređaju.'); return; }
+    setScanNotice('Šaljem zahtev G2 čitaču…');
+    try {
+      const created = await readerStationApi.start(readerStationId, crypto.randomUUID());
+      setScanSession(created);
+      readerSessionUnsubscribeRef.current?.();
+      readerSessionUnsubscribeRef.current = subscribeReaderSession(created.id, (event) => {
+        const data = event?.data || {};
+        if (data.sessionId !== created.id) return;
+        if (event.event === 'reader.scan.product') {
+          if (data.epc) updatePiece(selectedPieceIndex, 'epc', data.epc);
+          setScanNotice(data.product?.found === false ? 'EPC je očitan, ali artikal nije pronađen.' : 'EPC je očitan. G2 sada čeka barkod.');
+        }
+        if (event.event === 'reader.scan.completed') {
+          if (data.barcode) updatePiece(selectedPieceIndex, 'barcode', data.barcode);
+          setScanNotice('Očitavanje je završeno.'); readerSessionUnsubscribeRef.current?.(); readerSessionUnsubscribeRef.current = null; setScanSession(null);
+        }
+        if (event.event === 'reader.scan.cancelled') { setScanNotice('Sesija je prekinuta.'); setScanSession(null); }
+      }, (error) => setScanNotice(error?.message || 'Reader Station veza nije dostupna.'));
+      setScanNotice('G2 čitač čeka EPC.');
+    } catch (error) { setScanNotice(error?.message || 'Ne mogu da pokrenem očitavanje.'); }
   };
 
   const handleQuantityChange = (value) => {
@@ -1624,6 +1671,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 font-mono text-sm"
                     />
                   </label>
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {readerStations.length > 1 ? <select value={readerStationId} disabled={Boolean(scanSession)} onChange={(event) => setReaderStationId(event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm"><option value="">Izaberite G2 čitač</option>{readerStations.map((station) => <option key={station.id} value={station.id}>{station.name}</option>)}</select> : <span className="text-xs font-semibold text-emerald-800">{readerStations[0]?.name || 'Nema online G2 čitača'}</span>}
+                      {!scanSession ? <button type="button" onClick={() => void startReaderSession()} className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white">Očitaj sa G2</button> : <button type="button" onClick={() => void cancelReaderSession()} className="rounded-lg border border-emerald-700 px-3 py-2 text-sm font-bold text-emerald-800">Nova sesija / promeni čitač</button>}
+                    </div>
+                    {scanNotice ? <p className="mt-2 text-xs text-emerald-900" role="status">{scanNotice}</p> : null}
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <CustomSelect
                       label="Lokacija"
