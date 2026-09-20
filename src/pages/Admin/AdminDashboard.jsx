@@ -8,7 +8,7 @@ import React, {
 import { useAuth } from '../../hooks/useAuth';
 import {
   catalogAuditApi,
-  isAdminEmail,
+  workforceApi,
   importsApi,
 } from '../../services/dajaPlatform';
 import { useNavigate } from 'react-router-dom';
@@ -331,7 +331,7 @@ const getAuditDetailTabs = (event) => {
 };
 
 function AdminDashboardContent() {
-  const { user } = useAuth();
+  const { user, staffReady } = useAuth();
   const nav = useNavigate();
   // The public realtime signal carries the changed product ID. The admin hook
   // then loads only that product through its authenticated catalog API.
@@ -356,6 +356,13 @@ function AdminDashboardContent() {
   const [auditError, setAuditError] = useState('');
   const [expandedAuditId, setExpandedAuditId] = useState(null);
   const [activeAuditDetailTab, setActiveAuditDetailTab] = useState('basic');
+  const [workforceMembers, setWorkforceMembers] = useState([]);
+  const [workforceLoading, setWorkforceLoading] = useState(false);
+  const [workforceError, setWorkforceError] = useState('');
+  const [selectedWorker, setSelectedWorker] = useState(null);
+  const [workerDetail, setWorkerDetail] = useState(null);
+  const [workerRate, setWorkerRate] = useState('');
+  const [defaultWorkerRate, setDefaultWorkerRate] = useState('');
   const displayedAuditEvents = useMemo(
     () => collapseInitialCatalogEvents(auditEvents),
     [auditEvents],
@@ -460,8 +467,8 @@ function AdminDashboardContent() {
   }, []);
 
   useEffect(() => {
-    if (!user || !isAdminEmail(user.email)) nav('/');
-  }, [user, nav]);
+    if (staffReady === false && user === null) nav('/');
+  }, [staffReady, user, nav]);
 
   useEffect(() => {
     if (activeTab !== 'audit') return undefined;
@@ -487,6 +494,46 @@ function AdminDashboardContent() {
       cancelled = true;
     };
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'workforce') return undefined;
+    let cancelled = false;
+    setWorkforceLoading(true);
+    setWorkforceError('');
+    Promise.all([workforceApi.list(), workforceApi.settings()])
+      .then(([members, settings]) => {
+        if (cancelled) return;
+        setWorkforceMembers(Array.isArray(members) ? members : []);
+        setDefaultWorkerRate(String(Number(settings?.defaultRateMinor || 0) / 100));
+      })
+      .catch((error) => { if (!cancelled) setWorkforceError(error?.message || 'Učinak zaposlenih nije dostupan.'); })
+      .finally(() => { if (!cancelled) setWorkforceLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeTab]);
+
+  const openWorker = async (member) => {
+    setSelectedWorker(member);
+    setWorkerRate(String(Number(member.rateMinor || 0) / 100));
+    try { setWorkerDetail(await workforceApi.member(member.id)); }
+    catch (error) { setWorkforceError(error?.message || 'Detalji zaposlenog nisu dostupni.'); }
+  };
+
+  const reviewWorkerProduct = async (productId, status) => {
+    const note = status === 'changes_requested' ? window.prompt('Napiši šta treba ispraviti:') : undefined;
+    if (status === 'changes_requested' && !note) return;
+    await workforceApi.reviewProduct(productId, status, note);
+    if (selectedWorker) await openWorker(selectedWorker);
+  };
+
+  const saveWorkerRate = async () => {
+    if (!selectedWorker) return;
+    await workforceApi.updateRate(selectedWorker.id, Math.round(Number(workerRate || 0) * 100));
+    setActiveTab('workforce');
+  };
+
+  const saveDefaultWorkerRate = async () => {
+    await workforceApi.updateSettings(Math.round(Number(defaultWorkerRate || 0) * 100));
+  };
 
   // --- NOVA FUNKCIJA: Toggle Visibility ---
   const toggleVisibility = async (product) => {
@@ -801,6 +848,12 @@ function AdminDashboardContent() {
               onClick={() => setActiveTab('audit')}
               icon={ClipboardList}
               label="Dnevnik"
+            />
+            <TabButton
+              active={activeTab === 'workforce'}
+              onClick={() => setActiveTab('workforce')}
+              icon={ClipboardList}
+              label="Učinak zaposlenih"
             />
             <TabButton
               active={activeTab === 'privacy'}
@@ -1242,6 +1295,23 @@ function AdminDashboardContent() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {activeTab === 'workforce' && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div><h2 className="text-lg font-bold text-neutral-900">Učinak zaposlenih</h2><p className="mt-1 text-sm text-neutral-500">Unosi, kontrola kvaliteta i obračun po proizvodu.</p></div>
+                <div className="flex items-center gap-2"><label className="text-xs font-semibold text-neutral-500">Podrazumevana cena</label><input className="w-24 rounded-lg border border-neutral-200 px-2 py-2 text-sm" type="number" min="0" step="0.01" value={defaultWorkerRate} onChange={(event) => setDefaultWorkerRate(event.target.value)} /><span className="text-sm">RSD</span><button type="button" onClick={saveDefaultWorkerRate} className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-bold text-white">Sačuvaj</button></div>
+              </div>
+            </div>
+            {workforceLoading ? <div className="rounded-2xl bg-white p-8 text-center text-neutral-500">Učitavanje učinka…</div> : workforceError ? <div className="rounded-2xl bg-red-50 p-6 text-red-700">{workforceError}</div> : (
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)]">
+                <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm"><div className="border-b border-neutral-100 p-4 text-sm font-bold">Zaposleni i statistika</div><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-neutral-50 text-xs uppercase text-neutral-500"><tr><th className="p-3">Ime</th><th className="p-3">Ukupno</th><th className="p-3">Danas</th><th className="p-3">Odobreno</th><th className="p-3">Dorade</th><th className="p-3 text-right">Obračun</th></tr></thead><tbody className="divide-y divide-neutral-100">{workforceMembers.map((member) => <tr key={member.id} onClick={() => void openWorker(member)} className={`cursor-pointer hover:bg-emerald-50 ${selectedWorker?.id === member.id ? 'bg-emerald-50' : ''}`}><td className="p-3"><div className="font-semibold text-neutral-900">{member.name}</div><div className="text-xs text-neutral-500">{member.email}</div></td><td className="p-3 font-bold">{member.createdInPeriod}</td><td className="p-3">{member.createdToday}</td><td className="p-3 text-emerald-700">{member.approvedCount}</td><td className="p-3 text-amber-700">{member.pendingCount + member.changesRequestedCount}</td><td className="p-3 text-right font-bold">{(Number(member.approvedAmountMinor || 0) / 100).toLocaleString('sr-RS')} RSD</td></tr>)}</tbody></table></div>{workforceMembers.length === 0 && <p className="p-8 text-center text-neutral-500">Nema zabeleženih zaposlenih sa unosima.</p>}</div>
+                {selectedWorker && <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><div><h3 className="font-bold text-neutral-900">{selectedWorker.name}</h3><p className="text-sm text-neutral-500">{selectedWorker.email}</p></div><button type="button" onClick={() => setSelectedWorker(null)} className="text-neutral-400"><X size={18} /></button></div><div className="mt-4 flex items-center gap-2"><input className="w-28 rounded-lg border border-neutral-200 px-2 py-2 text-sm" type="number" min="0" step="0.01" value={workerRate} onChange={(event) => setWorkerRate(event.target.value)} /><span className="text-sm">RSD / odobren artikal</span><button type="button" onClick={() => void saveWorkerRate()} className="ml-auto rounded-lg border border-emerald-600 px-3 py-2 text-xs font-bold text-emerald-700">Sačuvaj cenu</button></div><div className="mt-5 space-y-3">{workerDetail?.products?.map((product) => <article key={product.id} className="rounded-xl border border-neutral-200 p-3"><div className="flex gap-3"><img className="h-12 w-12 rounded-lg object-contain" src={product.thumbnailUrl || product.primaryImageUrl || '/placeholder-watch.svg'} alt="" /><div className="min-w-0 flex-1"><strong className="block truncate text-sm">{product.name}</strong><span className="text-xs text-neutral-500">{product.qualityReviewStatus === 'approved' ? 'Odobreno' : product.qualityReviewStatus === 'changes_requested' ? 'Vraćeno na doradu' : 'Na proveri'} · {product.createdAt ? formatAuditDate(product.createdAt) : '—'}</span></div></div><div className="mt-2 flex gap-2">{product.qualityReviewStatus !== 'approved' && <button type="button" onClick={() => void reviewWorkerProduct(product.id, 'approved')} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white">Odobri za obračun</button>}{product.qualityReviewStatus !== 'changes_requested' && <button type="button" onClick={() => void reviewWorkerProduct(product.id, 'changes_requested')} className="rounded-lg bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-800">Vrati na doradu</button>}</div></article>)}</div><h4 className="mt-5 border-t border-neutral-100 pt-4 text-sm font-bold">Istorija aktivnosti</h4><div className="mt-2 max-h-56 space-y-2 overflow-y-auto">{workerDetail?.activity?.map((event) => <div key={event.id} className="flex justify-between gap-3 text-xs"><span className="font-medium">{AUDIT_OPERATION_LABELS[event.operation] || event.operation} · {event.productName}</span><span className="whitespace-nowrap text-neutral-500">{formatAuditDate(event.occurredAt)}</span></div>)}</div></div>}
               </div>
             )}
           </motion.div>
@@ -1926,13 +1996,13 @@ function AdminDashboardContent() {
 export default function AdminDashboard() {
   const { user, authReady, staffReady } = useAuth();
   const nav = useNavigate();
-  const isAuthorized = isAdminEmail(user?.email) && staffReady;
+  const isAuthorized = Boolean(user && staffReady);
 
   useEffect(() => {
     if (authReady && !isAuthorized) nav('/', { replace: true });
   }, [authReady, isAuthorized, nav]);
 
-  if (!authReady || (isAdminEmail(user?.email) && !staffReady)) {
+  if (!authReady || (user && !staffReady)) {
     return <div className="p-8 text-center text-slate-500">Provera pristupa…</div>;
   }
   if (!isAuthorized) return null;

@@ -873,6 +873,33 @@ export const ordersApi = {
   },
 };
 
+export const workforceApi = {
+  list(params = {}) {
+    return apiRequest('/admin/workforce', { staff: true, query: params });
+  },
+  settings() {
+    return apiRequest('/admin/workforce/settings', { staff: true });
+  },
+  updateSettings(rateMinor) {
+    return apiRequest('/admin/workforce/settings', {
+      method: 'PATCH', staff: true, body: { rateMinor },
+    });
+  },
+  updateRate(userId, rateMinor) {
+    return apiRequest(`/admin/workforce/${encodeURIComponent(userId)}/rate`, {
+      method: 'PATCH', staff: true, body: { rateMinor },
+    });
+  },
+  member(userId) {
+    return apiRequest(`/admin/workforce/${encodeURIComponent(userId)}`, { staff: true });
+  },
+  reviewProduct(productId, status, note) {
+    return apiRequest(`/admin/workforce/products/${encodeURIComponent(productId)}/review`, {
+      method: 'PATCH', staff: true, body: { status, ...(note ? { note } : {}) },
+    });
+  },
+};
+
 /** Remote G2 stations are staff-only. The browser never talks to reader
  * hardware; Daja Platform owns the one-active-session lock. */
 export const readerStationApi = {

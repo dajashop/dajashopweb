@@ -4,7 +4,6 @@ import { Ctx } from './AuthContext';
 import {
   authApi,
   customerApi,
-  isAdminEmail,
   subscribeCustomerRealtime,
 } from '../services/dajaPlatform';
 import {
@@ -65,12 +64,11 @@ export function AuthProvider({ children }) {
     try {
       const me = await authApi.me();
 
-      if (isAdminEmail(me?.email)) {
-        // The API is authoritative; a failed staff exchange must not log the
-        // customer out of their normal storefront session.
-        await authApi.createAdminSession().catch(() => null);
-      }
-      setStaffReady(isAdminEmail(me?.email) && Boolean(getStaffAccessToken()));
+      // The API is authoritative: configured owners and explicitly assigned
+      // catalog contributors may both exchange their Google customer session
+      // for a staff session. A normal customer simply gets no staff token.
+      await authApi.createAdminSession().catch(() => null);
+      setStaffReady(Boolean(getStaffAccessToken()));
 
       // Publish the admin user only after the staff-session exchange. This
       // prevents admin widgets from sending their first request with a normal
