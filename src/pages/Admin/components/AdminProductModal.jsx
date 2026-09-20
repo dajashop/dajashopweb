@@ -402,6 +402,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       } catch {
         // Older products have no per-piece metadata.
       }
+      // GTIN/EAN identifies the sellable product; the piece barcode belongs
+      // only to the physical item row below. Older saves mirrored the GTIN
+      // into the first piece barcode, so do not preload that accidental copy.
+      const productGtin = product.variants?.[0]?.barcode || product.barcode || '';
+      if (extraBarcodes[0] && String(extraBarcodes[0]).trim() === String(productGtin).trim()) {
+        extraBarcodes[0] = '';
+      }
       const initialQuantity = Math.max(1, Number(product.quantity ?? product.stockQuantity ?? 1));
       setPieceDetails(Array.from({ length: initialQuantity }, (_, index) => ({
         barcode: extraBarcodes[index] || '',
@@ -555,7 +562,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   };
 
   const updatePiece = (index, field, value) => {
-    if (index === 0 && (field === 'epc' || field === 'barcode')) {
+    // EPC is also stored on the primary variant. The GTIN/EAN field is a
+    // product-level identifier and must never be mirrored to the piece row.
+    if (index === 0 && field === 'epc') {
       setForm((current) => ({ ...current, [field]: value }));
     }
     if (field === 'locationId' || field === 'zoneId' || field === 'binId') {
