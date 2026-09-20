@@ -175,6 +175,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const [readerStations, setReaderStations] = useState([]);
   const [readerStationId, setReaderStationId] = useState('');
   const [scanSession, setScanSession] = useState(null);
+  const [scanPieceIndex, setScanPieceIndex] = useState(null);
   const [scanNotice, setScanNotice] = useState('');
   const [waitingForReaderRelease, setWaitingForReaderRelease] = useState(false);
   const readerSessionUnsubscribeRef = useRef(null);
@@ -588,8 +589,45 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     const id = scanSession?.id;
     readerSessionUnsubscribeRef.current?.(); readerSessionUnsubscribeRef.current = null;
     setScanSession(null);
+    setScanPieceIndex(null);
     if (id) await readerStationApi.cancel(id).catch(() => undefined);
   };
+
+  // Socket.IO delivers the result immediately in the usual case. This polling
+  // fallback reads the same persisted session if the scan happened while the
+  // browser socket was reconnecting, so EPC/barcode can never be lost.
+  useEffect(() => {
+    const sessionId = scanSession?.id;
+    if (!sessionId) return undefined;
+    let active = true;
+    const targetPieceIndex = scanPieceIndex ?? selectedPieceIndex;
+    const applySession = (data) => {
+      if (!active || !data) return;
+      if (data.epc) updatePiece(targetPieceIndex, 'epc', data.epc);
+      if (data.status === 'awaiting_barcode') {
+        setScanNotice(data.product?.found === false ? 'EPC je očitan, ali artikal nije pronađen.' : 'EPC je očitan. G2 sada čeka barkod.');
+        return;
+      }
+      if (data.status === 'completed') {
+        if (data.barcode) updatePiece(targetPieceIndex, 'barcode', data.barcode);
+        setScanNotice('Očitavanje je završeno. EPC i barkod su upisani u artikal.');
+        readerSessionUnsubscribeRef.current?.(); readerSessionUnsubscribeRef.current = null;
+        setScanSession(null); setScanPieceIndex(null);
+        return;
+      }
+      if (data.status === 'cancelled' || data.status === 'expired') {
+        setScanNotice(data.status === 'expired' ? 'Vreme za očitavanje je isteklo.' : 'Sesija je prekinuta.');
+        readerSessionUnsubscribeRef.current?.(); readerSessionUnsubscribeRef.current = null;
+        setScanSession(null); setScanPieceIndex(null);
+      }
+    };
+    const check = () => {
+      void readerStationApi.session(sessionId).then(applySession).catch(() => undefined);
+    };
+    check();
+    const interval = window.setInterval(check, 1_250);
+    return () => { active = false; window.clearInterval(interval); };
+  }, [scanSession?.id, scanPieceIndex, selectedPieceIndex]);
 
   const startReaderSession = async () => {
     if (!readerStationId) { setScanNotice('Nema online G2 čitača. Otvorite Reader Station aplikaciju na uređaju.'); return; }
@@ -601,20 +639,23 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         imageUrl: form.mainImageUrl || form.images?.[0]?.url || form.seo?.ogImage || undefined,
         description: form.description || undefined
       });
+      const targetPieceIndex = selectedPieceIndex;
       setScanSession(created);
+      setScanPieceIndex(targetPieceIndex);
       readerSessionUnsubscribeRef.current?.();
       readerSessionUnsubscribeRef.current = subscribeReaderSession(created.id, (event) => {
         const data = event?.data || {};
         if (data.sessionId !== created.id) return;
         if (event.event === 'reader.scan.product') {
-          if (data.epc) updatePiece(selectedPieceIndex, 'epc', data.epc);
+          if (data.epc) updatePiece(targetPieceIndex, 'epc', data.epc);
           setScanNotice(data.product?.found === false ? 'EPC je očitan, ali artikal nije pronađen.' : 'EPC je očitan. G2 sada čeka barkod.');
         }
         if (event.event === 'reader.scan.completed') {
-          if (data.barcode) updatePiece(selectedPieceIndex, 'barcode', data.barcode);
-          setScanNotice('Očitavanje je završeno.'); readerSessionUnsubscribeRef.current?.(); readerSessionUnsubscribeRef.current = null; setScanSession(null);
+          if (data.epc) updatePiece(targetPieceIndex, 'epc', data.epc);
+          if (data.barcode) updatePiece(targetPieceIndex, 'barcode', data.barcode);
+          setScanNotice('Očitavanje je završeno. EPC i barkod su upisani u artikal.'); readerSessionUnsubscribeRef.current?.(); readerSessionUnsubscribeRef.current = null; setScanSession(null); setScanPieceIndex(null);
         }
-        if (event.event === 'reader.scan.cancelled') { setScanNotice('Sesija je prekinuta.'); setScanSession(null); }
+        if (event.event === 'reader.scan.cancelled') { setScanNotice('Sesija je prekinuta.'); setScanSession(null); setScanPieceIndex(null); }
       }, (error) => setScanNotice(error?.message || 'Reader Station veza nije dostupna.'));
       setScanNotice('G2 čitač čeka EPC.');
     } catch (error) {
