@@ -874,6 +874,12 @@ export const ordersApi = {
 };
 
 export const workforceApi = {
+  pricing(userId) {
+    return apiRequest('/admin/workforce-pricing', { staff: true, query: userId ? { userId } : {} });
+  },
+  savePricing(rule) {
+    return apiRequest('/admin/workforce-pricing', { staff: true, method: 'PUT', body: rule });
+  },
   list(params = {}) {
     return apiRequest('/admin/workforce', { staff: true, query: params });
   },

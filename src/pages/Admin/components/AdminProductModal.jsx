@@ -16,6 +16,7 @@ import {
   mediaApi,
   inventoryApi,
   rfidApi,
+  workforceApi,
 } from '../../../services/dajaPlatform';
 import { adminCatalogApi, readerStationApi, subscribeReaderSession } from '../../../services/dajaPlatform';
 import FlashModal from '../../../components/modals/FlashModal.jsx';
@@ -25,6 +26,7 @@ import ImageManager from './ImageManager.jsx';
 import { generateSlug } from '../utils/generators.js';
 import CustomSelect from './CustomSelect.jsx';
 import ProductOperationsPanel from './ProductOperationsPanel.jsx';
+import WorkforceReviewNotes from './WorkforceReviewNotes.jsx';
 
 function validateEpcInput(value) {
   const epc = value
@@ -95,7 +97,7 @@ function catalogAttributeKey(value) {
  * Admin Product Modal
  * ... (dokumentacija ostaje ista) ...
  */
-export default function AdminProductModal({ product, onClose, onSuccess }) {
+export default function AdminProductModal({ product, onClose, onSuccess, reviewContext }) {
   const buildSeoDefaults = (baseProduct = {}) => {
     const baseTitle =
       `${baseProduct.brand || ''} ${baseProduct.name || ''}`.trim();
@@ -767,7 +769,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       ),
     }));
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (options = {}) => {
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
     const shouldReconcileQuantity = !product || quantityEditedRef.current;
     const shouldPersistPlacement = !product || placementEditedRef.current;
@@ -1191,12 +1193,16 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         setRemovedMediaLinkIds([]);
       }
       pendingUploadIdsRef.current.clear();
+      if (reviewContext && typeof options.reviewNote === 'string') {
+        await workforceApi.reviewProduct(savedProductId, 'changes_requested', options.reviewNote);
+      }
       await onSuccess?.();
 
-      setFlash({ open: true, title: 'Uspešno sačuvano!', ok: true });
+      setFlash({ open: true, title: options.reviewNote ? 'Sačuvano i vraćeno na doradu!' : 'Uspešno sačuvano!', ok: true });
       setTimeout(() => {
         closeModal();
       }, 500);
+      return true;
     } catch (err) {
       console.error(err);
       setFlash({
@@ -1529,6 +1535,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-8 flex flex-col gap-6">
+              {reviewContext && <WorkforceReviewNotes product={reviewContext.product} onReturn={note => handleSubmit({ reviewNote: note })} disabled={loading} />}
               <div className="bg-white p-5 rounded-xl shadow-none border border-neutral-200 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 [&_label>span:first-child]:mb-1 [&_label>span:first-child]:block [&_label>span:first-child]:text-xs [&_label>span:first-child]:font-bold [&_label>span:first-child]:uppercase [&_label>span:first-child]:tracking-wider [&_label>span:first-child]:text-neutral-500 [&_input]:bg-neutral-50 [&_input]:border-neutral-200 [&_input]:!rounded-xl [&_input]:px-4 [&_input]:py-3 [&_input]:text-sm">
                 <div>
                   <label className="block">
