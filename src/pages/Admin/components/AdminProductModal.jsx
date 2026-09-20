@@ -165,7 +165,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     mainImageUrl: '',
     seo: buildSeoDefaults(),
     active: true,
-    published: false,
+    published: true,
   });
   // One catalog product can represent several physical pieces.  Keep the
   // RFID, barcode and storage placement with the individual piece instead of
@@ -331,9 +331,9 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         binId: product.binId || product.bin_id || '',
         // [NOVO] Učitavamo postojeće features ili postavljamo jedan prazan red
         features:
-          product.features && product.features.length > 0
-            ? product.features
-            : [{ title: '', subtitle: '' }],
+          product.features?.filter(
+            (feature) => !/^rfid\b/i.test(String(feature?.title || '').trim()),
+          ) ?? [],
         model3DUrl: product.model3DUrl || '',
         department: product.department || 'satovi',
         slug: product.slug || '',
@@ -361,7 +361,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       }
       const initialQuantity = Math.max(1, Number(product.quantity ?? product.stockQuantity ?? 1));
       setPieceDetails(Array.from({ length: initialQuantity }, (_, index) => ({
-        barcode: extraBarcodes[index] || (index === 0 ? product.barcode || '' : ''),
+        barcode: extraBarcodes[index] || '',
         epc: index === 0 ? validateEpcInput(product.epc || '').value : '',
         // Empty means "use the product default location". A value here is an
         // explicit per-piece override.
@@ -374,12 +374,12 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
       // [NOVO] Reset za novi proizvod - dodajemo jedan prazan red da bude spremno
       setForm((prev) => ({
         ...prev,
-        features: [{ title: '', subtitle: '' }],
+        features: [],
         // [NOVO] Učitavamo postojeće URL-ove ako ih proizvod već ima
         thumbnailUrl: '',
         mainImageUrl: '',
         seo: buildSeoDefaults(),
-        published: false,
+        published: true,
       }));
       setPieceDetails([{ barcode: '', epc: '', locationId: '', zoneId: '', binId: '' }]);
       setSelectedPieceIndex(0);
@@ -704,7 +704,10 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
       // [NOVO] Filtriramo prazne redove pre čuvanja
       const cleanFeatures = (form.features || []).filter(
-        (f) => f.title && f.title.trim() !== '',
+        (feature) =>
+          feature.title &&
+          feature.title.trim() !== '' &&
+          !/^rfid\b/i.test(feature.title.trim()),
       );
       // The Platform accepts catalog attributes only under lowercase
       // snake_case keys. Older products may contain display labels such as
@@ -739,7 +742,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
           {
             ...(form.variants?.[0]?.id ? { id: form.variants[0].id } : {}),
             sku: form.sku?.trim() || null,
-            barcode: pieces[0]?.barcode || gtinValidation.value || null,
+            barcode: gtinValidation.value || null,
             mpn: form.mpn?.trim() || null,
             // The UI has one internal sellable row. Blank means use the
             // product title, never store an unnamed POS item.
@@ -1434,11 +1437,11 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                 <div className="order-5">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      GTIN / EAN
+                      GTIN / EAN proizvoda
                     </span>
                     <input
-                      value={pieceDetails[0]?.barcode || ''}
-                      onChange={(e) => updatePiece(0, 'barcode', e.target.value)}
+                      value={form.barcode || ''}
+                      onChange={(e) => handleChange('barcode', e.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
                       placeholder="8, 12, 13 ili 14 cifara"
                     />
