@@ -344,6 +344,7 @@ function AdminDashboardContent() {
   // ... (State varijable ostaju iste: activeTab, searchTerm, filters...)
   const [activeTab, setActiveTab] = useState('products');
   const [staffAccess, setStaffAccess] = useState(null);
+  const [staffAccessLoaded, setStaffAccessLoaded] = useState(false);
   const isCatalogContributor = Boolean(
     !staffAccess?.isOwner && staffAccess?.roles?.includes('Unosilac kataloga'),
   );
@@ -386,12 +387,13 @@ function AdminDashboardContent() {
     let cancelled = false;
     accessControlApi.me()
       .then((access) => { if (!cancelled) setStaffAccess(access); })
-      .catch(() => { if (!cancelled) setStaffAccess(null); });
+      .catch(() => { if (!cancelled) setStaffAccess(null); })
+      .finally(() => { if (!cancelled) setStaffAccessLoaded(true); });
     return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
-    if (isCatalogContributor && !['products', 'brands', 'categories', 'specs'].includes(activeTab)) {
+    if (isCatalogContributor && !['products', 'brands', 'categories', 'specs', 'my-workforce'].includes(activeTab)) {
       setActiveTab('products');
     }
   }, [activeTab, isCatalogContributor]);
@@ -929,7 +931,7 @@ function AdminDashboardContent() {
               icon={List}
               label="Specifikacije"
             />
-            {isCatalogContributor && (
+            {staffAccessLoaded && isCatalogContributor && (
               <TabButton
                 active={activeTab === 'my-workforce'}
                 onClick={() => setActiveTab('my-workforce')}
@@ -937,7 +939,7 @@ function AdminDashboardContent() {
                 label="Moj učinak"
               />
             )}
-            {!isCatalogContributor && (
+            {staffAccessLoaded && !isCatalogContributor && (
               <>
                 <TabButton active={activeTab === 'audit'} onClick={() => setActiveTab('audit')} icon={ClipboardList} label="Dnevnik" />
                 <TabButton active={activeTab === 'workforce'} onClick={() => setActiveTab('workforce')} icon={ClipboardList} label="Učinak zaposlenih" />
