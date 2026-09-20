@@ -12,7 +12,10 @@ const ProductFeatures = ({ product }) => {
   }
 
   const validFeatures = product.features.filter(
-    (f) => f.title && f.title.trim() !== ''
+    (feature) =>
+      feature.title &&
+      feature.title.trim() !== '' &&
+      !/^rfid\b/i.test(feature.title.trim())
   );
 
   if (validFeatures.length === 0) return null;

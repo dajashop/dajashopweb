@@ -69,7 +69,12 @@ export default function Product() {
   const hasFeatures = useMemo(() => {
     if (!p || !p.features || !Array.isArray(p.features)) return false;
     // Proveravamo da li ima bar jedna validna funkcionalnost sa naslovom
-    return p.features.some((f) => f.title && f.title.trim() !== '');
+    return p.features.some(
+      (feature) =>
+        feature.title &&
+        feature.title.trim() !== '' &&
+        !/^rfid\b/i.test(feature.title.trim()),
+    );
   }, [p]);
 
   if (loading)
