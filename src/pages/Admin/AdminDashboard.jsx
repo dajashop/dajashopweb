@@ -1128,7 +1128,11 @@ function AdminDashboardContent() {
                                   <p className="mt-2 text-xs text-amber-800">Kliknite na ikonu olovke, uradite tražene izmene i sačuvajte. Artikal će potom ponovo biti poslat na proveru.</p>
                                 </div>
                               ) : (
-                                <span className="text-neutral-500">{p.qualityReviewStatus === 'pending' ? 'Čeka proveru vlasnika.' : 'Spreman za dalji rad.'}</span>
+                                <div className="flex flex-wrap gap-x-5 gap-y-1 text-neutral-600">
+                                  <span><strong className="text-neutral-800">Odeljenje:</strong> {p.department || '—'}</span>
+                                  <span><strong className="text-neutral-800">Brend:</strong> {p.brand || '—'}</span>
+                                  <span><strong className="text-neutral-800">Kategorija:</strong> {p.category || '—'}</span>
+                                </div>
                               )}
                             </td>
                           ) : <td className="p-4 text-neutral-500">{p.category}</td>}
