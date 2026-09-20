@@ -900,6 +900,15 @@ export const workforceApi = {
   },
 };
 
+export const accessControlApi = {
+  users() { return apiRequest('/admin/access/users', { staff: true }); },
+  roles() { return apiRequest('/admin/access/roles', { staff: true }); },
+  createUser(payload) { return apiRequest('/admin/access/users', { method: 'POST', staff: true, body: payload }); },
+  updateAssignments(userId, assignments) {
+    return apiRequest(`/admin/access/users/${encodeURIComponent(userId)}/assignments`, { method: 'PUT', staff: true, body: { assignments } });
+  },
+};
+
 /** Remote G2 stations are staff-only. The browser never talks to reader
  * hardware; Daja Platform owns the one-active-session lock. */
 export const readerStationApi = {

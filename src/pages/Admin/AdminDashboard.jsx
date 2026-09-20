@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth';
 import {
   catalogAuditApi,
   workforceApi,
+  accessControlApi,
   importsApi,
 } from '../../services/dajaPlatform';
 import { useNavigate } from 'react-router-dom';
@@ -363,6 +364,12 @@ function AdminDashboardContent() {
   const [workerDetail, setWorkerDetail] = useState(null);
   const [workerRate, setWorkerRate] = useState('');
   const [defaultWorkerRate, setDefaultWorkerRate] = useState('');
+  const [accessUsers, setAccessUsers] = useState([]);
+  const [accessRoles, setAccessRoles] = useState([]);
+  const [newEmployeeName, setNewEmployeeName] = useState('');
+  const [newEmployeeEmail, setNewEmployeeEmail] = useState('');
+  const [accessLoading, setAccessLoading] = useState(false);
+  const [accessError, setAccessError] = useState('');
   const displayedAuditEvents = useMemo(
     () => collapseInitialCatalogEvents(auditEvents),
     [auditEvents],
@@ -494,6 +501,36 @@ function AdminDashboardContent() {
       cancelled = true;
     };
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'access') return undefined;
+    let cancelled = false;
+    setAccessLoading(true); setAccessError('');
+    Promise.all([accessControlApi.users(), accessControlApi.roles()])
+      .then(([users, roles]) => { if (!cancelled) { setAccessUsers(Array.isArray(users) ? users : []); setAccessRoles(Array.isArray(roles) ? roles : []); } })
+      .catch((error) => { if (!cancelled) setAccessError(error?.message || 'Korisnici i dozvole nisu dostupni.'); })
+      .finally(() => { if (!cancelled) setAccessLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeTab]);
+
+  const contributorRole = accessRoles.find((role) => role.code === 'catalog_contributor');
+  const createEmployee = async (event) => {
+    event.preventDefault();
+    if (!contributorRole) return;
+    try {
+      await accessControlApi.createUser({ email: newEmployeeEmail.trim(), displayName: newEmployeeName.trim(), roleId: contributorRole.id });
+      setNewEmployeeEmail(''); setNewEmployeeName('');
+      setAccessUsers(await accessControlApi.users());
+    } catch (error) { setAccessError(error?.message || 'Zaposleni nije dodat.'); }
+  };
+
+  const removeEmployeeAccess = async (employee) => {
+    if (!window.confirm(`Ukloniti pristup za ${employee.displayName || employee.email}?`)) return;
+    try {
+      await accessControlApi.updateAssignments(employee.id, []);
+      setAccessUsers(await accessControlApi.users());
+    } catch (error) { setAccessError(error?.message || 'Dozvole nisu promenjene.'); }
+  };
 
   useEffect(() => {
     if (activeTab !== 'workforce') return undefined;
@@ -854,6 +891,12 @@ function AdminDashboardContent() {
               onClick={() => setActiveTab('workforce')}
               icon={ClipboardList}
               label="Učinak zaposlenih"
+            />
+            <TabButton
+              active={activeTab === 'access'}
+              onClick={() => setActiveTab('access')}
+              icon={ShieldCheck}
+              label="Korisnici i dozvole"
             />
             <TabButton
               active={activeTab === 'privacy'}
@@ -1318,6 +1361,26 @@ function AdminDashboardContent() {
         )}
 
         {activeTab === 'privacy' && <PolicyPublicationPanel />}
+
+        {activeTab === 'access' && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+              <h2 className="text-lg font-bold text-neutral-900">Korisnici i dozvole</h2>
+              <p className="mt-1 text-sm text-neutral-500">Dodaj zaposlenog koji može da radi samo sa svojim artiklima.</p>
+              <form onSubmit={createEmployee} className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                <input required type="text" value={newEmployeeName} onChange={(event) => setNewEmployeeName(event.target.value)} placeholder="Ime i prezime" className="rounded-xl border border-neutral-200 px-3 py-2.5 text-sm" />
+                <input required type="email" value={newEmployeeEmail} onChange={(event) => setNewEmployeeEmail(event.target.value)} placeholder="E-mail Google naloga" className="rounded-xl border border-neutral-200 px-3 py-2.5 text-sm" />
+                <button disabled={!contributorRole} type="submit" className="rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Dodaj zaposlenog</button>
+              </form>
+              {!contributorRole && !accessLoading && <p className="mt-3 text-sm text-amber-700">Rola „Unosilac kataloga” još nije kreirana. Sačekaj da se migracija 046 izvrši na backendu.</p>}
+            </div>
+            {accessError && <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{accessError}</div>}
+            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+              <div className="border-b border-neutral-100 p-4 text-sm font-bold">Zaposleni sa pristupom</div>
+              {accessLoading ? <p className="p-8 text-center text-neutral-500">Učitavanje korisnika…</p> : <div className="divide-y divide-neutral-100">{accessUsers.map((employee) => { const assignment = employee.assignments?.find((item) => item.roleId === contributorRole?.id); return <div key={employee.id} className="flex flex-wrap items-center justify-between gap-3 p-4"><div><div className="font-semibold text-neutral-900">{employee.displayName}</div><div className="text-sm text-neutral-500">{employee.email}</div></div><div className="flex items-center gap-3"><span className={`rounded-full px-3 py-1 text-xs font-bold ${assignment ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>{assignment ? 'Unosilac kataloga' : 'Druga rola'}</span>{assignment && <button type="button" onClick={() => void removeEmployeeAccess(employee)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600">Ukloni pristup</button>}</div></div>; })}{!accessUsers.length && !accessLoading && <p className="p-8 text-center text-neutral-500">Nema korisnika.</p>}</div>}
+            </div>
+          </motion.div>
+        )}
 
         {/* Ostali tabovi za Brendove/Kategorije/Specifikacije (ostaju nepromenjeni) */}
         {activeTab === 'brands' /* ... kod za brendove ... */ && (
