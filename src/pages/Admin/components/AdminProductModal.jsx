@@ -176,6 +176,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
   const [readerStationId, setReaderStationId] = useState('');
   const [scanSession, setScanSession] = useState(null);
   const [scanNotice, setScanNotice] = useState('');
+  const [waitingForReaderRelease, setWaitingForReaderRelease] = useState(false);
   const readerSessionUnsubscribeRef = useRef(null);
 
   // State za Image Gallery Modal
@@ -219,6 +220,32 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
     }).catch(() => { if (active) setReaderStations([]); });
     return () => { active = false; readerSessionUnsubscribeRef.current?.(); };
   }, []);
+
+  useEffect(() => {
+    if (!waitingForReaderRelease || !readerStationId) return undefined;
+    let active = true;
+    const checkReader = async () => {
+      try {
+        const items = await readerStationApi.list();
+        if (!active) return;
+        const online = Array.isArray(items) ? items : [];
+        setReaderStations(online);
+        const station = online.find((item) => item.id === readerStationId);
+        if (!station) {
+          setWaitingForReaderRelease(false);
+          setScanNotice('G2 čitač više nije online. Otvorite Reader Station aplikaciju na uređaju.');
+        } else if (!station.busy) {
+          setWaitingForReaderRelease(false);
+          setScanNotice('G2 čitač je sada slobodan — možete da pokrenete očitavanje.');
+        }
+      } catch {
+        // Keep waiting; a temporary network failure must not claim that the reader is free.
+      }
+    };
+    void checkReader();
+    const interval = window.setInterval(() => { void checkReader(); }, 4_000);
+    return () => { active = false; window.clearInterval(interval); };
+  }, [readerStationId, waitingForReaderRelease]);
 
   useEffect(() => {
     const imageUrl = form.seo?.ogImage || form.images?.[0]?.url;
@@ -557,6 +584,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
 
   const startReaderSession = async () => {
     if (!readerStationId) { setScanNotice('Nema online G2 čitača. Otvorite Reader Station aplikaciju na uređaju.'); return; }
+    setWaitingForReaderRelease(false);
     setScanNotice('Šaljem zahtev G2 čitaču…');
     try {
       const created = await readerStationApi.start(readerStationId, crypto.randomUUID(), {
@@ -580,7 +608,13 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
         if (event.event === 'reader.scan.cancelled') { setScanNotice('Sesija je prekinuta.'); setScanSession(null); }
       }, (error) => setScanNotice(error?.message || 'Reader Station veza nije dostupna.'));
       setScanNotice('G2 čitač čeka EPC.');
-    } catch (error) { setScanNotice(error?.message || 'Ne mogu da pokrenem očitavanje.'); }
+    } catch (error) {
+      const message = error?.message || 'Ne mogu da pokrenem očitavanje.';
+      if (message.includes('Čitač je zauzet')) {
+        setWaitingForReaderRelease(true);
+        setScanNotice('G2 čitač je zauzet. Pratim sesiju i javiću čim se oslobodi.');
+      } else setScanNotice(message);
+    }
   };
 
   const handleQuantityChange = (value) => {
@@ -1678,7 +1712,7 @@ export default function AdminProductModal({ product, onClose, onSuccess }) {
                   <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
                     <div className="flex flex-wrap items-center gap-2">
                       {readerStations.length > 1 ? <select value={readerStationId} disabled={Boolean(scanSession)} onChange={(event) => setReaderStationId(event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm"><option value="">Izaberite G2 čitač</option>{readerStations.map((station) => <option key={station.id} value={station.id}>{station.name}</option>)}</select> : <span className="text-xs font-semibold text-emerald-800">{readerStations[0]?.name || 'Nema online G2 čitača'}</span>}
-                      {!scanSession ? <button type="button" onClick={() => void startReaderSession()} className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white">Očitaj sa G2</button> : <button type="button" onClick={() => void cancelReaderSession()} className="rounded-lg border border-emerald-700 px-3 py-2 text-sm font-bold text-emerald-800">Nova sesija / promeni čitač</button>}
+                      {!scanSession ? <button type="button" disabled={waitingForReaderRelease} onClick={() => void startReaderSession()} className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60">{waitingForReaderRelease ? 'Čekam G2…' : 'Očitaj sa G2'}</button> : <button type="button" onClick={() => void cancelReaderSession()} className="rounded-lg border border-emerald-700 px-3 py-2 text-sm font-bold text-emerald-800">Nova sesija / promeni čitač</button>}
                     </div>
                     {scanNotice ? <p className="mt-2 text-xs text-emerald-900" role="status">{scanNotice}</p> : null}
                   </div>
