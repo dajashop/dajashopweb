@@ -817,7 +817,20 @@ function AdminDashboardContent() {
       p.name.toLowerCase().includes(term) ||
       p.brand.toLowerCase().includes(term)
     );
+  }).sort((left, right) => {
+    // A contributor's corrections are the most urgent work. Keep every
+    // returned article at the top even when the rest of the catalog is sorted
+    // or refreshed in a different order.
+    if (!isCatalogContributor) return 0;
+    const rank = (product) => product.qualityReviewStatus === 'changes_requested' ? 0 : 1;
+    const rankDifference = rank(left) - rank(right);
+    if (rankDifference) return rankDifference;
+    return new Date(right.qualityReviewedAt || right.updatedAt || 0).getTime()
+      - new Date(left.qualityReviewedAt || left.updatedAt || 0).getTime();
   });
+  const returnedForRevisionCount = isCatalogContributor
+    ? products.filter((product) => product.qualityReviewStatus === 'changes_requested').length
+    : 0;
 
   // Memoizacija (visibleBrands, visibleCategories...) ostaje ista
   const visibleBrands = useMemo(() => {
@@ -934,6 +947,13 @@ function AdminDashboardContent() {
               onImport={handleBulkImport}
             />
 
+            {isCatalogContributor && returnedForRevisionCount > 0 && (
+              <div className="rounded-2xl border border-amber-300 bg-amber-100 px-5 py-4 text-amber-950 shadow-sm">
+                <p className="font-bold">Imate {returnedForRevisionCount} {returnedForRevisionCount === 1 ? 'artikal vraćen' : 'artikla vraćena'} na doradu.</p>
+                <p className="mt-1 text-sm">Otvorite žuti red ispod, uradite navedene ispravke i sačuvajte artikal. Zatim ponovo ide na proveru.</p>
+              </div>
+            )}
+
             {/* SEARCH BAR I DUGME DODAJ (Ostaje isto) */}
             <div className="flex flex-wrap gap-4 justify-between items-center bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
               <div className="flex flex-1 max-w-2xl gap-2">
@@ -1021,10 +1041,10 @@ function AdminDashboardContent() {
                     <tr>
                       <th className="p-4">Slika</th>
                       <th className="p-4">Naziv</th>
-                      <th className="p-4">Odeljenje</th>
-                      <th className="p-4">Brend</th>
+                      {!isCatalogContributor && <th className="p-4">Odeljenje</th>}
+                      {!isCatalogContributor && <th className="p-4">Brend</th>}
                       <th className="p-4">Cena</th>
-                      <th className="p-4">Kategorija</th>
+                      {isCatalogContributor ? <th className="p-4 min-w-[28rem]">Zadatak za doradu</th> : <th className="p-4">Kategorija</th>}
                       <th className="p-4 text-right">Akcije</th>
                     </tr>
                   </thead>
@@ -1032,11 +1052,15 @@ function AdminDashboardContent() {
                     {filteredProducts.map((p) => {
                       // Provera da li je sakriven
                       const isHidden = p.isVisible === false;
+                      const needsRevision = isCatalogContributor && p.qualityReviewStatus === 'changes_requested';
+                      const revisionNote = String(p.qualityReviewNote || '').trim();
                       return (
                         <tr
                           key={p.id}
                           className={`transition-colors ${
-                            isHidden
+                            needsRevision
+                              ? 'bg-amber-100 hover:bg-amber-200'
+                              : isHidden
                               ? 'bg-neutral-100/50 opacity-60'
                               : 'hover:bg-neutral-50'
                           }`}
@@ -1062,6 +1086,11 @@ function AdminDashboardContent() {
                             <div className="flex flex-col">
                               <span>
                                 {p.name}{' '}
+                                {needsRevision && (
+                                  <span className="text-[10px] text-amber-800 uppercase ml-2 font-extrabold">
+                                    (Doraditi)
+                                  </span>
+                                )}
                                 {isHidden && (
                                   <span className="text-[10px] text-red-500 uppercase ml-2">
                                     (Sakriven)
@@ -1073,22 +1102,36 @@ function AdminDashboardContent() {
                               </span>
                             </div>
                           </td>
-                          <td className="p-4">
-                            {' '}
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-blue-50 text-blue-700 uppercase tracking-wider">
-                              {p.department || 'satovi'}
-                            </span>{' '}
-                          </td>
-                          <td className="p-4">
-                            {' '}
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
-                              {p.brand}
-                            </span>{' '}
-                          </td>
+                          {!isCatalogContributor && (
+                            <td className="p-4">
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-blue-50 text-blue-700 uppercase tracking-wider">
+                                {p.department || 'satovi'}
+                              </span>
+                            </td>
+                          )}
+                          {!isCatalogContributor && (
+                            <td className="p-4">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
+                                {p.brand}
+                              </span>
+                            </td>
+                          )}
                           <td className="p-4 font-mono font-bold text-neutral-900">
                             {money(p.price)}
                           </td>
-                          <td className="p-4 text-neutral-500">{p.category}</td>
+                          {isCatalogContributor ? (
+                            <td className="p-4 text-sm text-amber-950">
+                              {needsRevision ? (
+                                <div className="max-w-2xl leading-relaxed">
+                                  <p className="font-extrabold">Vraćeno na doradu</p>
+                                  <p className="mt-1 font-medium">{revisionNote || 'Vlasnik je zatražio doradu ovog artikla. Proverite podatke, ispravite ih i sačuvajte proizvod.'}</p>
+                                  <p className="mt-2 text-xs text-amber-800">Kliknite na ikonu olovke, uradite tražene izmene i sačuvajte. Artikal će potom ponovo biti poslat na proveru.</p>
+                                </div>
+                              ) : (
+                                <span className="text-neutral-500">{p.qualityReviewStatus === 'pending' ? 'Čeka proveru vlasnika.' : 'Spreman za dalji rad.'}</span>
+                              )}
+                            </td>
+                          ) : <td className="p-4 text-neutral-500">{p.category}</td>}
 
                           {/* --- AKCIJE --- */}
                           <td className="p-4 text-right">
