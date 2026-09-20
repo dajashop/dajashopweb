@@ -15,7 +15,7 @@ import HamburgerMenu from './HamburgerMenu.jsx';
 export default function Header() {
   const { count, cart } = useCart();
   const { count: wishlistCount } = useWishlist();
-  const { user } = useAuth();
+  const { user, staffReady } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadOrders, setUnreadOrders] = useState(0);
 
@@ -82,6 +82,7 @@ export default function Header() {
         count={count}
         cart={cart}
         user={user}
+        staffReady={staffReady}
         anchorEl={anchorRef}
         onUnreadOrdersChange={setUnreadOrders}
       />

@@ -43,6 +43,7 @@ export default function HamburgerMenu({
   onClose,
   count = 0,
   user = null,
+  staffReady = false,
   anchorEl = null,
   onUnreadOrdersChange,
 }) {
@@ -111,6 +112,7 @@ export default function HamburgerMenu({
         anchorEl={anchorEl}
         showAuth={showAuth}
         isAdmin={isAdmin}
+        isStaff={staffReady}
         unreadOrders={unreadOrders} // <--- ŠALJEMO DOLE
       />
     ) : (
@@ -120,6 +122,7 @@ export default function HamburgerMenu({
         user={user}
         showAuth={showAuth}
         isAdmin={isAdmin}
+        isStaff={staffReady}
         unreadOrders={unreadOrders} // <--- ŠALJEMO DOLE
       />
     ),
@@ -152,6 +155,7 @@ function DesktopDropdown({
   anchorEl,
   showAuth,
   isAdmin,
+  isStaff,
   unreadOrders,
 }) {
   const ddRef = useRef(null);
@@ -267,6 +271,13 @@ function DesktopDropdown({
               </>
             )}
 
+            {isStaff && !isAdmin && (
+              <>
+                <div className="border-t border-white/10 my-1"></div>
+                <DDItem to="/admin" label="Katalog proizvoda" onClose={onClose} style={{ color: '#0f9f78' }} />
+              </>
+            )}
+
             {user ? (
               <DDItem
                 to="/account/profile"
@@ -315,7 +326,7 @@ function DDItem({ to, label, strong, onClose, style }) {
 }
 
 /* ----- MOBILE: slide-over panel ----- */
-function MobileSheet({ open, onClose, user, showAuth, isAdmin, unreadOrders }) {
+function MobileSheet({ open, onClose, user, showAuth, isAdmin, isStaff, unreadOrders }) {
   const panelRef = useRef(null);
   const firstFocusableRef = useRef(null);
   const { items, count } = useCart();
@@ -467,6 +478,14 @@ function MobileSheet({ open, onClose, user, showAuth, isAdmin, unreadOrders }) {
                             {unreadOrders}
                           </span>
                         )}
+                      </Link>
+                    </div>
+                  )}
+                  {isStaff && !isAdmin && (
+                    <div className="mt-2 border-t border-white/10 pt-2">
+                      <div className="text-xs font-bold text-neutral-500 uppercase px-4 mb-1">Katalog</div>
+                      <Link className="hm__link" to="/admin" onClick={onClose} style={{ color: '#0f9f78' }}>
+                        <Package size={18} style={{ marginRight: 10 }} /> Katalog proizvoda
                       </Link>
                     </div>
                   )}

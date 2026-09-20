@@ -343,6 +343,11 @@ function AdminDashboardContent() {
 
   // ... (State varijable ostaju iste: activeTab, searchTerm, filters...)
   const [activeTab, setActiveTab] = useState('products');
+  const [staffAccess, setStaffAccess] = useState(null);
+  const isCatalogContributor = Boolean(
+    staffAccess && !staffAccess.isOwner &&
+    staffAccess.permissions?.includes('catalog.contributor'),
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFilters, setSearchFilters] = useState([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -374,6 +379,20 @@ function AdminDashboardContent() {
     () => collapseInitialCatalogEvents(auditEvents),
     [auditEvents],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    accessControlApi.me()
+      .then((access) => { if (!cancelled) setStaffAccess(access); })
+      .catch(() => { if (!cancelled) setStaffAccess(null); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (isCatalogContributor && !['products', 'brands', 'categories', 'specs'].includes(activeTab)) {
+      setActiveTab('products');
+    }
+  }, [activeTab, isCatalogContributor]);
 
   // ... (Ostali state-ovi za brendove, kategorije...)
   const [brands, setBrands] = useState([]);
@@ -880,36 +899,15 @@ function AdminDashboardContent() {
               icon={List}
               label="Specifikacije"
             />
-            <TabButton
-              active={activeTab === 'audit'}
-              onClick={() => setActiveTab('audit')}
-              icon={ClipboardList}
-              label="Dnevnik"
-            />
-            <TabButton
-              active={activeTab === 'workforce'}
-              onClick={() => setActiveTab('workforce')}
-              icon={ClipboardList}
-              label="Učinak zaposlenih"
-            />
-            <TabButton
-              active={activeTab === 'access'}
-              onClick={() => setActiveTab('access')}
-              icon={ShieldCheck}
-              label="Korisnici i dozvole"
-            />
-            <TabButton
-              active={activeTab === 'privacy'}
-              onClick={() => setActiveTab('privacy')}
-              icon={ShieldCheck}
-              label="Privatnost"
-            />
-            <TabButton
-              active={activeTab === 'promotions'}
-              onClick={() => setActiveTab('promotions')}
-              icon={Ticket}
-              label="Promo kodovi"
-            />
+            {!isCatalogContributor && (
+              <>
+                <TabButton active={activeTab === 'audit'} onClick={() => setActiveTab('audit')} icon={ClipboardList} label="Dnevnik" />
+                <TabButton active={activeTab === 'workforce'} onClick={() => setActiveTab('workforce')} icon={ClipboardList} label="Učinak zaposlenih" />
+                <TabButton active={activeTab === 'access'} onClick={() => setActiveTab('access')} icon={ShieldCheck} label="Korisnici i dozvole" />
+                <TabButton active={activeTab === 'privacy'} onClick={() => setActiveTab('privacy')} icon={ShieldCheck} label="Privatnost" />
+                <TabButton active={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} icon={Ticket} label="Promo kodovi" />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1124,13 +1122,15 @@ function AdminDashboardContent() {
                               >
                                 <Edit3 size={18} />
                               </button>
-                              <button
-                                onClick={() => setDeleteId(p.id)}
-                                className="p-2 text-neutral-400 hover:bg-red-50 hover:text-red-500 rounded-full"
-                                title="Obriši"
-                              >
-                                <X size={18} />
-                              </button>
+                              {!isCatalogContributor && (
+                                <button
+                                  onClick={() => setDeleteId(p.id)}
+                                  className="p-2 text-neutral-400 hover:bg-red-50 hover:text-red-500 rounded-full"
+                                  title="Obriši"
+                                >
+                                  <X size={18} />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

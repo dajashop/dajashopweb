@@ -901,6 +901,7 @@ export const workforceApi = {
 };
 
 export const accessControlApi = {
+  me() { return apiRequest('/admin/access/me', { staff: true }); },
   users() { return apiRequest('/admin/access/users', { staff: true }); },
   roles() { return apiRequest('/admin/access/roles', { staff: true }); },
   createUser(payload) { return apiRequest('/admin/access/users', { method: 'POST', staff: true, body: payload }); },
