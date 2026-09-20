@@ -1369,7 +1369,7 @@ function AdminDashboardContent() {
               <p className="mt-1 text-sm text-neutral-500">Dodaj zaposlenog koji može da radi samo sa svojim artiklima.</p>
               <form onSubmit={createEmployee} className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
                 <input required type="text" value={newEmployeeName} onChange={(event) => setNewEmployeeName(event.target.value)} placeholder="Ime i prezime" className="rounded-xl border border-neutral-200 px-3 py-2.5 text-sm" />
-                <input required type="email" value={newEmployeeEmail} onChange={(event) => setNewEmployeeEmail(event.target.value)} placeholder="E-mail Google naloga" className="rounded-xl border border-neutral-200 px-3 py-2.5 text-sm" />
+                <input required type="email" value={newEmployeeEmail} onChange={(event) => setNewEmployeeEmail(event.target.value)} placeholder="E-mail" className="rounded-xl border border-neutral-200 px-3 py-2.5 text-sm" />
                 <button disabled={!contributorRole} type="submit" className="rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Dodaj zaposlenog</button>
               </form>
               {!contributorRole && !accessLoading && <p className="mt-3 text-sm text-amber-700">Rola „Unosilac kataloga” još nije kreirana. Sačekaj da se migracija 046 izvrši na backendu.</p>}
