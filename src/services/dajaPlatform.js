@@ -349,10 +349,10 @@ export const authApi = {
     return normalizeUser(data);
   },
   async oauthStart(provider, onProgress) {
-    // Do not keep the user inside a loading modal while a Render instance is
-    // waking up. Navigating to the OAuth endpoint lets the browser own that
-    // wait and continue to Google as soon as the API is available.
-    onProgress?.({ attempt: 1, elapsedMs: 0 });
+    // Keep the customer on DajaShop while a sleeping Render instance starts.
+    // Redirect only after the API is serving JSON, so Render's wake-up screen
+    // is never shown as part of the Google sign-in flow.
+    await waitForApiBeforeOAuth(onProgress);
 
     // The API validates and signs this URL's origin into the OAuth state, then
     // returns the customer to this exact route (including catalog filters).
