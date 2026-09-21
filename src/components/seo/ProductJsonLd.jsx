@@ -1,6 +1,6 @@
 import React from 'react';
 import JsonLd from './JsonLd.jsx';
-import { seoConfig } from '../../config/seo.js';
+import { commerceSeoConfig, seoConfig } from '../../config/seo.js';
 
 function collectProductImages(product) {
   const list = [];
@@ -52,6 +52,36 @@ function getAverageRating(reviews) {
   if (!values.length) return null;
   const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
   return Number(avg.toFixed(1));
+}
+
+function shippingDetails() {
+  return {
+    '@type': 'OfferShippingDetails',
+    shippingRate: {
+      '@type': 'MonetaryAmount',
+      value: String(commerceSeoConfig.shippingCost),
+      currency: commerceSeoConfig.currency,
+    },
+    shippingDestination: {
+      '@type': 'DefinedRegion',
+      addressCountry: commerceSeoConfig.country,
+    },
+    deliveryTime: {
+      '@type': 'ShippingDeliveryTime',
+      handlingTime: {
+        '@type': 'QuantitativeValue',
+        minValue: 0,
+        maxValue: 0,
+        unitCode: 'DAY',
+      },
+      transitTime: {
+        '@type': 'QuantitativeValue',
+        minValue: commerceSeoConfig.deliveryMinDays,
+        maxValue: commerceSeoConfig.deliveryMaxDays,
+        unitCode: 'DAY',
+      },
+    },
+  };
 }
 
 export default function ProductJsonLd({ product, reviews = [] }) {
@@ -114,25 +144,31 @@ export default function ProductJsonLd({ product, reviews = [] }) {
         '@type': 'Organization',
         name: seoConfig.siteName,
       },
+      shippingDetails: shippingDetails(),
       hasMerchantReturnPolicy: {
         '@type': 'MerchantReturnPolicy',
-        applicableCountry: 'RS',
-        returnPolicyCountry: 'RS',
+        applicableCountry: commerceSeoConfig.country,
+        returnPolicyCountry: commerceSeoConfig.country,
         returnPolicyCategory:
           'https://schema.org/MerchantReturnFiniteReturnWindow',
         returnMethod: 'https://schema.org/ReturnByMail',
-        merchantReturnDays: 14,
+        merchantReturnDays: commerceSeoConfig.returnDays,
         returnFees: 'https://schema.org/ReturnShippingFees',
       },
     },
   };
 
-  const avgRating = Array.isArray(reviews) ? getAverageRating(reviews) : null;
-  if (avgRating !== null && reviews.length > 0) {
+  const avgRating = Number.isFinite(Number(product.reviewSummary?.averageRating))
+    ? Number(product.reviewSummary.averageRating)
+    : Array.isArray(reviews)
+      ? getAverageRating(reviews)
+      : null;
+  const reviewCount = Number(product.reviewSummary?.ratingCount || reviews.length);
+  if (avgRating !== null && reviewCount > 0) {
     schema.aggregateRating = {
       '@type': 'AggregateRating',
       ratingValue: String(avgRating),
-      reviewCount: String(reviews.length),
+      reviewCount: String(reviewCount),
     };
   }
 

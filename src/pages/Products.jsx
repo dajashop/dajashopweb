@@ -152,7 +152,7 @@ export default function Product() {
         type="product"
         url={`${siteRoot}/product/${p.slug}`}
       />
-      <ProductJsonLd product={p} />
+      <ProductJsonLd product={p} reviews={p.reviews || []} />
       <BreadcrumbJsonLd
         items={[
           { name: departmentName, url: `${siteRoot}${departmentPath}` },

@@ -1,9 +1,20 @@
 /* global HTMLRewriter */
 
-const BOT_UA_REGEX =
-  /(facebookexternalhit|facebot|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegrambot|pinterest|googlebot|bingbot|yandexbot|duckduckbot)/i;
 const SEO_CACHE_SECONDS = 120;
 const GOOGLE_OAUTH_CALLBACK_PATH = '/api/v1/customer-auth/oauth/google/callback';
+const COMMERCE = {
+  country: 'RS',
+  currency: 'RSD',
+  shippingCost: 380,
+  freeShippingThreshold: 10000,
+  deliveryMinDays: 1,
+  deliveryMaxDays: 3,
+  returnDays: 14,
+};
+const PRIVATE_PATHS = new Set([
+  '/cart', '/checkout', '/account', '/orders', '/admin', '/verify-email',
+  '/reset-password', '/logout', '/unsubscribe', '/privacy', '/cookies', '/terms',
+]);
 
 function isProductPath(pathname) {
   return /^\/product\/[^/]+\/?$/.test(pathname);
@@ -57,6 +68,62 @@ function gtinProperty(barcode) {
     : {};
 }
 
+function shippingDetails() {
+  return {
+    '@type': 'OfferShippingDetails',
+    shippingRate: {
+      '@type': 'MonetaryAmount',
+      value: String(COMMERCE.shippingCost),
+      currency: COMMERCE.currency,
+    },
+    shippingDestination: {
+      '@type': 'DefinedRegion',
+      addressCountry: COMMERCE.country,
+    },
+    deliveryTime: {
+      '@type': 'ShippingDeliveryTime',
+      handlingTime: { '@type': 'QuantitativeValue', minValue: 0, maxValue: 0, unitCode: 'DAY' },
+      transitTime: {
+        '@type': 'QuantitativeValue',
+        minValue: COMMERCE.deliveryMinDays,
+        maxValue: COMMERCE.deliveryMaxDays,
+        unitCode: 'DAY',
+      },
+    },
+  };
+}
+
+function siteSchemas(siteUrl) {
+  const logo = `${siteUrl}/images/og-default.jpg`;
+  return [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Store',
+      name: 'DajaShop',
+      url: siteUrl,
+      logo,
+      image: logo,
+      telephone: '+381641262425',
+      email: 'info@dajashop.com',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Podzemni prolaz lokal C31',
+        addressLocality: 'Niš',
+        postalCode: '18000',
+        addressCountry: 'RS',
+      },
+      openingHours: ['Mo-Fr 10:00-20:00', 'Sa 10:00-15:00'],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'DajaShop',
+      url: siteUrl,
+      inLanguage: 'sr-RS',
+    },
+  ];
+}
+
 function buildSeo({ siteUrl, product }) {
   const productName = `${product.brand_name || product.brand || ''} ${product.name || ''}`.trim();
   const title = product.seo?.metaTitle || productName || 'DajaShop';
@@ -83,13 +150,14 @@ function buildSeo({ siteUrl, product }) {
     availability: `https://schema.org/${availability ? 'InStock' : 'OutOfStock'}`,
     itemCondition: `https://schema.org/${condition}`,
     seller: { '@type': 'Organization', name: 'DajaShop' },
+    shippingDetails: shippingDetails(),
     hasMerchantReturnPolicy: {
       '@type': 'MerchantReturnPolicy',
       applicableCountry: 'RS',
       returnPolicyCountry: 'RS',
       returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
       returnMethod: 'https://schema.org/ReturnByMail',
-      merchantReturnDays: 14,
+      merchantReturnDays: COMMERCE.returnDays,
       returnFees: 'https://schema.org/ReturnShippingFees',
     },
   };
@@ -112,6 +180,22 @@ function buildSeo({ siteUrl, product }) {
     ...gtinProperty(product.barcode),
     offers: offer,
   };
+  const reviews = Array.isArray(product.reviews) ? product.reviews : [];
+  const reviewSummary = product.reviewSummary || null;
+  if (reviews.length && Number(reviewSummary?.averageRating) > 0) {
+    schema.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: String(reviewSummary.averageRating),
+      reviewCount: String(reviewSummary.ratingCount || reviews.length),
+    };
+    schema.review = reviews.slice(0, 20).map((review) => ({
+      '@type': 'Review',
+      author: { '@type': 'Person', name: review.userName || 'Kupac' },
+      datePublished: String(review.createdAt || '').slice(0, 10),
+      reviewBody: review.comment || '',
+      reviewRating: { '@type': 'Rating', ratingValue: String(review.rating), bestRating: '5', worstRating: '1' },
+    }));
+  }
   const breadcrumbs = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -127,9 +211,9 @@ function buildSeo({ siteUrl, product }) {
 async function fetchProductBySlug({ slug, env, request }) {
   const apiBase = (env.DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
   const cacheUrl = new URL(request.url);
-  // v2 prevents a response cached by an older worker payload shape from
+  // v3 prevents a response cached by an older worker payload shape from
   // leaking into the corrected product metadata response.
-  cacheUrl.pathname = `/__seo_cache/v2/product/${slug}.json`;
+  cacheUrl.pathname = `/__seo_cache/v3/product/${slug}.json`;
   const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
   const cached = await caches.default.match(cacheKey);
   if (cached) return cached.json();
@@ -164,9 +248,12 @@ function notFoundResponse() {
   );
 }
 
-function rewriteProductHtml(response, seo) {
+function rewriteProductHtml(response, seo, siteUrl) {
   const safeJson = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
-  const injector = `<meta property="og:image:alt" content="${escapeHtml(seo.imageAlt)}"><meta property="product:price:amount" content="${seo.price ?? ''}"><meta property="product:price:currency" content="RSD"><script type="application/ld+json">${safeJson(seo.schema)}</script><script type="application/ld+json">${safeJson(seo.breadcrumbs)}</script><script>window.__DAJASHOP_SERVER_PRODUCT_SCHEMA__=true;</script>`;
+  const globalSchemas = siteSchemas(siteUrl)
+    .map((schema) => `<script type="application/ld+json">${safeJson(schema)}</script>`)
+    .join('');
+  const injector = `<meta property="og:image:alt" content="${escapeHtml(seo.imageAlt)}"><meta property="product:price:amount" content="${seo.price ?? ''}"><meta property="product:price:currency" content="RSD"><script type="application/ld+json">${safeJson(seo.schema)}</script><script type="application/ld+json">${safeJson(seo.breadcrumbs)}</script>${globalSchemas}<script>window.__DAJASHOP_SERVER_PRODUCT_SCHEMA__=true;</script>`;
   const metaValues = {
     description: seo.description,
     robots: 'index,follow,max-image-preview:large',
@@ -190,9 +277,26 @@ function rewriteProductHtml(response, seo) {
     .transform(response);
 }
 
+function rewritePublicHtml(response, siteUrl) {
+  const safeJson = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
+  const injector = siteSchemas(siteUrl)
+    .map((schema) => `<script type="application/ld+json">${safeJson(schema)}</script>`)
+    .join('');
+  return new HTMLRewriter()
+    .on('head', { element(element) { element.append(injector, { html: true }); } })
+    .transform(response);
+}
+
+function rewriteNoIndexHtml(response) {
+  return new HTMLRewriter()
+    .on('meta[name="robots"]', { element(element) { element.setAttribute('content', 'noindex,follow,max-image-preview:large'); } })
+    .transform(response);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const normalizedPath = url.pathname.replace(/\/+$/, '') || '/';
     const apiBase = (env.DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
     if (url.pathname === GOOGLE_OAUTH_CALLBACK_PATH) {
       const callbackUrl = new URL(`${apiBase}/customer-auth/oauth/google/callback`);
@@ -202,12 +306,21 @@ export default {
     if (url.pathname === '/sitemap.xml') {
       return fetch(`${apiBase}/public/catalog/sitemap.xml`, { cf: { cacheEverything: true, cacheTtl: 3600 } });
     }
+    if (url.pathname === '/merchant-feed.xml') {
+      return fetch(`${apiBase}/public/catalog/merchant-feed.xml`, { cf: { cacheEverything: true, cacheTtl: 3600 } });
+    }
 
     let response = await env.ASSETS.fetch(request);
     if (response.status === 404 && !url.pathname.match(/\.\w{1,5}$/)) {
       response = await env.ASSETS.fetch(new Request(`${url.protocol}//${url.host}/index.html`, request));
     }
-    if (!isProductPath(url.pathname)) return response;
+    const siteUrl = (env.SITE_URL || `${url.protocol}//${url.host}`).replace(/\/$/, '');
+    if (PRIVATE_PATHS.has(normalizedPath) || normalizedPath.startsWith('/account/') || normalizedPath.startsWith('/admin/')) {
+      return rewriteNoIndexHtml(response);
+    }
+    if (!isProductPath(url.pathname)) {
+      return url.pathname.match(/\.\w{1,5}$/) ? response : rewritePublicHtml(response, siteUrl);
+    }
 
     const productResult = await fetchProductBySlug({ slug: getSlugFromPath(url.pathname), env, request });
     if (productResult?.redirectTo) {
@@ -215,9 +328,6 @@ export default {
     }
     if (productResult?.missing) return notFoundResponse();
     if (!productResult?.product) return response;
-    if (!BOT_UA_REGEX.test(request.headers.get('user-agent') || '')) return response;
-
-    const siteUrl = (env.SITE_URL || `${url.protocol}//${url.host}`).replace(/\/$/, '');
-    return rewriteProductHtml(response, buildSeo({ siteUrl, product: productResult.product }));
+    return rewriteProductHtml(response, buildSeo({ siteUrl, product: productResult.product }), siteUrl);
   },
 };

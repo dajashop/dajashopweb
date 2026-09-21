@@ -11,13 +11,25 @@ export const seoConfig = {
   siteLogoUrl: import.meta.env.VITE_SITE_LOGO_URL || '',
   googleSiteVerification: import.meta.env.VITE_GOOGLE_SITE_VERIFICATION || '',
   business: {
-    name: import.meta.env.VITE_BUSINESS_NAME || '',
-    street: import.meta.env.VITE_BUSINESS_STREET || '',
-    city: import.meta.env.VITE_BUSINESS_CITY || '',
-    postalCode: import.meta.env.VITE_BUSINESS_POSTAL_CODE || '',
+    name: import.meta.env.VITE_BUSINESS_NAME || 'DajaShop',
+    street: import.meta.env.VITE_BUSINESS_STREET || 'Podzemni prolaz lokal C31',
+    city: import.meta.env.VITE_BUSINESS_CITY || 'Niš',
+    postalCode: import.meta.env.VITE_BUSINESS_POSTAL_CODE || '18000',
     country: import.meta.env.VITE_BUSINESS_COUNTRY || 'RS',
-    phone: import.meta.env.VITE_BUSINESS_PHONE || '',
-    email: import.meta.env.VITE_BUSINESS_EMAIL || '',
-    hours: import.meta.env.VITE_BUSINESS_HOURS || '',
+    phone: import.meta.env.VITE_BUSINESS_PHONE || '+381641262425',
+    email: import.meta.env.VITE_BUSINESS_EMAIL || 'info@dajashop.com',
+    hours: import.meta.env.VITE_BUSINESS_HOURS || 'Mo-Fr 10:00-20:00, Sa 10:00-15:00',
   },
+};
+
+export const commerceSeoConfig = {
+  country: 'RS',
+  currency: 'RSD',
+  shippingCost: Number(import.meta.env.VITE_STOREFRONT_SHIPPING_COST_RSD || 380),
+  freeShippingThreshold: Number(
+    import.meta.env.VITE_STOREFRONT_FREE_SHIPPING_THRESHOLD_RSD || 10000,
+  ),
+  deliveryMinDays: Number(import.meta.env.VITE_STOREFRONT_DELIVERY_MIN_DAYS || 1),
+  deliveryMaxDays: Number(import.meta.env.VITE_STOREFRONT_DELIVERY_MAX_DAYS || 3),
+  returnDays: Number(import.meta.env.VITE_STOREFRONT_RETURN_DAYS || 14),
 };

@@ -9,7 +9,7 @@ export default function OrganizationJsonLd() {
 
   const schema = {
     '@context': 'https://schema.org',
-    '@type': 'LocalBusiness',
+    '@type': 'Store',
     name: business.name,
     url: seoConfig.siteUrl,
     logo: seoConfig.siteLogoUrl,
