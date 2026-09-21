@@ -527,14 +527,8 @@ export default function WorkforcePanel({ departments = [], categories = [] }) {
                             </div>
                             {product.qualityReviewStatus !== 'approved' && (
                               <button
-                                disabled={
-                                  !!busy || !!product.qualityMissing?.length
-                                }
-                                title={
-                                  product.qualityMissing?.length
-                                    ? 'Prvo dopunite obavezna polja'
-                                    : 'Odobri jednom za obračun'
-                                }
+                                disabled={!!busy}
+                                title="Odobri jednom za obračun"
                                 className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40"
                                 onClick={() => void approve(product)}
                               >
