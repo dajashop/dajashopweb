@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowUpRight,
+  CheckCircle2,
   Clock3,
+  CircleAlert,
   Edit3,
   Eye,
   Search,
@@ -456,20 +458,35 @@ export default function WorkforcePanel({ departments = [], categories = [] }) {
                             : `Naknada: ${rsd(product.effectiveRateMinor)}`}
                         </p>
                       </td>
-                      <td className="max-w-sm p-4">
+                      <td className="max-w-md p-4">
                         <span className="font-semibold">{status(product)}</span>
                         {!product.deletedAt && (
                           <>
-                            {product.qualityMissing?.length ? (
+                            {product.qualityChecks?.length ? (
+                              <div className="mt-3 flex flex-wrap gap-1.5">
+                                {product.qualityChecks.map((check) => (
+                                  <span
+                                    key={check.label}
+                                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium ${
+                                      check.complete
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                                        : 'border-red-200 bg-red-50 text-red-800'
+                                    }`}
+                                  >
+                                    {check.complete ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}
+                                    {check.label}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
                               <ul className="mt-2 space-y-1 text-xs text-amber-800">
-                                {product.qualityMissing.map((item) => (
+                                {product.qualityMissing?.map((item) => (
                                   <li key={item}>Nedostaje: {item}</li>
                                 ))}
                               </ul>
-                            ) : (
-                              <p className="mt-2 text-xs text-emerald-700">
-                                Popunjena sva obavezna polja
-                              </p>
+                            )}
+                            {product.qualityChecks?.length > 0 && !product.qualityMissing?.length && (
+                              <p className="mt-2 text-xs font-medium text-emerald-700">Kompletan artikal — spreman za odobrenje</p>
                             )}
                             {product.qualityReviewNote && (
                               <p className="mt-3 whitespace-pre-wrap break-words rounded-lg border border-amber-200 bg-amber-100/50 p-2 text-xs text-amber-900">
