@@ -399,7 +399,7 @@ export default function WorkforcePanel({ departments = [], categories = [] }) {
                   <tr>
                     {[
                       'Artikal',
-                      'Cena / naknada',
+                      'Naknada',
                       'Kontrola kvaliteta',
                       'Unos / izmena',
                       'Akcije',
@@ -451,12 +451,11 @@ export default function WorkforcePanel({ departments = [], categories = [] }) {
                         </div>
                       </td>
                       <td className="whitespace-nowrap p-4">
-                        <b>{rsd(product.currentPriceAmount)}</b>
-                        <p className="mt-2 text-xs text-neutral-500">
+                        <b>
                           {product.compensationApprovedAt
                             ? `Obračunato: ${rsd(product.compensationAmountMinor)}`
                             : `Naknada: ${rsd(product.effectiveRateMinor)}`}
-                        </p>
+                        </b>
                       </td>
                       <td className="max-w-md p-4">
                         <span className="font-semibold">{status(product)}</span>
