@@ -67,11 +67,6 @@ export default function Filters({ products, onClose }) {
     return [...new Set(b)].sort();
   }, [baseData]);
 
-  const genders = useMemo(() => {
-    const g = baseData.map((p) => p.gender).filter(Boolean);
-    return [...new Set(g)].sort();
-  }, [baseData]);
-
   const categories = useMemo(() => {
     const selectedBrands = sp.getAll('brand');
     if (selectedBrands.length === 0) {
@@ -283,6 +278,54 @@ export default function Filters({ products, onClose }) {
       </div>
 
       <div className="f-scroll-container">
+        <div className={`f-section ${openSections.gender ? 'is-open' : ''}`}>
+          <SectionHeader
+            title="Pol"
+            count={countSelected('gender')}
+            onClear={() => clearKey('gender')}
+            isOpen={openSections.gender}
+            onToggle={() => toggleSection('gender')}
+          />
+          <AnimatePresence initial={false}>
+            {openSections.gender && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="f-content-wrapper"
+              >
+                <div className="f-content-inner">
+                  <div className="filter-list" role="group">
+                    {['Muški', 'Ženski'].map((gender) => (
+                      <label
+                        key={gender}
+                        className={`filter-row ${
+                          checked('gender', gender) ? 'is-active' : ''
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked('gender', gender)}
+                          onChange={() => toggleParam('gender', gender)}
+                          className="filter-input-hidden"
+                        />
+                        <span className="filter-text">{gender}</span>
+                        {checked('gender', gender) && (
+                          <div className="filter-check">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
         {brands.length > 0 && (
           <div className={`f-section ${openSections.brand ? 'is-open' : ''}`}>
             <SectionHeader
@@ -317,63 +360,6 @@ export default function Filters({ products, onClose }) {
                           />
                           <span className="filter-text">{b}</span>
                           {checked('brand', b) && (
-                            <div className="filter-check">
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="3"
-                              >
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            </div>
-                          )}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
-
-        {genders.length > 0 && (
-          <div className={`f-section ${openSections.gender ? 'is-open' : ''}`}>
-            <SectionHeader
-              title="Pol"
-              count={countSelected('gender')}
-              onClear={() => clearKey('gender')}
-              isOpen={openSections.gender}
-              onToggle={() => toggleSection('gender')}
-            />
-            <AnimatePresence initial={false}>
-              {openSections.gender && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="f-content-wrapper"
-                >
-                  <div className="f-content-inner">
-                    <div className="filter-list" role="group">
-                      {genders.map((g) => (
-                        <label
-                          key={g}
-                          className={`filter-row ${
-                            checked('gender', g) ? 'is-active' : ''
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked('gender', g)}
-                            onChange={() => toggleParam('gender', g)}
-                            className="filter-input-hidden"
-                          />
-                          <span className="filter-text">{g}</span>
-                          {checked('gender', g) && (
                             <div className="filter-check">
                               <svg
                                 width="14"
