@@ -8,16 +8,17 @@ const field =
 export default function WorkforcePricing({
   userId,
   departments,
-  categories,
+  brands = [],
   onSaved,
 }) {
   const [data, setData] = useState(null);
   const [departmentId, setDepartment] = useState('');
-  const [categoryId, setCategory] = useState('');
+  const [brandId, setBrand] = useState('');
   const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [open, setOpen] = useState(true);
   useEffect(() => {
     let cancelled = false;
     workforceApi
@@ -54,15 +55,22 @@ export default function WorkforcePricing({
   const ownRules =
     data?.rules?.filter((rule) => (rule.userId || '') === (userId || '')) || [];
   const label = (rule) =>
-    `${departments.find((d) => d.id === rule.departmentId)?.name || 'Odeljenje'} / ${rule.categoryId ? categories.find((c) => c.id === rule.categoryId)?.name || 'Kategorija' : 'Sve kategorije'}`;
+    `${departments.find((d) => d.id === rule.departmentId)?.name || 'Odeljenje'} / ${rule.brandId ? brands.find((brand) => brand.id === rule.brandId)?.name || 'Brend' : 'Svi brendovi'}`;
   return (
-    <details className="rounded-2xl border border-neutral-200 bg-white p-5">
+    <details
+      className="rounded-2xl border border-neutral-200 bg-white p-5"
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
       <summary className="cursor-pointer font-bold">
         {userId
           ? 'Poseban cenovnik zaposlenog'
           : 'Podrazumevani cenovnik unosa'}{' '}
         <span className="ml-2 text-sm font-normal text-neutral-500">
           RSD po odobrenom proizvodu
+        </span>
+        <span className="ml-3 text-xs font-medium text-neutral-500">
+          {open ? 'Sakrij cenovnik' : 'Prikaži cenovnik'}
         </span>
       </summary>
       <p className="mt-3 text-sm text-neutral-500">
@@ -104,7 +112,7 @@ export default function WorkforcePricing({
                 return;
               void save({
                 ...(departmentId ? { departmentId } : {}),
-                ...(categoryId ? { categoryId } : {}),
+                ...(brandId ? { brandId } : {}),
                 rateMinor: Math.round(Number(amount) * 100),
               });
             }}
@@ -115,7 +123,7 @@ export default function WorkforcePricing({
               value={departmentId}
               onChange={(event) => {
                 setDepartment(event.target.value);
-                setCategory('');
+                setBrand('');
               }}
             >
               <option value="">Opšta cena — sva odeljenja</option>
@@ -126,18 +134,18 @@ export default function WorkforcePricing({
               ))}
             </select>
             <select
-              aria-label="Kategorija za obračun"
+              aria-label="Brend za obračun"
               className={field}
               disabled={!departmentId}
-              value={categoryId}
-              onChange={(event) => setCategory(event.target.value)}
+              value={brandId}
+              onChange={(event) => setBrand(event.target.value)}
             >
-              <option value="">Sve kategorije</option>
-              {categories
-                .filter((c) => c.departmentId === departmentId)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
+              <option value="">Svi brendovi</option>
+              {brands
+                .filter((brand) => brand.departmentId === departmentId)
+                .map((brand) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.name}
                   </option>
                 ))}
             </select>
@@ -161,8 +169,8 @@ export default function WorkforcePricing({
             </button>
           </form>
           <p className="mt-3 text-xs text-neutral-500">
-            Prioritet: lična kategorija → lično odeljenje → lična opšta cena →
-            podrazumevana kategorija → odeljenje → opšta cena. Nula znači
+            Prioritet: lični brend → lično odeljenje → lična opšta cena →
+            podrazumevani brend → odeljenje → opšta cena. Nula znači
             naknadu od 0 RSD.
           </p>
           <div className="mt-4 divide-y divide-neutral-100 text-sm">
@@ -194,8 +202,8 @@ export default function WorkforcePricing({
                   onClick={() =>
                     void save({
                       departmentId: rule.departmentId,
-                      ...(rule.categoryId
-                        ? { categoryId: rule.categoryId }
+                      ...(rule.brandId
+                        ? { brandId: rule.brandId }
                         : {}),
                       rateMinor: null,
                     })

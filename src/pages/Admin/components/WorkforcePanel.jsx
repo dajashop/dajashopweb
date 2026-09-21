@@ -84,7 +84,7 @@ function Bars({ values, label }) {
   );
 }
 
-export default function WorkforcePanel({ departments = [], categories = [] }) {
+export default function WorkforcePanel({ departments = [], categories = [], brands = [] }) {
   const [members, setMembers] = useState([]);
   const [selected, setSelected] = useState(null);
   const [detail, setDetail] = useState(null);
@@ -226,7 +226,7 @@ export default function WorkforcePanel({ departments = [], categories = [] }) {
         <>
           <WorkforcePricing
             departments={departments}
-            categories={categories}
+            brands={brands}
             onSaved={refresh}
           />
           {loading ? (
@@ -358,7 +358,7 @@ export default function WorkforcePanel({ departments = [], categories = [] }) {
             key={selected.id}
             userId={selected.id}
             departments={departments}
-            categories={categories}
+            brands={brands}
             onSaved={refresh}
           />
           <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">

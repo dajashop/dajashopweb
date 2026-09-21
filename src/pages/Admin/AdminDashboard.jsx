@@ -1473,7 +1473,7 @@ function AdminDashboardContent() {
           </motion.div>
         )}
 
-        {activeTab === 'workforce' && !isCatalogContributor && <WorkforcePanel departments={departments} categories={categories} />}
+        {activeTab === 'workforce' && !isCatalogContributor && <WorkforcePanel departments={departments} categories={categories} brands={brands} />}
 
         {activeTab === 'privacy' && <PolicyPublicationPanel />}
 
