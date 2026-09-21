@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Truck, ShieldCheck, Package } from 'lucide-react';
 import './ProductTabs.css';
+import { visibleProductSpecs } from '../../utils/catalogPresentation.js';
 // [NOVO] Importujemo recenzije
 import ProductReviews from './ProductReviews.jsx';
 
 export default function ProductTabs({ product, hideSpecs = false }) {
   const [activeTab, setActiveTab] = useState('desc');
+  const specs = visibleProductSpecs(product?.specs);
 
   return (
     <div className="product-tabs-container">
@@ -57,10 +59,10 @@ export default function ProductTabs({ product, hideSpecs = false }) {
         {/* SPECIFIKACIJE */}
         {!hideSpecs && activeTab === 'specs' && (
           <div className="specs-wrapper">
-            {product.specs && Object.keys(product.specs).length > 0 ? (
+            {Object.keys(specs).length > 0 ? (
               <table className="specs-table">
                 <tbody>
-                  {Object.entries(product.specs).map(([k, v]) => (
+                  {Object.entries(specs).map(([k, v]) => (
                     <tr key={k} className="specs-table-row">
                       <td className="spec-cell-key">{k}</td>
                       <td className="spec-cell-val">{v}</td>

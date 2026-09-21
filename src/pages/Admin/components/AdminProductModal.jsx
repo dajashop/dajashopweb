@@ -27,6 +27,10 @@ import { generateSlug } from '../utils/generators.js';
 import CustomSelect from './CustomSelect.jsx';
 import ProductOperationsPanel from './ProductOperationsPanel.jsx';
 import WorkforceReviewNotes from './WorkforceReviewNotes.jsx';
+import {
+  visibleProductFeatures,
+  visibleProductSpecs,
+} from '../../../utils/catalogPresentation.js';
 
 function validateEpcInput(value) {
   const epc = value
@@ -328,16 +332,7 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
         ...product,
         price: regularPriceForAdmin(product),
         images: loadedImages,
-        specs: Object.fromEntries(
-          Object.entries(productAttributes).filter(
-            ([key]) =>
-              ![
-                'rfid_piece_placements',
-                '_rfidPiecePlacements',
-                'rfidpieceplacements',
-              ].includes(key),
-          ),
-        ),
+        specs: visibleProductSpecs(productAttributes),
         // The admin list exposes the primary variant as flat fields. Preserve
         // its ID so this modal updates it rather than creating a duplicate SKU.
         variants:
@@ -376,10 +371,7 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
         zoneId: product.zoneId || product.zone_id || '',
         binId: product.binId || product.bin_id || '',
         // [NOVO] Učitavamo postojeće features ili postavljamo jedan prazan red
-        features:
-          product.features?.filter(
-            (feature) => !/^rfid\b/i.test(String(feature?.title || '').trim()),
-          ) ?? [],
+        features: visibleProductFeatures(product.features),
         model3DUrl: product.model3DUrl || '',
         department: product.department || 'satovi',
         slug: product.slug || '',
@@ -840,25 +832,12 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
       const finalSlug = form.slug || generateSlug(form.name);
 
       // [NOVO] Filtriramo prazne redove pre čuvanja
-      const cleanFeatures = (form.features || []).filter(
-        (feature) =>
-          feature.title &&
-          feature.title.trim() !== '' &&
-          !/^rfid\b/i.test(feature.title.trim()),
-      );
+      const cleanFeatures = visibleProductFeatures(form.features);
       // The Platform accepts catalog attributes only under lowercase
       // snake_case keys. Older products may contain display labels such as
       // "Vodootpornost" or "Water resistance", which would otherwise make
       // every variant PATCH fail before a sale can be saved.
-      const catalogAttributes = Object.entries(form.specs || {})
-        .filter(
-          ([key]) =>
-            ![
-              'rfid_piece_placements',
-              '_rfidPiecePlacements',
-              'rfidpieceplacements',
-            ].includes(key),
-        )
+      const catalogAttributes = Object.entries(visibleProductSpecs(form.specs))
         .reduce(
         (attributes, [key, value]) => ({
           ...attributes,

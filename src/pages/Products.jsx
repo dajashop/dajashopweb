@@ -22,6 +22,7 @@ import SEOHead from '../components/seo/SEOHead.jsx';
 import ProductJsonLd from '../components/seo/ProductJsonLd.jsx';
 import BreadcrumbJsonLd from '../components/seo/BreadcrumbJsonLd.jsx';
 import { seoConfig } from '../config/seo.js';
+import { visibleProductFeatures } from '../utils/catalogPresentation.js';
 
 const DEPARTMENT_LABELS = {
   satovi: 'Ručni Satovi',
@@ -67,14 +68,7 @@ export default function Product() {
 
   // --- [LOGIKA] Da li proizvod ima unete funkcionalnosti? ---
   const hasFeatures = useMemo(() => {
-    if (!p || !p.features || !Array.isArray(p.features)) return false;
-    // Proveravamo da li ima bar jedna validna funkcionalnost sa naslovom
-    return p.features.some(
-      (feature) =>
-        feature.title &&
-        feature.title.trim() !== '' &&
-        !/^rfid\b/i.test(feature.title.trim()),
-    );
+    return visibleProductFeatures(p?.features).length > 0;
   }, [p]);
 
   if (loading)

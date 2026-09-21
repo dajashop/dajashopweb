@@ -1,5 +1,6 @@
 import React from 'react';
 import './ProductFeatures.css';
+import { visibleProductFeatures } from '../../utils/catalogPresentation.js';
 
 const ProductFeatures = ({ product }) => {
   if (
@@ -11,12 +12,7 @@ const ProductFeatures = ({ product }) => {
     return null;
   }
 
-  const validFeatures = product.features.filter(
-    (feature) =>
-      feature.title &&
-      feature.title.trim() !== '' &&
-      !/^rfid\b/i.test(feature.title.trim())
-  );
+  const validFeatures = visibleProductFeatures(product.features);
 
   if (validFeatures.length === 0) return null;
 

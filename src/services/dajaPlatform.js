@@ -10,6 +10,7 @@ import {
 import { io } from 'socket.io-client';
 import { getAccessToken, getStaffAccessToken } from './apiClient';
 import { readStoredValue, writeStoredValue } from './consentStorage.js';
+import { visibleProductSpecs } from '../utils/catalogPresentation.js';
 
 let publicCatalogSocket = null;
 const publicCatalogListeners = new Set();
@@ -216,7 +217,9 @@ function normalizeProduct(product) {
     image: primaryImage,
     mainImageUrl: primaryImage,
     thumbnailUrl: product.thumbnailUrl || product.thumbnail_url || primaryImage,
-    specs: product.specs || firstVariant?.attributes || {},
+    // RFID and per-piece barcode data are operational metadata. They must
+    // never become customer-facing product specifications.
+    specs: visibleProductSpecs(product.specs || firstVariant?.attributes),
     marketingFlags: product.marketingFlags || product.marketing_flags || [],
     isVisible: product.isVisible ?? product.active ?? true,
     published: product.published ?? true,
