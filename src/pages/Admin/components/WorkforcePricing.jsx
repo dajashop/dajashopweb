@@ -136,13 +136,12 @@ export default function WorkforcePricing({
             <select
               aria-label="Brend za obračun"
               className={field}
-              disabled={!departmentId}
               value={brandId}
               onChange={(event) => setBrand(event.target.value)}
             >
               <option value="">Svi brendovi</option>
               {brands
-                .filter((brand) => brand.departmentId === departmentId)
+                .filter((brand) => !departmentId || brand.departmentId === departmentId)
                 .map((brand) => (
                   <option key={brand.id} value={brand.id}>
                     {brand.name}
