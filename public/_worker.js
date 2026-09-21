@@ -16,6 +16,66 @@ const PRIVATE_PATHS = new Set([
   '/reset-password', '/logout', '/unsubscribe', '/privacy', '/cookies', '/terms',
 ]);
 
+// These pages are rendered by the SPA for visitors, but Google also receives
+// their final metadata directly from the Worker. Keep the public URLs,
+// canonical URLs and on-page subject aligned without requiring JavaScript.
+const STATIC_PAGE_SEO = {
+  '/': {
+    title: 'Satovi, naočare, baterije i daljinski upravljači',
+    description: 'Kupite satove, naočare, baterije i daljinske upravljače u DajaShop-u. Posetite nas u Nišu ili poručite online.',
+    type: 'WebPage',
+    name: 'Početna',
+  },
+  '/catalog': {
+    title: 'Ručni satovi — katalog',
+    description: 'Pregledajte ručne satove brendova Daniel Klein, Casio, Orient i Q&Q. Pronađite model koji odgovara vašem stilu u DajaShop-u.',
+    type: 'CollectionPage',
+    name: 'Ručni satovi',
+  },
+  '/naocare': {
+    title: 'Naočare — katalog',
+    description: 'Pregledajte ponudu naočara u DajaShop-u i pronađite model koji odgovara vašem stilu.',
+    type: 'CollectionPage',
+    name: 'Naočare',
+  },
+  '/baterije': {
+    title: 'Baterije za satove i elektroniku',
+    description: 'Baterije za satove, daljinske upravljače i elektroniku. Pogledajte dostupne modele u DajaShop-u.',
+    type: 'CollectionPage',
+    name: 'Baterije',
+  },
+  '/daljinski': {
+    title: 'Daljinski upravljači',
+    description: 'Daljinski upravljači za televizore, kapije i druge uređaje. Pogledajte dostupne modele u DajaShop-u.',
+    type: 'CollectionPage',
+    name: 'Daljinski upravljači',
+  },
+  '/about': {
+    title: 'O nama',
+    description: 'Saznajte više o DajaShop-u, našoj priči, vrednostima i ponudi satova, naočara i prateće opreme u Nišu.',
+    type: 'AboutPage',
+    name: 'O nama',
+  },
+  '/contact': {
+    title: 'Kontakt i radno vreme',
+    description: 'Kontaktirajte DajaShop u Nišu za informacije o proizvodima, porudžbinama i servisnim uslugama.',
+    type: 'ContactPage',
+    name: 'Kontakt',
+  },
+  '/faq': {
+    title: 'Često postavljana pitanja',
+    description: 'Odgovori na najčešća pitanja o poručivanju, isporuci, plaćanju i reklamacijama u DajaShop-u.',
+    type: 'FAQPage',
+    name: 'Često postavljana pitanja',
+  },
+  '/usluge': {
+    title: 'Servis i usluge u Nišu',
+    description: 'Usluge zamene baterija, korekcije narukvica i programiranja daljinskih upravljača u DajaShop radnji u Nišu.',
+    type: 'ServicePage',
+    name: 'Usluge',
+  },
+};
+
 function isProductPath(pathname) {
   return /^\/product\/[^/]+\/?$/.test(pathname);
 }
@@ -287,6 +347,59 @@ function rewritePublicHtml(response, siteUrl) {
     .transform(response);
 }
 
+function buildStaticSeo(pathname, siteUrl) {
+  const page = STATIC_PAGE_SEO[pathname];
+  if (!page) return null;
+  const url = `${siteUrl}${pathname === '/' ? '' : pathname}`;
+  const pageSchema = {
+    '@context': 'https://schema.org',
+    '@type': page.type,
+    name: page.name,
+    description: page.description,
+    url,
+    inLanguage: 'sr-RS',
+    isPartOf: { '@type': 'WebSite', name: 'DajaShop', url: siteUrl },
+  };
+  const breadcrumbs = pathname === '/'
+    ? null
+    : {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Početna', item: siteUrl },
+        { '@type': 'ListItem', position: 2, name: page.name, item: url },
+      ],
+    };
+  return { ...page, url, pageSchema, breadcrumbs };
+}
+
+function rewriteStaticHtml(response, seo, siteUrl) {
+  const safeJson = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
+  const schemas = [seo.pageSchema, seo.breadcrumbs, ...siteSchemas(siteUrl)].filter(Boolean);
+  const injector = schemas
+    .map((schema) => `<script type="application/ld+json">${safeJson(schema)}</script>`)
+    .join('');
+  const metaValues = {
+    description: seo.description,
+    robots: 'index,follow,max-image-preview:large',
+    'og:title': `${seo.title} | DajaShop`,
+    'og:description': seo.description,
+    'og:url': seo.url,
+    'og:type': 'website',
+    'twitter:title': `${seo.title} | DajaShop`,
+    'twitter:description': seo.description,
+  };
+  return new HTMLRewriter()
+    .on('title', { element(element) { element.setInnerContent(`${seo.title} | DajaShop`); } })
+    .on('meta', { element(element) {
+      const key = element.getAttribute('name') || element.getAttribute('property');
+      if (key && metaValues[key]) element.setAttribute('content', metaValues[key]);
+    } })
+    .on('link[rel="canonical"]', { element(element) { element.setAttribute('href', seo.url); } })
+    .on('head', { element(element) { element.append(injector, { html: true }); } })
+    .transform(response);
+}
+
 function rewriteNoIndexHtml(response) {
   return new HTMLRewriter()
     .on('meta[name="robots"]', { element(element) { element.setAttribute('content', 'noindex,follow,max-image-preview:large'); } })
@@ -327,6 +440,8 @@ export default {
       return rewriteNoIndexHtml(response);
     }
     if (!isProductPath(url.pathname)) {
+      const staticSeo = buildStaticSeo(normalizedPath, siteUrl);
+      if (staticSeo) return rewriteStaticHtml(response, staticSeo, siteUrl);
       return url.pathname.match(/\.\w{1,5}$/) ? response : rewritePublicHtml(response, siteUrl);
     }
 
