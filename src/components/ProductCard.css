@@ -39,98 +39,48 @@
   justify-content: center;
 }
 .catalog-image-dots-wrap {
-  width: min(126px, 54%, calc(14px + (var(--gallery-dot-count) * 22px)));
+  width: auto;
 }
 .catalog-image-dots {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 25px;
-  height: 25px;
-  padding: 3px 7px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.68);
+  justify-content: center;
+  gap: 8px;
+  min-height: 20px;
+  padding: 6px 10px;
+  border: 0;
   border-radius: 999px;
-  background: transparent;
-  box-shadow:
-    0 3px 8px rgba(0, 0, 0, 0.12),
-    0 1px 1px rgba(255, 255, 255, 0.48),
-    inset 0 1px 1px rgba(255, 255, 255, 0.76),
-    inset 1px 0 1px rgba(255, 255, 255, 0.36),
-    inset -1px 0 1px rgba(255, 255, 255, 0.36),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.06);
-  backdrop-filter: blur(1px) saturate(1.02);
-  -webkit-backdrop-filter: blur(1px) saturate(1.02);
-  isolation: isolate;
-}
-.catalog-image-dots::before {
-  position: absolute;
-  inset: 1px 13% auto 9%;
-  height: 42%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.36) 50%, transparent);
-  content: '';
-  filter: blur(3px);
-  opacity: 0.56;
-  pointer-events: none;
-}
-.catalog-image-dots::after {
-  position: absolute;
-  inset: auto 7% 1px 7%;
-  height: 24%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
-  content: '';
-  filter: blur(4px);
-  pointer-events: none;
+  background: color-mix(in oklab, var(--color-surface, #fff) 60%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .catalog-image-dot {
   position: relative;
-  display: grid;
-  flex: 0 1 16px;
-  width: 16px;
-  min-width: 11px;
-  height: 16px;
+  display: block;
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
   padding: 0;
-  place-items: center;
-  border: 0;
+  border: 1px solid var(--color-border, #e5e7eb);
   border-radius: 999px;
-  background: transparent;
+  background: color-mix(in oklab, var(--color-surface, #fff) 40%, transparent);
   cursor: pointer;
-  z-index: 1;
+  transition: width 0.25s ease, background-color 0.25s ease;
 }
 .catalog-image-dot:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
 .catalog-image-dot__liquid {
-  position: absolute;
-  inset: -2px;
-  border: 1px solid rgba(113, 113, 122, 0.62);
-  border-radius: inherit;
-  background: rgba(161, 161, 170, 0.28);
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.14),
-    inset 0 1px 1px rgba(255, 255, 255, 0.26);
-  backdrop-filter: blur(0.5px);
-  -webkit-backdrop-filter: blur(0.5px);
-  z-index: 1;
+  display: none;
 }
 .catalog-image-dot__core {
-  position: relative;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: rgba(113, 113, 122, 0.84);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.32);
-  transition: transform 180ms ease, background-color 180ms ease;
-  z-index: 2;
+  display: none;
 }
-.catalog-image-dot.is-active .catalog-image-dot__core {
-  background: rgba(82, 82, 91, 0.94);
-  transform: scale(1.05);
+.catalog-image-dot.is-active {
+  width: 18px;
+  background: var(--color-text, #111);
 }
 @media (prefers-reduced-motion: reduce) {
   .catalog-image-dot__core {
