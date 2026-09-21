@@ -56,6 +56,14 @@ export default function NavBar() {
     }
   };
 
+  const handleAllModelsClick = () => {
+    if (isMobile) {
+      setOpenIdx((prev) => (prev === 'all-models' ? null : 'all-models'));
+    } else {
+      navigate('/catalog');
+    }
+  };
+
   const handleOstaloClick = () => {
     if (isMobile) {
       // Na mobilnom otvaramo donji red (sub-meni)
@@ -79,10 +87,34 @@ export default function NavBar() {
     <nav className="navbar" aria-label="Glavna navigacija">
       <div className="container navbar__wrap">
         <div className="navbar__row" ref={rowRef}>
-          {/* Link ka Satovima */}
-          <Link to="/catalog" className={isActive('/catalog')}>
-            SVI MODELI
-          </Link>
+          {/* Svi modeli: isti padajući meni kao brendovi, sa brzim izborom pola. */}
+          <div
+            className="navbar__group"
+            data-open={isMobile && openIdx === 'all-models' ? 'true' : 'false'}
+          >
+            <button
+              className={`${isActive('/catalog')} navbar__label ${isMobile ? 'navbar__chip' : ''}`}
+              onClick={handleAllModelsClick}
+            >
+              SVI MODELI
+              {isMobile && (
+                <ChevronDown
+                  size={14}
+                  style={{
+                    marginLeft: 4,
+                    opacity: 0.6,
+                    transform: openIdx === 'all-models' ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s',
+                  }}
+                />
+              )}
+            </button>
+            <div className="navbar__dropdown card">
+              <Link to="/catalog" style={{ fontWeight: 'bold' }}>Svi modeli</Link>
+              <Link to="/catalog?gender=Muški">MUŠKI</Link>
+              <Link to="/catalog?gender=Ženski">ŽENSKI</Link>
+            </div>
+          </div>
 
           {/* Brendovi Satova */}
           {navSatovi.map((g, i) => (
@@ -183,7 +215,28 @@ export default function NavBar() {
           <div className="navbar__sub">
             <div className="navbar__subrow">
               {/* SCENARIO 1: OTVORENO JE "OSTALO" */}
-              {openIdx === 'ostalo' ? (
+              {openIdx === 'all-models' ? (
+                <>
+                  <Link
+                    className="navbar__pill"
+                    to="/catalog"
+                    onClick={() => setOpenIdx(null)}
+                    style={{
+                      fontWeight: 'bold',
+                      background: 'var(--color-text)',
+                      color: 'var(--color-bg)',
+                    }}
+                  >
+                    Svi modeli
+                  </Link>
+                  <Link className="navbar__pill" to="/catalog?gender=Muški" onClick={() => setOpenIdx(null)}>
+                    MUŠKI
+                  </Link>
+                  <Link className="navbar__pill" to="/catalog?gender=Ženski" onClick={() => setOpenIdx(null)}>
+                    ŽENSKI
+                  </Link>
+                </>
+              ) : openIdx === 'ostalo' ? (
                 <>
                   <Link
                     className="navbar__pill"
