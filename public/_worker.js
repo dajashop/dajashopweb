@@ -304,10 +304,18 @@ export default {
       return fetch(new Request(callbackUrl, request));
     }
     if (url.pathname === '/sitemap.xml') {
-      return fetch(`${apiBase}/public/catalog/sitemap.xml`, { cf: { cacheEverything: true, cacheTtl: 3600 } });
+      // The API has its own Redis cache. Do not edge-cache here: a stale 404
+      // would otherwise keep the sitemap unavailable after a backend deploy.
+      return fetch(`${apiBase}/public/catalog/sitemap.xml`, {
+        headers: { 'Cache-Control': 'no-cache' },
+      });
     }
     if (url.pathname === '/merchant-feed.xml') {
-      return fetch(`${apiBase}/public/catalog/merchant-feed.xml`, { cf: { cacheEverything: true, cacheTtl: 3600 } });
+      // Same rule for Merchant Center: always allow the backend's current
+      // feed to win instead of retaining an old failed edge response.
+      return fetch(`${apiBase}/public/catalog/merchant-feed.xml`, {
+        headers: { 'Cache-Control': 'no-cache' },
+      });
     }
 
     let response = await env.ASSETS.fetch(request);
