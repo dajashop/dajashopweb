@@ -304,7 +304,13 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
     const sub4 = departmentService.subscribe(setDepartments);
 
     if (product) {
-      const productAttributes = product.specs || product.attributes || {};
+      // The admin list can expose variant attributes as `specs`, `attributes`,
+      // or both.  Merge them so a present-but-empty `specs` object cannot
+      // hide the physical-piece placement stored in `attributes`.
+      const productAttributes = {
+        ...(product.attributes || {}),
+        ...(product.specs || {}),
+      };
       let loadedImages = [];
       if (product.images && Array.isArray(product.images)) {
         loadedImages = product.images.map((img, idx) => {
@@ -386,14 +392,18 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
       const storedBarcodes =
         productAttributes.additional_barcodes || productAttributes._additionalBarcodes;
       const storedPlacements =
-        productAttributes._rfidPiecePlacements ||
         productAttributes.rfid_piece_placements ||
+        productAttributes._rfidPiecePlacements ||
         productAttributes.rfidpieceplacements;
       let extraBarcodes = [];
       let placements = [];
       try {
         extraBarcodes = storedBarcodes ? JSON.parse(storedBarcodes) : [];
-        placements = storedPlacements ? JSON.parse(storedPlacements) : [];
+        placements = Array.isArray(storedPlacements)
+          ? storedPlacements
+          : storedPlacements
+            ? JSON.parse(storedPlacements)
+            : [];
       } catch {
         // Older products have no per-piece metadata.
       }
