@@ -104,6 +104,20 @@
   font-weight: 600;
 }
 
+.hm__logout {
+  color: #b42318;
+  border-color: #fecdca;
+  background: #fff5f4;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.hm__logout:hover {
+  color: #912018;
+  border-color: #fda29b;
+  background: #ffebe9;
+}
+
 .hm__sublinks {
   margin-top: auto;
   padding-top: 20px;
@@ -272,6 +286,17 @@
   border-top: 1px solid var(--color-border, #e5e7eb);
   margin-top: 4px;
   padding-top: 12px;
+}
+
+.hm__ddItem.hm__logout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b42318;
+}
+
+.hm__ddItem.hm__logout:hover {
+  background: #fff1f0;
 }
 
 /* ===== MINI CART LISTA U MENIJU ===== */

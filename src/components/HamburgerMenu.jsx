@@ -33,6 +33,7 @@ import {
   Info,
   Briefcase,
   User,
+  LogOut,
 } from 'lucide-react';
 import './HamburgerMenu.css';
 
@@ -49,7 +50,7 @@ export default function HamburgerMenu({
 }) {
   const isDesktop = useIsDesktop();
   const loc = useLocation();
-  const { showAuth } = useAuth();
+  const { showAuth, logout } = useAuth();
 
   // --- STATE ZA NOTIFIKACIJE ---
   const [unreadOrders, setUnreadOrders] = useState(0);
@@ -111,6 +112,7 @@ export default function HamburgerMenu({
         user={user}
         anchorEl={anchorEl}
         showAuth={showAuth}
+        logout={logout}
         isAdmin={isAdmin}
         isStaff={staffReady}
         unreadOrders={unreadOrders} // <--- ŠALJEMO DOLE
@@ -121,6 +123,7 @@ export default function HamburgerMenu({
         onClose={onClose}
         user={user}
         showAuth={showAuth}
+        logout={logout}
         isAdmin={isAdmin}
         isStaff={staffReady}
         unreadOrders={unreadOrders} // <--- ŠALJEMO DOLE
@@ -154,6 +157,7 @@ function DesktopDropdown({
   user,
   anchorEl,
   showAuth,
+  logout,
   isAdmin,
   isStaff,
   unreadOrders,
@@ -279,11 +283,24 @@ function DesktopDropdown({
             )}
 
             {user ? (
-              <DDItem
-                to="/account/profile"
-                label="Moj nalog"
-                onClose={onClose}
-              />
+              <>
+                <DDItem
+                  to="/account/profile"
+                  label="Moj nalog"
+                  onClose={onClose}
+                />
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="hm__ddItem hm__logout"
+                  onClick={() => {
+                    onClose();
+                    void logout();
+                  }}
+                >
+                  <LogOut size={16} /> Odjavi me
+                </button>
+              </>
             ) : (
               <button
                 type="button"
@@ -326,7 +343,7 @@ function DDItem({ to, label, strong, onClose, style }) {
 }
 
 /* ----- MOBILE: slide-over panel ----- */
-function MobileSheet({ open, onClose, user, showAuth, isAdmin, isStaff, unreadOrders }) {
+function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, unreadOrders }) {
   const panelRef = useRef(null);
   const firstFocusableRef = useRef(null);
   const { items, count } = useCart();
@@ -440,6 +457,16 @@ function MobileSheet({ open, onClose, user, showAuth, isAdmin, isStaff, unreadOr
                   >
                     <User size={18} style={{ marginRight: 10 }} /> Moj nalog
                   </Link>
+                  <button
+                    type="button"
+                    className="hm__link hm__logout"
+                    onClick={() => {
+                      onClose();
+                      void logout();
+                    }}
+                  >
+                    <LogOut size={18} style={{ marginRight: 10 }} /> Odjavi me
+                  </button>
 
                   {isAdmin && (
                     <div className="mt-2 border-t border-white/10 pt-2">
