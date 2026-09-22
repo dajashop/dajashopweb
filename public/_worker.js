@@ -21,10 +21,10 @@ const PRIVATE_PATHS = new Set([
 // canonical URLs and on-page subject aligned without requiring JavaScript.
 const STATIC_PAGE_SEO = {
   '/': {
-    title: 'Satovi, naočare, baterije i daljinski upravljači',
-    description: 'Kupite satove, naočare, baterije i daljinske upravljače u DajaShop-u. Posetite nas u Nišu ili poručite online.',
+    title: 'Daja Shop | Vreme je da zablistaš',
+    description: 'Pronađite sat koji prati vaš ritam, naočare koje ističu stil i detalje koji svaki dan čine posebnim. DajaShop, Niš.',
     type: 'WebPage',
-    name: 'Početna',
+    name: 'Daja Shop',
   },
   '/catalog': {
     title: 'Ručni satovi — katalog',
@@ -45,8 +45,8 @@ const STATIC_PAGE_SEO = {
     name: 'Ženski satovi',
   },
   '/naocare': {
-    title: 'Naočare — katalog',
-    description: 'Pregledajte ponudu naočara u DajaShop-u i pronađite model koji odgovara vašem stilu.',
+    title: 'Naočare',
+    description: 'Izaberite naočare koje spajaju izgled i udobnost.',
     type: 'CollectionPage',
     name: 'Naočare',
   },
@@ -58,7 +58,7 @@ const STATIC_PAGE_SEO = {
   },
   '/daljinski': {
     title: 'Daljinski upravljači',
-    description: 'Daljinski upravljači za televizore, kapije i druge uređaje. Pogledajte dostupne modele u DajaShop-u.',
+    description: 'Daljinski upravljači za televizore i druge uređaje.',
     type: 'CollectionPage',
     name: 'Daljinski upravljači',
   },
@@ -70,7 +70,7 @@ const STATIC_PAGE_SEO = {
   },
   '/contact': {
     title: 'Kontakt i radno vreme',
-    description: 'Kontaktirajte DajaShop u Nišu za informacije o proizvodima, porudžbinama i servisnim uslugama.',
+    description: 'Posetite nas u Nišu ili kontaktirajte Daja Shop.',
     type: 'ContactPage',
     name: 'Kontakt',
   },
@@ -81,8 +81,8 @@ const STATIC_PAGE_SEO = {
     name: 'Često postavljana pitanja',
   },
   '/usluge': {
-    title: 'Servis i usluge u Nišu',
-    description: 'Usluge zamene baterija, korekcije narukvica i programiranja daljinskih upravljača u DajaShop radnji u Nišu.',
+    title: 'Lasersko graviranje i usluge u Nišu',
+    description: 'Personalizujte svoj poklon preciznim laserskim graviranjem. Dostupne su i zamena baterija, korekcija narukvica i programiranje daljinskih upravljača.',
     type: 'ServicePage',
     name: 'Usluge',
   },
@@ -388,21 +388,22 @@ function buildStaticSeo(pathname, siteUrl) {
 function rewriteStaticHtml(response, seo, siteUrl) {
   const safeJson = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
   const schemas = [seo.pageSchema, seo.breadcrumbs, ...siteSchemas(siteUrl)].filter(Boolean);
+  const fullTitle = seo.url === siteUrl ? seo.title : `${seo.title} | DajaShop`;
   const injector = schemas
     .map((schema) => `<script type="application/ld+json">${safeJson(schema)}</script>`)
     .join('');
   const metaValues = {
     description: seo.description,
     robots: 'index,follow,max-image-preview:large',
-    'og:title': `${seo.title} | DajaShop`,
+    'og:title': fullTitle,
     'og:description': seo.description,
     'og:url': seo.url,
     'og:type': 'website',
-    'twitter:title': `${seo.title} | DajaShop`,
+    'twitter:title': fullTitle,
     'twitter:description': seo.description,
   };
   return new HTMLRewriter()
-    .on('title', { element(element) { element.setInnerContent(`${seo.title} | DajaShop`); } })
+    .on('title', { element(element) { element.setInnerContent(fullTitle); } })
     .on('meta', { element(element) {
       const key = element.getAttribute('name') || element.getAttribute('property');
       if (key && metaValues[key]) element.setAttribute('content', metaValues[key]);

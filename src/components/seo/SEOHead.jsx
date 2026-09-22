@@ -19,6 +19,7 @@ export default function SEOHead({
   url,
   type = 'website',
   noIndex = false,
+  homeTitle,
   children,
 }) {
   const location = useLocation();
@@ -28,7 +29,7 @@ export default function SEOHead({
   const canonicalUrl = ensureAbsoluteUrl(url || `${baseUrl}${currentPath}`);
   const imageUrl = ensureAbsoluteUrl(image);
   const isHome = currentPath === '/' || title === 'Početna';
-  const fullTitle = isHome ? siteName : `${title} | ${siteName}`;
+  const fullTitle = homeTitle || (isHome ? siteName : `${title} | ${siteName}`);
   const robotsValue = noIndex
     ? 'noindex,follow,max-image-preview:large'
     : 'index,follow,max-image-preview:large';

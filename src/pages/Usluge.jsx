@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // Ažurirano: Uklanjamo ShieldCheck, dodajemo KeyRound za daljinske
-import { Store, BatteryCharging, Wrench, KeyRound } from 'lucide-react';
+import { Store, BatteryCharging, Wrench, KeyRound, Sparkles } from 'lucide-react';
 import '../pages/About.css';
 import SEOHead from '../components/seo/SEOHead.jsx';
 
@@ -38,13 +38,22 @@ export default function Usluge() {
   // Array sa podacima o uslugama, ažuriran prema zahtevu
   const services = [
     {
+      Icon: Sparkles,
+      title: 'Precizno Lasersko Graviranje',
+      description:
+        'Personalizujte sat, nakit ili poklon preciznim laserskim graviranjem. Dodajte ime, datum ili poruku koja ostaje zauvek.',
+      warning:
+        'Za najbolji rezultat, posetite nas u radnji u Nišu sa predmetom koji želite da personalizujete.',
+      id: 1,
+    },
+    {
       Icon: BatteryCharging,
       title: 'Ekspertna Zamena Baterije Sata',
       description:
         'Vaš sat zaslužuje najviši nivo pažnje. Naša usluga obuhvata profesionalnu zamenu baterije uz korišćenje isključivo visokokvalitetnih ćelija. Pružamo garanciju na ugrađenu bateriju.',
       warning:
         'Molimo Vas da imate u vidu da se ova usluga sprovodi isključivo u našoj radnji u Nišu. Nismo u mogućnosti da pružamo uslugu zamene baterije putem kurirskih službi, čime osiguravamo najviši standard kvaliteta i sigurnosti.',
-      id: 1,
+      id: 2,
     },
     {
       Icon: Wrench,
@@ -53,7 +62,7 @@ export default function Usluge() {
         'Stručna montaža novih narukvica, kao i precizno podešavanje dužine metalnih narukvica Vašeg sata. Neophodan profesionalni alat i ekspertiza su ključni za dugovečnost Vašeg sata.',
       warning:
         'Ova usluga zahteva direktan pregled i rad našeg majstora. Dostupna isključivo u Daja Shop radnji.',
-      id: 2,
+      id: 3,
     },
     {
       Icon: KeyRound, // NOVO: Za daljinske upravljače za garaže
@@ -62,7 +71,7 @@ export default function Usluge() {
         'Pružamo profesionalnu uslugu programiranja i sinhronizacije daljinskih upravljača za Vaša garažna vrata, kapije ili rampe. Osigurajte sebi jednostavan i pouzdan pristup uz našu tehničku podršku.',
       warning:
         'Uspostavljanje veze i programiranje daljinskih upravljača zahteva prisustvo starog daljinskog upravljača kako bi se obezbedila puna kompatibilnost i uspešno uparivanje sa sistemom.',
-      id: 3,
+      id: 4,
     },
   ];
 
@@ -79,8 +88,8 @@ export default function Usluge() {
         style={{ padding: '48px 0', gap: '64px' }}
       >
         <SEOHead
-          title="Usluge"
-          description="Usluge servisa satova, zamene baterija i programiranja daljinskih upravljača u DajaShop radnji."
+          title="Lasersko graviranje i usluge"
+          description="Personalizujte svoj poklon preciznim laserskim graviranjem. Dostupne su i zamena baterija, korekcija narukvica i programiranje daljinskih upravljača."
         />
         <header className="section">
           <h1 className="h1" style={{ color: 'var(--color-primary)' }}>
