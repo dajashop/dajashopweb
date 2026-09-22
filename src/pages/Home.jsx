@@ -60,7 +60,7 @@ const CATEGORY_TILES = [
   {
     title: 'Ženski satovi',
     image: '/images/daniel-klain-5252.PNG',
-    to: '/catalog?gender=ŽENSKI',
+    to: '/zenski-satovi',
   },
   {
     title: 'G-SHOCK',

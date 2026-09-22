@@ -67,8 +67,8 @@ const departmentSEO = {
   },
 };
 
-export default function Catalog({ department = 'satovi' }) {
-  const activeSeo = departmentSEO[department] || departmentSEO.satovi;
+export default function Catalog({ department = 'satovi', fixedGender, seo }) {
+  const activeSeo = seo || departmentSEO[department] || departmentSEO.satovi;
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
 
   const [sp, setSp] = useSearchParams();
@@ -122,7 +122,7 @@ export default function Catalog({ department = 'satovi' }) {
   const activeFilters = useMemo(() => {
     const active = [];
     const brands = sp.getAll('brand');
-    const genders = sp.getAll('gender');
+    const genders = fixedGender ? [fixedGender] : sp.getAll('gender');
     const categories = sp.getAll('category');
     const min = sp.get('min');
     const max = sp.get('max');
@@ -155,7 +155,7 @@ export default function Catalog({ department = 'satovi' }) {
     });
 
     return active;
-  }, [sp]);
+  }, [fixedGender, sp]);
 
   const removeFilter = (key, val) => {
     const next = new URLSearchParams(sp);
@@ -205,7 +205,7 @@ export default function Catalog({ department = 'satovi' }) {
 
     const q = sp.get('q')?.toLowerCase() || '';
     const brands = sp.getAll('brand');
-    const genders = sp.getAll('gender');
+    const genders = fixedGender ? [fixedGender] : sp.getAll('gender');
     const categories = sp.getAll('category');
     const min = sp.get('min') ? Number(sp.get('min')) : null;
     const max = sp.get('max') ? Number(sp.get('max')) : null;
@@ -287,7 +287,7 @@ export default function Catalog({ department = 'satovi' }) {
       ...sorted.filter((product) => product.isVisible !== false),
       ...sorted.filter((product) => product.isVisible === false),
     ];
-  }, [departmentItems, sp, isAdmin]);
+  }, [departmentItems, fixedGender, sp, isAdmin]);
 
   const [page, setPage] = useState(1);
   const totalCount = filteredData.length;
@@ -444,8 +444,7 @@ export default function Catalog({ department = 'satovi' }) {
                   { label: 'Početna', href: '/' },
                   {
                     label: TITLES[department] || department,
-                    href:
-                      department === 'satovi' ? '/catalog' : `/${department}`,
+                    href: activeSeo.path,
                   },
                 ]}
               />
@@ -463,17 +462,23 @@ export default function Catalog({ department = 'satovi' }) {
                   </span>
                 )}
 
-                {activeFilters.map((f, idx) => (
-                  <button
-                    key={`${f.key}-${f.val}-${idx}`}
-                    onClick={() => removeFilter(f.key, f.val)}
-                    className="catalog__pill"
-                    title="Ukloni filter"
-                  >
-                    {f.label}
-                    <X size={13} className="catalog__pill-x" />
-                  </button>
-                ))}
+                {activeFilters.map((f, idx) =>
+                  f.key === 'gender' && f.val === fixedGender ? (
+                    <span key={`${f.key}-${f.val}-${idx}`} className="catalog__pill catalog__pill--ghost">
+                      {f.label}
+                    </span>
+                  ) : (
+                    <button
+                      key={`${f.key}-${f.val}-${idx}`}
+                      onClick={() => removeFilter(f.key, f.val)}
+                      className="catalog__pill"
+                      title="Ukloni filter"
+                    >
+                      {f.label}
+                      <X size={13} className="catalog__pill-x" />
+                    </button>
+                  ),
+                )}
 
                 {activeFilters.length > 0 && (
                   <button

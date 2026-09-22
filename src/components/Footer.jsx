@@ -187,8 +187,8 @@ export default function Footer() {
           <div className="footer__col">
             <h3 className="footer__title">Istraži</h3>
             <nav className="footer__nav">
-              <Link to="/catalog">Muški satovi</Link>
-              <Link to="/catalog">Ženski satovi</Link>
+              <Link to="/muski-satovi">Muški satovi</Link>
+              <Link to="/zenski-satovi">Ženski satovi</Link>
               <Link to="/about">O nama</Link>
               <Link to="/contact">Kontakt</Link>
             </nav>

@@ -32,6 +32,18 @@ const STATIC_PAGE_SEO = {
     type: 'CollectionPage',
     name: 'Ručni satovi',
   },
+  '/muski-satovi': {
+    title: 'Muški satovi',
+    description: 'Muški ručni satovi brendova Casio, Orient, Daniel Klein i Q&Q. Pronađite model za svaki stil u DajaShop-u.',
+    type: 'CollectionPage',
+    name: 'Muški satovi',
+  },
+  '/zenski-satovi': {
+    title: 'Ženski satovi',
+    description: 'Ženski ručni satovi brendova Casio, Daniel Klein, Orient i Q&Q. Izaberite elegantan sat u DajaShop-u.',
+    type: 'CollectionPage',
+    name: 'Ženski satovi',
+  },
   '/naocare': {
     title: 'Naočare — katalog',
     description: 'Pregledajte ponudu naočara u DajaShop-u i pronađite model koji odgovara vašem stilu.',

@@ -27,6 +27,8 @@ export default function AppRoutes() {
       {/* --- RUTE ZA ODELJENJA --- */}
       {/* Glavni katalog (Satovi) */}
       <Route path="/catalog" element={<Catalog department="satovi" />} />
+      <Route path="/muski-satovi" element={<Catalog department="satovi" fixedGender="Muški" seo={{ title: 'Muški satovi', description: 'Muški ručni satovi brendova Casio, Orient, Daniel Klein i Q&Q. Pronađite model za svaki stil u DajaShop-u.', keywords: 'muski satovi,rucni satovi za muskarce,Casio,Orient,Daniel Klein', path: '/muski-satovi' }} />} />
+      <Route path="/zenski-satovi" element={<Catalog department="satovi" fixedGender="Ženski" seo={{ title: 'Ženski satovi', description: 'Ženski ručni satovi brendova Casio, Daniel Klein, Orient i Q&Q. Izaberite elegantan sat u DajaShop-u.', keywords: 'zenski satovi,rucni satovi za zene,Casio,Daniel Klein,Orient', path: '/zenski-satovi' }} />} />
 
       {/* Posebne stranice za ostale proizvode */}
       <Route path="/daljinski" element={<Catalog department="daljinski" />} />

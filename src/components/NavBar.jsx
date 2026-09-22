@@ -111,8 +111,8 @@ export default function NavBar() {
             </button>
             <div className="navbar__dropdown card">
               <Link to="/catalog" style={{ fontWeight: 'bold' }}>Svi modeli</Link>
-              <Link to="/catalog?gender=Muški">MUŠKI</Link>
-              <Link to="/catalog?gender=Ženski">ŽENSKI</Link>
+              <Link to="/muski-satovi">MUŠKI</Link>
+              <Link to="/zenski-satovi">ŽENSKI</Link>
             </div>
           </div>
 
@@ -229,10 +229,10 @@ export default function NavBar() {
                   >
                     Svi modeli
                   </Link>
-                  <Link className="navbar__pill" to="/catalog?gender=Muški" onClick={() => setOpenIdx(null)}>
+                  <Link className="navbar__pill" to="/muski-satovi" onClick={() => setOpenIdx(null)}>
                     MUŠKI
                   </Link>
-                  <Link className="navbar__pill" to="/catalog?gender=Ženski" onClick={() => setOpenIdx(null)}>
+                  <Link className="navbar__pill" to="/zenski-satovi" onClick={() => setOpenIdx(null)}>
                     ŽENSKI
                   </Link>
                 </>
