@@ -145,6 +145,12 @@ function normalizeProduct(product) {
   const firstVariant = Array.isArray(product.variants)
     ? product.variants[0]
     : null;
+  // Keep the complete variant attributes for the staff product form. The
+  // customer-facing `specs` below remains filtered, but stripping the raw
+  // attributes here also stripped `rfid_piece_placements` before the admin
+  // modal could load each physical item's zone and shelf.
+  const rawAttributes =
+    product.attributes || firstVariant?.attributes || product.specs || {};
   const priceMinor =
     product.price ??
     product.currentPriceAmount ??
@@ -219,7 +225,8 @@ function normalizeProduct(product) {
     thumbnailUrl: product.thumbnailUrl || product.thumbnail_url || primaryImage,
     // RFID and per-piece barcode data are operational metadata. They must
     // never become customer-facing product specifications.
-    specs: visibleProductSpecs(product.specs || firstVariant?.attributes),
+    attributes: rawAttributes,
+    specs: visibleProductSpecs(rawAttributes),
     marketingFlags: product.marketingFlags || product.marketing_flags || [],
     isVisible: product.isVisible ?? product.active ?? true,
     published: product.published ?? true,
