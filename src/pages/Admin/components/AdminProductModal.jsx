@@ -18,7 +18,7 @@ import {
   rfidApi,
   workforceApi,
 } from '../../../services/dajaPlatform';
-import { adminCatalogApi, readerStationApi, subscribeReaderSession } from '../../../services/dajaPlatform';
+import { adminCatalogApi, readerStationApi, subscribeReaderFind, subscribeReaderSession } from '../../../services/dajaPlatform';
 import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
 import ImageGalleryModal from '../../../components/modals/ImageGalleryModal.jsx';
@@ -185,6 +185,9 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
   const [scanNotice, setScanNotice] = useState('');
   const [waitingForReaderRelease, setWaitingForReaderRelease] = useState(false);
   const readerSessionUnsubscribeRef = useRef(null);
+  const [findSession, setFindSession] = useState(null);
+  const [findSignal, setFindSignal] = useState(0);
+  const findSessionUnsubscribeRef = useRef(null);
 
   // State za Image Gallery Modal
   const [galleryIndex, setGalleryIndex] = useState(null);
@@ -225,7 +228,7 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
       setReaderStations(online);
       if (online.length === 1) setReaderStationId(online[0].id);
     }).catch(() => { if (active) setReaderStations([]); });
-    return () => { active = false; readerSessionUnsubscribeRef.current?.(); };
+    return () => { active = false; readerSessionUnsubscribeRef.current?.(); findSessionUnsubscribeRef.current?.(); };
   }, []);
 
   useEffect(() => {
@@ -595,6 +598,18 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
     setScanSession(null);
     setScanPieceIndex(null);
     if (id) await readerStationApi.cancel(id).catch(() => undefined);
+  };
+  const cancelFindSession = async () => { const id = findSession?.id; findSessionUnsubscribeRef.current?.(); findSessionUnsubscribeRef.current = null; setFindSession(null); setFindSignal(0); if (id) await readerStationApi.cancelFind(id).catch(() => undefined); };
+  const startFindSession = async () => {
+    const epc = validateEpcInput(selectedPiece.epc || '').value;
+    if (!epc) { setScanNotice('Izabrani komad nema važeći EPC za pronalaženje.'); return; }
+    if (!readerStationId) { setScanNotice('Nema online G2 čitača.'); return; }
+    try {
+      const created = await readerStationApi.startFind(readerStationId, crypto.randomUUID(), epc, { name: form.name || 'Artikal', sku: form.sku || undefined, barcode: selectedPiece.barcode || form.barcode || undefined, imageUrl: form.mainImageUrl || form.images?.[0]?.url || undefined });
+      setFindSession(created); setFindSignal(0); findSessionUnsubscribeRef.current?.();
+      findSessionUnsubscribeRef.current = subscribeReaderFind(created.id, (event) => { const data = event?.data || {}; if (data.sessionId !== created.id) return; if (event.event === 'reader.find.proximity') { setFindSignal(Math.round((data.proximity || 0) * 100)); setScanNotice(`Signal: ${Math.round((data.proximity || 0) * 100)}% · ${data.rssi ?? '—'} dBm`); } if (event.event === 'reader.find.completed' || event.event === 'reader.find.cancelled') { setScanNotice(event.event === 'reader.find.completed' ? 'Vreme za pronalaženje je isteklo.' : 'Traženje je zaustavljeno.'); setFindSession(null); } }, (error) => setScanNotice(error?.message || 'Reader Station veza nije dostupna.'));
+      setScanNotice('G2 čitač traži izabrani RFID tag (najviše 5 minuta).');
+    } catch (error) { setScanNotice(error?.message || 'Ne mogu da pokrenem pronalaženje.'); }
   };
 
   // Socket.IO delivers the result immediately in the usual case. This polling
@@ -1757,8 +1772,9 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
                   </label>
                   <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      {readerStations.length > 1 ? <select value={readerStationId} disabled={Boolean(scanSession)} onChange={(event) => setReaderStationId(event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm"><option value="">Izaberite G2 čitač</option>{readerStations.map((station) => <option key={station.id} value={station.id}>{station.name}</option>)}</select> : <span className="text-xs font-semibold text-emerald-800">{readerStations[0]?.name || 'Nema online G2 čitača'}</span>}
-                      {!scanSession ? <button type="button" disabled={waitingForReaderRelease} onClick={() => void startReaderSession()} className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60">{waitingForReaderRelease ? 'Čekam G2…' : 'Očitaj sa G2'}</button> : <button type="button" onClick={() => void cancelReaderSession()} className="rounded-lg border border-emerald-700 px-3 py-2 text-sm font-bold text-emerald-800">Nova sesija / promeni čitač</button>}
+                      {readerStations.length > 1 ? <select value={readerStationId} disabled={Boolean(scanSession || findSession)} onChange={(event) => setReaderStationId(event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm"><option value="">Izaberite G2 čitač</option>{readerStations.map((station) => <option key={station.id} value={station.id}>{station.name}</option>)}</select> : <span className="text-xs font-semibold text-emerald-800">{readerStations[0]?.name || 'Nema online G2 čitača'}</span>}
+                      {!scanSession ? <button type="button" disabled={waitingForReaderRelease || Boolean(findSession)} onClick={() => void startReaderSession()} className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60">{waitingForReaderRelease ? 'Čekam G2…' : 'Očitaj sa G2'}</button> : <button type="button" onClick={() => void cancelReaderSession()} className="rounded-lg border border-emerald-700 px-3 py-2 text-sm font-bold text-emerald-800">Nova sesija / promeni čitač</button>}
+                      {!findSession ? <button type="button" disabled={Boolean(scanSession) || !selectedPiece.epc} onClick={() => void startFindSession()} className="rounded-lg border border-emerald-700 px-3 py-2 text-sm font-bold text-emerald-800 disabled:opacity-50">Pronađi</button> : <button type="button" onClick={() => void cancelFindSession()} className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-bold text-white">Zaustavi traženje {findSignal ? `${findSignal}%` : ''}</button>}
                     </div>
                     {scanNotice ? <p className="mt-2 text-xs text-emerald-900" role="status">{scanNotice}</p> : null}
                   </div>

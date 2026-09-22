@@ -936,6 +936,9 @@ export const readerStationApi = {
   start(stationId, clientId, preview) { return apiRequest('/rfid/reader-stations/sessions', { method: 'POST', staff: true, body: { stationId, clientId, ...(preview ? { preview } : {}) } }); },
   session(sessionId) { return apiRequest(`/rfid/reader-stations/sessions/${encodeURIComponent(sessionId)}`, { staff: true }); },
   cancel(sessionId) { return apiRequest(`/rfid/reader-stations/sessions/${encodeURIComponent(sessionId)}/cancel`, { method: 'POST', staff: true }); },
+  startFind(stationId, clientId, epc, preview) { return apiRequest('/rfid/reader-stations/find-sessions', { method: 'POST', staff: true, body: { stationId, clientId, epc, ...(preview ? { preview } : {}) } }); },
+  findSession(sessionId) { return apiRequest(`/rfid/reader-stations/find-sessions/${encodeURIComponent(sessionId)}`, { staff: true }); },
+  cancelFind(sessionId) { return apiRequest(`/rfid/reader-stations/find-sessions/${encodeURIComponent(sessionId)}/cancel`, { method: 'POST', staff: true }); },
 };
 
 export function subscribeReaderSession(sessionId, onEvent, onError) {
@@ -949,6 +952,17 @@ export function subscribeReaderSession(sessionId, onEvent, onError) {
   }));
   channels.forEach((channel) => socket.on(channel, onEvent));
   socket.on('connect_error', onError || (() => {}));
+  return () => { channels.forEach((channel) => socket.off(channel, onEvent)); socket.close(); };
+}
+
+export function subscribeReaderFind(sessionId, onEvent, onError) {
+  if (!REALTIME_ENABLED) return () => {};
+  const token = getStaffAccessToken();
+  if (!token) { onError?.(new Error('Staff token nije dostupan za Reader Station.')); return () => {}; }
+  const socket = io(realtimeNamespaceUrl(), { path: '/socket.io', transports: ['websocket'], auth: { token: `Bearer ${token}` }, reconnection: true });
+  const channels = ['reader.find.proximity', 'reader.find.completed', 'reader.find.cancelled'];
+  socket.on('connect', () => socket.emit('reader.find.subscribe', { sessionId }, (result) => { if (result?.ok === false) onError?.(new Error('Nije moguće povezati sesiju pronalaženja.')); }));
+  channels.forEach((channel) => socket.on(channel, onEvent)); socket.on('connect_error', onError || (() => {}));
   return () => { channels.forEach((channel) => socket.off(channel, onEvent)); socket.close(); };
 }
 
