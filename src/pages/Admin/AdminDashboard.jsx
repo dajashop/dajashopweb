@@ -50,7 +50,6 @@ import {
   departmentService,
   categoryService,
   specKeyService,
-  repairProductImageUrls,
   uploadRemoteImage,
 } from '../../services/admin';
 import { money } from '../../utils/currency';
@@ -357,7 +356,6 @@ function AdminDashboardContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
-  const [repairingImages, setRepairingImages] = useState(false);
   const [auditEvents, setAuditEvents] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditError, setAuditError] = useState('');
@@ -731,22 +729,6 @@ function AdminDashboardContent() {
     }
   };
 
-  const handleRepairImages = async () => {
-    setRepairingImages(true);
-
-    try {
-      const result = await repairProductImageUrls();
-      alert(
-        `Popravka završena. Ažurirano: ${result.updatedCount}, preskočeno: ${result.skippedCount}, greške: ${result.errorCount}.`,
-      );
-    } catch (error) {
-      console.error('Greška pri popravci slika:', error);
-      alert('Popravka slika nije uspela. Proverite konzolu.');
-    } finally {
-      setRepairingImages(false);
-    }
-  };
-
   // --- Import logika (handleBulkImport) ostaje ista... ---
   const handleBulkImport = async ({ file }) => {
     const base64Xlsx = await new Promise((resolve, reject) => {
@@ -998,16 +980,6 @@ function AdminDashboardContent() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={handleRepairImages}
-                  disabled={repairingImages}
-                  className="bg-white text-neutral-700 border border-neutral-200 rounded-xl px-4 py-2.5 flex items-center gap-2 hover:bg-neutral-50 font-bold disabled:opacity-60 disabled:cursor-wait"
-                >
-                  <Check size={18} />
-                  {repairingImages
-                    ? 'Popravljam slike...'
-                    : 'Popravi Firebase slike'}
-                </button>
                 <button
                   onClick={openNew}
                   className="bg-neutral-900 text-white rounded-xl px-5 py-2.5 flex items-center gap-2 hover:bg-black font-bold"
