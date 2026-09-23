@@ -413,10 +413,12 @@ function AdminDashboardContent() {
   const [specFilters, setSpecFilters] = useState([]);
   const [newSpecName, setNewSpecName] = useState('');
   const [newSpecUnit, setNewSpecUnit] = useState('');
+  const [newSpecOptions, setNewSpecOptions] = useState('');
   const [newSpecDept, setNewSpecDept] = useState('');
   const [editingSpecId, setEditingSpecId] = useState(null);
   const [editingSpecName, setEditingSpecName] = useState('');
   const [editingSpecUnit, setEditingSpecUnit] = useState('');
+  const [editingSpecOptions, setEditingSpecOptions] = useState('');
 
   const filterOptions = [
     { id: 'name', label: 'Naziv' },
@@ -681,9 +683,11 @@ function AdminDashboardContent() {
       await specKeyService.add(newSpecName, {
         departmentId,
         unit: newSpecUnit.trim(),
+        optionValues: newSpecOptions.split(',').map((value) => value.trim()).filter(Boolean),
       });
       setNewSpecName('');
       setNewSpecUnit('');
+      setNewSpecOptions('');
     } catch (err) {
       alert('Greška.');
     }
@@ -693,9 +697,11 @@ function AdminDashboardContent() {
     try {
       await specKeyService.update(editingSpecId, editingSpecName, {
         unit: editingSpecUnit.trim(),
+        optionValues: editingSpecOptions.split(',').map((value) => value.trim()).filter(Boolean),
       });
       setEditingSpecId(null);
       setEditingSpecUnit('');
+      setEditingSpecOptions('');
     } catch (err) {
       alert('Greška.');
     }
@@ -2010,6 +2016,10 @@ function AdminDashboardContent() {
                     onChange={(e) => setNewSpecUnit(e.target.value)}
                   />{' '}
                 </div>{' '}
+                <div className="flex-[2] min-w-[170px]">
+                  <label className="text-[10px] uppercase font-bold text-neutral-400 ml-1">Ponuđeni odgovori</label>
+                  <input className="w-full bg-white/5 border border-primary-dark rounded-xl px-3 py-2 text-sm focus:border-primary outline-none transition-colors" placeholder="Da, Ne ili Plava, Crna" value={newSpecOptions} onChange={(e) => setNewSpecOptions(e.target.value)} />
+                </div>{' '}
                 <button
                   type="submit"
                   disabled={!newSpecName.trim()}
@@ -2049,6 +2059,7 @@ function AdminDashboardContent() {
                             placeholder="Jedinica"
                             aria-label="Jedinica specifikacije"
                           />{' '}
+                          <input className="flex-1 bg-black/20 rounded-lg px-2 py-1 text-sm outline-none border border-primary/50" value={editingSpecOptions} onChange={(e) => setEditingSpecOptions(e.target.value)} placeholder="Ponuđeni odgovori" aria-label="Ponuđeni odgovori" />{' '}
                           <button
                             onClick={handleUpdateSpec}
                             className="text-emerald-500 p-1 hover:bg-white/10 rounded-lg"
@@ -2079,6 +2090,7 @@ function AdminDashboardContent() {
                                 ({item.unit}){' '}
                               </span>
                             )}{' '}
+                            {Array.isArray(item.optionValues) && item.optionValues.length > 0 && <span className="text-[10px] text-neutral-400">{item.optionValues.join(', ')}</span>}{' '}
                             {specFilters.length !== 1 && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-neutral-400 border border-white/5 uppercase tracking-wider">
                                 {' '}
@@ -2096,6 +2108,7 @@ function AdminDashboardContent() {
                                 setEditingSpecId(item.id);
                                 setEditingSpecName(item.name);
                                 setEditingSpecUnit(item.unit || '');
+                                setEditingSpecOptions(Array.isArray(item.optionValues) ? item.optionValues.join(', ') : '');
                               }}
                               className="p-1.5 hover:bg-white/10 rounded-lg text-muted hover:text-primary transition-colors"
                             >

@@ -194,6 +194,7 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
 
   const [tempSpecKey, setTempSpecKey] = useState('');
   const [tempSpecVal, setTempSpecVal] = useState('');
+  const [saveSpecOption, setSaveSpecOption] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deletedVariantIds, setDeletedVariantIds] = useState([]);
   const [pendingPrice, setPendingPrice] = useState(null);
@@ -755,7 +756,7 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
   };
   // --------------------------------------------------------
 
-  const addSpec = () => {
+  const addSpec = async () => {
     if (!tempSpecKey || !tempSpecVal) return;
     const def = specKeys.find((k) => k.name === tempSpecKey);
     let finalVal = tempSpecVal;
@@ -766,8 +767,13 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
       ...prev,
       specs: { ...prev.specs, [tempSpecKey]: finalVal },
     }));
+    if (saveSpecOption && def?.id) {
+      const optionValues = [...new Set([...(Array.isArray(def.optionValues) ? def.optionValues : []), finalVal])];
+      await specKeyService.update(def.id, def.name, { departmentId: def.departmentId, unit: def.unit || null, optionValues });
+    }
     setTempSpecKey('');
     setTempSpecVal('');
+    setSaveSpecOption(false);
   };
 
   const removeSpec = (key) => {
@@ -2310,9 +2316,13 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
                     <input
                       value={tempSpecVal}
                       onChange={(e) => setTempSpecVal(e.target.value)}
+                      list="catalog-specification-options"
                       className="w-full bg-white border border-neutral-200 rounded-xl pl-4 pr-10 py-3 text-sm outline-none focus:border-neutral-400"
                       placeholder="npr. 200"
                     />
+                    <datalist id="catalog-specification-options">
+                      {(specKeys.find((item) => item.name === tempSpecKey)?.optionValues || []).map((option) => <option key={option} value={option} />)}
+                    </datalist>
                     {activeUnit && (
                       <span className="absolute right-3 top-32px text-neutral-400 text-xs font-bold pointer-events-none">
                         {activeUnit}
@@ -2320,13 +2330,19 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
                     )}
                   </div>
                   <button
-                    onClick={addSpec}
+                    onClick={() => void addSpec()}
                     disabled={!tempSpecKey || !tempSpecVal}
                     className="bg-neutral-900 text-white p-3 rounded-xl hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-neutral-200"
                   >
                     <Plus size={20} />
                   </button>
                 </div>
+                {tempSpecKey && (
+                  <label className="-mt-3 mb-4 flex items-center gap-2 text-xs text-neutral-600 cursor-pointer">
+                    <input type="checkbox" checked={saveSpecOption} onChange={(event) => setSaveSpecOption(event.target.checked)} />
+                    Sačuvaj ovu vrednost kao ponuđenu opciju za buduće artikle
+                  </label>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <AnimatePresence>
                     {Object.entries(form.specs).map(([key, val]) => (
