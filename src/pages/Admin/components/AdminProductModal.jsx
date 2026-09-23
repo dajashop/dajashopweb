@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 // [IZMENA] Dodat Trash2 za brisanje redova
-import { X, Save, Plus, Trash2, ChevronDown } from 'lucide-react';
+import { X, Save, Plus, Trash2, ChevronDown, Check } from 'lucide-react';
 import {
   brandService,
   categoryService,
@@ -145,6 +145,80 @@ function SpecificationValueInput({ value, onChange, options, unit }) {
               {option}
             </button>
           )) : <p className="px-4 py-3 text-xs text-neutral-500">Nema ponuđenih odgovora.</p>}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SpecificationKeySelect({ value, onChange, options, selectedValues, placeholder }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const containerRef = useRef(null);
+  const selectedOption = options.find((option) => option.value === value);
+  const visibleOptions = options.filter((option) =>
+    option.label.toLocaleLowerCase('sr-RS').includes(query.trim().toLocaleLowerCase('sr-RS')),
+  );
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!containerRef.current?.contains(event.target)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  return (
+    <div className="relative min-w-0" ref={containerRef}>
+      <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-neutral-500">Osobina</span>
+      <input
+        value={isOpen ? query : selectedOption?.label || ''}
+        onFocus={(event) => {
+          setQuery('');
+          setIsOpen(true);
+          event.currentTarget.select();
+        }}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          if (value) onChange('');
+        }}
+        placeholder={placeholder}
+        className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-4 pr-11 text-sm outline-none transition-colors focus:border-neutral-800 focus:ring-2 focus:ring-neutral-100"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+      />
+      <button
+        type="button"
+        onClick={() => {
+          setQuery('');
+          setIsOpen((current) => !current);
+        }}
+        className="absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-lg text-neutral-500 hover:bg-neutral-100 transition-colors"
+        aria-label="Prikaži osobine"
+      >
+        <ChevronDown size={16} className={isOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
+      </button>
+      {isOpen ? (
+        <div className="absolute z-50 mt-2 max-h-60 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white p-1 shadow-xl custom-scrollbar" role="listbox">
+          {visibleOptions.map((option) => {
+            const alreadyAdded = Object.prototype.hasOwnProperty.call(selectedValues || {}, option.value);
+            return (
+              <button
+                key={option.id || option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setQuery('');
+                  setIsOpen(false);
+                }}
+                className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+              >
+                <span className="min-w-0 truncate">{option.label}</span>
+                {alreadyAdded ? <Check size={16} className="shrink-0 text-emerald-600" aria-label="Već dodato" /> : null}
+              </button>
+            );
+          })}
+          {!visibleOptions.length ? <p className="px-3 py-3 text-xs text-neutral-500">Nema odgovarajućih osobina.</p> : null}
         </div>
       ) : null}
     </div>
@@ -2356,11 +2430,11 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
                 </h3>
                 <div className="flex gap-3 items-end mb-6 bg-neutral-50 p-3 rounded-xl border border-neutral-100">
                   <div className="flex-1 min-w-[140px]">
-                    <CustomSelect
-                      label="Osobina"
+                    <SpecificationKeySelect
                       value={tempSpecKey}
                       options={specOptions}
                       onChange={setTempSpecKey}
+                      selectedValues={form.specs}
                       placeholder={
                         specOptions.length === 0 ? 'Nema opcija' : 'Izaberi...'
                       }
