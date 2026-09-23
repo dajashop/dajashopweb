@@ -185,7 +185,7 @@ const OfferedAnswersDropdown = ({
       </div>
       {open && (
         <div
-          className={`${compact ? 'relative mt-1.5 w-full' : 'absolute z-30 mt-1.5 w-full'} overflow-hidden rounded-xl border border-primary-dark bg-[#17201d] shadow-xl`}
+          className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-xl border border-primary-dark bg-[#17201d] shadow-xl"
           onMouseDown={(event) => event.preventDefault()}
         >
           {answers.length ? (
@@ -2132,7 +2132,7 @@ function AdminDashboardContent() {
                   <Plus size={18} />{' '}
                 </button>{' '}
               </form>{' '}
-              <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar max-h-[500px]">
+              <div className={`flex-1 ${editingSpecOptionsOpen ? 'overflow-visible' : 'overflow-y-auto'} pr-1 space-y-2 custom-scrollbar max-h-[500px]`}>
                 {' '}
                 <AnimatePresence initial={false}>
                   {' '}
