@@ -125,6 +125,88 @@ const AUDIT_FIELD_LABELS = {
   sourceType: 'Razlog izmene',
 };
 
+const splitOfferedAnswers = (value) =>
+  [...new Set(String(value || '').split(',').map((item) => item.trim()).filter(Boolean))];
+
+const OfferedAnswersDropdown = ({
+  value,
+  draft,
+  open,
+  onValueChange,
+  onDraftChange,
+  onOpenChange,
+  compact = false,
+}) => {
+  const answers = splitOfferedAnswers(value);
+  const addAnswer = () => {
+    const nextAnswer = draft.trim();
+    if (!nextAnswer) return;
+    onValueChange([...new Set([...answers, nextAnswer])].join(', '));
+    onDraftChange('');
+    onOpenChange(true);
+  };
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <input
+          className={`w-full bg-white/5 border border-primary-dark rounded-xl px-3 py-2 pr-10 text-sm focus:border-primary outline-none transition-colors ${compact ? 'rounded-lg py-1' : ''}`}
+          value={draft}
+          onChange={(event) => onDraftChange(event.target.value)}
+          onFocus={() => onOpenChange(true)}
+          onBlur={() => window.setTimeout(() => onOpenChange(false), 120)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              addAnswer();
+            }
+          }}
+          placeholder="Upišite odgovor"
+          aria-label="Ponuđeni odgovori"
+          aria-expanded={open}
+          maxLength={160}
+        />
+        <button
+          type="button"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={addAnswer}
+          disabled={!draft.trim()}
+          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-primary hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-35 transition-colors"
+          aria-label="Dodaj ponuđeni odgovor"
+        >
+          <Plus size={compact ? 15 : 17} />
+        </button>
+      </div>
+      {open && (
+        <div
+          className="absolute z-30 mt-1.5 w-full overflow-hidden rounded-xl border border-primary-dark bg-[#17201d] shadow-xl"
+          onMouseDown={(event) => event.preventDefault()}
+        >
+          {answers.length ? (
+            <ul className="max-h-44 overflow-y-auto py-1.5 custom-scrollbar">
+              {answers.map((answer) => (
+                <li key={answer} className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-white hover:bg-white/5">
+                  <span className="min-w-0 truncate">{answer}</span>
+                  <button
+                    type="button"
+                    onClick={() => onValueChange(answers.filter((item) => item !== answer).join(', '))}
+                    className="shrink-0 rounded-md p-1 text-neutral-400 hover:bg-red-400/10 hover:text-red-300 transition-colors"
+                    aria-label={`Ukloni odgovor ${answer}`}
+                  >
+                    <X size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-3 py-3 text-xs text-neutral-400">Upišite odgovor i pritisnite + da ga dodate u listu.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const INVENTORY_SOURCE_LABELS = {
   admin_product_save: 'Admin: čuvanje artikla',
   admin_product_quantity_change: 'Admin: ručna izmena količine',
@@ -414,11 +496,15 @@ function AdminDashboardContent() {
   const [newSpecName, setNewSpecName] = useState('');
   const [newSpecUnit, setNewSpecUnit] = useState('');
   const [newSpecOptions, setNewSpecOptions] = useState('');
+  const [newSpecOptionDraft, setNewSpecOptionDraft] = useState('');
+  const [newSpecOptionsOpen, setNewSpecOptionsOpen] = useState(false);
   const [newSpecDept, setNewSpecDept] = useState('');
   const [editingSpecId, setEditingSpecId] = useState(null);
   const [editingSpecName, setEditingSpecName] = useState('');
   const [editingSpecUnit, setEditingSpecUnit] = useState('');
   const [editingSpecOptions, setEditingSpecOptions] = useState('');
+  const [editingSpecOptionDraft, setEditingSpecOptionDraft] = useState('');
+  const [editingSpecOptionsOpen, setEditingSpecOptionsOpen] = useState(false);
 
   const filterOptions = [
     { id: 'name', label: 'Naziv' },
@@ -688,6 +774,8 @@ function AdminDashboardContent() {
       setNewSpecName('');
       setNewSpecUnit('');
       setNewSpecOptions('');
+      setNewSpecOptionDraft('');
+      setNewSpecOptionsOpen(false);
     } catch (err) {
       alert('Greška.');
     }
@@ -702,6 +790,8 @@ function AdminDashboardContent() {
       setEditingSpecId(null);
       setEditingSpecUnit('');
       setEditingSpecOptions('');
+      setEditingSpecOptionDraft('');
+      setEditingSpecOptionsOpen(false);
     } catch (err) {
       alert('Greška.');
     }
@@ -2018,7 +2108,14 @@ function AdminDashboardContent() {
                 </div>{' '}
                 <div className="flex-[2] min-w-[170px]">
                   <label className="text-[10px] uppercase font-bold text-neutral-400 ml-1">Ponuđeni odgovori</label>
-                  <input className="w-full bg-white/5 border border-primary-dark rounded-xl px-3 py-2 text-sm focus:border-primary outline-none transition-colors" placeholder="Da, Ne ili Plava, Crna" value={newSpecOptions} onChange={(e) => setNewSpecOptions(e.target.value)} />
+                  <OfferedAnswersDropdown
+                    value={newSpecOptions}
+                    draft={newSpecOptionDraft}
+                    open={newSpecOptionsOpen}
+                    onValueChange={setNewSpecOptions}
+                    onDraftChange={setNewSpecOptionDraft}
+                    onOpenChange={setNewSpecOptionsOpen}
+                  />
                 </div>{' '}
                 <button
                   type="submit"
@@ -2059,7 +2156,17 @@ function AdminDashboardContent() {
                             placeholder="Jedinica"
                             aria-label="Jedinica specifikacije"
                           />{' '}
-                          <input className="flex-1 bg-black/20 rounded-lg px-2 py-1 text-sm outline-none border border-primary/50" value={editingSpecOptions} onChange={(e) => setEditingSpecOptions(e.target.value)} placeholder="Ponuđeni odgovori" aria-label="Ponuđeni odgovori" />{' '}
+                          <div className="flex-1 min-w-[180px]">
+                            <OfferedAnswersDropdown
+                              value={editingSpecOptions}
+                              draft={editingSpecOptionDraft}
+                              open={editingSpecOptionsOpen}
+                              onValueChange={setEditingSpecOptions}
+                              onDraftChange={setEditingSpecOptionDraft}
+                              onOpenChange={setEditingSpecOptionsOpen}
+                              compact
+                            />
+                          </div>{' '}
                           <button
                             onClick={handleUpdateSpec}
                             className="text-emerald-500 p-1 hover:bg-white/10 rounded-lg"
@@ -2068,7 +2175,11 @@ function AdminDashboardContent() {
                             <Check size={16} />{' '}
                           </button>{' '}
                           <button
-                            onClick={() => setEditingSpecId(null)}
+                            onClick={() => {
+                              setEditingSpecId(null);
+                              setEditingSpecOptionDraft('');
+                              setEditingSpecOptionsOpen(false);
+                            }}
                             className="text-red-400 p-1 hover:bg-white/10 rounded-lg"
                           >
                             {' '}
@@ -2109,6 +2220,8 @@ function AdminDashboardContent() {
                                 setEditingSpecName(item.name);
                                 setEditingSpecUnit(item.unit || '');
                                 setEditingSpecOptions(Array.isArray(item.optionValues) ? item.optionValues.join(', ') : '');
+                                setEditingSpecOptionDraft('');
+                                setEditingSpecOptionsOpen(false);
                               }}
                               className="p-1.5 hover:bg-white/10 rounded-lg text-muted hover:text-primary transition-colors"
                             >
