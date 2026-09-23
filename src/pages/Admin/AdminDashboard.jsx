@@ -185,27 +185,27 @@ const OfferedAnswersDropdown = ({
       </div>
       {open && (
         <div
-          className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-xl border border-primary-dark bg-[#17201d] shadow-xl"
+          className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl"
           onMouseDown={(event) => event.preventDefault()}
         >
           {answers.length ? (
             <ul className="max-h-44 overflow-y-auto py-1.5 custom-scrollbar">
               {answers.map((answer) => (
-                <li key={answer} className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-white hover:bg-white/5">
+                <li key={answer} className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-50">
                   <span className="min-w-0 truncate">{answer}</span>
                   <button
                     type="button"
                     onClick={() => onValueChange(answers.filter((item) => item !== answer).join(', '))}
-                    className="shrink-0 rounded-md p-1 text-neutral-400 hover:bg-red-400/10 hover:text-red-300 transition-colors"
+                    className="shrink-0 rounded-md p-1 text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
                     aria-label={`Ukloni odgovor ${answer}`}
                   >
-                    <X size={14} />
+                    <Trash2 size={14} />
                   </button>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="px-3 py-3 text-xs text-neutral-400">Upišite odgovor i pritisnite + da ga dodate u listu.</p>
+            <p className="px-3 py-3 text-xs text-neutral-500">Upišite odgovor i pritisnite + da ga dodate u listu.</p>
           )}
         </div>
       )}
