@@ -25,6 +25,18 @@ import { readSessionValue, writeSessionValue } from '../services/consentStorage.
 
 const PER_PAGE = 32;
 
+function normalizedGender(value) {
+  const compact = String(value || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toUpperCase();
+  if (!compact || compact === 'UNISEX') return 'UNISEX';
+  if (compact === 'MUSKI' || compact === 'M') return 'MUSKI';
+  if (compact === 'ZENSKI' || compact === 'Z') return 'ZENSKI';
+  return compact;
+}
+
 const SORT_OPTIONS = [
   { value: 'popular', label: 'Popularnost' },
   { value: 'newest', label: 'Najnovije' },
@@ -218,9 +230,8 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
     if (genders.length) {
       out = out.filter((p) => {
-        if (genders.includes(p.gender)) return true;
-        if (!p.gender || p.gender === 'Unisex') return true;
-        return false;
+        const productGender = normalizedGender(p.gender);
+        return productGender === 'UNISEX' || genders.some((gender) => normalizedGender(gender) === productGender);
       });
     }
 

@@ -194,6 +194,7 @@ function normalizeProduct(product) {
       product.primary_category_id ||
       product.categoryId ||
       null,
+    gender: product.gender || product.variantGender || product.variant_gender || firstVariant?.gender || '',
     brand: product.brand || product.brand_name || null,
     category: product.category || product.category_name || null,
     price: toDisplayPrice(priceMinor),

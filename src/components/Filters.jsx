@@ -4,6 +4,14 @@ import { useSearchParams } from 'react-router-dom';
 import catalog from '../services/CatalogService.js';
 import { motion, AnimatePresence } from 'framer-motion';
 
+function normalizedGender(value) {
+  const compact = String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
+  if (!compact || compact === 'UNISEX') return 'UNISEX';
+  if (compact === 'MUSKI' || compact === 'M') return 'MUSKI';
+  if (compact === 'ZENSKI' || compact === 'Z') return 'ZENSKI';
+  return compact;
+}
+
 function SectionHeader({ title, count, onClear, isOpen, onToggle }) {
   return (
     <div
@@ -95,9 +103,8 @@ export default function Filters({ products, onClose }) {
       );
     if (selectedGenders.length > 0) {
       filtered = filtered.filter((p) => {
-        if (selectedGenders.includes(p.gender)) return true;
-        if (!p.gender || p.gender === 'Unisex') return true;
-        return false;
+        const productGender = normalizedGender(p.gender);
+        return productGender === 'UNISEX' || selectedGenders.some((gender) => normalizedGender(gender) === productGender);
       });
     }
 
