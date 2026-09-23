@@ -129,7 +129,10 @@ const splitOfferedAnswers = (value) =>
   [...new Set(String(value || '').split(',').map((item) => item.trim()).filter(Boolean))];
 
 const catalogInlineFieldClass =
-  'min-w-0 !rounded-[8px] border border-primary-dark bg-white/5 px-3 py-1 text-sm outline-none transition-colors focus:border-primary focus:bg-white/10';
+  'h-10 min-w-0 !rounded-[8px] border border-primary-dark bg-white/5 px-3 text-sm outline-none transition-colors focus:border-primary focus:bg-white/10';
+
+const catalogAddButtonClass =
+  'btn btn--primary !h-10 !w-10 !rounded-[8px] !p-0';
 
 const OfferedAnswersDropdown = ({
   value,
@@ -153,7 +156,7 @@ const OfferedAnswersDropdown = ({
     <div className="relative">
       <div className="relative">
         <input
-          className={`w-full bg-white/5 border border-primary-dark rounded-xl px-3 py-2 pr-10 text-sm focus:border-primary outline-none transition-colors ${compact ? 'rounded-lg py-1' : ''}`}
+          className="h-10 w-full !rounded-[8px] border border-primary-dark bg-white/5 px-3 pr-10 text-sm outline-none transition-colors focus:border-primary focus:bg-white/10"
           value={draft}
           onChange={(event) => onDraftChange(event.target.value)}
           onFocus={() => onOpenChange(true)}
@@ -1622,7 +1625,7 @@ function AdminDashboardContent() {
                 {' '}
                 {brandFilters.length !== 1 && (
                   <select
-                    className="bg-white/5 border border-primary-dark rounded-xl px-3 py-2 text-sm focus:border-primary outline-none transition-colors"
+                    className={catalogInlineFieldClass}
                     value={newBrandDept}
                     onChange={(e) => setNewBrandDept(e.target.value)}
                   >
@@ -1645,7 +1648,7 @@ function AdminDashboardContent() {
                 <button
                   type="submit"
                   disabled={!newBrandName.trim()}
-                  className="btn btn--primary rounded-xl px-3"
+                  className={catalogAddButtonClass}
                 >
                   {' '}
                   <Plus size={18} />{' '}
@@ -1824,7 +1827,7 @@ function AdminDashboardContent() {
                       Odeljenje{' '}
                     </label>{' '}
                     <select
-                      className="w-full bg-white/5 border border-primary-dark rounded-xl px-3 py-2 text-sm focus:border-primary outline-none transition-colors"
+                      className={`w-full ${catalogInlineFieldClass}`}
                       value={newCatDept}
                       onChange={(e) => {
                         setNewCatDept(e.target.value);
@@ -1849,7 +1852,7 @@ function AdminDashboardContent() {
                     Brend{' '}
                   </label>{' '}
                   <select
-                    className="w-full bg-white/5 border border-primary-dark rounded-xl px-3 py-2 text-sm focus:border-primary outline-none transition-colors"
+                    className={`w-full ${catalogInlineFieldClass}`}
                     value={newCatBrand}
                     onChange={(e) => setNewCatBrand(e.target.value)}
                   >
@@ -1889,7 +1892,7 @@ function AdminDashboardContent() {
                       newCatBrand
                     )
                   }
-                  className="btn btn--primary rounded-xl px-3 py-2 mb-[1px]"
+                  className={`${catalogAddButtonClass} mb-[1px]`}
                 >
                   {' '}
                   <Plus size={18} />{' '}
@@ -2068,7 +2071,7 @@ function AdminDashboardContent() {
                       Odeljenje{' '}
                     </label>{' '}
                     <select
-                      className="w-full bg-white/5 border border-primary-dark rounded-xl px-3 py-2 text-sm focus:border-primary outline-none transition-colors"
+                      className={`w-full ${catalogInlineFieldClass}`}
                       value={newSpecDept}
                       onChange={(e) => setNewSpecDept(e.target.value)}
                     >
@@ -2123,7 +2126,7 @@ function AdminDashboardContent() {
                 <button
                   type="submit"
                   disabled={!newSpecName.trim()}
-                  className="btn btn--primary rounded-xl px-3 py-2 mb-[1px]"
+                  className={`${catalogAddButtonClass} mb-[1px]`}
                 >
                   {' '}
                   <Plus size={18} />{' '}
