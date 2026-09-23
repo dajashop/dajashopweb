@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 // [IZMENA] Dodat Trash2 za brisanje redova
-import { X, Save, Plus, Trash2 } from 'lucide-react';
+import { X, Save, Plus, Trash2, ChevronDown } from 'lucide-react';
 import {
   brandService,
   categoryService,
@@ -92,6 +92,63 @@ function catalogAttributeKey(value) {
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
   return normalized || 'specification';
+}
+
+function SpecificationValueInput({ value, onChange, options, unit }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+  const normalizedOptions = [...new Set((options || []).filter(Boolean))];
+  const visibleOptions = normalizedOptions.filter((option) =>
+    option.toLocaleLowerCase('sr-RS').includes(value.trim().toLocaleLowerCase('sr-RS')),
+  );
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!containerRef.current?.contains(event.target)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onFocus={() => setIsOpen(true)}
+        className={`w-full bg-white border border-neutral-200 rounded-xl pl-4 py-3 text-sm outline-none transition-colors focus:border-neutral-400 ${unit ? 'pr-24' : 'pr-11'}`}
+        placeholder="npr. 200"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+      />
+      {unit ? <span className="absolute right-11 top-1/2 -translate-y-1/2 text-neutral-400 text-xs font-bold pointer-events-none">{unit}</span> : null}
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-neutral-500 hover:bg-neutral-100 transition-colors"
+        aria-label="Prikaži ponuđene odgovore"
+      >
+        <ChevronDown size={16} className={isOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
+      </button>
+      {isOpen ? (
+        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl" role="listbox">
+          {visibleOptions.length ? visibleOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => {
+                onChange(option);
+                setIsOpen(false);
+              }}
+              className="flex w-full items-center px-4 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+            >
+              {option}
+            </button>
+          )) : <p className="px-4 py-3 text-xs text-neutral-500">Nema ponuđenih odgovora.</p>}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 // --- 1. Custom Select ---
@@ -2313,21 +2370,12 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                       Vrednost
                     </span>
-                    <input
+                    <SpecificationValueInput
                       value={tempSpecVal}
-                      onChange={(e) => setTempSpecVal(e.target.value)}
-                      list="catalog-specification-options"
-                      className="w-full bg-white border border-neutral-200 rounded-xl pl-4 pr-10 py-3 text-sm outline-none focus:border-neutral-400"
-                      placeholder="npr. 200"
+                      onChange={setTempSpecVal}
+                      options={specKeys.find((item) => item.name === tempSpecKey)?.optionValues || []}
+                      unit={activeUnit}
                     />
-                    <datalist id="catalog-specification-options">
-                      {(specKeys.find((item) => item.name === tempSpecKey)?.optionValues || []).map((option) => <option key={option} value={option} />)}
-                    </datalist>
-                    {activeUnit && (
-                      <span className="absolute right-3 top-32px text-neutral-400 text-xs font-bold pointer-events-none">
-                        {activeUnit}
-                      </span>
-                    )}
                   </div>
                   <button
                     onClick={() => void addSpec()}
