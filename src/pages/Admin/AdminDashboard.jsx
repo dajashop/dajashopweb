@@ -128,6 +128,9 @@ const AUDIT_FIELD_LABELS = {
 const splitOfferedAnswers = (value) =>
   [...new Set(String(value || '').split(',').map((item) => item.trim()).filter(Boolean))];
 
+const catalogInlineFieldClass =
+  'min-w-0 rounded-lg border border-primary-dark bg-white/5 px-3 py-1 text-sm outline-none transition-colors focus:border-primary focus:bg-white/10';
+
 const OfferedAnswersDropdown = ({
   value,
   draft,
@@ -179,7 +182,7 @@ const OfferedAnswersDropdown = ({
       </div>
       {open && (
         <div
-          className="absolute z-30 mt-1.5 w-full overflow-hidden rounded-xl border border-primary-dark bg-[#17201d] shadow-xl"
+          className={`${compact ? 'relative mt-1.5 w-full' : 'absolute z-30 mt-1.5 w-full'} overflow-hidden rounded-xl border border-primary-dark bg-[#17201d] shadow-xl`}
           onMouseDown={(event) => event.preventDefault()}
         >
           {answers.length ? (
@@ -1634,7 +1637,7 @@ function AdminDashboardContent() {
                   </select>
                 )}{' '}
                 <input
-                  className="flex-1 bg-white/5 border border-primary-dark rounded-xl px-4 py-2 text-sm focus:border-primary outline-none transition-colors"
+                  className={`flex-1 ${catalogInlineFieldClass}`}
                   placeholder="Novi brend..."
                   value={newBrandName}
                   onChange={(e) => setNewBrandName(e.target.value)}
@@ -1666,7 +1669,7 @@ function AdminDashboardContent() {
                         <div className="flex flex-1 items-center gap-2">
                           {' '}
                           <input
-                            className="flex-1 bg-black/20 rounded-lg px-2 py-1 text-sm outline-none border border-primary/50"
+                            className={`flex-1 ${catalogInlineFieldClass}`}
                             value={editingBrandName}
                             onChange={(e) =>
                               setEditingBrandName(e.target.value)
@@ -1869,7 +1872,7 @@ function AdminDashboardContent() {
                     Naziv{' '}
                   </label>{' '}
                   <input
-                    className="w-full bg-white/5 border border-primary-dark rounded-xl px-4 py-2 text-sm focus:border-primary outline-none transition-colors"
+                    className={`w-full ${catalogInlineFieldClass}`}
                     placeholder="npr. G-Shock..."
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
@@ -1910,13 +1913,13 @@ function AdminDashboardContent() {
                         <div className="flex flex-1 items-center gap-2">
                           {' '}
                           <input
-                            className="flex-1 bg-black/20 rounded-lg px-2 py-1 text-sm outline-none border border-primary/50"
+                            className={`flex-1 ${catalogInlineFieldClass}`}
                             value={editingCatName}
                             onChange={(e) => setEditingCatName(e.target.value)}
                             autoFocus
                           />{' '}
                           <select
-                            className="bg-black/20 rounded-lg px-2 py-1 text-sm outline-none border border-primary/50"
+                            className={catalogInlineFieldClass}
                             value={editingCatBrandId}
                             onChange={(e) =>
                               setEditingCatBrandId(e.target.value)
@@ -2087,7 +2090,7 @@ function AdminDashboardContent() {
                     Naziv{' '}
                   </label>{' '}
                   <input
-                    className="w-full bg-white/5 border border-primary-dark rounded-xl px-4 py-2 text-sm focus:border-primary outline-none transition-colors"
+                    className={`w-full ${catalogInlineFieldClass}`}
                     placeholder="Npr. Težina"
                     value={newSpecName}
                     onChange={(e) => setNewSpecName(e.target.value)}
@@ -2100,7 +2103,7 @@ function AdminDashboardContent() {
                     Jed. (opc){' '}
                   </label>{' '}
                   <input
-                    className="w-full bg-white/5 border border-primary-dark rounded-xl px-3 py-2 text-sm focus:border-primary outline-none transition-colors text-center"
+                    className={`w-full text-center ${catalogInlineFieldClass}`}
                     placeholder="g, mm"
                     value={newSpecUnit}
                     onChange={(e) => setNewSpecUnit(e.target.value)}
@@ -2144,13 +2147,13 @@ function AdminDashboardContent() {
                         <div className="flex flex-1 items-center gap-2">
                           {' '}
                           <input
-                            className="flex-1 bg-black/20 rounded-lg px-2 py-1 text-sm outline-none border border-primary/50"
+                            className={`flex-1 ${catalogInlineFieldClass}`}
                             value={editingSpecName}
                             onChange={(e) => setEditingSpecName(e.target.value)}
                             autoFocus
                           />{' '}
                           <input
-                            className="w-20 bg-black/20 rounded-lg px-2 py-1 text-sm outline-none border border-primary/50"
+                            className={`w-24 ${catalogInlineFieldClass}`}
                             value={editingSpecUnit}
                             onChange={(e) => setEditingSpecUnit(e.target.value)}
                             placeholder="Jedinica"
