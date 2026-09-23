@@ -129,7 +129,7 @@ const splitOfferedAnswers = (value) =>
   [...new Set(String(value || '').split(',').map((item) => item.trim()).filter(Boolean))];
 
 const catalogInlineFieldClass =
-  'min-w-0 rounded-lg border border-primary-dark bg-white/5 px-3 py-1 text-sm outline-none transition-colors focus:border-primary focus:bg-white/10';
+  'min-w-0 !rounded-[8px] border border-primary-dark bg-white/5 px-3 py-1 text-sm outline-none transition-colors focus:border-primary focus:bg-white/10';
 
 const OfferedAnswersDropdown = ({
   value,
