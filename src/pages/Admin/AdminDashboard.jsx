@@ -851,13 +851,19 @@ function AdminDashboardContent() {
       setEditingSpecOptionDraft('');
       setEditingSpecOptionsOpen(false);
     } catch (err) {
-      await specKeyService.refresh().catch(() => {});
-      setEditingSpecId(null);
-      setEditingSpecUnit('');
-      setEditingSpecOptions('');
-      setEditingSpecOptionDraft('');
-      setEditingSpecOptionsOpen(false);
-      alert('Specifikacija je u međuvremenu promenjena ili obrisana. Lista je osvežena.');
+      if (Number(err?.status) === 404) {
+        await specKeyService.refresh().catch(() => {});
+        setEditingSpecId(null);
+        setEditingSpecUnit('');
+        setEditingSpecOptions('');
+        setEditingSpecOptionDraft('');
+        setEditingSpecOptionsOpen(false);
+        alert('Specifikacija je u međuvremenu obrisana. Lista je osvežena.');
+        return;
+      }
+
+      // Sačuvaj otvoren formular i unesene podatke: 500/409 nisu dokaz da je specifikacija obrisana.
+      alert(err instanceof Error ? err.message : 'Čuvanje specifikacije nije uspelo.');
     }
   };
   const handleDeleteSpec = async (id) => {
