@@ -313,6 +313,7 @@ export default function AdminProductModal({
   });
   const initialProductDraftRef = useRef(productDraft);
   const skipInitialDraftSyncRef = useRef(Boolean(productDraft));
+  const successfullySavedRef = useRef(false);
   // One catalog product can represent several physical pieces.  Keep the
   // RFID, barcode and storage placement with the individual piece instead of
   // making every piece inherit the first item's tag/location.
@@ -614,6 +615,10 @@ export default function AdminProductModal({
 
   useEffect(() => {
     if (product || !onDraftChange) return;
+    // Saving can finish while image/RFID cleanup still updates local state.
+    // Those final updates must never recreate a draft for a product that was
+    // already persisted successfully.
+    if (successfullySavedRef.current) return;
     // The first render still contains the empty default form while the saved
     // draft is being restored. Do not overwrite it during that short render.
     if (skipInitialDraftSyncRef.current) {
@@ -1401,11 +1406,14 @@ export default function AdminProductModal({
         setRemovedMediaLinkIds([]);
       }
       pendingUploadIdsRef.current.clear();
-      if (!product) onDraftChange?.(null);
+      if (!product) {
+        successfullySavedRef.current = true;
+        onDraftChange?.(null);
+      }
       if (reviewContext && typeof options.reviewNote === 'string') {
         await workforceApi.reviewProduct(savedProductId, 'changes_requested', options.reviewNote);
       }
-      await onSuccess?.();
+      await onSuccess?.({ created: !product });
 
       setFlash({ open: true, title: options.reviewNote ? 'Sačuvano i vraćeno na doradu!' : 'Uspešno sačuvano!', ok: true });
       setTimeout(() => {

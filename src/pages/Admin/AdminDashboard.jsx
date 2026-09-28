@@ -2300,7 +2300,10 @@ function AdminDashboardContent() {
             draft={!editProduct ? productDraft?.payload : null}
             onDraftChange={saveProductDraft}
             onClose={() => setModalOpen(false)}
-            onSuccess={() => setModalOpen(false)}
+            onSuccess={({ created } = {}) => {
+              if (created) saveProductDraft(null);
+              setModalOpen(false);
+            }}
           />
         )}
       </AnimatePresence>
