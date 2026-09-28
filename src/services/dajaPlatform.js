@@ -444,11 +444,12 @@ export const catalogApi = {
 
     return products.slice(0, requestedLimit);
   },
-  async getProductBySlug(slug) {
+  async getProductBySlug(slug, { realtime = false } = {}) {
     const data = await apiRequest(
       `/public/catalog/products/${encodeURIComponent(slug)}`,
       {
         auth: false,
+        ...(realtime ? { query: { realtime: '1' } } : {}),
       },
     );
     if (data?.redirectTo) return { redirectTo: data.redirectTo };

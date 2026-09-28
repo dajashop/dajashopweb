@@ -102,13 +102,13 @@ export async function applyPublicProductRealtimeEvent(event) {
     return;
   }
   try {
-    const product = await catalogApi.getProductBySlug(slug);
+    const product = await catalogApi.getProductBySlug(slug, { realtime: true });
     // The public API returns 200 + null for a hidden, unpublished or deleted
     // slug. Treat that exactly like a missing product.
     if (product?.redirectTo) {
       const redirectedSlug = product.redirectTo.split('/').filter(Boolean).pop();
       if (redirectedSlug) {
-        const redirectedProduct = await catalogApi.getProductBySlug(redirectedSlug);
+        const redirectedProduct = await catalogApi.getProductBySlug(redirectedSlug, { realtime: true });
         if (redirectedProduct?.id) {
           notifyProductsChanged({
             type: 'upsert',
