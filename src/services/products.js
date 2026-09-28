@@ -97,6 +97,10 @@ export async function fetchProductBySlug(slug) {
 export async function applyPublicProductRealtimeEvent(event) {
   const slug = event?.data?.slug || event?.slug;
   if (!slug) return;
+  if (event?.data?.deleted === true || event?.deleted === true) {
+    notifyProductsChanged({ type: 'deleteBySlug', slug });
+    return;
+  }
   try {
     const product = await catalogApi.getProductBySlug(slug);
     // The public API returns 200 + null for a hidden, unpublished or deleted
