@@ -2393,18 +2393,22 @@ function AdminDashboardContent() {
 }
 
 export default function AdminDashboard() {
-  const { user, authReady, staffReady } = useAuth();
-  const nav = useNavigate();
+  const { user, authReady, staffReady, showAuth } = useAuth();
   const isAuthorized = Boolean(user && staffReady);
 
-  useEffect(() => {
-    if (authReady && !isAuthorized) nav('/', { replace: true });
-  }, [authReady, isAuthorized, nav]);
-
-  if (!authReady || (user && !staffReady)) {
+  if (!authReady) {
     return <div className="p-8 text-center text-slate-500">Provera pristupa…</div>;
   }
-  if (!isAuthorized) return null;
+  if (!isAuthorized) {
+    return (
+      <div className="p-8 text-center text-slate-500">
+        <p>Admin sesija nije dostupna. Ostaješ na ovoj stranici; prijavi se ponovo da nastaviš.</p>
+        <button type="button" onClick={() => showAuth('login')} className="mt-4 rounded-lg bg-neutral-900 px-4 py-2 text-white">
+          Prijavi se
+        </button>
+      </div>
+    );
+  }
   return <AdminDashboardContent />;
 }
 

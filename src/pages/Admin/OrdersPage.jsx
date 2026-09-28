@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { isAdminEmail } from '../../services/dajaPlatform';
 import { useNavigate } from 'react-router-dom';
@@ -6,19 +6,21 @@ import AdminOrders from './components/AdminOrders'; // Tvoja postojeća komponen
 import SEOHead from '../../components/seo/SEOHead.jsx';
 
 export default function OrdersPage() {
-  const { user, authReady, staffReady } = useAuth();
+  const { user, authReady, staffReady, showAuth } = useAuth();
   const nav = useNavigate();
   const isAuthorized = isAdminEmail(user?.email) && staffReady;
 
-  // Auth Check - Vraćamo na početnu ako nije admin
-  useEffect(() => {
-    if (authReady && !isAuthorized) {
-      nav('/');
-    }
-  }, [authReady, isAuthorized, nav]);
-
-  if (!authReady || (isAdminEmail(user?.email) && !staffReady)) return null;
-  if (!isAuthorized) return null;
+  if (!authReady) return <div className="p-8 text-center text-slate-500">Provera pristupa…</div>;
+  if (!isAuthorized) {
+    return (
+      <div className="p-8 text-center text-slate-500">
+        <p>Admin sesija nije dostupna. Prijavi se ponovo da nastaviš.</p>
+        <button type="button" onClick={() => showAuth('login')} className="mt-4 rounded-lg bg-neutral-900 px-4 py-2 text-white">
+          Prijavi se
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-20 bg-[#f5f5f7]">

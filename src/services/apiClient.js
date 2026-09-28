@@ -48,13 +48,13 @@ export function getStaffAccessToken() {
   return readStorage(STAFF_ACCESS_KEY);
 }
 
-export function setAuthTokens(tokens = {}) {
+export function setAuthTokens(tokens = {}, { notify = true } = {}) {
   const accessToken = tokens.accessToken || tokens.access_token || null;
   const refreshToken = tokens.refreshToken || tokens.refresh_token || null;
   const changed = getAccessToken() !== accessToken || getRefreshToken() !== refreshToken;
   writeStorage(ACCESS_KEY, accessToken);
   writeStorage(REFRESH_KEY, refreshToken);
-  if (changed) emitAuthChange();
+  if (changed && notify) emitAuthChange();
 }
 
 export function setStaffAccessToken(accessToken) {
@@ -145,9 +145,15 @@ async function refreshAccessToken() {
         body: JSON.stringify({ refreshToken: requestedRefreshToken }),
       });
       const data = await parseResponse(response);
-      if (!response.ok) throw new Error(data?.message || 'Sesija je istekla.');
+      if (!response.ok) {
+        const error = new Error(data?.message || 'Sesija je istekla.');
+        error.status = response.status;
+        throw error;
+      }
       const tokens = unwrapEnvelope(data);
-      setAuthTokens(tokens);
+      // Rotacija tokena ne menja nalog. Ponovno učitavanje korisnika bi
+      // privremeno ugasilo staffReady i izbacilo admina sa stranice.
+      setAuthTokens(tokens, { notify: false });
       return tokens?.accessToken || tokens?.access_token;
     })
       .finally(() => {
@@ -237,9 +243,12 @@ async function currentCustomerAccessToken() {
   try {
     await refreshAccessToken();
     return getAccessToken();
-  } catch {
-    clearAuthTokens();
-    return null;
+  } catch (error) {
+    if (error?.status === 401 || error?.status === 403) {
+      clearAuthTokens();
+      return null;
+    }
+    return getAccessToken();
   }
 }
 
@@ -328,8 +337,8 @@ export async function apiRequest(path, options = {}) {
     try {
       await refreshAccessToken();
       return apiRequest(path, { ...options, retry: false });
-    } catch {
-      clearAuthTokens();
+    } catch (error) {
+      if (error?.status === 401 || error?.status === 403) clearAuthTokens();
     }
   }
 
