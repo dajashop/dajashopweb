@@ -818,6 +818,11 @@ function AdminDashboardContent() {
   };
   const handleUpdateSpec = async () => {
     if (!editingSpecName.trim()) return;
+    const current = specs.find((item) => item.id === editingSpecId);
+    if (
+      current?.name !== editingSpecName.trim() &&
+      !window.confirm('Preimenovanje će promeniti ovu specifikaciju na svim proizvodima. Nastavi?')
+    ) return;
     try {
       await specKeyService.update(editingSpecId, editingSpecName, {
         unit: editingSpecUnit.trim(),
@@ -833,7 +838,12 @@ function AdminDashboardContent() {
     }
   };
   const handleDeleteSpec = async (id) => {
-    if (window.confirm('Obriši?')) await specKeyService.remove(id);
+    const spec = specs.find((item) => item.id === id);
+    if (
+      window.confirm(
+        `Obrisati specifikaciju „${spec?.name || ''}” sa svih proizvoda? Ova radnja uklanja i njene postojeće vrednosti.`,
+      )
+    ) await specKeyService.remove(id);
   };
 
   const toggleBrandFilter = (deptId) => {
