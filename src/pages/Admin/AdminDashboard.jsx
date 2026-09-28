@@ -56,6 +56,7 @@ import { money } from '../../utils/currency';
 import SEOHead from '../../components/seo/SEOHead.jsx';
 import PolicyPublicationPanel from './components/PolicyPublicationPanel.jsx';
 import PromotionManager from './components/PromotionManager.jsx';
+import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
 
 // ... (sanitizeItem i generateSlug funkcije ostaju iste)
 
@@ -124,6 +125,8 @@ const AUDIT_FIELD_LABELS = {
   binId: 'Polica',
   sourceType: 'Razlog izmene',
 };
+
+const productDraftStorageKey = (userId) => `daja_admin_product_draft:${userId}`;
 
 const splitOfferedAnswers = (value) =>
   [...new Set(String(value || '').split(',').map((item) => item.trim()).filter(Boolean))];
@@ -443,6 +446,7 @@ function AdminDashboardContent() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
+  const [productDraft, setProductDraft] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [auditEvents, setAuditEvents] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -509,6 +513,32 @@ function AdminDashboardContent() {
   const [editingSpecName, setEditingSpecName] = useState('');
   const [editingSpecUnit, setEditingSpecUnit] = useState('');
   const [editingSpecOptions, setEditingSpecOptions] = useState('');
+
+  useEffect(() => {
+    if (!user?.id) {
+      setProductDraft(null);
+      return;
+    }
+    try {
+      const saved = JSON.parse(readStoredValue(productDraftStorageKey(user.id), 'necessary') || '');
+      setProductDraft(saved?.payload?.form ? saved : null);
+    } catch {
+      setProductDraft(null);
+    }
+  }, [user?.id]);
+
+  const saveProductDraft = useCallback((payload) => {
+    const nextDraft = payload
+      ? { payload, updatedAt: new Date().toISOString() }
+      : null;
+    setProductDraft(nextDraft);
+    if (!user?.id) return;
+    writeStoredValue(
+      productDraftStorageKey(user.id),
+      nextDraft ? JSON.stringify(nextDraft) : null,
+      'necessary',
+    );
+  }, [user?.id]);
   const [editingSpecOptionDraft, setEditingSpecOptionDraft] = useState('');
   const [editingSpecOptionsOpen, setEditingSpecOptionsOpen] = useState(false);
 
@@ -2257,11 +2287,38 @@ function AdminDashboardContent() {
         {modalOpen && (
           <AdminProductModal
             product={editProduct}
+            draft={!editProduct ? productDraft?.payload : null}
+            onDraftChange={saveProductDraft}
             onClose={() => setModalOpen(false)}
             onSuccess={() => setModalOpen(false)}
           />
         )}
       </AnimatePresence>
+      {productDraft && !modalOpen && (
+        <div className="fixed bottom-5 right-5 z-[70] w-[min(22rem,calc(100vw-2.5rem))] rounded-2xl border border-amber-200 bg-white p-4 shadow-2xl shadow-neutral-900/15">
+          <div className="flex items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800">
+              <Package size={20} />
+            </div>
+            <button type="button" onClick={openNew} className="min-w-0 flex-1 text-left">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-800">Sačuvani nacrt</p>
+              <p className="mt-1 truncate text-sm font-bold text-neutral-900">
+                {productDraft.payload?.form?.name?.trim() || 'Novi proizvod'}
+              </p>
+              <p className="mt-1 text-xs text-neutral-500">Klikni da nastaviš unos.</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => saveProductDraft(null)}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600"
+              aria-label="Obriši nacrt proizvoda"
+              title="Obriši nacrt"
+            >
+              <X size={17} />
+            </button>
+          </div>
+        </div>
+      )}
       <ConfirmModal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}

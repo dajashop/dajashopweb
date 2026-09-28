@@ -232,7 +232,14 @@ function SpecificationKeySelect({ value, onChange, options, selectedValues, plac
  * Admin Product Modal
  * ... (dokumentacija ostaje ista) ...
  */
-export default function AdminProductModal({ product, onClose, onSuccess, reviewContext }) {
+export default function AdminProductModal({
+  product,
+  onClose,
+  onSuccess,
+  reviewContext,
+  draft: productDraft,
+  onDraftChange,
+}) {
   const buildSeoDefaults = (baseProduct = {}) => {
     const baseTitle =
       `${baseProduct.brand || ''} ${baseProduct.name || ''}`.trim();
@@ -304,6 +311,8 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
     active: true,
     published: true,
   });
+  const initialProductDraftRef = useRef(productDraft);
+  const skipInitialDraftSyncRef = useRef(Boolean(productDraft));
   // One catalog product can represent several physical pieces.  Keep the
   // RFID, barcode and storage placement with the individual piece instead of
   // making every piece inherit the first item's tag/location.
@@ -560,6 +569,26 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
         binId: placements[index]?.binId || '',
       })));
       setSelectedPieceIndex(0);
+    } else if (initialProductDraftRef.current?.form) {
+      const savedDraft = initialProductDraftRef.current;
+      setForm((previous) => ({
+        ...previous,
+        ...savedDraft.form,
+        images: Array.isArray(savedDraft.form.images) ? savedDraft.form.images : [],
+        specs: savedDraft.form.specs || {},
+        variants: Array.isArray(savedDraft.form.variants) ? savedDraft.form.variants : [],
+        features: Array.isArray(savedDraft.form.features) ? savedDraft.form.features : [],
+        seo: {
+          ...buildSeoDefaults(savedDraft.form),
+          ...(savedDraft.form.seo || {}),
+        },
+      }));
+      setPieceDetails(
+        Array.isArray(savedDraft.pieceDetails) && savedDraft.pieceDetails.length
+          ? savedDraft.pieceDetails
+          : [{ barcode: '', epc: '', locationId: '', zoneId: '', binId: '' }],
+      );
+      setSelectedPieceIndex(savedDraft.selectedPieceIndex || 0);
     } else {
       // [NOVO] Reset za novi proizvod - dodajemo jedan prazan red da bude spremno
       setForm((prev) => ({
@@ -582,6 +611,42 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
       sub4();
     };
   }, [product]);
+
+  useEffect(() => {
+    if (product || !onDraftChange) return;
+    // The first render still contains the empty default form while the saved
+    // draft is being restored. Do not overwrite it during that short render.
+    if (skipInitialDraftSyncRef.current) {
+      skipInitialDraftSyncRef.current = false;
+      return;
+    }
+
+    const hasDraftContent = Boolean(
+      form.name?.trim() ||
+        form.variantName?.trim() ||
+        form.brand?.trim() ||
+        form.category?.trim() ||
+        form.price !== '' ||
+        form.description?.trim() ||
+        form.sku?.trim() ||
+        form.barcode?.trim() ||
+        form.mpn?.trim() ||
+        form.epc?.trim() ||
+        form.model3DUrl?.trim() ||
+        form.images?.length ||
+        form.variants?.length ||
+        Object.keys(form.specs || {}).length ||
+        form.features?.some((feature) => feature.title?.trim() || feature.subtitle?.trim()) ||
+        pieceDetails.some((piece) =>
+          piece.barcode?.trim() || piece.epc?.trim() || piece.locationId || piece.zoneId || piece.binId,
+        ),
+    );
+    onDraftChange(
+      hasDraftContent
+        ? { form, pieceDetails, selectedPieceIndex }
+        : null,
+    );
+  }, [form, onDraftChange, pieceDetails, product, selectedPieceIndex]);
 
   // The product list contains display URLs; load the canonical media links so
   // deletion and reordering can safely address the exact R2-backed asset.
@@ -619,7 +684,9 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
   };
 
   const closeModal = () => {
-    discardPendingUploads();
+    // A new product draft may contain images already uploaded to R2. Keep
+    // them attached to the draft when the user uses Back or closes the modal.
+    if (product) discardPendingUploads();
     onClose();
   };
 
@@ -1334,6 +1401,7 @@ export default function AdminProductModal({ product, onClose, onSuccess, reviewC
         setRemovedMediaLinkIds([]);
       }
       pendingUploadIdsRef.current.clear();
+      if (!product) onDraftChange?.(null);
       if (reviewContext && typeof options.reviewNote === 'string') {
         await workforceApi.reviewProduct(savedProductId, 'changes_requested', options.reviewNote);
       }
