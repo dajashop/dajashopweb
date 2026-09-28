@@ -3,7 +3,7 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://maps.googleapis.com; connect-src 'self' https://daja-platform-api.onrender.com https://api.dajashop.rs https://cloudflareinsights.com https://static.cloudflareinsights.com https://maps.googleapis.com https://maps.gstatic.com; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-src https://www.google.com
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://maps.googleapis.com; connect-src 'self' https://daja-platform-api.onrender.com https://api.dajashop.rs https://cloudflareinsights.com https://static.cloudflareinsights.com https://maps.googleapis.com https://maps.gstatic.com wss://daja-platform-api.onrender.com wss://api.dajashop.rs; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-src https://www.google.com
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable

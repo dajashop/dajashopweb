@@ -821,14 +821,29 @@ function AdminDashboardContent() {
   const handleUpdateSpec = async () => {
     if (!editingSpecName.trim()) return;
     const current = specs.find((item) => item.id === editingSpecId);
+    const nextName = editingSpecName.trim();
+    const nextUnit = editingSpecUnit.trim();
+    const nextOptionValues = editingSpecOptions.split(',').map((value) => value.trim()).filter(Boolean);
     if (
-      current?.name !== editingSpecName.trim() &&
+      current?.name !== nextName &&
       !window.confirm('Preimenovanje će promeniti ovu specifikaciju na svim proizvodima. Nastavi?')
     ) return;
+    const unchanged = current
+      && current.name === nextName
+      && (current.unit || '') === nextUnit
+      && JSON.stringify(current.optionValues || []) === JSON.stringify(nextOptionValues);
+    if (unchanged) {
+      setEditingSpecId(null);
+      setEditingSpecUnit('');
+      setEditingSpecOptions('');
+      setEditingSpecOptionDraft('');
+      setEditingSpecOptionsOpen(false);
+      return;
+    }
     try {
-      await specKeyService.update(editingSpecId, editingSpecName, {
-        unit: editingSpecUnit.trim(),
-        optionValues: editingSpecOptions.split(',').map((value) => value.trim()).filter(Boolean),
+      await specKeyService.update(editingSpecId, nextName, {
+        unit: nextUnit,
+        optionValues: nextOptionValues,
       });
       setEditingSpecId(null);
       setEditingSpecUnit('');
