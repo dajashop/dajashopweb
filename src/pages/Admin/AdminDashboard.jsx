@@ -447,6 +447,8 @@ function AdminDashboardContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [productDraft, setProductDraft] = useState(null);
+  const [restoreProductDraft, setRestoreProductDraft] = useState(false);
+  const [draftSessionActive, setDraftSessionActive] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [auditEvents, setAuditEvents] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -857,10 +859,22 @@ function AdminDashboardContent() {
 
   const openNew = () => {
     setEditProduct(null);
+    setRestoreProductDraft(false);
+    // Keep an existing recovery draft untouched. A new blank form becomes a
+    // draft only when no other unfinished product is waiting in the corner.
+    setDraftSessionActive(!productDraft);
+    setModalOpen(true);
+  };
+  const openSavedDraft = () => {
+    setEditProduct(null);
+    setRestoreProductDraft(true);
+    setDraftSessionActive(true);
     setModalOpen(true);
   };
   const openEdit = (p) => {
     setEditProduct(p);
+    setRestoreProductDraft(false);
+    setDraftSessionActive(false);
     setModalOpen(true);
   };
 
@@ -2297,11 +2311,17 @@ function AdminDashboardContent() {
         {modalOpen && (
           <AdminProductModal
             product={editProduct}
-            draft={!editProduct ? productDraft?.payload : null}
-            onDraftChange={saveProductDraft}
-            onClose={() => setModalOpen(false)}
+            draft={!editProduct && restoreProductDraft ? productDraft?.payload : null}
+            onDraftChange={draftSessionActive ? saveProductDraft : undefined}
+            onClose={() => {
+              setDraftSessionActive(false);
+              setRestoreProductDraft(false);
+              setModalOpen(false);
+            }}
             onSuccess={({ created } = {}) => {
-              if (created) saveProductDraft(null);
+              if (created && draftSessionActive) saveProductDraft(null);
+              setDraftSessionActive(false);
+              setRestoreProductDraft(false);
               setModalOpen(false);
             }}
           />
@@ -2313,7 +2333,7 @@ function AdminDashboardContent() {
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800">
               <Package size={20} />
             </div>
-            <button type="button" onClick={openNew} className="min-w-0 flex-1 text-left">
+            <button type="button" onClick={openSavedDraft} className="min-w-0 flex-1 text-left">
               <p className="text-xs font-bold uppercase tracking-wider text-amber-800">Sačuvani nacrt</p>
               <p className="mt-1 truncate text-sm font-bold text-neutral-900">
                 {productDraft.payload?.form?.name?.trim() || 'Novi proizvod'}
