@@ -3,13 +3,22 @@ import './Filters.css';
 import { useSearchParams } from 'react-router-dom';
 import catalog from '../services/CatalogService.js';
 import { motion, AnimatePresence } from 'framer-motion';
+import { catalogSpecValue, filterCatalogProducts, normalizedCatalogGender } from '../utils/catalogFilters.js';
+import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 
-function normalizedGender(value) {
-  const compact = String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
-  if (!compact || compact === 'UNISEX') return 'UNISEX';
-  if (compact === 'MUSKI' || compact === 'M') return 'MUSKI';
-  if (compact === 'ZENSKI' || compact === 'Z') return 'ZENSKI';
-  return compact;
+function countBy(products, getValue) {
+  const counts = new Map();
+  products.forEach((product) => {
+    const value = getValue(product);
+    if (value !== null && value !== undefined && value !== '') {
+      counts.set(value, (counts.get(value) || 0) + 1);
+    }
+  });
+  return counts;
+}
+
+function FilterCount({ count }) {
+  return <span className="filter-count" aria-label={`${count} artikala`}>{count}</span>;
 }
 
 function SectionHeader({ title, count, onClear, isOpen, onToggle }) {
@@ -75,62 +84,48 @@ export default function Filters({ products, fixedGender, onClose }) {
     return [...new Set(b)].sort();
   }, [baseData]);
 
+  const brandCounts = useMemo(() =>
+    countBy(filterCatalogProducts(baseData, sp, { fixedGender, ignoreKey: 'brand' }), (p) => p.brand),
+  [baseData, sp, fixedGender]);
+
+  const genderCounts = useMemo(() => {
+    const candidates = filterCatalogProducts(baseData, sp, { ignoreKey: 'gender' });
+    return new Map(['Muški', 'Ženski'].map((gender) => [
+      gender,
+      candidates.filter((product) => {
+        const productGender = normalizedCatalogGender(product.gender);
+        return productGender === 'UNISEX' || productGender === normalizedCatalogGender(gender);
+      }).length,
+    ]));
+  }, [baseData, sp]);
+
   const categories = useMemo(() => {
-    const selectedBrands = sp.getAll('brand');
-    if (selectedBrands.length === 0) {
-      const allCats = baseData.map((p) => p.category).filter(Boolean);
-      return [...new Set(allCats)].sort();
-    }
-    const filteredProducts = baseData.filter((p) =>
-      selectedBrands.includes(p.brand)
-    );
-    const dynamicCats = filteredProducts.map((p) => p.category).filter(Boolean);
-    return [...new Set(dynamicCats)].sort();
-  }, [sp, baseData]);
+    const candidates = filterCatalogProducts(baseData, sp, { fixedGender, ignoreKey: 'category' });
+    return [...new Set([...candidates.map((p) => p.category), ...sp.getAll('category')].filter(Boolean))].sort();
+  }, [sp, baseData, fixedGender]);
+
+  const categoryCounts = useMemo(() =>
+    countBy(filterCatalogProducts(baseData, sp, { fixedGender, ignoreKey: 'category' }), (p) => p.category),
+  [baseData, sp, fixedGender]);
 
   const specifications = useMemo(() => {
-    const selectedBrands = sp.getAll('brand');
-    const selectedCategories = sp.getAll('category');
-    const selectedGenders = fixedGender ? [fixedGender] : sp.getAll('gender');
-    const query = sp.get('q')?.trim().toLowerCase();
-    const minPrice = sp.get('min') ? Number(sp.get('min')) : null;
-    const maxPrice = sp.get('max') ? Number(sp.get('max')) : null;
+    const candidates = filterCatalogProducts(baseData, sp, { fixedGender, ignoreSpecs: true });
+    const keys = new Set(candidates.flatMap((product) => Object.keys(product.specs || {})));
+    [...sp.keys()].filter((key) => key.startsWith('spec_')).forEach((key) => keys.add(key.slice(5)));
 
-    let filtered = baseData;
-
-    if (selectedBrands.length > 0)
-      filtered = filtered.filter((p) => selectedBrands.includes(p.brand));
-    if (selectedCategories.length > 0)
-      filtered = filtered.filter((p) =>
-        selectedCategories.includes(p.category)
-      );
-    if (selectedGenders.length > 0) {
-      filtered = filtered.filter((p) => {
-        const productGender = normalizedGender(p.gender);
-        return productGender === 'UNISEX' || selectedGenders.some((gender) => normalizedGender(gender) === productGender);
-      });
-    }
-    if (query) filtered = filtered.filter((p) => `${p.brand || ''} ${p.name || ''}`.toLowerCase().includes(query));
-    if (minPrice !== null) filtered = filtered.filter((p) => p.price >= minPrice);
-    if (maxPrice !== null) filtered = filtered.filter((p) => p.price <= maxPrice);
-
-    const specsMap = {};
-    filtered.forEach((p) => {
-      if (!p.specs) return;
-      Object.entries(p.specs).forEach(([key, val]) => {
-        if (val === null || val === undefined || typeof val === 'object') return;
-        const value = String(val).trim();
-        if (!value) return;
-        if (!specsMap[key]) specsMap[key] = new Set();
-        specsMap[key].add(value);
-      });
-    });
-
-    return Object.entries(specsMap)
-      .map(([key, valuesSet]) => ({
-        key,
-        values: [...valuesSet].sort(),
-      }))
+    return [...keys]
+      .map((key) => {
+        const matching = filterCatalogProducts(baseData, sp, { fixedGender, ignoreKey: `spec_${key}` });
+        const counts = countBy(matching, (product) => catalogSpecValue(product.specs?.[key]));
+        const values = [...new Set([...counts.keys(), ...sp.getAll(`spec_${key}`)])]
+          .sort()
+          .map((value) => ({ value, count: counts.get(value) || 0 }));
+        return {
+          key,
+          values,
+        };
+      })
+      .filter((spec) => spec.values.length > 0)
       .sort((a, b) => a.key.localeCompare(b.key));
   }, [sp, baseData, fixedGender]);
 
@@ -301,6 +296,7 @@ export default function Filters({ products, fixedGender, onClose }) {
                             className="filter-input-hidden"
                           />
                           <span className="filter-text">{gender}</span>
+                          <FilterCount count={genderCounts.get(gender) || 0} />
                           {checked('gender', gender) && (
                             <div className="filter-check">
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -351,6 +347,7 @@ export default function Filters({ products, fixedGender, onClose }) {
                             className="filter-input-hidden"
                           />
                           <span className="filter-text">{b}</span>
+                          <FilterCount count={brandCounts.get(b) || 0} />
                           {checked('brand', b) && (
                             <div className="filter-check">
                               <svg
@@ -410,6 +407,7 @@ export default function Filters({ products, fixedGender, onClose }) {
                             className="filter-input-hidden"
                           />
                           <span className="filter-text">{c}</span>
+                          <FilterCount count={categoryCounts.get(c) || 0} />
                           {checked('category', c) && (
                             <div className="filter-check">
                               <svg
@@ -440,7 +438,7 @@ export default function Filters({ products, fixedGender, onClose }) {
             className={`f-section ${openSections[spec.key] ? 'is-open' : ''}`}
           >
             <SectionHeader
-              title={spec.key}
+              title={formatProductSpecLabel(spec.key)}
               count={countSelected(`spec_${spec.key}`)}
               onClear={() => clearKey(`spec_${spec.key}`)}
               isOpen={!!openSections[spec.key]}
@@ -456,23 +454,24 @@ export default function Filters({ products, fixedGender, onClose }) {
                 >
                   <div className="f-content-inner">
                     <div className="filter-list" role="group">
-                      {spec.values.map((val) => (
+                      {spec.values.map(({ value, count }) => (
                         <label
-                          key={val}
+                          key={value}
                           className={`filter-row ${
-                            checked(`spec_${spec.key}`, val) ? 'is-active' : ''
+                            checked(`spec_${spec.key}`, value) ? 'is-active' : ''
                           }`}
                         >
                           <input
                             type="checkbox"
-                            checked={checked(`spec_${spec.key}`, val)}
+                            checked={checked(`spec_${spec.key}`, value)}
                             onChange={() =>
-                              toggleParam(`spec_${spec.key}`, val)
+                              toggleParam(`spec_${spec.key}`, value)
                             }
                             className="filter-input-hidden"
                           />
-                          <span className="filter-text">{val}</span>
-                          {checked(`spec_${spec.key}`, val) && (
+                          <span className="filter-text">{value}</span>
+                          <FilterCount count={count} />
+                          {checked(`spec_${spec.key}`, value) && (
                             <div className="filter-check">
                               <svg
                                 width="14"

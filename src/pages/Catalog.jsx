@@ -16,6 +16,8 @@ import { seoConfig } from '../config/seo.js';
 
 // Hookovi
 import useProducts from '../hooks/useProducts.js';
+import { filterCatalogProducts } from '../utils/catalogFilters.js';
+import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 
 // --- ADMIN IMPORTI (Potrebni da bismo znali da li da prikažemo skrivene satove) ---
 import { useAuth } from '../hooks/useAuth';
@@ -24,18 +26,6 @@ import { useConsent } from '../context/ConsentContext.jsx';
 import { readSessionValue, writeSessionValue } from '../services/consentStorage.js';
 
 const PER_PAGE = 32;
-
-function normalizedGender(value) {
-  const compact = String(value || '')
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toUpperCase();
-  if (!compact || compact === 'UNISEX') return 'UNISEX';
-  if (compact === 'MUSKI' || compact === 'M') return 'MUSKI';
-  if (compact === 'ZENSKI' || compact === 'Z') return 'ZENSKI';
-  return compact;
-}
 
 const SORT_OPTIONS = [
   { value: 'popular', label: 'Popularnost' },
@@ -162,7 +152,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       if (k.startsWith('spec_')) {
         const labelKey = k.replace('spec_', '');
         sp.getAll(k).forEach((v) => {
-          active.push({ key: k, val: v, label: `${labelKey}: ${v}` });
+          active.push({ key: k, val: v, label: `${formatProductSpecLabel(labelKey)}: ${v}` });
         });
       }
     });
@@ -214,49 +204,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
   // Glavna logika filtriranja (Pretraga, Brendovi...)
   const filteredData = useMemo(() => {
-    let out = [...departmentItems];
-
-    const q = sp.get('q')?.toLowerCase() || '';
-    const brands = sp.getAll('brand');
-    const genders = fixedGender ? [fixedGender] : sp.getAll('gender');
-    const categories = sp.getAll('category');
-    const min = sp.get('min') ? Number(sp.get('min')) : null;
-    const max = sp.get('max') ? Number(sp.get('max')) : null;
-
-    if (q)
-      out = out.filter((p) =>
-        (p.brand + ' ' + p.name).toLowerCase().includes(q),
-      );
-    if (brands.length) out = out.filter((p) => brands.includes(p.brand));
-
-    if (genders.length) {
-      out = out.filter((p) => {
-        const productGender = normalizedGender(p.gender);
-        return productGender === 'UNISEX' || genders.some((gender) => normalizedGender(gender) === productGender);
-      });
-    }
-
-    if (categories.length)
-      out = out.filter((p) => categories.includes(p.category));
-    if (min !== null) out = out.filter((p) => p.price >= min);
-    if (max !== null) out = out.filter((p) => p.price <= max);
-
-    const specParams = Array.from(sp.keys()).filter((k) =>
-      k.startsWith('spec_'),
-    );
-    specParams.forEach((paramKey) => {
-      const specName = paramKey.replace('spec_', '');
-      const selectedValues = sp.getAll(paramKey);
-      if (selectedValues.length > 0) {
-        out = out.filter(
-          (p) =>
-            p.specs &&
-            p.specs[specName] !== null &&
-            p.specs[specName] !== undefined &&
-            selectedValues.includes(String(p.specs[specName]).trim()),
-        );
-      }
-    });
+    const out = filterCatalogProducts(departmentItems, sp, { fixedGender });
 
     const collator = new Intl.Collator('sr-RS', { sensitivity: 'base' });
     const getDate = (val) => {
@@ -300,7 +248,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       ...sorted.filter((product) => product.isVisible !== false),
       ...sorted.filter((product) => product.isVisible === false),
     ];
-  }, [departmentItems, fixedGender, sp, isAdmin]);
+  }, [departmentItems, fixedGender, sp, isAdmin, sortParam]);
 
   const [page, setPage] = useState(1);
   const totalCount = filteredData.length;

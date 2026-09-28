@@ -45,7 +45,6 @@
   justify-content: space-between;
   margin-bottom: 8px;
   padding-bottom: 8px;
-  border-bottom: 2px solid var(--color-border, #e5e7eb);
 }
 .f-top-title {
   font-size: 18px;
@@ -61,10 +60,10 @@
 
 /* ===== Filter Sections ===== */
 .f-section {
-  border-top: 1px solid var(--color-border, #e5e7eb);
+  border: 0;
 }
-.f-section:first-of-type {
-  border-top: none;
+.f-section + .f-section {
+  margin-top: 4px;
 }
 
 .f-head {
@@ -193,6 +192,19 @@
   flex: 1;
   font-size: 15px;
   line-height: 1.2;
+}
+
+.filter-count {
+  flex: none;
+  min-width: 24px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--accent-8, rgba(0, 0, 0, 0.06));
+  color: var(--color-muted, #6e6e73);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 .filter-check {
