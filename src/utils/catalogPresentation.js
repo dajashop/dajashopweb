@@ -20,6 +20,13 @@ export function visibleProductSpecs(specs) {
   );
 }
 
+export function formatProductSpecLabel(key) {
+  return String(key || '')
+    .trim()
+    .replace(/_+/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
 export function visibleProductFeatures(features) {
   if (!Array.isArray(features)) return [];
 

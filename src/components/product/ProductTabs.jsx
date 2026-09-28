@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Truck, ShieldCheck, Package } from 'lucide-react';
 import './ProductTabs.css';
-import { visibleProductSpecs } from '../../utils/catalogPresentation.js';
+import { formatProductSpecLabel, visibleProductSpecs } from '../../utils/catalogPresentation.js';
 // [NOVO] Importujemo recenzije
 import ProductReviews from './ProductReviews.jsx';
 
@@ -64,7 +64,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
                 <tbody>
                   {Object.entries(specs).map(([k, v]) => (
                     <tr key={k} className="specs-table-row">
-                      <td className="spec-cell-key">{k}</td>
+                      <td className="spec-cell-key">{formatProductSpecLabel(k)}</td>
                       <td className="spec-cell-val">{v}</td>
                     </tr>
                   ))}

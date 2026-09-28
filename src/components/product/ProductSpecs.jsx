@@ -1,6 +1,6 @@
 import React from 'react';
 import './ProductSpecs.css';
-import { visibleProductSpecs } from '../../utils/catalogPresentation.js';
+import { formatProductSpecLabel, visibleProductSpecs } from '../../utils/catalogPresentation.js';
 
 export default function ProductSpecs({ product }) {
   const specs = visibleProductSpecs(product?.specs);
@@ -18,7 +18,7 @@ export default function ProductSpecs({ product }) {
           <tbody>
             {Object.entries(specs).map(([k, v]) => (
               <tr key={k} className="specs-table-row">
-                <td className="spec-cell-key">{k}</td>
+                <td className="spec-cell-key">{formatProductSpecLabel(k)}</td>
                 <td className="spec-cell-val">{v}</td>
               </tr>
             ))}
