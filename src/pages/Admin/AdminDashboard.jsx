@@ -12,7 +12,6 @@ import {
   accessControlApi,
   importsApi,
 } from '../../services/dajaPlatform';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package,
@@ -423,8 +422,7 @@ const getAuditDetailTabs = (event) => {
 };
 
 function AdminDashboardContent() {
-  const { user, staffReady } = useAuth();
-  const nav = useNavigate();
+  const { user } = useAuth();
   // The public realtime signal carries the changed product ID. The admin hook
   // then loads only that product through its authenticated catalog API.
   const { items: products, refresh: refreshProducts } = useProducts({
@@ -613,10 +611,6 @@ function AdminDashboardContent() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    if (staffReady === false && user === null) nav('/');
-  }, [staffReady, user, nav]);
 
   useEffect(() => {
     if (activeTab !== 'audit') return undefined;
