@@ -357,7 +357,7 @@ const productColumns = (specKeys = []) => [
   { header: 'Naziv', key: 'Naziv', width: 30 },
   { header: 'Brend', key: 'Brend', width: 15 },
   { header: 'Odeljenje', key: 'Odeljenje', width: 15 },
-  { header: 'Kategorija', key: 'Kategorija', width: 20 },
+  { header: 'Kolekcija', key: 'Kolekcija', width: 20 },
   { header: 'Pol', key: 'Pol', width: 10 },
   { header: 'Cena', key: 'Cena', width: 12 },
   { header: 'Slika', key: 'Slika', width: 30 },
@@ -374,7 +374,7 @@ export const exportToExcel = async (data, fileName = 'proizvodi') => {
       Naziv: item.name,
       Brend: item.brand,
       Odeljenje: item.department || 'satovi',
-      Kategorija: item.category,
+      Kolekcija: item.category,
       Pol: item.gender || 'Unisex',
       Cena: item.price,
       Slika: item.image || '',
@@ -415,7 +415,7 @@ export const downloadTemplate = async (
   const maxRows = Math.max(existingBrands.length, existingCategories.length, 4);
   const referenceRows = Array.from({ length: maxRows }, (_, index) => ({
     brendovi: existingBrands[index]?.name || '',
-    kategorije: existingCategories[index]?.name || '',
+    kolekcije: existingCategories[index]?.name || '',
     odeljenja: depts[index] || '',
     pol: genders[index] || '',
   }));
@@ -424,7 +424,7 @@ export const downloadTemplate = async (
     Naziv: 'Primer: Casio Edifice',
     Brend: 'Casio',
     Odeljenje: 'satovi',
-    Kategorija: 'Edifice',
+    Kolekcija: 'Edifice',
     Pol: 'MUŠKI',
     Cena: 15900,
     Slika: 'https://link-do-slike.com/sat.jpg',
@@ -444,7 +444,7 @@ export const downloadTemplate = async (
         title: 'Šifarnik (Pomoć)',
         columns: [
           { header: 'Postojeći Brendovi', key: 'brendovi', width: 25 },
-          { header: 'Postojeće Kategorije', key: 'kategorije', width: 25 },
+          { header: 'Postojeće Kolekcije', key: 'kolekcije', width: 25 },
           { header: 'Dozvoljena Odeljenja', key: 'odeljenja', width: 20 },
           { header: 'Pol (Opcije)', key: 'pol', width: 25 },
         ],

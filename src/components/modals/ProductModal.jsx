@@ -215,7 +215,7 @@ export default function ProductModal({ open, onClose }) {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">
-                    Kategorija
+                    Kolekcija
                   </label>
                   <input
                     required

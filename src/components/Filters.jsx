@@ -261,7 +261,7 @@ export default function Filters({ products, onClose }) {
   if (baseData.length === 0) {
     return (
       <aside className="filters card glass p-4 text-center text-muted text-sm">
-        Nema filtera za ovu kategoriju.
+        Nema filtera za ovu kolekciju.
       </aside>
     );
   }
@@ -395,7 +395,7 @@ export default function Filters({ products, onClose }) {
             className={`f-section ${openSections.category ? 'is-open' : ''}`}
           >
             <SectionHeader
-              title="Kategorija"
+              title="Kolekcija"
               count={countSelected('category')}
               onClear={() => clearKey('category')}
               isOpen={openSections.category}

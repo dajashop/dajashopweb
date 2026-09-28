@@ -92,7 +92,7 @@ const ExcelManager = ({ products, brands, categories, onImport }) => {
           name: getVal(row, 'Naziv', 'name', 'naslov') || 'Nepoznat proizvod',
           brand: getVal(row, 'Brend', 'brand', 'marka') || 'Ostalo',
           department: getVal(row, 'Odeljenje', 'department') || 'satovi',
-          category: getVal(row, 'Kategorija', 'category') || 'Opšte',
+          category: getVal(row, 'Kolekcija', 'Kategorija', 'category') || 'Opšte',
           gender: cleanGender, // <--- OVDE JE POPRAVKA
           price: parsedPrice,
           image: getVal(row, 'Slika', 'image', 'url') || '',

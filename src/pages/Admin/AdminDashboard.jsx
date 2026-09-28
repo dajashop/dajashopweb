@@ -102,7 +102,7 @@ const AUDIT_FIELD_LABELS = {
   itemCondition: 'Stanje artikla',
   departmentId: 'Odeljenje',
   brandId: 'Brend',
-  primaryCategoryId: 'Kategorija',
+  primaryCategoryId: 'Kolekcija',
   sku: 'Šifra artikla',
   barcode: 'Barkod',
   mpn: 'Model / MPN',
@@ -546,7 +546,7 @@ function AdminDashboardContent() {
     { id: 'name', label: 'Naziv' },
     { id: 'department', label: 'Odeljenje' },
     { id: 'brand', label: 'Brend' },
-    { id: 'category', label: 'Kategorija' },
+    { id: 'category', label: 'Kolekcija' },
     { id: 'price', label: 'Cena' },
   ];
 
@@ -993,7 +993,7 @@ function AdminDashboardContent() {
               active={activeTab === 'categories'}
               onClick={() => setActiveTab('categories')}
               icon={Layers}
-              label="Kategorije"
+              label="Kolekcije"
             />
             <TabButton
               active={activeTab === 'specs'}
@@ -1132,7 +1132,7 @@ function AdminDashboardContent() {
                       <th className="p-4">Odeljenje</th>
                       <th className="p-4">Brend</th>
                       <th className="p-4">Cena</th>
-                      <th className="p-4">Kategorija</th>
+                      <th className="p-4">Kolekcija</th>
                       <th className="p-4 text-right">Akcije</th>
                     </tr>
                   </thead>
@@ -1791,7 +1791,7 @@ function AdminDashboardContent() {
                       {' '}
                       <Layers size={20} />{' '}
                     </div>{' '}
-                    <h2 className="text-xl font-bold">Kategorije</h2>{' '}
+                    <h2 className="text-xl font-bold">Kolekcije</h2>{' '}
                   </div>{' '}
                   <div className="flex flex-wrap gap-2">
                     {' '}
@@ -1888,7 +1888,7 @@ function AdminDashboardContent() {
                   >
                     {' '}
                     <option value="">
-                      - Bez brenda (opšta kategorija) -
+                      - Bez brenda (opšta kolekcija) -
                     </option>{' '}
                     {availableBrandsForCat.map((b) => (
                       <option key={b.id} value={b.name}>

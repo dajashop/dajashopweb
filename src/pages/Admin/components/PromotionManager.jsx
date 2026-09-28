@@ -160,7 +160,7 @@ function SelectedProducts({ scope, products, onChange }) {
     ...scope.productIds.map((id) => ({ id, type: 'product', product: products.find((item) => item.id === id) })),
     ...scope.variantIds.map((id) => ({ id, type: 'variant', product: products.find((item) => item.variantId === id) })),
   ];
-  if (!selected.length) return <p className="text-sm text-neutral-500">Nisu izabrani konkretni proizvodi. Pravilo se oslanja na kategorije, brendove, odeljenja ili važi za sve artikle.</p>;
+  if (!selected.length) return <p className="text-sm text-neutral-500">Nisu izabrani konkretni proizvodi. Pravilo se oslanja na kolekcije, brendove, odeljenja ili važi za sve artikle.</p>;
   const remove = (item) => onChange({ ...scope, [item.type === 'product' ? 'productIds' : 'variantIds']: scope[item.type === 'product' ? 'productIds' : 'variantIds'].filter((id) => id !== item.id) });
   return <div className="flex flex-wrap gap-2">{selected.map((item) => <button key={`${item.type}-${item.id}`} type="button" onClick={() => remove(item)} className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white py-1 pl-1 pr-2 text-xs text-neutral-700 hover:border-red-200 hover:bg-red-50"><span className="flex h-7 w-7 overflow-hidden rounded-full bg-neutral-100">{item.product?.thumbnailUrl || item.product?.primaryImageUrl || item.product?.image ? <img src={item.product.thumbnailUrl || item.product.primaryImageUrl || item.product.image} alt="" className="h-full w-full object-cover" /> : <ImageOff size={13} className="m-auto text-neutral-400" />}</span>{item.product?.name || 'Obrisan proizvod'}{item.type === 'variant' ? ' · varijanta' : ''}<X size={13} /></button>)}</div>;
 }
@@ -217,7 +217,7 @@ function ScopeEditor({ scope, onChange, products = [], categories = [], brands =
         <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_180px_180px_180px_auto]">
           <label className="relative"><Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Traži po nazivu ili šifri artikla" className="w-full rounded-xl border border-neutral-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-neutral-300" /></label>
           <select value={brandFilter} onChange={(event) => setBrandFilter(event.target.value)} className="rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm"><option value="">Svi brendovi</option>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select>
-          <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className="rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm"><option value="">Sve kategorije</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select>
+          <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className="rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm"><option value="">Sve kolekcije</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select>
           <select value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)} className="rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm"><option value="">Sva odeljenja</option>{departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select>
           <button type="button" onClick={resetFilters} className="rounded-xl border border-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-600 hover:bg-neutral-50">Resetuj</button>
         </div>
@@ -235,7 +235,7 @@ function ScopeEditor({ scope, onChange, products = [], categories = [], brands =
                 {image ? <img src={image} alt={product.name} className="h-full w-full object-cover" /> : <ImageOff size={20} className="m-auto mt-7 text-neutral-400" />}
                 <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-[10px] font-bold text-white">UVEĆAJ</span>
               </button>
-              <div className="min-w-0 flex-1"><h5 className="line-clamp-2 text-sm font-bold text-neutral-900">{product.name}</h5><p className="mt-1 truncate text-xs text-neutral-500">Šifra: {product.sku || product.mpn || 'nije uneta'}</p><p className="mt-1 truncate text-xs text-neutral-500">{product.brand || 'Bez brenda'} · {product.category || 'Bez kategorije'}</p></div>
+              <div className="min-w-0 flex-1"><h5 className="line-clamp-2 text-sm font-bold text-neutral-900">{product.name}</h5><p className="mt-1 truncate text-xs text-neutral-500">Šifra: {product.sku || product.mpn || 'nije uneta'}</p><p className="mt-1 truncate text-xs text-neutral-500">{product.brand || 'Bez brenda'} · {product.category || 'Bez kolekcije'}</p></div>
             </div>
             <div className="grid grid-cols-2 border-t border-neutral-100">
               <button type="button" onClick={() => toggle('productIds', product.id)} className={`px-3 py-2 text-xs font-bold ${selectedProduct ? 'bg-neutral-900 text-white' : 'text-neutral-700 hover:bg-neutral-50'}`}>{selectedProduct ? '✓ Ceo proizvod' : 'Izaberi proizvod'}</button>
@@ -249,7 +249,7 @@ function ScopeEditor({ scope, onChange, products = [], categories = [], brands =
       <div className="mt-4 rounded-xl border border-neutral-200 bg-white p-3"><p className="mb-2 text-sm font-semibold text-neutral-700">Odabrani artikli</p><SelectedProducts scope={scope} products={products} onChange={onChange} /></div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <ChoiceChips label="Kategorije kao pravilo" values={scope.categoryIds} options={categories.map((item) => ({ id: item.id, label: item.name }))} onChange={(categoryIds) => onChange({ ...scope, categoryIds })} />
+        <ChoiceChips label="Kolekcije kao pravilo" values={scope.categoryIds} options={categories.map((item) => ({ id: item.id, label: item.name }))} onChange={(categoryIds) => onChange({ ...scope, categoryIds })} />
         <ChoiceChips label="Brendovi kao pravilo" values={scope.brandIds} options={brands.map((item) => ({ id: item.id, label: item.name }))} onChange={(brandIds) => onChange({ ...scope, brandIds })} />
         <ChoiceChips label="Odeljenja kao pravilo" values={scope.departmentIds} options={departments.map((item) => ({ id: item.id, label: item.name }))} onChange={(departmentIds) => onChange({ ...scope, departmentIds })} />
       </div>

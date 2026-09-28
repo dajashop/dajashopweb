@@ -1617,7 +1617,7 @@ export default function AdminProductModal({
     form.description ||
     [
       fallbackSeoTitle,
-      form.category ? `iz kategorije ${form.category}` : '',
+      form.category ? `iz kolekcije ${form.category}` : '',
       form.mpn ? `model ${form.mpn}` : '',
       ...Object.entries(form.specs || {})
         .slice(0, 2)
@@ -1848,16 +1848,16 @@ export default function AdminProductModal({
                   }
                 />
                 <CustomSelect
-                  label="Kategorija"
+                  label="Kolekcija"
                   value={form.category}
                   options={catOptions}
                   onChange={(v) => handleChange('category', v)}
                   placeholder={
                     catOptions.length === 0
                       ? form.brand
-                        ? 'Nema kategorija za ovaj brend'
-                        : 'Nema opštih kategorija'
-                      : 'Izaberi kategoriju (opciono)'
+                        ? 'Nema kolekcija za ovaj brend'
+                        : 'Nema opštih kolekcija'
+                      : 'Izaberi kolekciju (opciono)'
                   }
                   disabled={catOptions.length === 0}
                 />

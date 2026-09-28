@@ -83,7 +83,7 @@ export default function Product() {
     p.description ||
     [
       productTitle,
-      p.category ? `iz kategorije ${p.category}` : '',
+      p.category ? `iz kolekcije ${p.category}` : '',
       p.mpn ? `model ${p.mpn}` : '',
       ...Object.entries(p.specs || {})
         .slice(0, 2)

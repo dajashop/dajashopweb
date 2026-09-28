@@ -100,7 +100,7 @@ export default function ProductJsonLd({ product, reviews = [] }) {
     product.description ||
     [
       productName,
-      product.category ? `iz kategorije ${product.category}` : '',
+      product.category ? `iz kolekcije ${product.category}` : '',
       product.mpn ? `model ${product.mpn}` : '',
       ...Object.entries(product.specs || {})
         .slice(0, 2)
