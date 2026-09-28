@@ -7,10 +7,18 @@ const ACCESS_KEY = 'daja_customer_access_token';
 const REFRESH_KEY = 'daja_customer_refresh_token';
 const STAFF_ACCESS_KEY = 'daja_staff_access_token';
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
+const CUSTOMER_REFRESH_LOCK_KEY = 'daja_customer_refresh_lock';
+const CUSTOMER_REFRESH_LOCK_TIMEOUT_MS = 20_000;
+const CUSTOMER_REFRESH_LOCK_TTL_MS = 15_000;
+const CUSTOMER_REFRESH_LOCK_RETRY_MS = 80;
 
 let refreshPromise = null;
 const authListeners = new Set();
 const staffTokenListeners = new Set();
+const customerRefreshLockOwner =
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `daja-refresh-${Math.random().toString(36).slice(2)}`;
 
 function readStorage(key) {
   return readStoredValue(key, 'necessary');
@@ -116,28 +124,83 @@ function unwrapEnvelope(data) {
 }
 
 async function refreshAccessToken() {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) throw new Error('Refresh token nije dostupan.');
-
   if (!refreshPromise) {
-    refreshPromise = fetch(buildUrl('/customer-auth/refresh'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+    const requestedRefreshToken = getRefreshToken();
+    if (!requestedRefreshToken) throw new Error('Refresh token nije dostupan.');
+
+    // Refresh tokens rotate after every use. The browser keeps customer
+    // credentials in shared localStorage, so two tabs must never send the
+    // same refresh token at once: the second request would otherwise revoke
+    // the entire session family as suspected token reuse.
+    refreshPromise = withCustomerRefreshLock(async () => {
+      if (getRefreshToken() !== requestedRefreshToken) {
+        const refreshedAccessToken = getAccessToken();
+        if (refreshedAccessToken) return refreshedAccessToken;
+        throw new Error('Sesija je promenjena u drugom tabu.');
+      }
+
+      const response = await fetch(buildUrl('/customer-auth/refresh'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: requestedRefreshToken }),
+      });
+      const data = await parseResponse(response);
+      if (!response.ok) throw new Error(data?.message || 'Sesija je istekla.');
+      const tokens = unwrapEnvelope(data);
+      setAuthTokens(tokens);
+      return tokens?.accessToken || tokens?.access_token;
     })
-      .then(async (response) => {
-        const data = await parseResponse(response);
-        if (!response.ok) throw new Error(data?.message || 'Sesija je istekla.');
-        const tokens = unwrapEnvelope(data);
-        setAuthTokens(tokens);
-        return tokens?.accessToken || tokens?.access_token;
-      })
       .finally(() => {
         refreshPromise = null;
       });
   }
 
   return refreshPromise;
+}
+
+async function withCustomerRefreshLock(operation) {
+  if (typeof navigator !== 'undefined' && navigator.locks?.request) {
+    return navigator.locks.request(CUSTOMER_REFRESH_LOCK_KEY, operation);
+  }
+
+  const deadline = Date.now() + CUSTOMER_REFRESH_LOCK_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    if (tryAcquireCustomerRefreshLock()) {
+      try {
+        return await operation();
+      } finally {
+        releaseCustomerRefreshLock();
+      }
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, CUSTOMER_REFRESH_LOCK_RETRY_MS));
+  }
+  throw new Error('Obnova sesije je zauzeta u drugom tabu.');
+}
+
+function tryAcquireCustomerRefreshLock() {
+  const now = Date.now();
+  const existing = parseCustomerRefreshLock(readStoredValue(CUSTOMER_REFRESH_LOCK_KEY, 'necessary'));
+  if (existing && existing.expiresAt > now && existing.owner !== customerRefreshLockOwner) return false;
+
+  const lock = { owner: customerRefreshLockOwner, expiresAt: now + CUSTOMER_REFRESH_LOCK_TTL_MS };
+  if (!writeStoredValue(CUSTOMER_REFRESH_LOCK_KEY, JSON.stringify(lock), 'necessary')) return false;
+  return parseCustomerRefreshLock(readStoredValue(CUSTOMER_REFRESH_LOCK_KEY, 'necessary'))?.owner === customerRefreshLockOwner;
+}
+
+function releaseCustomerRefreshLock() {
+  const existing = parseCustomerRefreshLock(readStoredValue(CUSTOMER_REFRESH_LOCK_KEY, 'necessary'));
+  if (existing?.owner === customerRefreshLockOwner) {
+    writeStoredValue(CUSTOMER_REFRESH_LOCK_KEY, null, 'necessary');
+  }
+}
+
+function parseCustomerRefreshLock(value) {
+  try {
+    const parsed = JSON.parse(value || '');
+    return typeof parsed?.owner === 'string' && Number.isFinite(parsed?.expiresAt) ? parsed : null;
+  } catch {
+    return null;
+  }
 }
 
 function accessTokenExpiresSoon(token) {
