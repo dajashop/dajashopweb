@@ -123,6 +123,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     err,
   } = useProducts({
     order: backendOrderField,
+    all: true,
     // The public catalog must always use the same published dataset as the
     // storefront API and RFID sync. Admin-only drafts belong in the admin
     // dashboard, not in the customer-facing catalog.
@@ -250,8 +251,9 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
         out = out.filter(
           (p) =>
             p.specs &&
-            p.specs[specName] &&
-            selectedValues.includes(p.specs[specName]),
+            p.specs[specName] !== null &&
+            p.specs[specName] !== undefined &&
+            selectedValues.includes(String(p.specs[specName]).trim()),
         );
       }
     });
@@ -439,12 +441,12 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       />
 
       <div className="catalog-mobile-trigger lg:hidden mb-4">
-        <FilterDrawer products={departmentItems} />
+        <FilterDrawer products={departmentItems} fixedGender={fixedGender} />
       </div>
 
       <div className="catalog-layout lg:grid lg:grid-cols-[260px_1fr] lg:gap-8 items-start">
         <aside className="sidebar-filters hidden lg:block sticky top-24">
-          <Filters products={departmentItems} />
+          <Filters products={departmentItems} fixedGender={fixedGender} />
         </aside>
 
         <main className="catalog-main min-w-0">

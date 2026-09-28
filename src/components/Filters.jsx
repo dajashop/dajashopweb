@@ -61,7 +61,7 @@ function SectionHeader({ title, count, onClear, isOpen, onToggle }) {
   );
 }
 
-export default function Filters({ products, onClose }) {
+export default function Filters({ products, fixedGender, onClose }) {
   // <--- Dodat onClose prop
   const [sp, setSp] = useSearchParams();
 
@@ -91,7 +91,10 @@ export default function Filters({ products, onClose }) {
   const specifications = useMemo(() => {
     const selectedBrands = sp.getAll('brand');
     const selectedCategories = sp.getAll('category');
-    const selectedGenders = sp.getAll('gender');
+    const selectedGenders = fixedGender ? [fixedGender] : sp.getAll('gender');
+    const query = sp.get('q')?.trim().toLowerCase();
+    const minPrice = sp.get('min') ? Number(sp.get('min')) : null;
+    const maxPrice = sp.get('max') ? Number(sp.get('max')) : null;
 
     let filtered = baseData;
 
@@ -107,14 +110,19 @@ export default function Filters({ products, onClose }) {
         return productGender === 'UNISEX' || selectedGenders.some((gender) => normalizedGender(gender) === productGender);
       });
     }
+    if (query) filtered = filtered.filter((p) => `${p.brand || ''} ${p.name || ''}`.toLowerCase().includes(query));
+    if (minPrice !== null) filtered = filtered.filter((p) => p.price >= minPrice);
+    if (maxPrice !== null) filtered = filtered.filter((p) => p.price <= maxPrice);
 
     const specsMap = {};
     filtered.forEach((p) => {
       if (!p.specs) return;
       Object.entries(p.specs).forEach(([key, val]) => {
-        if (!val) return;
+        if (val === null || val === undefined || typeof val === 'object') return;
+        const value = String(val).trim();
+        if (!value) return;
         if (!specsMap[key]) specsMap[key] = new Set();
-        specsMap[key].add(val);
+        specsMap[key].add(value);
       });
     });
 
@@ -124,7 +132,7 @@ export default function Filters({ products, onClose }) {
         values: [...valuesSet].sort(),
       }))
       .sort((a, b) => a.key.localeCompare(b.key));
-  }, [sp, baseData]);
+  }, [sp, baseData, fixedGender]);
 
   const maxPriceLimit = useMemo(() => {
     if (!baseData || baseData.length === 0) return 50000;
@@ -163,32 +171,7 @@ export default function Filters({ products, onClose }) {
   }
 
   function toggleCategory(val) {
-    setParams((p) => {
-      const currentCats = p.getAll('category');
-      const has = currentCats.includes(val);
-      p.delete('category');
-      const newCats = has
-        ? currentCats.filter((x) => x !== val)
-        : [...currentCats, val];
-      newCats.forEach((v) => p.append('category', v));
-
-      if (!has) {
-        const matchingProducts = baseData.filter(
-          (prod) => prod.category === val
-        );
-        const associatedBrands = [
-          ...new Set(
-            matchingProducts.map((prod) => prod.brand).filter(Boolean)
-          ),
-        ];
-        const currentBrands = p.getAll('brand');
-        associatedBrands.forEach((brand) => {
-          if (!currentBrands.includes(brand)) {
-            p.append('brand', brand);
-          }
-        });
-      }
-    });
+    toggleParam('category', val);
   }
 
   function checked(key, val) {
@@ -285,53 +268,55 @@ export default function Filters({ products, onClose }) {
       </div>
 
       <div className="f-scroll-container">
-        <div className={`f-section ${openSections.gender ? 'is-open' : ''}`}>
-          <SectionHeader
-            title="Pol"
-            count={countSelected('gender')}
-            onClear={() => clearKey('gender')}
-            isOpen={openSections.gender}
-            onToggle={() => toggleSection('gender')}
-          />
-          <AnimatePresence initial={false}>
-            {openSections.gender && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="f-content-wrapper"
-              >
-                <div className="f-content-inner">
-                  <div className="filter-list" role="group">
-                    {['Muški', 'Ženski'].map((gender) => (
-                      <label
-                        key={gender}
-                        className={`filter-row ${
-                          checked('gender', gender) ? 'is-active' : ''
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked('gender', gender)}
-                          onChange={() => toggleParam('gender', gender)}
-                          className="filter-input-hidden"
-                        />
-                        <span className="filter-text">{gender}</span>
-                        {checked('gender', gender) && (
-                          <div className="filter-check">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </div>
-                        )}
-                      </label>
-                    ))}
+        {!fixedGender && (
+          <div className={`f-section ${openSections.gender ? 'is-open' : ''}`}>
+            <SectionHeader
+              title="Pol"
+              count={countSelected('gender')}
+              onClear={() => clearKey('gender')}
+              isOpen={openSections.gender}
+              onToggle={() => toggleSection('gender')}
+            />
+            <AnimatePresence initial={false}>
+              {openSections.gender && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="f-content-wrapper"
+                >
+                  <div className="f-content-inner">
+                    <div className="filter-list" role="group">
+                      {['Muški', 'Ženski'].map((gender) => (
+                        <label
+                          key={gender}
+                          className={`filter-row ${
+                            checked('gender', gender) ? 'is-active' : ''
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked('gender', gender)}
+                            onChange={() => toggleParam('gender', gender)}
+                            className="filter-input-hidden"
+                          />
+                          <span className="filter-text">{gender}</span>
+                          {checked('gender', gender) && (
+                            <div className="filter-check">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </div>
+                          )}
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         {brands.length > 0 && (
           <div className={`f-section ${openSections.brand ? 'is-open' : ''}`}>

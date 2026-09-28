@@ -424,9 +424,10 @@ export const authApi = {
 
 export const catalogApi = {
   async listProducts(params = {}) {
-    const requestedLimit = Math.max(1, Number(params.limit) || 20);
-    const pageSize = Math.min(requestedLimit, 50);
-    const { cursor: initialCursor, limit: _limit, ...filters } = params;
+    const fetchAll = params.all === true;
+    const requestedLimit = fetchAll ? Infinity : Math.max(1, Number(params.limit) || 20);
+    const pageSize = fetchAll ? 50 : Math.min(requestedLimit, 50);
+    const { cursor: initialCursor, limit: _limit, all: _all, ...filters } = params;
     const products = [];
     let cursor = initialCursor;
 
@@ -443,7 +444,7 @@ export const catalogApi = {
       cursor = data?.nextCursor || null;
     } while (cursor && products.length < requestedLimit);
 
-    return products.slice(0, requestedLimit);
+    return fetchAll ? products : products.slice(0, requestedLimit);
   },
   async getProductBySlug(slug, { realtime = false } = {}) {
     const data = await apiRequest(
