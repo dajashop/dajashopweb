@@ -13,6 +13,7 @@ const CUSTOMER_REFRESH_LOCK_TTL_MS = 15_000;
 const CUSTOMER_REFRESH_LOCK_RETRY_MS = 80;
 
 let refreshPromise = null;
+let staffRefreshPromise = null;
 const authListeners = new Set();
 const staffTokenListeners = new Set();
 const customerRefreshLockOwner =
@@ -253,35 +254,54 @@ async function currentCustomerAccessToken() {
 }
 
 async function refreshStaffAccessToken() {
-  const customerToken = getAccessToken();
-  if (!customerToken) throw new Error('Customer token nije dostupan.');
+  if (!staffRefreshPromise) {
+    staffRefreshPromise = (async () => {
+      const customerToken = await currentCustomerAccessToken();
+      if (!customerToken) throw new Error('Customer token nije dostupan.');
 
-  const storageKey = 'daja_staff_device_id';
-  let deviceId = readStorage(storageKey);
-  if (!deviceId) {
-    deviceId = crypto.randomUUID();
-    writeStorage(storageKey, deviceId);
-  }
+      const storageKey = 'daja_staff_device_id';
+      let deviceId = readStorage(storageKey);
+      if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        writeStorage(storageKey, deviceId);
+      }
 
-  const response = await fetch(buildUrl('/customer-auth/admin/session'), {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${customerToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ deviceId }),
-    credentials: 'include',
-  });
-  const data = unwrapEnvelope(await parseResponse(response));
-  if (!response.ok) {
-    const error = new Error(data?.message || data?.error?.message || 'Staff sesija nije dostupna.');
-    error.status = response.status;
-    throw error;
+      const response = await fetch(buildUrl('/customer-auth/admin/session'), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${customerToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ deviceId }),
+        credentials: 'include',
+      });
+      const data = unwrapEnvelope(await parseResponse(response));
+      if (!response.ok) {
+        const error = new Error(data?.message || data?.error?.message || 'Staff sesija nije dostupna.');
+        error.status = response.status;
+        throw error;
+      }
+      const accessToken = data?.accessToken || data?.access_token;
+      if (!accessToken) throw new Error('Staff sesija nije vratila token.');
+      setStaffAccessToken(accessToken);
+      return accessToken;
+    })().finally(() => {
+      staffRefreshPromise = null;
+    });
   }
-  const accessToken = data?.accessToken || data?.access_token;
-  if (!accessToken) throw new Error('Staff sesija nije vratila token.');
-  setStaffAccessToken(accessToken);
-  return accessToken;
+  return staffRefreshPromise;
+}
+
+async function currentStaffAccessToken() {
+  const token = getStaffAccessToken();
+  if (!token) return getAccessToken();
+  if (!accessTokenExpiresSoon(token)) return token;
+  try {
+    return await refreshStaffAccessToken();
+  } catch {
+    // The ordinary 401 retry still handles a renewal that failed temporarily.
+    return token;
+  }
 }
 
 export async function apiRequest(path, options = {}) {
@@ -302,7 +322,7 @@ export async function apiRequest(path, options = {}) {
   const token = !auth
     ? null
     : staff
-      ? getStaffAccessToken() || getAccessToken()
+      ? await currentStaffAccessToken()
       : await currentCustomerAccessToken();
   if (auth && token) requestHeaders.Authorization = `Bearer ${token}`;
 
