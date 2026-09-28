@@ -851,7 +851,13 @@ function AdminDashboardContent() {
       setEditingSpecOptionDraft('');
       setEditingSpecOptionsOpen(false);
     } catch (err) {
-      alert('Greška.');
+      await specKeyService.refresh().catch(() => {});
+      setEditingSpecId(null);
+      setEditingSpecUnit('');
+      setEditingSpecOptions('');
+      setEditingSpecOptionDraft('');
+      setEditingSpecOptionsOpen(false);
+      alert('Specifikacija je u međuvremenu promenjena ili obrisana. Lista je osvežena.');
     }
   };
   const handleDeleteSpec = async (id) => {
