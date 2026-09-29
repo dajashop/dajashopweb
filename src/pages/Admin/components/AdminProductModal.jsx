@@ -816,12 +816,30 @@ export default function AdminProductModal({
       setSupplierPreviews((previous) => ({ ...previous, [provider]: null }));
       return;
     }
+    if (provider === 'linkel') {
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'https:' || !['linkel.rs', 'www.linkel.rs'].includes(parsed.hostname.toLowerCase()) || parsed.username || parsed.password || parsed.port || parsed.pathname.split('/').filter(Boolean).length < 3) {
+          throw new Error('Unesite direktan HTTPS link artikla sa linkel.rs.');
+        }
+      } catch (error) {
+        setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'error', message: error?.message || 'Link nije ispravan' } }));
+        return;
+      }
+    }
     setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'checking' } }));
     try {
       const result = await adminCatalogApi.previewSupplierLink(provider, url);
       setSupplierPreviews((previous) => ({ ...previous, [provider]: result }));
     } catch (error) {
-      setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'error', message: error?.message || 'Link nije ispravan' } }));
+      const syntacticallyValid = provider === 'linkel';
+      setSupplierPreviews((previous) => ({
+        ...previous,
+        [provider]: {
+          status: syntacticallyValid ? 'unverified' : 'error',
+          message: syntacticallyValid ? 'Link je ispravan, ali serverska provera trenutno nije dostupna.' : (error?.message || 'Link nije ispravan'),
+        },
+      }));
     }
   };
 
@@ -2030,6 +2048,7 @@ export default function AdminProductModal({
                     />
                     {supplierPreviews.linkel?.status === 'checking' && <span className="mt-1 block text-xs text-neutral-500">Proveravam Linkel link…</span>}
                     {supplierPreviews.linkel?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">Link je važeći{supplierPreviews.linkel.stockStatus === 'in_stock' ? ' i artikal je na stanju' : supplierPreviews.linkel.stockStatus === 'out_of_stock' ? ', artikal nije na stanju' : ''}.</span>}
+                    {supplierPreviews.linkel?.status === 'unverified' && <span className="mt-1 block text-xs font-semibold text-amber-700">{supplierPreviews.linkel.message}</span>}
                     {(supplierPreviews.linkel?.status === 'missing' || supplierPreviews.linkel?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen{supplierPreviews.linkel.message ? `: ${supplierPreviews.linkel.message}` : '.'}</span>}
                   </label>
                 </div>}
