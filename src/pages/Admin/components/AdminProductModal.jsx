@@ -33,6 +33,12 @@ import {
   visibleProductSpecs,
 } from '../../../utils/catalogPresentation.js';
 
+// The modal can remount while the product list refreshes after a save. Keep
+// preview requests outside the component so that a blur and the follow-up
+// product refresh cannot send the same supplier request twice.
+const supplierPreviewInFlight = new Map();
+const supplierPreviewCache = new Map();
+
 function validateEpcInput(value) {
   const epc = value
     .trim()
@@ -322,7 +328,6 @@ export default function AdminProductModal({
   const [nameFocused, setNameFocused] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [supplierPreviews, setSupplierPreviews] = useState({});
-  const supplierPreviewRequestsRef = useRef(new Map());
   const [priceFocused, setPriceFocused] = useState(false);
   const [eurRsdRate, setEurRsdRate] = useState(null);
   const nameInputRef = useRef(null);
@@ -829,11 +834,30 @@ export default function AdminProductModal({
       }
     }
     const requestKey = `${provider}:${url}`;
-    if (supplierPreviewRequestsRef.current.has(requestKey)) return;
-    supplierPreviewRequestsRef.current.set(requestKey, Date.now());
+    const cached = supplierPreviewCache.get(requestKey);
+    if (cached && Date.now() - cached.timestamp < 5000) {
+      setSupplierPreviews((previous) => ({ ...previous, [provider]: cached.result }));
+      return;
+    }
+    const existingRequest = supplierPreviewInFlight.get(requestKey);
+    if (existingRequest) {
+      setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'checking' } }));
+      try {
+        const result = await existingRequest;
+        setSupplierPreviews((previous) => ({ ...previous, [provider]: result }));
+      } catch {
+        if (provider === 'linkel') {
+          setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'unverified', message: 'Link je ispravan, ali serverska provera trenutno nije dostupna.' } }));
+        }
+      }
+      return;
+    }
     setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'checking' } }));
+    const request = adminCatalogApi.previewSupplierLink(provider, url);
+    supplierPreviewInFlight.set(requestKey, request);
     try {
-      const result = await adminCatalogApi.previewSupplierLink(provider, url);
+      const result = await request;
+      supplierPreviewCache.set(requestKey, { result, timestamp: Date.now() });
       setSupplierPreviews((previous) => ({ ...previous, [provider]: result }));
     } catch (error) {
       const syntacticallyValid = provider === 'linkel';
@@ -845,7 +869,7 @@ export default function AdminProductModal({
         },
       }));
     } finally {
-      window.setTimeout(() => supplierPreviewRequestsRef.current.delete(requestKey), 1500);
+      supplierPreviewInFlight.delete(requestKey);
     }
   };
 
