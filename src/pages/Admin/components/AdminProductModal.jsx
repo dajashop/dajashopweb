@@ -318,6 +318,9 @@ export default function AdminProductModal({
     published: true,
   });
   const [checkedName, setCheckedName] = useState('');
+  const [nameFocused, setNameFocused] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
+  const nameInputRef = useRef(null);
   useEffect(() => {
     const timer = window.setTimeout(() => setCheckedName(form.name.trim()), 250);
     return () => window.clearTimeout(timer);
@@ -326,8 +329,10 @@ export default function AdminProductModal({
     () => product ? [] : findSimilarProducts(checkedName, existingProducts),
     [checkedName, existingProducts, product],
   );
-  const hasExactNameMatch = checkedName === form.name.trim()
-    && similarProducts.some((match) => match.exact);
+  const currentNameMatches = checkedName === form.name.trim() && !catalogLoading && !catalogError
+    ? similarProducts
+    : [];
+  const hasExactNameMatch = currentNameMatches.some((match) => match.exact);
   const initialProductDraftRef = useRef(productDraft);
   const skipInitialDraftSyncRef = useRef(Boolean(productDraft));
   const successfullySavedRef = useRef(false);
@@ -747,6 +752,7 @@ export default function AdminProductModal({
   }, []);
 
   const handleChange = (field, value) => {
+    if (field === 'name') setDuplicateWarning(null);
     if (field === 'quantity') quantityEditedRef.current = true;
     if (field === 'locationId' || field === 'zoneId' || field === 'binId') {
       placementEditedRef.current = true;
@@ -1056,6 +1062,19 @@ export default function AdminProductModal({
       setFlash({ open: true, title: gtinValidation.error, ok: false });
       return;
     }
+    if (!product && !options.confirmDuplicate) {
+      const matches = findSimilarProducts(form.name.trim(), existingProducts);
+      if (matches.length || catalogLoading || catalogError) {
+        setDuplicateWarning({
+          name: form.name.trim(),
+          count: matches.length,
+          exact: matches.some((match) => match.exact),
+          unavailable: Boolean(!matches.length && (catalogLoading || catalogError)),
+        });
+        return;
+      }
+    }
+    setDuplicateWarning(null);
     // saveProduct notifies the parent synchronously. Capture this before any
     // await so a parent re-render with the new (empty) EPC cannot erase the
     // value we still need to unassign.
@@ -1773,19 +1792,26 @@ export default function AdminProductModal({
             <div className="lg:col-span-8 flex flex-col gap-6">
               {reviewContext && <WorkforceReviewNotes product={reviewContext.product} onReturn={note => handleSubmit({ reviewNote: note })} disabled={loading} />}
               <div className="bg-white p-5 rounded-xl shadow-none border border-neutral-200 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 [&_label>span:first-child]:mb-1 [&_label>span:first-child]:block [&_label>span:first-child]:text-xs [&_label>span:first-child]:font-bold [&_label>span:first-child]:uppercase [&_label>span:first-child]:tracking-wider [&_label>span:first-child]:text-neutral-500 [&_input]:bg-neutral-50 [&_input]:border-neutral-200 [&_input]:!rounded-xl [&_input]:px-4 [&_input]:py-3 [&_input]:text-sm">
-                <div className="relative z-20">
+                <div
+                  className="relative z-20"
+                  onFocus={() => setNameFocused(true)}
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget)) setNameFocused(false);
+                  }}
+                >
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                       Naziv <b className="text-emerald-700">*</b>
                     </span>
                     <input
+                      ref={nameInputRef}
                       value={form.name}
                       onChange={(e) => handleChange('name', e.target.value)}
                       className={`w-full border rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 transition-all font-medium ${hasExactNameMatch ? '!bg-red-50 !border-red-400 focus:ring-red-200' : 'bg-neutral-50 border-neutral-200 focus:ring-neutral-200 focus:border-neutral-400'}`}
                       placeholder="Unesi naziv proizvoda..."
                     />
                   </label>
-                  {!product && form.name.trim().length >= 4 && (
+                  {!product && nameFocused && form.name.trim().length >= 4 && (
                     <div className={`absolute left-0 right-0 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-xl border p-3 text-xs shadow-xl ${hasExactNameMatch ? 'border-red-300 bg-red-100 shadow-red-900/15' : 'border-neutral-200 bg-white shadow-neutral-900/15'}`} role="status" aria-live="polite">
                       {catalogError ? (
                         <p className="font-semibold text-red-700">Provera duplikata trenutno nije dostupna.</p>
@@ -2710,7 +2736,36 @@ export default function AdminProductModal({
           </div>
         </div>
 
-        <div className="px-8 py-5 bg-white border-t border-neutral-100 flex items-center justify-end gap-4">
+        {duplicateWarning?.name === form.name.trim() && (
+          <div className={`border-t px-8 py-3 flex flex-wrap items-center gap-3 ${duplicateWarning.exact ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`} role="alert">
+            <p className={`mr-auto text-sm font-semibold ${duplicateWarning.exact ? 'text-red-800' : 'text-amber-800'}`}>
+              {duplicateWarning.unavailable
+                ? 'Provera duplikata nije završena. Proverite naziv pre čuvanja.'
+                : duplicateWarning.exact
+                ? 'Artikal sa istim nazivom već postoji. Da li ipak želite da sačuvate novi?'
+                : `Pronađeno je ${duplicateWarning.count} sličnih artikala. Da li ipak želite da sačuvate novi?`}
+            </p>
+            <button type="button" onClick={() => setDuplicateWarning(null)} className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700">
+              Vrati se
+            </button>
+            <button type="button" onClick={() => handleSubmit({ confirmDuplicate: true })} disabled={loading} className="rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">
+              Sačuvaj ipak
+            </button>
+          </div>
+        )}
+        <div className="px-8 py-5 bg-white border-t border-neutral-100 flex flex-wrap items-center justify-end gap-4">
+          {!product && currentNameMatches.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                nameInputRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                nameInputRef.current?.focus();
+              }}
+              className={`mr-auto text-left text-xs font-semibold underline ${hasExactNameMatch ? 'text-red-700' : 'text-amber-700'}`}
+            >
+              {hasExactNameMatch ? 'Pažnja: isti naziv već postoji' : `Pažnja: ${currentNameMatches.length} sličnih artikala`} — pogledaj
+            </button>
+          )}
           <button
             type="button"
             role="switch"
@@ -2738,7 +2793,7 @@ export default function AdminProductModal({
             Otkaži
           </button>
           <button
-            onClick={handleSubmit}
+            onClick={() => handleSubmit()}
             disabled={loading}
             className="bg-neutral-900 text-white px-8 py-2.5 rounded-xl font-bold hover:bg-black hover:shadow-lg hover:shadow-neutral-200 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-wait"
           >
