@@ -326,6 +326,8 @@ export default function AdminProductModal({
     () => product ? [] : findSimilarProducts(checkedName, existingProducts),
     [checkedName, existingProducts, product],
   );
+  const hasExactNameMatch = checkedName === form.name.trim()
+    && similarProducts.some((match) => match.exact);
   const initialProductDraftRef = useRef(productDraft);
   const skipInitialDraftSyncRef = useRef(Boolean(productDraft));
   const successfullySavedRef = useRef(false);
@@ -1771,7 +1773,7 @@ export default function AdminProductModal({
             <div className="lg:col-span-8 flex flex-col gap-6">
               {reviewContext && <WorkforceReviewNotes product={reviewContext.product} onReturn={note => handleSubmit({ reviewNote: note })} disabled={loading} />}
               <div className="bg-white p-5 rounded-xl shadow-none border border-neutral-200 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 [&_label>span:first-child]:mb-1 [&_label>span:first-child]:block [&_label>span:first-child]:text-xs [&_label>span:first-child]:font-bold [&_label>span:first-child]:uppercase [&_label>span:first-child]:tracking-wider [&_label>span:first-child]:text-neutral-500 [&_input]:bg-neutral-50 [&_input]:border-neutral-200 [&_input]:!rounded-xl [&_input]:px-4 [&_input]:py-3 [&_input]:text-sm">
-                <div>
+                <div className="relative z-20">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                       Naziv <b className="text-emerald-700">*</b>
@@ -1779,20 +1781,22 @@ export default function AdminProductModal({
                     <input
                       value={form.name}
                       onChange={(e) => handleChange('name', e.target.value)}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-400 transition-all font-medium"
+                      className={`w-full border rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 transition-all font-medium ${hasExactNameMatch ? '!bg-red-50 !border-red-400 focus:ring-red-200' : 'bg-neutral-50 border-neutral-200 focus:ring-neutral-200 focus:border-neutral-400'}`}
                       placeholder="Unesi naziv proizvoda..."
                     />
                   </label>
                   {!product && form.name.trim().length >= 4 && (
-                    <div className="mt-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-xs" role="status" aria-live="polite">
+                    <div className={`absolute left-0 right-0 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-xl border p-3 text-xs shadow-xl ${hasExactNameMatch ? 'border-red-300 bg-red-100 shadow-red-900/15' : 'border-neutral-200 bg-white shadow-neutral-900/15'}`} role="status" aria-live="polite">
                       {catalogError ? (
                         <p className="font-semibold text-red-700">Provera duplikata trenutno nije dostupna.</p>
                       ) : catalogLoading || checkedName !== form.name.trim() ? (
                         <p className="text-neutral-600">Tražim postojeće artikle sa sličnim nazivom...</p>
                       ) : similarProducts.length ? (
                         <>
-                          <p className="mb-2 font-bold text-amber-800">
-                            {similarProducts.some((match) => match.exact || match.sameModel)
+                          <p className={`mb-2 font-bold ${hasExactNameMatch ? 'text-red-800' : 'text-amber-800'}`}>
+                            {hasExactNameMatch
+                              ? 'Isti naziv već postoji — proveri pre dodavanja'
+                              : similarProducts.some((match) => match.sameModel)
                               ? 'Mogući duplikat — proveri pre dodavanja'
                               : 'Pronađeni su slični artikli'}
                           </p>
