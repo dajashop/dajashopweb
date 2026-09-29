@@ -432,6 +432,14 @@ function AdminDashboardContent() {
 
   // ... (State varijable ostaju iste: activeTab, searchTerm, filters...)
   const [activeTab, setActiveTab] = useState('products');
+  useEffect(() => {
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible' && activeTab === 'products') refreshProducts();
+    };
+    const timer = window.setInterval(refreshIfVisible, 10 * 60 * 1000);
+    window.addEventListener('focus', refreshIfVisible);
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', refreshIfVisible); };
+  }, [activeTab, refreshProducts]);
   const [staffAccess, setStaffAccess] = useState(null);
   const [staffAccessLoaded, setStaffAccessLoaded] = useState(false);
   const isCatalogContributor = Boolean(
@@ -1178,6 +1186,7 @@ function AdminDashboardContent() {
                       <th className="p-4">Brend</th>
                       <th className="p-4">Cena</th>
                       <th className="p-4">Kolekcija</th>
+                      <th className="p-4">Dobavljač</th>
                       <th className="p-4 text-right">Akcije</th>
                     </tr>
                   </thead>
@@ -1265,6 +1274,17 @@ function AdminDashboardContent() {
                           ) : (
                             <td className="p-4 text-neutral-500">{p.category}</td>
                           )}
+                          <td className="p-4 text-xs whitespace-nowrap">
+                            {p.supplierUrl ? (
+                              <div className="flex flex-col gap-1">
+                                <span className={p.supplierStatus === 'missing' ? 'font-bold text-red-700' : p.supplierStatus === 'available' ? 'font-bold text-emerald-700' : 'font-semibold text-amber-700'}>
+                                  {{ available: 'Stranica dostupna', missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[p.supplierStatus] || 'Nije provereno'}
+                                </span>
+                                {p.supplierLastCheckedAt ? <span className="text-neutral-500">{new Date(p.supplierLastCheckedAt).toLocaleString('sr-RS')}</span> : null}
+                                <a href={p.supplierUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori Ekka link</a>
+                              </div>
+                            ) : <span className="text-neutral-400">—</span>}
+                          </td>
 
                           {/* --- AKCIJE --- */}
                           <td className="p-4 text-right">

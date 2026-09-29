@@ -474,6 +474,7 @@ export const adminCatalogApi = {
     const has = (key) => Object.prototype.hasOwnProperty.call(product, key);
     const productPayload = {};
     if (has('name')) productPayload.name = product.name;
+    if (has('supplierUrl')) productPayload.supplierUrl = product.supplierUrl?.trim() || null;
     if (has('slug')) productPayload.slug = product.slug;
     if (has('description'))
       productPayload.description = product.description || '';
