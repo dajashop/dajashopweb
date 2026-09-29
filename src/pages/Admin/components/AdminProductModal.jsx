@@ -305,6 +305,7 @@ export default function AdminProductModal({
     features: [],
     model3DUrl: '',
     supplierUrl: '',
+    bultimeUrl: '',
     slug: '',
     thumbnailUrl: '',
     mainImageUrl: '',
@@ -526,6 +527,7 @@ export default function AdminProductModal({
         features: visibleProductFeatures(product.features),
         model3DUrl: product.model3DUrl || '',
         supplierUrl: product.supplierUrl || '',
+        bultimeUrl: product.bultimeUrl || '',
         department: product.department || 'satovi',
         slug: product.slug || '',
         // [NOVO] Učitavamo postojeće URL-ove ako ih proizvod već ima
@@ -1846,6 +1848,18 @@ export default function AdminProductModal({
                       onChange={(event) => handleChange('supplierUrl', event.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
                       placeholder="https://ekka.rs/proizvodi/..."
+                    />
+                  </label>
+                </div>
+                <div className="order-8 md:col-span-2">
+                  <label className="block">
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Bultime link (interno)</span>
+                    <input
+                      type="url"
+                      value={form.bultimeUrl || ''}
+                      onChange={(event) => handleChange('bultimeUrl', event.target.value)}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
+                      placeholder="https://bultime.bg/index.php?route=product/product&product_id=..."
                     />
                   </label>
                 </div>

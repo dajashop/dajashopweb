@@ -1275,13 +1275,24 @@ function AdminDashboardContent() {
                             <td className="p-4 text-neutral-500">{p.category}</td>
                           )}
                           <td className="p-4 text-xs whitespace-nowrap">
-                            {p.supplierUrl ? (
-                              <div className="flex flex-col gap-1">
+                            {p.supplierUrl || p.bultimeUrl ? (
+                              <div className="flex flex-col gap-2">
+                                {p.supplierUrl ? <div className="flex flex-col gap-1">
+                                <span className="font-bold text-neutral-700">Ekka</span>
                                 <span className={p.supplierStatus === 'missing' ? 'font-bold text-red-700' : p.supplierStatus === 'available' ? 'font-bold text-emerald-700' : 'font-semibold text-amber-700'}>
                                   {{ available: 'Stranica dostupna', missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[p.supplierStatus] || 'Nije provereno'}
                                 </span>
                                 {p.supplierLastCheckedAt ? <span className="text-neutral-500">{new Date(p.supplierLastCheckedAt).toLocaleString('sr-RS')}</span> : null}
                                 <a href={p.supplierUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori Ekka link</a>
+                                </div> : null}
+                                {p.bultimeUrl ? <div className="flex flex-col gap-1 border-t border-neutral-200 pt-1">
+                                  <span className="font-bold text-neutral-700">Bultime</span>
+                                  <span className={p.bultimeStatus === 'missing' || p.bultimeStockStatus === 'out_of_stock' ? 'font-bold text-red-700' : p.bultimeStatus === 'available' ? 'font-bold text-emerald-700' : 'font-semibold text-amber-700'}>
+                                    {p.bultimeStatus === 'available' ? (p.bultimeStockStatus === 'in_stock' ? 'Na stanju kod Bultime' : p.bultimeStockStatus === 'out_of_stock' ? 'Nema na stanju kod Bultime' : 'Stranica dostupna') : ({ missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[p.bultimeStatus] || 'Nije provereno')}
+                                  </span>
+                                  {p.bultimeLastCheckedAt ? <span className="text-neutral-500">{new Date(p.bultimeLastCheckedAt).toLocaleString('sr-RS')}</span> : null}
+                                  <a href={p.bultimeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori Bultime link</a>
+                                </div> : null}
                               </div>
                             ) : <span className="text-neutral-400">—</span>}
                           </td>

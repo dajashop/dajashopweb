@@ -475,6 +475,7 @@ export const adminCatalogApi = {
     const productPayload = {};
     if (has('name')) productPayload.name = product.name;
     if (has('supplierUrl')) productPayload.supplierUrl = product.supplierUrl?.trim() || null;
+    if (has('bultimeUrl')) productPayload.bultimeUrl = product.bultimeUrl?.trim() || null;
     if (has('slug')) productPayload.slug = product.slug;
     if (has('description'))
       productPayload.description = product.description || '';
