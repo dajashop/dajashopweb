@@ -322,6 +322,7 @@ export default function AdminProductModal({
   const [nameFocused, setNameFocused] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [supplierPreviews, setSupplierPreviews] = useState({});
+  const supplierPreviewRequestsRef = useRef(new Map());
   const [priceFocused, setPriceFocused] = useState(false);
   const [eurRsdRate, setEurRsdRate] = useState(null);
   const nameInputRef = useRef(null);
@@ -827,6 +828,9 @@ export default function AdminProductModal({
         return;
       }
     }
+    const requestKey = `${provider}:${url}`;
+    if (supplierPreviewRequestsRef.current.has(requestKey)) return;
+    supplierPreviewRequestsRef.current.set(requestKey, Date.now());
     setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'checking' } }));
     try {
       const result = await adminCatalogApi.previewSupplierLink(provider, url);
@@ -840,6 +844,8 @@ export default function AdminProductModal({
           message: syntacticallyValid ? 'Link je ispravan, ali serverska provera trenutno nije dostupna.' : (error?.message || 'Link nije ispravan'),
         },
       }));
+    } finally {
+      window.setTimeout(() => supplierPreviewRequestsRef.current.delete(requestKey), 1500);
     }
   };
 
