@@ -470,12 +470,20 @@ export const adminCatalogApi = {
     });
     return normalizeProduct(data);
   },
+  async previewSupplierLink(provider, url) {
+    return apiRequest('/supplier-links/preview', {
+      method: 'POST',
+      staff: true,
+      body: { provider, url },
+    });
+  },
   async saveProduct(product) {
     const has = (key) => Object.prototype.hasOwnProperty.call(product, key);
     const productPayload = {};
     if (has('name')) productPayload.name = product.name;
     if (has('supplierUrl')) productPayload.supplierUrl = product.supplierUrl?.trim() || null;
     if (has('bultimeUrl')) productPayload.bultimeUrl = product.bultimeUrl?.trim() || null;
+    if (has('linkelUrl')) productPayload.linkelUrl = product.linkelUrl?.trim() || null;
     if (has('slug')) productPayload.slug = product.slug;
     if (has('description'))
       productPayload.description = product.description || '';

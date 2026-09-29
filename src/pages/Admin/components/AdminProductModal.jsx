@@ -310,6 +310,7 @@ export default function AdminProductModal({
     model3DUrl: '',
     supplierUrl: '',
     bultimeUrl: '',
+    linkelUrl: '',
     slug: '',
     thumbnailUrl: '',
     mainImageUrl: '',
@@ -320,6 +321,7 @@ export default function AdminProductModal({
   const [checkedName, setCheckedName] = useState('');
   const [nameFocused, setNameFocused] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
+  const [supplierPreviews, setSupplierPreviews] = useState({});
   const nameInputRef = useRef(null);
   useEffect(() => {
     const timer = window.setTimeout(() => setCheckedName(form.name.trim()), 250);
@@ -548,6 +550,7 @@ export default function AdminProductModal({
         model3DUrl: product.model3DUrl || '',
         supplierUrl: product.supplierUrl || '',
         bultimeUrl: product.bultimeUrl || '',
+        linkelUrl: product.linkelUrl || '',
         department: product.department || 'satovi',
         slug: product.slug || '',
         // [NOVO] Učitavamo postojeće URL-ove ako ih proizvod već ima
@@ -796,6 +799,21 @@ export default function AdminProductModal({
       }
       return next;
     });
+  };
+
+  const previewSupplier = async (provider, value) => {
+    const url = String(value || '').trim();
+    if (!url) {
+      setSupplierPreviews((previous) => ({ ...previous, [provider]: null }));
+      return;
+    }
+    setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'checking' } }));
+    try {
+      const result = await adminCatalogApi.previewSupplierLink(provider, url);
+      setSupplierPreviews((previous) => ({ ...previous, [provider]: result }));
+    } catch (error) {
+      setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'error', message: error?.message || 'Link nije ispravan' } }));
+    }
   };
 
   const updatePiece = (index, field, value) => {
@@ -1903,6 +1921,20 @@ export default function AdminProductModal({
                       placeholder="0"
                     />
                   </label>
+                  <div className="mt-2 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
+                    <span className="font-semibold">Cene kod dobavljača:</span>{' '}
+                    {[
+                      ['Ekka', 'supplier', product?.supplierPriceAmount, product?.supplierPriceCurrency],
+                      ['Bultime', 'bultime', product?.bultimePriceAmount, product?.bultimePriceCurrency],
+                      ['Linkel', 'linkel', product?.linkelPriceAmount, product?.linkelPriceCurrency],
+                    ].map(([label, provider, savedAmount, savedCurrency], index) => {
+                      const preview = supplierPreviews[provider];
+                      const amount = preview?.priceAmount ?? savedAmount;
+                      const currency = preview?.priceCurrency ?? savedCurrency;
+                      return <span key={provider} className={index ? 'ml-3' : ''}>{label}: {amount !== null && amount !== undefined ? `${Number(amount).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} ${currency || ''}` : '—'}</span>;
+                    })}
+                    <span className="ml-2 text-neutral-400">(ne menja prodajnu cenu)</span>
+                  </div>
                 </div>
                 <div className="order-7">
                   <label className="block">
@@ -1926,9 +1958,29 @@ export default function AdminProductModal({
                       type="url"
                       value={form.supplierUrl || ''}
                       onChange={(event) => handleChange('supplierUrl', event.target.value)}
+                      onBlur={(event) => previewSupplier('ekka', event.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
                       placeholder="https://ekka.rs/proizvodi/..."
                     />
+                    {supplierPreviews.ekka?.status === 'checking' && <span className="mt-1 block text-xs text-neutral-500">Proveravam Ekka link…</span>}
+                    {supplierPreviews.ekka?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">Link je važeći.</span>}
+                    {(supplierPreviews.ekka?.status === 'missing' || supplierPreviews.ekka?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen.</span>}
+                  </label>
+                </div>
+                <div className="order-8 md:col-span-2">
+                  <label className="block">
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Linkel link (interno)</span>
+                    <input
+                      type="url"
+                      value={form.linkelUrl || ''}
+                      onChange={(event) => handleChange('linkelUrl', event.target.value)}
+                      onBlur={(event) => previewSupplier('linkel', event.target.value)}
+                      className={`w-full bg-neutral-50 border rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 ${supplierPreviews.linkel?.status === 'available' ? 'border-emerald-400 focus:ring-emerald-200' : supplierPreviews.linkel?.status === 'missing' || supplierPreviews.linkel?.status === 'error' ? 'border-red-400 focus:ring-red-200' : 'border-neutral-200 focus:ring-neutral-200'}`}
+                      placeholder="https://www.linkel.rs/sr/..."
+                    />
+                    {supplierPreviews.linkel?.status === 'checking' && <span className="mt-1 block text-xs text-neutral-500">Proveravam Linkel link…</span>}
+                    {supplierPreviews.linkel?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">Link je važeći{supplierPreviews.linkel.stockStatus === 'in_stock' ? ' i artikal je na stanju' : supplierPreviews.linkel.stockStatus === 'out_of_stock' ? ', artikal nije na stanju' : ''}.</span>}
+                    {(supplierPreviews.linkel?.status === 'missing' || supplierPreviews.linkel?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen{supplierPreviews.linkel.message ? `: ${supplierPreviews.linkel.message}` : '.'}</span>}
                   </label>
                 </div>
                 <div className="order-8 md:col-span-2">
@@ -1938,9 +1990,13 @@ export default function AdminProductModal({
                       type="url"
                       value={form.bultimeUrl || ''}
                       onChange={(event) => handleChange('bultimeUrl', event.target.value)}
+                      onBlur={(event) => previewSupplier('bultime', event.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
                       placeholder="https://bultime.bg/index.php?route=product/product&product_id=..."
                     />
+                    {supplierPreviews.bultime?.status === 'checking' && <span className="mt-1 block text-xs text-neutral-500">Proveravam Bultime link…</span>}
+                    {supplierPreviews.bultime?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">Link je važeći.</span>}
+                    {(supplierPreviews.bultime?.status === 'missing' || supplierPreviews.bultime?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen.</span>}
                   </label>
                 </div>
               </div>

@@ -1275,13 +1275,14 @@ function AdminDashboardContent() {
                             <td className="p-4 text-neutral-500">{p.category}</td>
                           )}
                           <td className="p-4 text-xs whitespace-nowrap">
-                            {p.supplierUrl || p.bultimeUrl ? (
+                            {p.supplierUrl || p.bultimeUrl || p.linkelUrl ? (
                               <div className="flex items-start gap-4 whitespace-nowrap">
                                 {p.supplierUrl ? <div className="flex min-w-max flex-col gap-1">
                                   <span className="font-bold text-neutral-700">Ekka</span>
                                   <span className={p.supplierStatus === 'missing' ? 'font-bold text-red-700' : p.supplierStatus === 'available' ? 'font-bold text-emerald-700' : 'font-semibold text-amber-700'}>
                                     {{ available: 'Stranica dostupna', missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[p.supplierStatus] || 'Nije provereno'}
                                   </span>
+                                  {p.supplierPriceAmount != null ? <span className="text-neutral-600">Cena: {Number(p.supplierPriceAmount).toLocaleString('sr-RS')} {p.supplierPriceCurrency || ''}</span> : null}
                                   {p.supplierLastCheckedAt ? <span className="text-neutral-500">{new Date(p.supplierLastCheckedAt).toLocaleString('sr-RS')}</span> : null}
                                   <a href={p.supplierUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori Ekka link</a>
                                 </div> : null}
@@ -1290,8 +1291,18 @@ function AdminDashboardContent() {
                                   <span className={p.bultimeStatus === 'missing' || p.bultimeStockStatus === 'out_of_stock' ? 'font-bold text-red-700' : p.bultimeStatus === 'available' ? 'font-bold text-emerald-700' : 'font-semibold text-amber-700'}>
                                     {p.bultimeStatus === 'available' ? (p.bultimeStockStatus === 'in_stock' ? 'Na stanju kod Bultime' : p.bultimeStockStatus === 'out_of_stock' ? 'Nema na stanju kod Bultime' : 'Stranica dostupna') : ({ missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[p.bultimeStatus] || 'Nije provereno')}
                                   </span>
+                                  {p.bultimePriceAmount != null ? <span className="text-neutral-600">Cena: {Number(p.bultimePriceAmount).toLocaleString('sr-RS')} {p.bultimePriceCurrency || ''}</span> : null}
                                   {p.bultimeLastCheckedAt ? <span className="text-neutral-500">{new Date(p.bultimeLastCheckedAt).toLocaleString('sr-RS')}</span> : null}
                                   <a href={p.bultimeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori Bultime link</a>
+                                </div> : null}
+                                {p.linkelUrl ? <div className="flex min-w-max flex-col gap-1 border-l border-neutral-200 pl-4">
+                                  <span className="font-bold text-neutral-700">Linkel</span>
+                                  <span className={p.linkelStatus === 'missing' ? 'font-bold text-red-700' : p.linkelStatus === 'available' ? 'font-bold text-emerald-700' : 'font-semibold text-amber-700'}>
+                                    {p.linkelStatus === 'available' ? (p.linkelStockStatus === 'in_stock' ? 'Na stanju kod Linkel' : p.linkelStockStatus === 'out_of_stock' ? 'Nema na stanju kod Linkel' : 'Stranica dostupna') : ({ missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[p.linkelStatus] || 'Nije provereno')}
+                                  </span>
+                                  {p.linkelPriceAmount != null ? <span className="text-neutral-600">Cena: {Number(p.linkelPriceAmount).toLocaleString('sr-RS')} {p.linkelPriceCurrency || ''}</span> : null}
+                                  {p.linkelLastCheckedAt ? <span className="text-neutral-500">{new Date(p.linkelLastCheckedAt).toLocaleString('sr-RS')}</span> : null}
+                                  <a href={p.linkelUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori Linkel link</a>
                                 </div> : null}
                               </div>
                             ) : <span className="text-neutral-400">—</span>}
