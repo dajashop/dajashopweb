@@ -477,6 +477,9 @@ export const adminCatalogApi = {
       body: { provider, url },
     });
   },
+  async getSupplierExchangeRate() {
+    return apiRequest('/supplier-links/exchange-rate', { staff: true });
+  },
   async saveProduct(product) {
     const has = (key) => Object.prototype.hasOwnProperty.call(product, key);
     const productPayload = {};

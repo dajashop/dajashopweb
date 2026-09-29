@@ -322,6 +322,8 @@ export default function AdminProductModal({
   const [nameFocused, setNameFocused] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [supplierPreviews, setSupplierPreviews] = useState({});
+  const [priceFocused, setPriceFocused] = useState(false);
+  const [eurRsdRate, setEurRsdRate] = useState(null);
   const nameInputRef = useRef(null);
   useEffect(() => {
     const timer = window.setTimeout(() => setCheckedName(form.name.trim()), 250);
@@ -813,6 +815,27 @@ export default function AdminProductModal({
       setSupplierPreviews((previous) => ({ ...previous, [provider]: result }));
     } catch (error) {
       setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'error', message: error?.message || 'Link nije ispravan' } }));
+    }
+  };
+
+  useEffect(() => {
+    if (!product) return;
+    const links = [
+      ['ekka', product.supplierUrl],
+      ['bultime', product.bultimeUrl],
+      ['linkel', product.linkelUrl],
+    ].filter(([, url]) => url);
+    links.forEach(([provider, url]) => { void previewSupplier(provider, url); });
+  }, [product?.id, product?.supplierUrl, product?.bultimeUrl, product?.linkelUrl]);
+
+  const loadExchangeRate = async () => {
+    if (eurRsdRate) return eurRsdRate;
+    try {
+      const result = await adminCatalogApi.getSupplierExchangeRate();
+      setEurRsdRate(Number(result.middleRate));
+      return Number(result.middleRate);
+    } catch {
+      return null;
     }
   };
 
@@ -1908,7 +1931,13 @@ export default function AdminProductModal({
                     />
                   </label>
                 </div>
-                <div className="order-4">
+                <div
+                  className="relative order-4 z-10"
+                  onFocus={() => { setPriceFocused(true); void loadExchangeRate(); }}
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget)) setPriceFocused(false);
+                  }}
+                >
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
                       Cena (RSD) <b className="text-emerald-700">*</b>
@@ -1921,7 +1950,7 @@ export default function AdminProductModal({
                       placeholder="0"
                     />
                   </label>
-                  <div className="mt-2 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
+                  {priceFocused && <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-xl border border-neutral-200 bg-white p-3 text-xs text-neutral-700 shadow-xl">
                     <span className="font-semibold">Cene kod dobavljača:</span>{' '}
                     {[
                       ['Ekka', 'supplier', product?.supplierPriceAmount, product?.supplierPriceCurrency],
@@ -1931,10 +1960,23 @@ export default function AdminProductModal({
                       const preview = supplierPreviews[provider];
                       const amount = preview?.priceAmount ?? savedAmount;
                       const currency = preview?.priceCurrency ?? savedCurrency;
-                      return <span key={provider} className={index ? 'ml-3' : ''}>{label}: {amount !== null && amount !== undefined ? `${Number(amount).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} ${currency || ''}` : '—'}</span>;
+                      let display = '—';
+                      if (amount !== null && amount !== undefined) {
+                        const numeric = Number(amount);
+                        const code = String(currency || 'RSD').toUpperCase();
+                        if (code === 'EUR' && eurRsdRate) {
+                          display = `${(numeric * eurRsdRate).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} RSD · ${numeric.toLocaleString('sr-RS', { maximumFractionDigits: 2 })} EUR`;
+                        } else if (code === 'RSD' && eurRsdRate) {
+                          display = `${numeric.toLocaleString('sr-RS', { maximumFractionDigits: 2 })} RSD · ${(numeric / eurRsdRate).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} EUR`;
+                        } else {
+                          display = `${numeric.toLocaleString('sr-RS', { maximumFractionDigits: 2 })} ${code}`;
+                        }
+                      }
+                      return <span key={provider} className={index ? 'mt-1 block' : 'mt-1 block'}>{label}: {display}</span>;
                     })}
-                    <span className="ml-2 text-neutral-400">(ne menja prodajnu cenu)</span>
-                  </div>
+                    <span className="mt-1 block text-neutral-400">Prikaz: RSD i EUR po trenutnom srednjem kursu NBS. Ne menja prodajnu cenu.</span>
+                    {!eurRsdRate && <span className="mt-1 block text-neutral-500">Učitavam kurs…</span>}
+                  </div>}
                 </div>
                 <div className="order-7">
                   <label className="block">
