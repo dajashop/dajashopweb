@@ -24,6 +24,7 @@ import FlashModal from '../../../components/modals/FlashModal.jsx';
 import ImageGalleryModal from '../../../components/modals/ImageGalleryModal.jsx';
 import ImageManager from './ImageManager.jsx';
 import { generateSlug } from '../utils/generators.js';
+import { findSimilarProducts } from '../utils/productNameSimilarity.js';
 import CustomSelect from './CustomSelect.jsx';
 import ProductOperationsPanel from './ProductOperationsPanel.jsx';
 import WorkforceReviewNotes from './WorkforceReviewNotes.jsx';
@@ -234,6 +235,9 @@ function SpecificationKeySelect({ value, onChange, options, selectedValues, plac
  */
 export default function AdminProductModal({
   product,
+  existingProducts = [],
+  catalogLoading = false,
+  catalogError,
   onClose,
   onSuccess,
   reviewContext,
@@ -313,6 +317,15 @@ export default function AdminProductModal({
     active: true,
     published: true,
   });
+  const [checkedName, setCheckedName] = useState('');
+  useEffect(() => {
+    const timer = window.setTimeout(() => setCheckedName(form.name.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [form.name]);
+  const similarProducts = useMemo(
+    () => product ? [] : findSimilarProducts(checkedName, existingProducts),
+    [checkedName, existingProducts, product],
+  );
   const initialProductDraftRef = useRef(productDraft);
   const skipInitialDraftSyncRef = useRef(Boolean(productDraft));
   const successfullySavedRef = useRef(false);
@@ -1770,6 +1783,43 @@ export default function AdminProductModal({
                       placeholder="Unesi naziv proizvoda..."
                     />
                   </label>
+                  {!product && form.name.trim().length >= 4 && (
+                    <div className="mt-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-xs" role="status" aria-live="polite">
+                      {catalogError ? (
+                        <p className="font-semibold text-red-700">Provera duplikata trenutno nije dostupna.</p>
+                      ) : catalogLoading || checkedName !== form.name.trim() ? (
+                        <p className="text-neutral-600">Tražim postojeće artikle sa sličnim nazivom...</p>
+                      ) : similarProducts.length ? (
+                        <>
+                          <p className="mb-2 font-bold text-amber-800">
+                            {similarProducts.some((match) => match.exact || match.sameModel)
+                              ? 'Mogući duplikat — proveri pre dodavanja'
+                              : 'Pronađeni su slični artikli'}
+                          </p>
+                          <ul className="space-y-2">
+                            {similarProducts.map(({ product: existing, exact, sameModel }) => (
+                              <li key={existing.id} className="flex items-start justify-between gap-2 border-t border-neutral-200 pt-2">
+                                <div className="min-w-0">
+                                  <span className="block font-semibold text-neutral-800">{existing.name}</span>
+                                  <span className="text-neutral-500">
+                                    {exact ? 'Isti naziv' : sameModel ? 'Ista šifra/model' : 'Sličan naziv'}
+                                    {existing.sku ? ` · SKU: ${existing.sku}` : ''}
+                                  </span>
+                                </div>
+                                {existing.slug && existing.active !== false && existing.published !== false && (
+                                  <a href={`/product/${encodeURIComponent(existing.slug)}`} target="_blank" rel="noopener noreferrer" className="shrink-0 font-semibold text-blue-700 underline">
+                                    Otvori
+                                  </a>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      ) : (
+                        <p className="font-semibold text-emerald-700">Nema sličnih artikala u učitanom katalogu.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block">

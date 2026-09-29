@@ -425,7 +425,7 @@ function AdminDashboardContent() {
   const { user } = useAuth();
   // The public realtime signal carries the changed product ID. The admin hook
   // then loads only that product through its authenticated catalog API.
-  const { items: products, refresh: refreshProducts } = useProducts({
+  const { items: products, loading: productsLoading, err: productsError, refresh: refreshProducts } = useProducts({
     admin: true,
     publicRealtime: true,
   });
@@ -2363,6 +2363,9 @@ function AdminDashboardContent() {
         {modalOpen && (
           <AdminProductModal
             product={editProduct}
+            existingProducts={products}
+            catalogLoading={productsLoading}
+            catalogError={productsError}
             draft={!editProduct && restoreProductDraft ? productDraft?.payload : null}
             onDraftChange={draftSessionActive ? saveProductDraft : undefined}
             onClose={() => {
