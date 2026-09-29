@@ -337,6 +337,8 @@ export default function AdminProductModal({
     ? similarProducts
     : [];
   const hasExactNameMatch = currentNameMatches.some((match) => match.exact);
+  const isWatchDepartment = form.department === 'satovi';
+  const isLinkelDepartment = form.department === 'baterije' || form.department === 'daljinski';
   const initialProductDraftRef = useRef(productDraft);
   const skipInitialDraftSyncRef = useRef(Boolean(productDraft));
   const successfullySavedRef = useRef(false);
@@ -779,6 +781,11 @@ export default function AdminProductModal({
         next.brandId = null;
         next.category = '';
         next.primaryCategoryId = null;
+        if (value !== 'satovi') {
+          next.supplierUrl = '';
+          next.bultimeUrl = '';
+        }
+        if (value !== 'baterije' && value !== 'daljinski') next.linkelUrl = '';
       }
       if (field === 'brand') {
         next.brandId = value
@@ -1952,11 +1959,12 @@ export default function AdminProductModal({
                   </label>
                   {priceFocused && <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-xl border border-neutral-200 bg-white p-3 text-xs text-neutral-700 shadow-xl">
                     <span className="font-semibold">Cene kod dobavljača:</span>{' '}
-                    {[
+                    {(isWatchDepartment ? [
                       ['Ekka', 'supplier', product?.supplierPriceAmount, product?.supplierPriceCurrency],
                       ['Bultime', 'bultime', product?.bultimePriceAmount, product?.bultimePriceCurrency],
+                    ] : isLinkelDepartment ? [
                       ['Linkel', 'linkel', product?.linkelPriceAmount, product?.linkelPriceCurrency],
-                    ].map(([label, provider, savedAmount, savedCurrency], index) => {
+                    ] : []).map(([label, provider, savedAmount, savedCurrency], index) => {
                       const preview = supplierPreviews[provider];
                       const amount = preview?.priceAmount ?? savedAmount;
                       const currency = preview?.priceCurrency ?? savedCurrency;
@@ -1993,7 +2001,7 @@ export default function AdminProductModal({
                     />
                   </label>
                 </div>
-                <div className="order-8 md:col-span-2">
+                {isWatchDepartment && <div className="order-8 md:col-span-2">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Ekka link (interno)</span>
                     <input
@@ -2008,8 +2016,8 @@ export default function AdminProductModal({
                     {supplierPreviews.ekka?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">Link je važeći.</span>}
                     {(supplierPreviews.ekka?.status === 'missing' || supplierPreviews.ekka?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen.</span>}
                   </label>
-                </div>
-                <div className="order-8 md:col-span-2">
+                </div>}
+                {isLinkelDepartment && <div className="order-8 md:col-span-2">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Linkel link (interno)</span>
                     <input
@@ -2024,8 +2032,8 @@ export default function AdminProductModal({
                     {supplierPreviews.linkel?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">Link je važeći{supplierPreviews.linkel.stockStatus === 'in_stock' ? ' i artikal je na stanju' : supplierPreviews.linkel.stockStatus === 'out_of_stock' ? ', artikal nije na stanju' : ''}.</span>}
                     {(supplierPreviews.linkel?.status === 'missing' || supplierPreviews.linkel?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen{supplierPreviews.linkel.message ? `: ${supplierPreviews.linkel.message}` : '.'}</span>}
                   </label>
-                </div>
-                <div className="order-8 md:col-span-2">
+                </div>}
+                {isWatchDepartment && <div className="order-8 md:col-span-2">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">Bultime link (interno)</span>
                     <input
@@ -2040,7 +2048,7 @@ export default function AdminProductModal({
                     {supplierPreviews.bultime?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">Link je važeći.</span>}
                     {(supplierPreviews.bultime?.status === 'missing' || supplierPreviews.bultime?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen.</span>}
                   </label>
-                </div>
+                </div>}
               </div>
 
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 grid grid-cols-1 md:grid-cols-3 gap-6">
