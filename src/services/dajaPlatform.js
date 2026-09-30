@@ -487,6 +487,9 @@ export const adminCatalogApi = {
     if (has('supplierUrl')) productPayload.supplierUrl = product.supplierUrl?.trim() || null;
     if (has('bultimeUrl')) productPayload.bultimeUrl = product.bultimeUrl?.trim() || null;
     if (has('linkelUrl')) productPayload.linkelUrl = product.linkelUrl?.trim() || null;
+    if (has('milanoUrl')) productPayload.milanoUrl = product.milanoUrl?.trim() || null;
+    if (has('timezoneUrl')) productPayload.timezoneUrl = product.timezoneUrl?.trim() || null;
+    if (has('qandqUrl')) productPayload.qandqUrl = product.qandqUrl?.trim() || null;
     if (has('slug')) productPayload.slug = product.slug;
     if (has('description'))
       productPayload.description = product.description || '';

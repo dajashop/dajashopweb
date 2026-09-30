@@ -1276,7 +1276,7 @@ function AdminDashboardContent() {
                             <td className="p-4 text-neutral-500">{p.category}</td>
                           )}
                           <td className="p-4 text-xs whitespace-nowrap">
-                            {p.supplierUrl || p.bultimeUrl || p.linkelUrl ? (
+                            {p.supplierUrl || p.bultimeUrl || p.linkelUrl || p.milanoUrl || p.timezoneUrl || p.qandqUrl ? (
                               <div className="flex items-start gap-4 whitespace-nowrap">
                                 {p.supplierUrl ? <div className="flex min-w-max flex-col gap-1">
                                   <span className="font-bold text-neutral-700">Ekka</span>
@@ -1305,6 +1305,17 @@ function AdminDashboardContent() {
                                   {p.linkelLastCheckedAt ? <span className="text-neutral-500">{new Date(p.linkelLastCheckedAt).toLocaleString('sr-RS')}</span> : null}
                                   <a href={p.linkelUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori Linkel link</a>
                                 </div> : null}
+                                {[
+                                  ['milano', 'Milano Group'], ['timezone', 'Timezone'], ['qandq', 'Q&Q Casio'],
+                                ].map(([provider, label]) => p[`${provider}Url`] ? <div key={provider} className="flex min-w-max flex-col gap-1 border-l border-neutral-200 pl-4">
+                                  <span className="font-bold text-neutral-700">{label}</span>
+                                  <span className={p[`${provider}Status`] === 'available' ? 'font-bold text-emerald-700' : p[`${provider}Status`] === 'missing' ? 'font-bold text-red-700' : 'font-semibold text-amber-700'}>
+                                    {p[`${provider}Status`] === 'available' ? (p[`${provider}StockStatus`] === 'in_stock' ? 'Na stanju kod dobavljača' : p[`${provider}StockStatus`] === 'out_of_stock' ? 'Nema na stanju kod dobavljača' : 'Stranica dostupna') : ({ missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[p[`${provider}Status`]] || 'Nije provereno')}
+                                  </span>
+                                  {p[`${provider}PriceAmount`] != null ? <span className="text-neutral-600">Cena: {Number(p[`${provider}PriceAmount`]).toLocaleString('sr-RS')} {p[`${provider}PriceCurrency`] || ''}</span> : null}
+                                  {p[`${provider}LastCheckedAt`] ? <span className="text-neutral-500">{new Date(p[`${provider}LastCheckedAt`]).toLocaleString('sr-RS')}</span> : null}
+                                  <a href={p[`${provider}Url`]} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori {label} link</a>
+                                </div> : null)}
                               </div>
                             ) : <span className="text-neutral-400">—</span>}
                           </td>

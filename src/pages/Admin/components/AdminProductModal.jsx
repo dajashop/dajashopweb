@@ -317,6 +317,9 @@ export default function AdminProductModal({
     supplierUrl: '',
     bultimeUrl: '',
     linkelUrl: '',
+    milanoUrl: '',
+    timezoneUrl: '',
+    qandqUrl: '',
     slug: '',
     thumbnailUrl: '',
     mainImageUrl: '',
@@ -345,6 +348,7 @@ export default function AdminProductModal({
     : [];
   const hasExactNameMatch = currentNameMatches.some((match) => match.exact);
   const isWatchDepartment = form.department === 'satovi';
+  const isEyewearDepartment = form.department === 'naocare';
   const isLinkelDepartment = form.department === 'baterije' || form.department === 'daljinski';
   const initialProductDraftRef = useRef(productDraft);
   const skipInitialDraftSyncRef = useRef(Boolean(productDraft));
@@ -562,6 +566,9 @@ export default function AdminProductModal({
         supplierUrl: product.supplierUrl || '',
         bultimeUrl: product.bultimeUrl || '',
         linkelUrl: product.linkelUrl || '',
+        milanoUrl: product.milanoUrl || '',
+        timezoneUrl: product.timezoneUrl || '',
+        qandqUrl: product.qandqUrl || '',
         department: product.department || 'satovi',
         slug: product.slug || '',
         // [NOVO] Učitavamo postojeće URL-ove ako ih proizvod već ima
@@ -766,7 +773,7 @@ export default function AdminProductModal({
   }, []);
 
   const handleChange = (field, value) => {
-    const provider = { supplierUrl: 'ekka', bultimeUrl: 'bultime', linkelUrl: 'linkel' }[field];
+    const provider = { supplierUrl: 'ekka', bultimeUrl: 'bultime', linkelUrl: 'linkel', milanoUrl: 'milano', timezoneUrl: 'timezone', qandqUrl: 'qandq' }[field];
     if (provider) {
       supplierPreviewUrlRef.current[provider] = String(value || '').trim();
       setSupplierPreviews((previous) => ({ ...previous, [provider]: null }));
@@ -796,8 +803,11 @@ export default function AdminProductModal({
         if (value !== 'satovi') {
           next.supplierUrl = '';
           next.bultimeUrl = '';
+          next.timezoneUrl = '';
+          next.qandqUrl = '';
         }
         if (value !== 'baterije' && value !== 'daljinski') next.linkelUrl = '';
+        if (value !== 'naocare') next.milanoUrl = '';
       }
       if (field === 'brand') {
         next.brandId = value
@@ -893,9 +903,12 @@ export default function AdminProductModal({
       ['ekka', product.supplierUrl],
       ['bultime', product.bultimeUrl],
       ['linkel', product.linkelUrl],
+      ['milano', product.milanoUrl],
+      ['timezone', product.timezoneUrl],
+      ['qandq', product.qandqUrl],
     ].filter(([, url]) => url);
     links.forEach(([provider, url]) => { void previewSupplier(provider, url); });
-  }, [product?.id, product?.supplierUrl, product?.bultimeUrl, product?.linkelUrl]);
+  }, [product?.id, product?.supplierUrl, product?.bultimeUrl, product?.linkelUrl, product?.milanoUrl, product?.timezoneUrl, product?.qandqUrl]);
 
   const loadExchangeRate = async () => {
     if (eurRsdRate) return eurRsdRate;
@@ -2024,8 +2037,12 @@ export default function AdminProductModal({
                     {(isWatchDepartment ? [
                       ['Ekka', 'supplier', product?.supplierPriceAmount, product?.supplierPriceCurrency],
                       ['Bultime', 'bultime', product?.bultimePriceAmount, product?.bultimePriceCurrency],
+                      ['Timezone', 'timezone', product?.timezonePriceAmount, product?.timezonePriceCurrency],
+                      ['Q&Q Casio', 'qandq', product?.qandqPriceAmount, product?.qandqPriceCurrency],
                     ] : isLinkelDepartment ? [
                       ['Linkel', 'linkel', product?.linkelPriceAmount, product?.linkelPriceCurrency],
+                    ] : isEyewearDepartment ? [
+                      ['Milano Group', 'milano', product?.milanoPriceAmount, product?.milanoPriceCurrency],
                     ] : []).map(([label, provider, savedAmount, savedCurrency], index) => {
                       const preview = supplierPreviews[provider];
                       const amount = preview?.priceAmount ?? savedAmount;
@@ -2112,6 +2129,26 @@ export default function AdminProductModal({
                     {(supplierPreviews.bultime?.status === 'missing' || supplierPreviews.bultime?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen.</span>}
                   </label>
                 </div>}
+                {[
+                  ...(isEyewearDepartment ? [['milano', 'Milano Group', 'https://milanogroup.eu/shop/...']] : []),
+                  ...(isWatchDepartment ? [['timezone', 'Timezone', 'https://timezone-bg.com/product/...'], ['qandq', 'Q&Q Casio', 'https://www.qandq-casio.com/product.php?id=19894']] : []),
+                ].map(([provider, label, placeholder]) => {
+                  const result = supplierPreviews[provider];
+                  return <div key={provider} className="order-8 md:col-span-2">
+                    <label className="block">
+                      <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">{label} link (interno)</span>
+                      <input type="url" value={form[`${provider}Url`] || ''}
+                        onChange={(event) => handleChange(`${provider}Url`, event.target.value)}
+                        onBlur={(event) => previewSupplier(provider, event.target.value)}
+                        className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
+                        placeholder={placeholder} />
+                      {result?.status === 'checking' && <span className="mt-1 block text-xs text-neutral-500">Proveravam link…</span>}
+                      {result?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">{result.stockStatus === 'in_stock' ? 'Na stanju kod dobavljača' : result.stockStatus === 'out_of_stock' ? 'Nema na stanju kod dobavljača' : 'Stranica dostupna'}{result.priceAmount != null ? ` · ${result.priceAmount} ${result.priceCurrency || ''}` : ''}</span>}
+                      {result?.status === 'unverified' && <span className="mt-1 block text-xs text-amber-700">{result.message || 'Link je sačuvan; provera trenutno nije dostupna.'}</span>}
+                      {(result?.status === 'missing' || result?.status === 'error') && <span className="mt-1 block text-xs text-red-700">{result.message || 'Stranica nije potvrđena.'}</span>}
+                    </label>
+                  </div>;
+                })}
               </div>
 
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100 grid grid-cols-1 md:grid-cols-3 gap-6">
