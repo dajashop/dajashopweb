@@ -5,7 +5,7 @@ const names = {
   ekka: 'Ekka',
   bultime: 'Bultime',
   timezone: 'Timezone',
-  qandq: 'Stilius (Q&Q Casio)',
+  qandq: 'Stilius',
 };
 const date = (value) =>
   value

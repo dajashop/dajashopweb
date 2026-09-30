@@ -2056,7 +2056,7 @@ export default function AdminProductModal({
                       ['Ekka', 'supplier', product?.supplierPriceAmount, product?.supplierPriceCurrency],
                       ['Bultime', 'bultime', product?.bultimePriceAmount, product?.bultimePriceCurrency],
                       ['Timezone', 'timezone', product?.timezonePriceAmount, product?.timezonePriceCurrency],
-                      ['Q&Q Casio', 'qandq', product?.qandqPriceAmount, product?.qandqPriceCurrency],
+                      ['Stilius', 'qandq', product?.qandqPriceAmount, product?.qandqPriceCurrency],
                     ] : isLinkelDepartment ? [
                       ['Linkel', 'linkel', product?.linkelPriceAmount, product?.linkelPriceCurrency],
                     ] : isEyewearDepartment ? [
@@ -2149,7 +2149,7 @@ export default function AdminProductModal({
                 </div>}
                 {[
                   ...(isEyewearDepartment ? [['milano', 'Milano Group', 'https://milanogroup.eu/shop/...']] : []),
-                  ...(isWatchDepartment ? [['timezone', 'Timezone', 'https://timezone-bg.com/product/...'], ['qandq', 'Q&Q Casio', 'https://www.qandq-casio.com/product.php?id=19894']] : []),
+                  ...(isWatchDepartment ? [['timezone', 'Timezone', 'https://timezone-bg.com/product/...'], ['qandq', 'Stilius', 'https://www.qandq-casio.com/product.php?id=19894']] : []),
                 ].map(([provider, label, placeholder]) => {
                   const result = supplierPreviews[provider];
                   return <div key={provider} className="order-8 md:col-span-2">

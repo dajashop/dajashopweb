@@ -92,7 +92,7 @@ const SUPPLIER_PROVIDERS = [
   ['linkel', 'Linkel'],
   ['milano', 'Milano'],
   ['timezone', 'Timezone'],
-  ['qandq', 'Q&Q Casio'],
+  ['qandq', 'Stilius'],
 ];
 
 function SupplierCountdown({ nextCheckAt }) {
@@ -103,12 +103,13 @@ function SupplierCountdown({ nextCheckAt }) {
 
   useEffect(() => {
     if (!Number.isFinite(target)) return undefined;
+    setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), showDays ? 60_000 : 1_000);
     return () => window.clearInterval(timer);
   }, [nextCheckAt, showDays]);
 
   if (remaining === null) return null;
-  if (showDays) return <span className="text-neutral-500">{Math.ceil(remaining / 86_400_000)}d</span>;
+  if (showDays) return <span className="text-neutral-500">{Math.floor(remaining / 86_400_000)}d</span>;
   if (remaining >= 3_600_000) return <span className="text-neutral-500">{Math.floor(remaining / 3_600_000)}h</span>;
   if (remaining >= 60_000) return <span className="text-neutral-500">{Math.floor(remaining / 60_000)}m</span>;
   return <span className="text-neutral-500">{Math.ceil(remaining / 1_000)}s</span>;
@@ -144,11 +145,14 @@ function SupplierLinkSummary({ product, provider, label, withDivider, canWrite }
       {number != null && <span title="Redni broj u desetodnevnom ciklusu" className="font-normal text-neutral-500">#{number}</span>}
       {amount != null && <span className="font-normal text-neutral-600">{Number(amount).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} {currency || ''}</span>}
     </div>
-    <span className={`font-semibold ${stock === 'out_of_stock' || status === 'missing' ? 'text-red-700' : status === 'available' ? 'text-emerald-700' : 'text-amber-700'}`}>{statusText}</span>
+    <div className="flex items-baseline gap-2">
+      <span className={`font-semibold ${stock === 'out_of_stock' || status === 'missing' ? 'text-red-700' : status === 'available' ? 'text-emerald-700' : 'text-amber-700'}`}>{statusText}</span>
+      <SupplierCountdown nextCheckAt={product[`${provider}NextCheckAt`]} />
+    </div>
     {reason && <span className="whitespace-normal text-neutral-500">{reason}</span>}
     {status !== 'available' && stock == null && <span className="text-neutral-500">Stanje zaliha nepoznato</span>}
-    {product[`${provider}LastCheckedAt`] && <span className="text-neutral-500">Provereno: {supplierDate(product[`${provider}LastCheckedAt`])}</span>}
-    {product[`${provider}NextCheckAt`] && <span className="text-neutral-500">Sledeća: {supplierDate(product[`${provider}NextCheckAt`])} <SupplierCountdown nextCheckAt={product[`${provider}NextCheckAt`]} /></span>}
+    {product[`${provider}LastCheckedAt`] && <span title="Poslednja provera" className="text-neutral-500">{supplierDate(product[`${provider}LastCheckedAt`])}</span>}
+    {product[`${provider}NextCheckAt`] && <span title="Sledeća provera" className="text-neutral-500">{supplierDate(product[`${provider}NextCheckAt`])}</span>}
     {product[`${provider}ConfirmationDueAt`] && <span className="text-amber-700">Potvrda: {supplierDate(product[`${provider}ConfirmationDueAt`])}</span>}
     {paused && <span className="text-amber-700">Pauza do {supplierDate(paused)} · {product[`${provider}PauseReason`]}</span>}
     {status !== 'available' && product[`${provider}LastGoodResult`]?.checkedAt && <span className="text-neutral-500">Poslednja dobra: {supplierDate(product[`${provider}LastGoodResult`].checkedAt)}</span>}
