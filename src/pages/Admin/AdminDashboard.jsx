@@ -84,6 +84,57 @@ const generateSlug = (text) => {
     .replace(/\-\-+/g, '-');
 };
 
+const SUPPLIER_PROVIDERS = [
+  ['supplier', 'Ekka'],
+  ['bultime', 'Bultime'],
+  ['linkel', 'Linkel'],
+  ['milano', 'Milano Group'],
+  ['timezone', 'Timezone'],
+  ['qandq', 'Q&Q Casio'],
+];
+
+function SupplierCountdown({ nextCheckAt }) {
+  const [now, setNow] = useState(Date.now());
+  const target = Date.parse(nextCheckAt || '');
+  const remaining = Number.isFinite(target) ? Math.max(0, target - now) : null;
+  const showDays = remaining !== null && remaining >= 24 * 60 * 60 * 1000;
+
+  useEffect(() => {
+    if (!Number.isFinite(target)) return undefined;
+    const timer = window.setInterval(() => setNow(Date.now()), showDays ? 60_000 : 1_000);
+    return () => window.clearInterval(timer);
+  }, [nextCheckAt, showDays]);
+
+  if (remaining === null) return null;
+  const seconds = Math.ceil(remaining / 1000);
+  if (showDays) return <span className="text-neutral-500">{Math.ceil(seconds / 86400)}d</span>;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return <span className="text-neutral-500">{hours}h {minutes}m {seconds % 60}s</span>;
+}
+
+function SupplierLinkSummary({ product, provider, label, withDivider }) {
+  const url = product[`${provider}Url`];
+  if (!url) return null;
+  const status = product[`${provider}Status`];
+  const stock = product[`${provider}StockStatus`];
+  const amount = product[`${provider}PriceAmount`];
+  const currency = product[`${provider}PriceCurrency`];
+  const statusText = status === 'available'
+    ? stock === 'in_stock' ? 'Na stanju' : stock === 'out_of_stock' ? 'Nema na stanju' : 'Stranica dostupna'
+    : ({ missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[status] || 'Nije provereno');
+  const statusColor = status === 'missing' || stock === 'out_of_stock'
+    ? 'text-red-700' : status === 'available' ? 'text-emerald-700' : 'text-amber-700';
+  return <div className={`flex min-w-max flex-col gap-1 ${withDivider ? 'border-l border-neutral-200 pl-4' : ''}`}>
+    <div className="flex items-baseline gap-2 font-bold">
+      <a href={url} target="_blank" rel="noopener noreferrer" className="text-neutral-700 hover:text-blue-700 hover:underline">{label}</a>
+      {amount != null && <span className="font-normal text-neutral-600">{Number(amount).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} {currency || ''}</span>}
+    </div>
+    <span className={`font-semibold ${statusColor}`}>{statusText}</span>
+    <SupplierCountdown nextCheckAt={product[`${provider}NextCheckAt`]} />
+  </div>;
+}
+
 const AUDIT_OPERATION_LABELS = {
   create: 'Dodat artikal',
   update: 'Izmenjen artikal',
@@ -440,6 +491,19 @@ function AdminDashboardContent() {
     window.addEventListener('focus', refreshIfVisible);
     return () => { window.clearInterval(timer); window.removeEventListener('focus', refreshIfVisible); };
   }, [activeTab, refreshProducts]);
+  useEffect(() => {
+    if (activeTab !== 'products') return undefined;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== 'visible' || productsLoading) return;
+      const due = products.some((product) => SUPPLIER_PROVIDERS.some(([provider]) => {
+        if (!product[`${provider}Url`]) return false;
+        const next = Date.parse(product[`${provider}NextCheckAt`] || '');
+        return Number.isFinite(next) && next + 20_000 <= Date.now();
+      }));
+      if (due) refreshProducts();
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [activeTab, products, productsLoading, refreshProducts]);
   const [staffAccess, setStaffAccess] = useState(null);
   const [staffAccessLoaded, setStaffAccessLoaded] = useState(false);
   const isCatalogContributor = Boolean(
@@ -1276,46 +1340,11 @@ function AdminDashboardContent() {
                             <td className="p-4 text-neutral-500">{p.category}</td>
                           )}
                           <td className="p-4 text-xs whitespace-nowrap">
-                            {p.supplierUrl || p.bultimeUrl || p.linkelUrl || p.milanoUrl || p.timezoneUrl || p.qandqUrl ? (
+                            {SUPPLIER_PROVIDERS.some(([provider]) => p[`${provider}Url`]) ? (
                               <div className="flex items-start gap-4 whitespace-nowrap">
-                                {p.supplierUrl ? <div className="flex min-w-max flex-col gap-1">
-                                  <span className="font-bold text-neutral-700">Ekka</span>
-                                  <span className={p.supplierStatus === 'missing' ? 'font-bold text-red-700' : p.supplierStatus === 'available' ? 'font-bold text-emerald-700' : 'font-semibold text-amber-700'}>
-                                    {{ available: 'Stranica dostupna', missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[p.supplierStatus] || 'Nije provereno'}
-                                  </span>
-                                  {p.supplierPriceAmount != null ? <span className="text-neutral-600">Cena: {Number(p.supplierPriceAmount).toLocaleString('sr-RS')} {p.supplierPriceCurrency || ''}</span> : null}
-                                  {p.supplierLastCheckedAt ? <span className="text-neutral-500">{new Date(p.supplierLastCheckedAt).toLocaleString('sr-RS')}</span> : null}
-                                  <a href={p.supplierUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori Ekka link</a>
-                                </div> : null}
-                                {p.bultimeUrl ? <div className={`flex min-w-max flex-col gap-1 ${p.supplierUrl ? 'border-l border-neutral-200 pl-4' : ''}`}>
-                                  <span className="font-bold text-neutral-700">Bultime</span>
-                                  <span className={p.bultimeStatus === 'missing' || p.bultimeStockStatus === 'out_of_stock' ? 'font-bold text-red-700' : p.bultimeStatus === 'available' ? 'font-bold text-emerald-700' : 'font-semibold text-amber-700'}>
-                                    {p.bultimeStatus === 'available' ? (p.bultimeStockStatus === 'in_stock' ? 'Na stanju kod Bultime' : p.bultimeStockStatus === 'out_of_stock' ? 'Nema na stanju kod Bultime' : 'Stranica dostupna') : ({ missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[p.bultimeStatus] || 'Nije provereno')}
-                                  </span>
-                                  {p.bultimePriceAmount != null ? <span className="text-neutral-600">Cena: {Number(p.bultimePriceAmount).toLocaleString('sr-RS')} {p.bultimePriceCurrency || ''}</span> : null}
-                                  {p.bultimeLastCheckedAt ? <span className="text-neutral-500">{new Date(p.bultimeLastCheckedAt).toLocaleString('sr-RS')}</span> : null}
-                                  <a href={p.bultimeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori Bultime link</a>
-                                </div> : null}
-                                {p.linkelUrl ? <div className="flex min-w-max flex-col gap-1 border-l border-neutral-200 pl-4">
-                                  <span className="font-bold text-neutral-700">Linkel</span>
-                                  <span className={p.linkelStatus === 'missing' ? 'font-bold text-red-700' : p.linkelStatus === 'available' ? 'font-bold text-emerald-700' : 'font-semibold text-amber-700'}>
-                                    {p.linkelStatus === 'available' ? (p.linkelStockStatus === 'in_stock' ? 'Na stanju kod Linkel' : p.linkelStockStatus === 'out_of_stock' ? 'Nema na stanju kod Linkel' : 'Stranica dostupna') : ({ missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[p.linkelStatus] || 'Nije provereno')}
-                                  </span>
-                                  {p.linkelPriceAmount != null ? <span className="text-neutral-600">Cena: {Number(p.linkelPriceAmount).toLocaleString('sr-RS')} {p.linkelPriceCurrency || ''}</span> : null}
-                                  {p.linkelLastCheckedAt ? <span className="text-neutral-500">{new Date(p.linkelLastCheckedAt).toLocaleString('sr-RS')}</span> : null}
-                                  <a href={p.linkelUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori Linkel link</a>
-                                </div> : null}
-                                {[
-                                  ['milano', 'Milano Group'], ['timezone', 'Timezone'], ['qandq', 'Q&Q Casio'],
-                                ].map(([provider, label]) => p[`${provider}Url`] ? <div key={provider} className="flex min-w-max flex-col gap-1 border-l border-neutral-200 pl-4">
-                                  <span className="font-bold text-neutral-700">{label}</span>
-                                  <span className={p[`${provider}Status`] === 'available' ? 'font-bold text-emerald-700' : p[`${provider}Status`] === 'missing' ? 'font-bold text-red-700' : 'font-semibold text-amber-700'}>
-                                    {p[`${provider}Status`] === 'available' ? (p[`${provider}StockStatus`] === 'in_stock' ? 'Na stanju kod dobavljača' : p[`${provider}StockStatus`] === 'out_of_stock' ? 'Nema na stanju kod dobavljača' : 'Stranica dostupna') : ({ missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[p[`${provider}Status`]] || 'Nije provereno')}
-                                  </span>
-                                  {p[`${provider}PriceAmount`] != null ? <span className="text-neutral-600">Cena: {Number(p[`${provider}PriceAmount`]).toLocaleString('sr-RS')} {p[`${provider}PriceCurrency`] || ''}</span> : null}
-                                  {p[`${provider}LastCheckedAt`] ? <span className="text-neutral-500">{new Date(p[`${provider}LastCheckedAt`]).toLocaleString('sr-RS')}</span> : null}
-                                  <a href={p[`${provider}Url`]} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Otvori {label} link</a>
-                                </div> : null)}
+                                {SUPPLIER_PROVIDERS.filter(([provider]) => p[`${provider}Url`]).map(([provider, label], index) => (
+                                  <SupplierLinkSummary key={provider} product={p} provider={provider} label={label} withDivider={index > 0} />
+                                ))}
                               </div>
                             ) : <span className="text-neutral-400">—</span>}
                           </td>
