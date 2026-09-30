@@ -327,7 +327,9 @@ export default function AdminProductModal({
     active: true,
     published: true,
   });
-  const [checkedName, setCheckedName] = useState('');
+  const [nameCheck, setNameCheck] = useState({ name: '', matches: [], unavailable: false });
+  const nameCheckRef = useRef(nameCheck);
+  const nameCheckTimerRef = useRef(null);
   const [nameFocused, setNameFocused] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [supplierPreviews, setSupplierPreviews] = useState({});
@@ -335,17 +337,26 @@ export default function AdminProductModal({
   const [priceFocused, setPriceFocused] = useState(false);
   const [eurRsdRate, setEurRsdRate] = useState(null);
   const nameInputRef = useRef(null);
+  const checkProductName = (value) => {
+    if (successfullySavedRef.current) return;
+    const name = String(value || '').trim();
+    const result = {
+      name,
+      matches: !product && !catalogLoading && !catalogError
+        ? findSimilarProducts(name, existingProducts)
+        : [],
+      unavailable: Boolean(catalogLoading || catalogError),
+    };
+    nameCheckRef.current = result;
+    setNameCheck(result);
+  };
   useEffect(() => {
-    const timer = window.setTimeout(() => setCheckedName(form.name.trim()), 250);
-    return () => window.clearTimeout(timer);
+    nameCheckTimerRef.current = window.setTimeout(() => checkProductName(form.name), 250);
+    return () => window.clearTimeout(nameCheckTimerRef.current);
+    // A catalog refresh must not recheck the name or include the product just saved.
   }, [form.name]);
-  const similarProducts = useMemo(
-    () => product ? [] : findSimilarProducts(checkedName, existingProducts),
-    [checkedName, existingProducts, product],
-  );
-  const currentNameMatches = checkedName === form.name.trim() && !catalogLoading && !catalogError
-    ? similarProducts
-    : [];
+  const currentNameMatches = nameCheck.name === form.name.trim() ? nameCheck.matches : [];
+  const similarProducts = currentNameMatches;
   const hasExactNameMatch = currentNameMatches.some((match) => match.exact);
   const isWatchDepartment = form.department === 'satovi';
   const isEyewearDepartment = form.department === 'naocare';
@@ -1186,18 +1197,18 @@ export default function AdminProductModal({
       return;
     }
     if (!product && !options.confirmDuplicate) {
-      const matches = findSimilarProducts(form.name.trim(), existingProducts);
-      if (matches.length || catalogLoading || catalogError) {
+      const matches = nameCheckRef.current.name === form.name.trim() ? nameCheckRef.current.matches : [];
+      if (matches.length) {
         setDuplicateWarning({
           name: form.name.trim(),
           count: matches.length,
           exact: matches.some((match) => match.exact),
-          unavailable: Boolean(!matches.length && (catalogLoading || catalogError)),
         });
         return;
       }
     }
     setDuplicateWarning(null);
+    window.clearTimeout(nameCheckTimerRef.current);
     // saveProduct notifies the parent synchronously. Capture this before any
     // await so a parent re-render with the new (empty) EPC cannot erase the
     // value we still need to unassign.
@@ -1569,6 +1580,9 @@ export default function AdminProductModal({
       pendingUploadIdsRef.current.clear();
       if (!product) {
         successfullySavedRef.current = true;
+        nameCheckRef.current = { name: '', matches: [], unavailable: false };
+        setNameCheck({ name: '', matches: [], unavailable: false });
+        setNameFocused(false);
         onDraftChange?.(null);
       }
       if (reviewContext && typeof options.reviewNote === 'string') {
@@ -1930,15 +1944,19 @@ export default function AdminProductModal({
                       ref={nameInputRef}
                       value={form.name}
                       onChange={(e) => handleChange('name', e.target.value)}
+                      onBlur={(e) => {
+                        window.clearTimeout(nameCheckTimerRef.current);
+                        checkProductName(e.target.value);
+                      }}
                       className={`w-full border rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 transition-all font-medium ${hasExactNameMatch ? '!bg-red-50 !border-red-400 focus:ring-red-200' : 'bg-neutral-50 border-neutral-200 focus:ring-neutral-200 focus:border-neutral-400'}`}
                       placeholder="Unesi naziv proizvoda..."
                     />
                   </label>
                   {!product && nameFocused && form.name.trim().length >= 4 && (
                     <div className={`absolute left-0 right-0 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-xl border p-3 text-xs shadow-xl ${hasExactNameMatch ? 'border-red-300 bg-red-100 shadow-red-900/15' : 'border-neutral-200 bg-white shadow-neutral-900/15'}`} role="status" aria-live="polite">
-                      {catalogError ? (
+                      {nameCheck.unavailable && catalogError ? (
                         <p className="font-semibold text-red-700">Provera duplikata trenutno nije dostupna.</p>
-                      ) : catalogLoading || checkedName !== form.name.trim() ? (
+                      ) : nameCheck.unavailable || nameCheck.name !== form.name.trim() ? (
                         <p className="text-neutral-600">Tražim postojeće artikle sa sličnim nazivom...</p>
                       ) : similarProducts.length ? (
                         <>
