@@ -122,7 +122,7 @@ function SupplierLinkSummary({ product, provider, label, withDivider, canWrite }
   const url = product[`${provider}Url`];
   if (!url) return null;
   const status = product[`${provider}Status`];
-  const stock = product[`${provider}StockStatus`];
+  const stock = product[`${provider}StockStatus`] ?? (provider === 'qandq' && status === 'available' ? 'in_stock' : null);
   const amount = product[`${provider}PriceAmount`];
   const currency = product[`${provider}PriceCurrency`];
   const number = product[`${provider}QueuePosition`];
@@ -152,7 +152,6 @@ function SupplierLinkSummary({ product, provider, label, withDivider, canWrite }
     {reason && <span className="whitespace-normal text-neutral-500">{reason}</span>}
     {status !== 'available' && stock == null && <span className="text-neutral-500">Stanje zaliha nepoznato</span>}
     {product[`${provider}LastCheckedAt`] && <span title="Poslednja provera" className="text-neutral-500">{supplierDate(product[`${provider}LastCheckedAt`])}</span>}
-    {product[`${provider}NextCheckAt`] && <span title="Sledeća provera" className="text-neutral-500">{supplierDate(product[`${provider}NextCheckAt`])}</span>}
     {product[`${provider}ConfirmationDueAt`] && <span className="text-amber-700">Potvrda: {supplierDate(product[`${provider}ConfirmationDueAt`])}</span>}
     {paused && <span className="text-amber-700">Pauza do {supplierDate(paused)} · {product[`${provider}PauseReason`]}</span>}
     {status !== 'available' && product[`${provider}LastGoodResult`]?.checkedAt && <span className="text-neutral-500">Poslednja dobra: {supplierDate(product[`${provider}LastGoodResult`].checkedAt)}</span>}
