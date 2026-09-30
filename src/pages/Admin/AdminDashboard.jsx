@@ -532,6 +532,7 @@ function AdminDashboardContent() {
   }, [activeTab, products, productsLoading, refreshProducts]);
   const [staffAccess, setStaffAccess] = useState(null);
   const [staffAccessLoaded, setStaffAccessLoaded] = useState(false);
+  const canManageSupplierChecks = Boolean(staffAccess?.isOwner || staffAccess?.canManageSupplierChecks);
   const isCatalogContributor = Boolean(
     !staffAccess?.isOwner && staffAccess?.roles?.includes('Unosilac kataloga'),
   );
@@ -1127,9 +1128,6 @@ function AdminDashboardContent() {
               icon={Package}
               label="Proizvodi"
             />
-            {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
-              <TabButton active={activeTab === 'suppliers'} onClick={() => setActiveTab('suppliers')} icon={Truck} label="Dobavljači" />
-            )}
             <TabButton
               active={activeTab === 'brands'}
               onClick={() => setActiveTab('brands')}
@@ -1148,6 +1146,9 @@ function AdminDashboardContent() {
               icon={List}
               label="Specifikacije"
             />
+            {staffAccessLoaded && isCatalogContributor && staffAccess?.permissions?.includes('catalog.read') && (
+              <TabButton active={activeTab === 'suppliers'} onClick={() => setActiveTab('suppliers')} icon={Truck} label="Dobavljači" />
+            )}
             {staffAccessLoaded && isCatalogContributor && (
               <TabButton
                 active={activeTab === 'my-workforce'}
@@ -1159,6 +1160,9 @@ function AdminDashboardContent() {
             {staffAccessLoaded && !isCatalogContributor && (
               <>
                 <TabButton active={activeTab === 'audit'} onClick={() => setActiveTab('audit')} icon={ClipboardList} label="Dnevnik" />
+                {(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
+                  <TabButton active={activeTab === 'suppliers'} onClick={() => setActiveTab('suppliers')} icon={Truck} label="Dobavljači" />
+                )}
                 <TabButton active={activeTab === 'workforce'} onClick={() => setActiveTab('workforce')} icon={ClipboardList} label="Učinak zaposlenih" />
                 <TabButton active={activeTab === 'access'} onClick={() => setActiveTab('access')} icon={ShieldCheck} label="Korisnici i dozvole" />
                 <TabButton active={activeTab === 'privacy'} onClick={() => setActiveTab('privacy')} icon={ShieldCheck} label="Privatnost" />
@@ -1180,7 +1184,7 @@ function AdminDashboardContent() {
           />
         )}
         {activeTab === 'suppliers' && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
-          <SupplierQueuePanel canWrite={Boolean(staffAccess?.isOwner)} onOpenProduct={openEdit} />
+          <SupplierQueuePanel canWrite={canManageSupplierChecks} onOpenProduct={openEdit} />
         )}
         {activeTab === 'products' && (
           <motion.div
@@ -1375,7 +1379,7 @@ function AdminDashboardContent() {
                             {SUPPLIER_PROVIDERS.some(([provider]) => p[`${provider}Url`]) ? (
                               <div className="flex items-start gap-4 whitespace-nowrap">
                                 {SUPPLIER_PROVIDERS.filter(([provider]) => p[`${provider}Url`]).map(([provider, label], index) => (
-                                  <SupplierLinkSummary key={provider} product={p} provider={provider} label={label} withDivider={index > 0} canWrite={Boolean(staffAccess?.isOwner)} />
+                                  <SupplierLinkSummary key={provider} product={p} provider={provider} label={label} withDivider={index > 0} canWrite={canManageSupplierChecks} />
                                 ))}
                               </div>
                             ) : <span className="text-neutral-400">—</span>}
