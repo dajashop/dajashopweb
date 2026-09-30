@@ -954,8 +954,9 @@ function AdminDashboardContent() {
       });
     }
     return (
-      p.name.toLowerCase().includes(term) ||
-      p.brand.toLowerCase().includes(term)
+      String(p.name || '').toLowerCase().includes(term) ||
+      String(p.brand || '').toLowerCase().includes(term) ||
+      String(p.sku || '').toLowerCase().includes(term)
     );
   }).sort((left, right) => {
     // A contributor's corrections are the most urgent work. Keep every
