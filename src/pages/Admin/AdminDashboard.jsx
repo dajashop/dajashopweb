@@ -88,7 +88,7 @@ const SUPPLIER_PROVIDERS = [
   ['supplier', 'Ekka'],
   ['bultime', 'Bultime'],
   ['linkel', 'Linkel'],
-  ['milano', 'Milano Group'],
+  ['milano', 'Milano'],
   ['timezone', 'Timezone'],
   ['qandq', 'Q&Q Casio'],
 ];
@@ -106,11 +106,10 @@ function SupplierCountdown({ nextCheckAt }) {
   }, [nextCheckAt, showDays]);
 
   if (remaining === null) return null;
-  const seconds = Math.ceil(remaining / 1000);
-  if (showDays) return <span className="text-neutral-500">{Math.ceil(seconds / 86400)}d</span>;
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return <span className="text-neutral-500">{hours}h {minutes}m {seconds % 60}s</span>;
+  if (showDays) return <span className="text-neutral-500">{Math.ceil(remaining / 86_400_000)}d</span>;
+  if (remaining >= 3_600_000) return <span className="text-neutral-500">{Math.floor(remaining / 3_600_000)}h</span>;
+  if (remaining >= 60_000) return <span className="text-neutral-500">{Math.floor(remaining / 60_000)}m</span>;
+  return <span className="text-neutral-500">{Math.ceil(remaining / 1_000)}s</span>;
 }
 
 function SupplierLinkSummary({ product, provider, label, withDivider }) {
@@ -130,8 +129,11 @@ function SupplierLinkSummary({ product, provider, label, withDivider }) {
       <a href={url} target="_blank" rel="noopener noreferrer" className="text-neutral-700 hover:text-blue-700 hover:underline">{label}</a>
       {amount != null && <span className="font-normal text-neutral-600">{Number(amount).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} {currency || ''}</span>}
     </div>
-    <span className={`font-semibold ${statusColor}`}>{statusText}</span>
-    <SupplierCountdown nextCheckAt={product[`${provider}NextCheckAt`]} />
+    <div className="flex items-baseline gap-2">
+      <span className={`font-semibold ${statusColor}`}>{statusText}</span>
+      <SupplierCountdown nextCheckAt={product[`${provider}NextCheckAt`]} />
+    </div>
+    {product[`${provider}LastCheckedAt`] && <span className="text-neutral-500">{new Date(product[`${provider}LastCheckedAt`]).toLocaleString('sr-RS')}</span>}
   </div>;
 }
 
