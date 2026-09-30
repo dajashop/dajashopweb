@@ -328,6 +328,7 @@ export default function AdminProductModal({
   const [nameFocused, setNameFocused] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [supplierPreviews, setSupplierPreviews] = useState({});
+  const supplierPreviewUrlRef = useRef({});
   const [priceFocused, setPriceFocused] = useState(false);
   const [eurRsdRate, setEurRsdRate] = useState(null);
   const nameInputRef = useRef(null);
@@ -765,6 +766,11 @@ export default function AdminProductModal({
   }, []);
 
   const handleChange = (field, value) => {
+    const provider = { supplierUrl: 'ekka', bultimeUrl: 'bultime', linkelUrl: 'linkel' }[field];
+    if (provider) {
+      supplierPreviewUrlRef.current[provider] = String(value || '').trim();
+      setSupplierPreviews((previous) => ({ ...previous, [provider]: null }));
+    }
     if (field === 'name') setDuplicateWarning(null);
     if (field === 'quantity') quantityEditedRef.current = true;
     if (field === 'locationId' || field === 'zoneId' || field === 'binId') {
@@ -818,8 +824,13 @@ export default function AdminProductModal({
 
   const previewSupplier = async (provider, value) => {
     const url = String(value || '').trim();
+    supplierPreviewUrlRef.current[provider] = url;
+    const showPreview = (result) => {
+      if (supplierPreviewUrlRef.current[provider] !== url) return;
+      setSupplierPreviews((previous) => ({ ...previous, [provider]: result }));
+    };
     if (!url) {
-      setSupplierPreviews((previous) => ({ ...previous, [provider]: null }));
+      showPreview(null);
       return;
     }
     if (provider === 'linkel') {
@@ -829,45 +840,48 @@ export default function AdminProductModal({
           throw new Error('Unesite direktan HTTPS link artikla sa linkel.rs.');
         }
       } catch (error) {
-        setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'error', message: error?.message || 'Link nije ispravan' } }));
+        showPreview({ status: 'error', message: error?.message || 'Link nije ispravan' });
         return;
       }
     }
     const requestKey = `${provider}:${url}`;
     const cached = supplierPreviewCache.get(requestKey);
     if (cached && Date.now() - cached.timestamp < 5000) {
-      setSupplierPreviews((previous) => ({ ...previous, [provider]: cached.result }));
+      showPreview(provider === 'linkel' && cached.result.status === 'error'
+        ? { status: 'unverified', message: 'Link se može sačuvati; dostupnost trenutno nije potvrđena.' }
+        : cached.result);
       return;
     }
     const existingRequest = supplierPreviewInFlight.get(requestKey);
     if (existingRequest) {
-      setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'checking' } }));
+      showPreview({ status: 'checking' });
       try {
         const result = await existingRequest;
-        setSupplierPreviews((previous) => ({ ...previous, [provider]: result }));
+        showPreview(provider === 'linkel' && result.status === 'error'
+          ? { status: 'unverified', message: 'Link se može sačuvati; dostupnost trenutno nije potvrđena.' }
+          : result);
       } catch {
         if (provider === 'linkel') {
-          setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'unverified', message: 'Link je ispravan, ali serverska provera trenutno nije dostupna.' } }));
+          showPreview({ status: 'unverified', message: 'Link se može sačuvati; serverska provera trenutno nije dostupna.' });
         }
       }
       return;
     }
-    setSupplierPreviews((previous) => ({ ...previous, [provider]: { status: 'checking' } }));
+    showPreview({ status: 'checking' });
     const request = adminCatalogApi.previewSupplierLink(provider, url);
     supplierPreviewInFlight.set(requestKey, request);
     try {
       const result = await request;
       supplierPreviewCache.set(requestKey, { result, timestamp: Date.now() });
-      setSupplierPreviews((previous) => ({ ...previous, [provider]: result }));
+      showPreview(provider === 'linkel' && result.status === 'error'
+        ? { status: 'unverified', message: 'Link se može sačuvati; dostupnost trenutno nije potvrđena.' }
+        : result);
     } catch (error) {
       const syntacticallyValid = provider === 'linkel';
-      setSupplierPreviews((previous) => ({
-        ...previous,
-        [provider]: {
-          status: syntacticallyValid ? 'unverified' : 'error',
-          message: syntacticallyValid ? 'Link je ispravan, ali serverska provera trenutno nije dostupna.' : (error?.message || 'Link nije ispravan'),
-        },
-      }));
+      showPreview({
+        status: syntacticallyValid ? 'unverified' : 'error',
+        message: syntacticallyValid ? 'Link se može sačuvati; serverska provera trenutno nije dostupna.' : (error?.message || 'Link nije ispravan'),
+      });
     } finally {
       supplierPreviewInFlight.delete(requestKey);
     }
@@ -2078,7 +2092,7 @@ export default function AdminProductModal({
                     />
                     {supplierPreviews.linkel?.status === 'checking' && <span className="mt-1 block text-xs text-neutral-500">Proveravam Linkel link…</span>}
                     {supplierPreviews.linkel?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">Link je važeći{supplierPreviews.linkel.stockStatus === 'in_stock' ? ' i artikal je na stanju' : supplierPreviews.linkel.stockStatus === 'out_of_stock' ? ', artikal nije na stanju' : ''}.</span>}
-                    {supplierPreviews.linkel?.status === 'unverified' && <span className="mt-1 block text-xs font-semibold text-amber-700">{supplierPreviews.linkel.message}</span>}
+                    {supplierPreviews.linkel?.status === 'unverified' && <span className="mt-1 block text-xs font-semibold text-amber-700">{supplierPreviews.linkel.message || 'Link se može sačuvati; dostupnost trenutno nije potvrđena.'}</span>}
                     {(supplierPreviews.linkel?.status === 'missing' || supplierPreviews.linkel?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen{supplierPreviews.linkel.message ? `: ${supplierPreviews.linkel.message}` : '.'}</span>}
                   </label>
                 </div>}
