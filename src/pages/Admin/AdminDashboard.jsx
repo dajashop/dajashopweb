@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import {
+  adminCatalogApi,
   catalogAuditApi,
   workforceApi,
   accessControlApi,
@@ -54,6 +55,7 @@ import {
 import { money } from '../../utils/currency';
 import SEOHead from '../../components/seo/SEOHead.jsx';
 import PolicyPublicationPanel from './components/PolicyPublicationPanel.jsx';
+import SupplierQueuePanel from './components/SupplierQueuePanel.jsx';
 import PromotionManager from './components/PromotionManager.jsx';
 import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
 
@@ -112,28 +114,46 @@ function SupplierCountdown({ nextCheckAt }) {
   return <span className="text-neutral-500">{Math.ceil(remaining / 1_000)}s</span>;
 }
 
-function SupplierLinkSummary({ product, provider, label, withDivider }) {
+const supplierDate = value => value ? new Date(value).toLocaleString('sr-RS', { timeZone: 'Europe/Belgrade' }) : '—';
+function SupplierLinkSummary({ product, provider, label, withDivider, canWrite }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const url = product[`${provider}Url`];
   if (!url) return null;
   const status = product[`${provider}Status`];
   const stock = product[`${provider}StockStatus`];
   const amount = product[`${provider}PriceAmount`];
   const currency = product[`${provider}PriceCurrency`];
+  const number = product[`${provider}QueuePosition`];
+  const paused = product[`${provider}PausedUntil`];
+  const reason = product[`${provider}DisabledReason`] || product[`${provider}FirstProblemReason`];
   const statusText = status === 'available'
     ? stock === 'in_stock' ? 'Na stanju' : stock === 'out_of_stock' ? 'Nema na stanju' : 'Stranica dostupna'
-    : ({ missing: 'Link nedostupan', checking: 'Proverava se', deferred: 'Provera odložena', unverified: 'Nije provereno' }[status] || 'Nije provereno');
-  const statusColor = status === 'missing' || stock === 'out_of_stock'
-    ? 'text-red-700' : status === 'available' ? 'text-emerald-700' : 'text-amber-700';
-  return <div className={`flex min-w-max flex-col gap-1 ${withDivider ? 'border-l border-neutral-200 pl-4' : ''}`}>
+    : ({ missing: 'Link nedostupan', checking: 'Proverava se', disabled: 'Link isključen iz provere', paused: 'Dobavljač pauziran', waiting_confirmation: 'Čeka potvrdu', deferred: 'Provera odložena', unverified: 'Nije provereno' }[status] || 'Stanje nepoznato');
+  const reactivate = async () => {
+    setBusy(true); setError('');
+    try {
+      await adminCatalogApi.reactivateSupplierLink(product[`${provider}LinkId`]);
+      window.dispatchEvent(new Event('daja:supplier-refresh'));
+    } catch (caught) { setError(caught.message || 'Vraćanje nije uspelo.'); }
+    finally { setBusy(false); }
+  };
+  return <div className={`flex min-w-[150px] max-w-[250px] flex-col gap-1 ${withDivider ? 'border-l border-neutral-200 pl-4' : ''}`}>
     <div className="flex items-baseline gap-2 font-bold">
       <a href={url} target="_blank" rel="noopener noreferrer" className="text-neutral-700 hover:text-blue-700 hover:underline">{label}</a>
+      {number != null && <span title="Redni broj u desetodnevnom ciklusu" className="font-normal text-neutral-500">#{number}</span>}
       {amount != null && <span className="font-normal text-neutral-600">{Number(amount).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} {currency || ''}</span>}
     </div>
-    <div className="flex items-baseline gap-2">
-      <span className={`font-semibold ${statusColor}`}>{statusText}</span>
-      <SupplierCountdown nextCheckAt={product[`${provider}NextCheckAt`]} />
-    </div>
-    {product[`${provider}LastCheckedAt`] && <span className="text-neutral-500">{new Date(product[`${provider}LastCheckedAt`]).toLocaleString('sr-RS')}</span>}
+    <span className={`font-semibold ${stock === 'out_of_stock' || status === 'missing' ? 'text-red-700' : status === 'available' ? 'text-emerald-700' : 'text-amber-700'}`}>{statusText}</span>
+    {reason && <span className="whitespace-normal text-neutral-500">{reason}</span>}
+    {status !== 'available' && stock == null && <span className="text-neutral-500">Stanje zaliha nepoznato</span>}
+    {product[`${provider}LastCheckedAt`] && <span className="text-neutral-500">Provereno: {supplierDate(product[`${provider}LastCheckedAt`])}</span>}
+    {product[`${provider}NextCheckAt`] && <span className="text-neutral-500">Sledeća: {supplierDate(product[`${provider}NextCheckAt`])} <SupplierCountdown nextCheckAt={product[`${provider}NextCheckAt`]} /></span>}
+    {product[`${provider}ConfirmationDueAt`] && <span className="text-amber-700">Potvrda: {supplierDate(product[`${provider}ConfirmationDueAt`])}</span>}
+    {paused && <span className="text-amber-700">Pauza do {supplierDate(paused)} · {product[`${provider}PauseReason`]}</span>}
+    {status !== 'available' && product[`${provider}LastGoodResult`]?.checkedAt && <span className="text-neutral-500">Poslednja dobra: {supplierDate(product[`${provider}LastGoodResult`].checkedAt)}</span>}
+    {status === 'disabled' && canWrite && <button type="button" disabled={busy} onClick={reactivate} className="self-start text-blue-700 hover:underline disabled:opacity-50">{busy ? 'Vraćanje…' : 'Vrati u proveru'}</button>}
+    {error && <span role="alert" className="whitespace-normal text-red-700">{error}</span>}
   </div>;
 }
 
@@ -497,7 +517,7 @@ function AdminDashboardContent() {
     if (activeTab !== 'products') return undefined;
     const timer = window.setInterval(() => {
       if (document.visibilityState !== 'visible' || productsLoading) return;
-      const due = products.some((product) => SUPPLIER_PROVIDERS.some(([provider]) => {
+      const due = products.some((product) => SUPPLIER_PROVIDERS.filter(([provider]) => ['linkel', 'milano'].includes(provider)).some(([provider]) => {
         if (!product[`${provider}Url`]) return false;
         const next = Date.parse(product[`${provider}NextCheckAt`] || '');
         return Number.isFinite(next) && next + 20_000 <= Date.now();
@@ -1158,6 +1178,7 @@ function AdminDashboardContent() {
             animate={{ opacity: 1 }}
             className="space-y-6"
           >
+            <SupplierQueuePanel canWrite={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))} />
             <ExcelManager
               products={products}
               brands={brands}
@@ -1345,7 +1366,7 @@ function AdminDashboardContent() {
                             {SUPPLIER_PROVIDERS.some(([provider]) => p[`${provider}Url`]) ? (
                               <div className="flex items-start gap-4 whitespace-nowrap">
                                 {SUPPLIER_PROVIDERS.filter(([provider]) => p[`${provider}Url`]).map(([provider, label], index) => (
-                                  <SupplierLinkSummary key={provider} product={p} provider={provider} label={label} withDivider={index > 0} />
+                                  <SupplierLinkSummary key={provider} product={p} provider={provider} label={label} withDivider={index > 0} canWrite={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))} />
                                 ))}
                               </div>
                             ) : <span className="text-neutral-400">—</span>}

@@ -33,6 +33,7 @@ export default function useProducts(params = {}) {
     const unsub = subscribeProducts({
       onData: (arr) => {
         setItems(arr);
+        if (memoizedParams.admin) window.dispatchEvent(new Event('daja:supplier-refresh'));
         setLoading(false);
       },
       onError: (e) => {
@@ -71,6 +72,7 @@ export default function useProducts(params = {}) {
         return;
       }
       if (change.type === 'upsert' && change.product?.id) {
+        if (memoizedParams.admin) window.dispatchEvent(new Event('daja:supplier-refresh'));
         setItems((current) => {
           const index = current.findIndex((item) => item.id === change.product.id);
           if (index === -1) {
@@ -163,6 +165,60 @@ export default function useProducts(params = {}) {
       .filter(Boolean);
     return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [items, usePublicRealtime]);
+
+  const supplierItems = useRef(items);
+  supplierItems.current = items;
+  useEffect(() => {
+    if (!memoizedParams.admin) return undefined;
+    let revision = 0;
+    let stopped = false;
+    let busy = false;
+    let timer;
+    const cache = new Map();
+    const apply = () => setItems(current => current.map(product => {
+      const states = cache.get(product.id);
+      if (!states) return product;
+      const fields = {};
+      for (const state of states.values()) {
+        const prefix = state.providerCode === 'ekka' ? 'supplier' : state.providerCode;
+        for (const key of ['url', 'status', 'stockStatus', 'priceAmount', 'priceCurrency', 'lastCheckedAt', 'nextCheckAt', 'queuePosition', 'checksEnabled', 'disabledReason', 'disabledAt', 'lastGoodResult', 'confirmationDueAt', 'nextRegularAt', 'pausedUntil', 'pauseReason', 'firstProblemAt', 'firstProblemReason']) {
+          fields[prefix + key[0].toUpperCase() + key.slice(1)] = state.removed ? null : state[key] ?? null;
+        }
+        fields[prefix + 'LinkId'] = state.id;
+      }
+      return { ...product, ...fields };
+    }));
+    const poll = async () => {
+      if (busy || stopped || document.visibilityState !== 'visible') return;
+      busy = true;
+      try {
+        let more;
+        do {
+          const result = await adminCatalogApi.supplierStates(revision);
+          if (stopped) return;
+          for (const state of result.items) {
+            if (!cache.has(state.productId)) cache.set(state.productId, new Map());
+            cache.get(state.productId).set(state.providerCode, state);
+          }
+          revision = result.nextRevision;
+          more = result.hasMore;
+        } while (more);
+        apply();
+      } catch { /* Preserve current results while offline or during a deployment. */ }
+      finally {
+        busy = false;
+        if (!stopped) {
+          const checking = [...cache.values()].some(states => [...states.values()].some(state => state.status === 'checking')) || supplierItems.current.some(product => ['supplier', 'bultime', 'timezone', 'qandq'].some(prefix => product[prefix + 'Status'] === 'checking'));
+          timer = window.setTimeout(poll, checking ? 2_000 : 30_000);
+        }
+      }
+    };
+    const wake = () => { window.clearTimeout(timer); void poll(); };
+    window.addEventListener('daja:supplier-refresh', wake);
+    document.addEventListener('visibilitychange', wake);
+    void poll();
+    return () => { stopped = true; window.clearTimeout(timer); window.removeEventListener('daja:supplier-refresh', wake); document.removeEventListener('visibilitychange', wake); };
+  }, [memoizedParams.admin, refreshKey]);
 
   const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
   return { items, loading, err, refresh };

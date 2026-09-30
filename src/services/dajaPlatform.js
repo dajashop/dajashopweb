@@ -470,6 +470,18 @@ export const adminCatalogApi = {
     });
     return normalizeProduct(data);
   },
+  async supplierStates(afterRevision = 0, limit = 500) {
+    return apiRequest(`/supplier-links/states?afterRevision=${afterRevision}&limit=${limit}`, { staff: true });
+  },
+  async supplierProviders() {
+    return apiRequest('/supplier-links/providers', { staff: true });
+  },
+  async reactivateSupplierLink(id) {
+    return apiRequest(`/supplier-links/${encodeURIComponent(id)}/reactivate`, { staff: true, method: 'POST' });
+  },
+  async probeSupplier(code) {
+    return apiRequest(`/supplier-links/providers/${encodeURIComponent(code)}/probe`, { staff: true, method: 'POST' });
+  },
   async previewSupplierLink(provider, url) {
     return apiRequest('/supplier-links/preview', {
       method: 'POST',
