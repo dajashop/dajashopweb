@@ -476,6 +476,24 @@ export const adminCatalogApi = {
   async supplierProviders() {
     return apiRequest('/supplier-links/providers', { staff: true });
   },
+  async supplierLinks(filters = {}, exporting = false) {
+    return apiRequest(exporting ? '/supplier-links/links/export' : '/supplier-links/links', { staff: true, query: filters });
+  },
+  async supplierStatistics(code = 'all', period = '24h') {
+    return apiRequest(`/supplier-links/providers/${encodeURIComponent(code)}/statistics`, { staff: true, query: { period } });
+  },
+  async supplierTimeline() {
+    return apiRequest('/supplier-links/timeline', { staff: true, query: { minutes: 60 } });
+  },
+  async pauseSuppliers(body) {
+    return apiRequest('/supplier-links/providers/pause', { staff: true, method: 'POST', body });
+  },
+  async resumeSuppliers(providers) {
+    return apiRequest('/supplier-links/providers/resume', { staff: true, method: 'POST', body: { providers } });
+  },
+  async supplierActions(action, ids, reason) {
+    return apiRequest('/supplier-links/actions', { staff: true, method: 'POST', body: { action, ids, reason } });
+  },
   async reactivateSupplierLink(id) {
     return apiRequest(`/supplier-links/${encodeURIComponent(id)}/reactivate`, { staff: true, method: 'POST' });
   },

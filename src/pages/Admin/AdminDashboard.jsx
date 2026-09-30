@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package,
+  Truck,
   Tag,
   Layers,
   List,
@@ -574,7 +575,7 @@ function AdminDashboardContent() {
   }, []);
 
   useEffect(() => {
-    if (isCatalogContributor && !['products', 'brands', 'categories', 'specs', 'my-workforce'].includes(activeTab)) {
+    if (isCatalogContributor && !['products', 'brands', 'categories', 'specs', 'suppliers', 'my-workforce'].includes(activeTab)) {
       setActiveTab('products');
     }
   }, [activeTab, isCatalogContributor]);
@@ -1126,6 +1127,9 @@ function AdminDashboardContent() {
               icon={Package}
               label="Proizvodi"
             />
+            {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
+              <TabButton active={activeTab === 'suppliers'} onClick={() => setActiveTab('suppliers')} icon={Truck} label="Dobavljači" />
+            )}
             <TabButton
               active={activeTab === 'brands'}
               onClick={() => setActiveTab('brands')}
@@ -1175,13 +1179,15 @@ function AdminDashboardContent() {
             specs={specs}
           />
         )}
+        {activeTab === 'suppliers' && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
+          <SupplierQueuePanel canWrite={Boolean(staffAccess?.isOwner)} onOpenProduct={openEdit} />
+        )}
         {activeTab === 'products' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="space-y-6"
           >
-            <SupplierQueuePanel canWrite={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))} />
             <ExcelManager
               products={products}
               brands={brands}
@@ -1369,7 +1375,7 @@ function AdminDashboardContent() {
                             {SUPPLIER_PROVIDERS.some(([provider]) => p[`${provider}Url`]) ? (
                               <div className="flex items-start gap-4 whitespace-nowrap">
                                 {SUPPLIER_PROVIDERS.filter(([provider]) => p[`${provider}Url`]).map(([provider, label], index) => (
-                                  <SupplierLinkSummary key={provider} product={p} provider={provider} label={label} withDivider={index > 0} canWrite={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))} />
+                                  <SupplierLinkSummary key={provider} product={p} provider={provider} label={label} withDivider={index > 0} canWrite={Boolean(staffAccess?.isOwner)} />
                                 ))}
                               </div>
                             ) : <span className="text-neutral-400">—</span>}
