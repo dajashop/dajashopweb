@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useId, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export function isColorSpec(key) {
   const label = String(key || '').toLowerCase().replace(/[_-]/g, ' ');
@@ -42,16 +43,40 @@ function swatch(value) {
 }
 
 export default function ColorFilter({ values, selected, onToggle, label }) {
+  const [tooltip, setTooltip] = useState(null);
+  const tooltipId = useId();
+  useEffect(() => {
+    const hide = () => setTooltip(null);
+    window.addEventListener('scroll', hide, true);
+    window.addEventListener('resize', hide);
+    return () => {
+      window.removeEventListener('scroll', hide, true);
+      window.removeEventListener('resize', hide);
+    };
+  }, []);
+  const showName = (event, value) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setTooltip({ value, x: Math.max(94, Math.min(window.innerWidth - 94, bounds.left + bounds.width / 2)), y: bounds.top - 8 });
+  };
   return (
+    <>
     <div className="color-filter-grid" role="group" aria-label={label}>
       {values.map(({ value, count }) => (
         <button key={value} type="button" className={`color-filter-card ${selected.includes(value) ? 'is-active' : ''}`}
           style={swatch(value)} aria-pressed={selected.includes(value)} aria-label={`${value}: ${count} proizvoda`}
-          onClick={() => onToggle(value)}>
+          aria-describedby={tooltip?.value === value ? tooltipId : undefined}
+          onMouseEnter={(event) => showName(event, value)} onMouseLeave={() => setTooltip(null)}
+          onFocus={(event) => showName(event, value)} onBlur={() => setTooltip(null)}
+          onKeyDown={(event) => { if (event.key === 'Escape') setTooltip(null); }}
+          onClick={(event) => { showName(event, value); onToggle(value); }}>
           <span className="color-filter-count">{count}</span>
-          <span className="color-filter-name">{value}</span>
         </button>
       ))}
     </div>
+    {tooltip && createPortal(
+      <span id={tooltipId} role="tooltip" className="color-filter-tooltip" style={{ left: tooltip.x, top: tooltip.y }}>{tooltip.value}</span>,
+      document.body,
+    )}
+    </>
   );
 }
