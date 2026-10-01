@@ -158,3 +158,19 @@ html.lenis body {
     scrollbar-color: rgba(100, 100, 100, 0.4) transparent;
   }
 }
+
+/* Keep editable controls readable on phones, including dialogs portaled to
+   body. Override compact component/Tailwind fonts without changing desktop
+   forms or non-text controls. Do not disable browser/pinch zoom. */
+@media (max-width: 1030px), (hover: none) and (pointer: coarse) {
+  html body :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]),
+    textarea,
+    select,
+    [contenteditable="true"],
+    [contenteditable=""],
+    [contenteditable="plaintext-only"]
+  ) {
+    font-size: max(1rem, 16px) !important;
+  }
+}
