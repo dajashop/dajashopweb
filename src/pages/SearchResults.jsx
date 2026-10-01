@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, RefreshCw, ArrowRight } from 'lucide-react';
 import useCatalogSearch from '../hooks/useCatalogSearch.js';
+import { recordSearchQuery } from '../services/searchHistory.js';
 import ProductCard from '../components/ProductCard.jsx';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import '../components/ProductGrid.css';
@@ -22,6 +23,7 @@ export default function SearchResults() {
   const previousItems = page.key === queryKey ? page.items : [];
   const items = useMemo(() => [...previousItems, ...(data?.items || [])].filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index), [previousItems, data]);
   useEffect(() => { setField(q); }, [q]);
+  useEffect(() => { recordSearchQuery(q); }, [q]);
   useEffect(() => { setPage({ key: queryKey, cursor: undefined, items: [] }); }, [queryKey]);
   function update(key, value) { const next = new URLSearchParams(params); value ? next.set(key, value) : next.delete(key); setParams(next); }
   function submit(event) { event.preventDefault(); if (field.trim().length >= 2) { const next = new URLSearchParams(); next.set('q', field.trim()); setParams(next); } }
@@ -36,12 +38,12 @@ export default function SearchResults() {
     {shown && <div className="search-results__toolbar"><div className="search-results__departments" aria-label="Odeljenje">{departments.map((item) => <button key={item.id} type="button" aria-pressed={(department || '') === item.id} className={(department || '') === item.id ? 'is-active' : ''} onClick={() => update('department', item.id)}>{item.label}</button>)}</div>
       <label>Sortiraj <select value={sort} onChange={(event) => update('sort', event.target.value)}><option value="relevance">Relevantnost</option><option value="price_asc">Cena: niža prvo</option><option value="price_desc">Cena: viša prvo</option></select></label></div>}
     {data?.recognized?.length > 0 && <div className="search-results__recognized" aria-label="Prepoznati uslovi">{data.recognized.map((label) => <span key={label}>{label}</span>)}</div>}
-    <div className="search-results__status" role="status" aria-live="polite">{loading ? 'Učitavanje rezultata…' : error ? '' : data && shown ? `${data.total} proizvoda odgovara pretrazi` : 'Unesi najmanje dva znaka ili pogledaj predloge ispod.'}</div>
+    <div className="search-results__status" role="status" aria-live="polite">{loading ? 'Učitavanje rezultata…' : error ? '' : data && shown ? `${data.total} proizvoda odgovara pretrazi` : 'Unesi model, brend ili osobine proizvoda. Dovoljna su dva znaka da počnemo.'}</div>
     {error && <div className="search-results__error">Pretraga trenutno nije dostupna.<button type="button" onClick={retry}><RefreshCw size={15} /> Pokušaj ponovo</button></div>}
     {!error && data?.message && <div className="search-results__empty"><p>{data.message}</p>{data.corrections?.length > 0 && <div><span>Da li ste mislili…?</span>{data.corrections.map((item) => <button key={item.query} type="button" onClick={() => update('q', item.query)}>{item.label}</button>)}</div>}</div>}
     {items.length > 0 && <div className="product-grid">{items.map((product) => <div className="search-results__card" key={product.id}><ProductCard p={product} /><span className={`search-results__stock ${product.inStock ? 'is-available' : ''}`}>{product.inStock ? 'Na stanju' : 'Nema na stanju'}</span></div>)}</div>}
     {data?.nextCursor && <button type="button" className="search-results__more" disabled={loading} onClick={loadMore}>Prikaži još proizvoda</button>}
     {loading && previousItems.length > 0 && <div className="search-results__status">Učitavanje narednih proizvoda…</div>}
-    {!loading && !error && data?.recommendations?.length > 0 && !items.length && <section className="search-results__recommendations"><h2>Možda će ti se svideti</h2><div className="product-grid">{data.recommendations.map((product) => <div className="search-results__card" key={product.id}><ProductCard p={product} /><span className={`search-results__stock ${product.inStock ? 'is-available' : ''}`}>{product.inStock ? 'Na stanju' : 'Nema na stanju'}</span></div>)}</div></section>}
+    {shown && !loading && !error && data?.total === 0 && data?.recommendations?.length > 0 && !items.length && <section className="search-results__recommendations"><h2>Možda će vam se svideti</h2><div className="product-grid">{data.recommendations.map((product) => <div className="search-results__card" key={product.id}><ProductCard p={product} /><span className={`search-results__stock ${product.inStock ? 'is-available' : ''}`}>{product.inStock ? 'Na stanju' : 'Nema na stanju'}</span></div>)}</div></section>}
   </div>;
 }

@@ -1,5 +1,6 @@
 const OPTIONAL_STORAGE_KEYS = [
   'theme',
+  'dajashop_search_history',
   'daja_last_login',
   'dajashop_newsletter_seen',
   'dajashop_product_alert_subscriptions',

@@ -3,6 +3,8 @@ import { createPortal, flushSync } from 'react-dom';
 import { Search, ArrowRight, ArrowLeft, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useCatalogSearch from '../hooks/useCatalogSearch.js';
+import useSearchHistory from '../hooks/useSearchHistory.js';
+import { clearSearchHistory, recordSearchQuery } from '../services/searchHistory.js';
 import SearchSuggestions from './search/SearchSuggestions.jsx';
 import './SearchBar.css';
 import './search/LiveSearch.css';
@@ -16,14 +18,17 @@ export default function SearchBar() {
   const [active, setActive] = useState(-1);
   const [recommendations, setRecommendations] = useState([]);
   const inputRef = useRef(null); const mobileInput = useRef(null); const anchor = useRef(null); const panel = useRef(null);
+  const openRef = useRef(false); const queryRef = useRef(q); queryRef.current = q;
   const navigate = useNavigate(); const location = useLocation();
   const id = `search-${useId().replace(/:/g, '')}`;
   const { data, loading, error, retry } = useCatalogSearch({ q, enabled: open, seed });
+  const history = useSearchHistory();
   const hasValue = q.trim().length > 0;
-  const close = useCallback(() => { setOpen(false); setActive(-1); }, []);
+  const close = useCallback(() => { if (openRef.current) recordSearchQuery(queryRef.current); openRef.current = false; setOpen(false); setActive(-1); }, []);
 
   function show() {
     if (open) return;
+    openRef.current = true;
     // Keep portal focus in the user gesture so iOS keeps its keyboard.
     flushSync(() => { setSeed(crypto.randomUUID()); setRecommendations([]); setActive(-1); setOpen(true); });
     if (mobile) mobileInput.current?.focus({ preventScroll: true });
@@ -60,7 +65,7 @@ export default function SearchBar() {
       if (selected) selected.click(); else submit();
     }
   }
-  useEffect(() => { setActive(-1); }, [q, data]);
+  useEffect(() => { setActive(-1); }, [q, data, history]);
   useEffect(() => { if (data?.recommendations?.length) setRecommendations((existing) => existing.length ? existing : data.recommendations); }, [data]);
   useEffect(() => {
     close();
@@ -82,8 +87,8 @@ export default function SearchBar() {
     if (!open) return;
     const viewport = window.visualViewport;
     function update() {
-      if (mobile) { setPosition({ top: viewport?.offsetTop || 0, left: viewport?.offsetLeft || 0, width: viewport?.width || window.innerWidth, height: viewport?.height || window.innerHeight }); return; }
-      const bounds = anchor.current.getBoundingClientRect(); const width = Math.min(720, window.innerWidth - 24);
+      if (mobile) { const height = viewport?.height || window.innerHeight; setPosition({ top: viewport?.offsetTop || 0, left: viewport?.offsetLeft || 0, width: viewport?.width || window.innerWidth, height, '--search-viewport-height': `${height}px` }); return; }
+      const bounds = anchor.current.getBoundingClientRect(); const width = Math.min(1080, window.innerWidth - 24);
       setPosition({ top: bounds.bottom + 10, left: Math.max(12, Math.min(bounds.left, window.innerWidth - width - 12)), width, maxHeight: Math.max(120, window.innerHeight - bounds.bottom - 24) });
     }
     update(); const observer = new ResizeObserver(update); observer.observe(anchor.current);
@@ -111,7 +116,8 @@ export default function SearchBar() {
   const accessibility = { role: 'combobox', 'aria-autocomplete': 'list', 'aria-expanded': open, 'aria-controls': open ? `${id}-list` : undefined,
     'aria-activedescendant': active >= 0 ? `${id}-option-${active}` : undefined, 'aria-label': 'Pretraži modele, brendove i kolekcije' };
   const content = <SearchSuggestions data={data} loading={loading} error={error} retry={retry} query={q}
-    recommendations={!loading && !error && (!q.trim() || data?.message) ? recommendations : []}
+    recommendations={!loading && !error && q.trim().length >= 2 && data?.message ? recommendations : []}
+    history={history} onClearHistory={clearSearchHistory}
     onNavigate={go} onCorrect={correct} active={active} onActive={setActive} idPrefix={id} />;
   return <>
     <div ref={anchor} className={`searchNeo ${open ? 'is-focused' : ''} ${hasValue ? 'has-value' : ''}`} role="search" aria-label="Pretraga" tabIndex={-1}>
