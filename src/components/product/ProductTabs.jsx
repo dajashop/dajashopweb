@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Truck, ShieldCheck, Package } from 'lucide-react';
 import './ProductTabs.css';
+import { descriptionHtml } from '../description.js';
+import '../rich-description.css';
 import { formatProductSpecLabel, visibleProductSpecs } from '../../utils/catalogPresentation.js';
 // [NOVO] Importujemo recenzije
 import ProductReviews from './ProductReviews.jsx';
@@ -49,7 +51,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
         {activeTab === 'desc' && (
           <div className="tab-text-content">
             {product.description ? (
-              <p>{product.description}</p>
+              <div className="rich-description" dangerouslySetInnerHTML={{ __html: descriptionHtml(product.description) }} />
             ) : (
               <p className="empty-text">Nema opisa.</p>
             )}

@@ -1,3 +1,4 @@
+import { descriptionText } from '../description.js';
 import React from 'react';
 import JsonLd from './JsonLd.jsx';
 import { commerceSeoConfig, seoConfig } from '../../config/seo.js';
@@ -97,7 +98,7 @@ export default function ProductJsonLd({ product, reviews = [] }) {
   const productName = `${product.brand || ''} ${product.name || ''}`.trim();
   const description =
     product.seo?.metaDescription ||
-    product.description ||
+    descriptionText(product.description) ||
     [
       productName,
       product.category ? `iz kolekcije ${product.category}` : '',

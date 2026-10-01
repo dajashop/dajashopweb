@@ -1,3 +1,4 @@
+import { descriptionText } from '../components/description.js';
 import React, { useEffect, useMemo } from 'react';
 import './Product.css';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -80,7 +81,7 @@ export default function Product() {
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
   const productTitle = `${p.brand || ''} ${p.name || ''}`.trim();
   const productDescription =
-    p.description ||
+    descriptionText(p.description) ||
     [
       productTitle,
       p.category ? `iz kolekcije ${p.category}` : '',

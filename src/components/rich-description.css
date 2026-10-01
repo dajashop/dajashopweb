@@ -1,0 +1,22 @@
+.rich-description { line-height: 1.65; overflow-wrap: anywhere; }
+.rich-description p, .rich-description div { margin: 0 0 .75em; }
+.rich-description ul { list-style: disc; padding-left: 1.5em; margin: .75em 0; }
+.rich-description ol { list-style: decimal; padding-left: 1.5em; margin: .75em 0; }
+.rich-description li { margin: .25em 0; }
+.rich-description h3 { font-size: 1.2em; font-weight: 700; margin: .9em 0 .5em; }
+.rich-description blockquote { border-left: 3px solid #cbd5e1; padding-left: 1em; margin: .75em 0; }
+.description-trigger { width: 100%; text-align: left; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; cursor: pointer; display: flex; align-items: center; gap: 12px; }
+.description-trigger span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.description-trigger small { flex-shrink: 0; font-weight: 600; }
+.description-label { display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 5px; }
+.description-overlay { position: fixed; inset: 0; z-index: 2147483000; background: rgb(15 23 42 / 15%); }
+.description-panel { position: fixed; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 16px; box-shadow: 0 20px 65px rgb(0 0 0 / 24%); padding: 14px; display: flex; flex-direction: column; gap: 10px; max-height: calc(100dvh - 24px); }
+.description-panel header, .description-panel footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.description-panel button { color: #334155; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 7px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+.description-panel button:focus-visible, .description-trigger:focus-visible { outline: 2px solid #64748b; outline-offset: 2px; }
+.description-toolbar { display: flex; flex-wrap: wrap; gap: 5px; }
+.description-content { min-height: 120px; height: 230px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; outline: none; }
+.description-content:focus { border-color: #64748b; }
+.description-panel footer { font-size: 12px; color: #64748b; }
+.description-error { color: #b91c1c; font-size: 12px; margin: 0; }
+@media (max-width: 600px) { .description-content { height: 180px; } .description-panel { padding: 10px; } }

@@ -26,6 +26,8 @@ import ImageManager from './ImageManager.jsx';
 import { generateSlug } from '../utils/generators.js';
 import { findSimilarProducts } from '../utils/productNameSimilarity.js';
 import CustomSelect from './CustomSelect.jsx';
+import { RichDescription } from '../../../components/RichDescription.jsx';
+import { descriptionText } from '../../../components/description.js';
 import ProductOperationsPanel from './ProductOperationsPanel.jsx';
 import WorkforceReviewNotes from './WorkforceReviewNotes.jsx';
 import {
@@ -1797,7 +1799,7 @@ export default function AdminProductModal({
 
   const fallbackSeoTitle = `${form.brand || ''} ${form.name || ''}`.trim();
   const fallbackSeoDescription = (
-    form.description ||
+    descriptionText(form.description) ||
     [
       fallbackSeoTitle,
       form.category ? `iz kolekcije ${form.category}` : '',
@@ -2084,19 +2086,7 @@ export default function AdminProductModal({
                   </div>}
                 </div>
                 <div className="order-7">
-                  <label className="block">
-                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      Opis (Opciono)
-                    </span>
-                    <input
-                      value={form.description || ''}
-                      onChange={(e) =>
-                        handleChange('description', e.target.value)
-                      }
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200 transition-all"
-                      placeholder="Kratak opis..."
-                    />
-                  </label>
+                  <RichDescription value={form.description || ''} onChange={(value) => handleChange('description', value)} maxLength={4000} />
                 </div>
                 {isWatchDepartment && <div className="order-8 md:col-span-2">
                   <label className="block">
