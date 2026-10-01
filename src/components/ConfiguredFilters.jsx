@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { configuredFilterParams, configuredFilterChips, filterConfiguredProducts, filterLeaves, numericFilterValue, optionMatches, orderedNodes, rangeKey, selectionKey } from '../utils/filterConfiguration.js';
 import './Filters.css';
 
-export default function ConfiguredFilters({ products, configuration, fixedGender, onClose, params: previewParams, onParams }) {
+export default function ConfiguredFilters({ products, configuration, fixedGender, onClose, params: previewParams, onParams, expandIds = [] }) {
   const [urlParams, setUrlParams] = useSearchParams();
   const params = configuredFilterParams(previewParams || urlParams, configuration, fixedGender);
   const [open, setOpen] = useState({});
@@ -74,7 +74,7 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
     <div className="f-top"><h3 className="f-top-title">Filteri</h3><div className="f-top-actions">{chips.length > 0 && <><span className="f-badge">{chips.length}</span><button type="button" className="f-clear" onClick={clearAll}>Očisti sve</button></>}</div></div>
     <div className="f-scroll-container">
     {orderedNodes(configuration.filters).filter((node) => node.visible && !(fixedGender && node.sources.includes('gender'))).map((node) => {
-      const expanded = open[node.id] ?? node.open;
+      const expanded = open[node.id] ?? (expandIds.includes(node.id) || node.open);
       const active = chips.filter((chip) => filterLeaves({ filters: [node] }).some((leaf) => [selectionKey(leaf), `range:${leaf.id}`].includes(chip.key))).length;
       return <div className={`f-section ${expanded ? 'is-open' : ''}`} key={node.id}>
         <SectionHeader title={node.title} count={active} onClear={() => clearNode(node)} isOpen={expanded} onToggle={() => setOpen((previous) => ({ ...previous, [node.id]: !expanded }))} />

@@ -2,15 +2,15 @@
 .filter-manager h2 { font-size: 24px; font-weight: 800; margin: 0; }
 .filter-manager h3 { font-size: 16px; font-weight: 750; margin: 16px 0 10px; }
 .filter-manager h4 { font-weight: 700; margin: 10px 0; }
-.filter-manager button, .filter-manager select, .filter-manager input:not([type=checkbox]), .filter-manager textarea { font: inherit; border: 1px solid #ddd; border-radius: 8px; padding: 7px 10px; background: #fff; color: #222; font-size: 13px; }
-.filter-manager button { cursor: pointer; }
-.filter-manager button:hover:not(:disabled) { border-color: #2875ff; }
-.filter-manager button:disabled { opacity: .45; cursor: default; }
+.filter-manager button:not(.filters button), .filter-manager select:not(.filters select), .filter-manager input:not([type=checkbox]):not(.filters input), .filter-manager textarea:not(.filters textarea) { font: inherit; border: 1px solid #ddd; border-radius: 8px; padding: 7px 10px; background: #fff; color: #222; font-size: 13px; }
+.filter-manager button:not(.filters button) { cursor: pointer; }
+.filter-manager button:not(.filters button):hover:not(:disabled) { border-color: #2875ff; }
+.filter-manager button:not(.filters button):disabled { opacity: .45; cursor: default; }
 .filter-manager .fm-primary { background: #171717; color: white; }
-.filter-manager label { display: block; font-size: 12px; margin: 9px 0; }
-.filter-manager label input:not([type=checkbox]), .filter-manager label textarea, .filter-manager label select { display: block; width: 100%; margin-top: 4px; }
-.filter-manager textarea { min-height: 65px; }
-.filter-manager input[type=checkbox] { margin-right: 6px; accent-color: #2875ff; }
+.filter-manager label:not(.filters label) { display: block; font-size: 12px; margin: 9px 0; }
+.filter-manager label:not(.filters label) input:not([type=checkbox]), .filter-manager label:not(.filters label) textarea, .filter-manager label:not(.filters label) select { display: block; width: 100%; margin-top: 4px; }
+.filter-manager textarea:not(.filters textarea) { min-height: 65px; }
+.filter-manager input[type=checkbox]:not(.filters input) { margin-right: 6px; accent-color: #2875ff; }
 .filter-manager fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .fm-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .fm-help { font-size: 12px; color: #71717a; margin: 10px 0; }
@@ -76,3 +76,37 @@
 .fm-preview-products { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; padding: 12px 0; }
 .fm-preview-products > div { display: flex; flex-direction: column; gap: 8px; border: 1px solid #eee; padding: 12px; border-radius: 10px; font-size: 12px; }
 @media (max-width: 850px) { .fm-layout { grid-template-columns: 1fr; } .fm-sidebar { max-height: 400px; } .fm-fields { grid-template-columns: 1fr; } .fm-preview-layout { grid-template-columns: 220px minmax(150px, 1fr); } }
+
+.fm-layout.has-preview { grid-template-columns: minmax(240px, 280px) minmax(330px, 1fr) minmax(290px, 350px); gap: 16px; }
+.fm-live-preview { position: sticky; top: 18px; max-height: calc(100vh - 36px); overflow: auto; padding: 14px; border: 1px solid #dce5f2; border-radius: 14px; background: #fff; box-shadow: 0 4px 18px rgb(30 55 90 / 5%); min-width: 0; scrollbar-width: thin; }
+.fm-live-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 12px; }
+.fm-live-heading h3 { display: flex; align-items: center; gap: 7px; margin: 0; }
+.fm-live-heading p { margin: 5px 0 0; font-size: 11px; color: #768296; }
+.fm-live-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #26b57c; box-shadow: 0 0 0 4px #e9f8f1; }
+.fm-preview-tabs, .fm-preview-device { display: flex; gap: 4px; align-items: center; padding: 4px; background: #f3f5f9; border-radius: 10px; margin-bottom: 10px; }
+.filter-manager .fm-preview-tabs button, .filter-manager .fm-preview-device button { display: flex; align-items: center; justify-content: center; gap: 5px; flex: 1; border: 0; padding: 7px 4px; background: transparent; font-size: 11px; color: #738095; white-space: nowrap; }
+.filter-manager .fm-preview-tabs button.is-active, .filter-manager .fm-preview-device button.is-active { color: #2466d6; background: #fff; box-shadow: 0 1px 4px rgb(25 45 75 / 8%); font-weight: 650; }
+.filter-manager .fm-preview-device .fm-icon-button { flex: none; width: 28px; }
+.fm-preview-stage { padding: 10px 0; background: #f7f8fb; border-radius: 11px; }
+.fm-preview-stage .filters { width: 250px; max-width: 100%; margin: 0 auto; max-height: 55vh; }
+.fm-preview-stage.is-mobile { width: 320px; max-width: 100%; max-height: 55vh; overflow: auto; margin: auto; padding: 0 12px 20px; background: #fff; }
+.fm-live-preview .fm-help { line-height: 1.5; }
+.fm-kind-picker { display: flex; flex-wrap: wrap; gap: 5px; }
+.filter-manager .fm-kind-picker button { padding: 6px 8px; font-size: 11px; border-radius: 7px; }
+.filter-manager .fm-kind-picker button.is-active { border-color: #a9c9ff; background: #edf4ff; color: #2466d6; }
+.fm-live-results { padding-top: 13px; margin-top: 10px; border-top: 1px solid #edf0f5; font-size: 12px; }
+.fm-live-results .fm-preview-products { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.fm-live-results .fm-preview-products > div { min-width: 0; overflow-wrap: anywhere; padding: 9px; font-size: 11px; }
+.fm-preview-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 9px; }
+.fm-preview-chips span { padding: 4px 7px; border-radius: 999px; background: #edf4ff; color: #2866cd; font-size: 10px; }
+@media (max-width: 1250px) and (min-width: 851px) {
+  .fm-layout.has-preview { grid-template-columns: 280px minmax(0, 1fr); grid-template-rows: minmax(0, 35vh) auto; }
+  .fm-layout.has-preview .fm-sidebar { grid-column: 1; grid-row: 1; max-height: 35vh; }
+  .fm-layout.has-preview .fm-editor { grid-column: 2; grid-row: 1 / span 2; }
+  .fm-layout.has-preview .fm-live-preview { grid-column: 1; grid-row: 2; max-height: 60vh; }
+}
+@media (max-width: 850px) {
+  .fm-layout.has-preview { display: flex; flex-direction: column; }
+  .fm-layout.has-preview > * { width: 100%; }
+  .fm-live-preview { position: static; max-height: 650px; }
+}

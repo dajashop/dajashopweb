@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { filterConfigurationApi } from '../../../services/filterConfiguration.js';
 import { specKeyService } from '../../../services/admin.js';
 import useProducts from '../../../hooks/useProducts.js';
-import ConfiguredFilters from '../../../components/ConfiguredFilters.jsx';
-import { defaultFilterConfiguration, discoverFilterSources, filterConfiguredProducts, filterId, filterLeaves, newFilter, orderedNodes, specificationSourceKey, validateFilterConfiguration } from '../../../utils/filterConfiguration.js';
+import FilterLivePreview from './FilterLivePreview.jsx';
+import { defaultFilterConfiguration, discoverFilterSources, filterId, filterLeaves, newFilter, orderedNodes, specificationSourceKey, validateFilterConfiguration } from '../../../utils/filterConfiguration.js';
 import FilterOrderTree from './FilterOrderTree.jsx';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import './FilterManager.css';
@@ -25,12 +25,10 @@ export default function FilterManager({ products, productsLoading, definitions, 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [preview, setPreview] = useState(false);
-  const [mobile, setMobile] = useState(false);
-  const [previewParams, setPreviewParams] = useState(new URLSearchParams());
+  const [preview, setPreview] = useState(true);
   const [newSpec, setNewSpec] = useState({ name: '', unit: '', values: '' });
   const [optionDraft, setOptionDraft] = useState({ label: '', source: '', values: [] });
-  const { items: storefrontProducts } = useProducts({ admin: false, all: true });
+  const { items: storefrontProducts, loading: storefrontLoading } = useProducts({ admin: false, all: true });
   const scopedProducts = useMemo(() => products.filter((product) => (product.department || 'satovi') === department), [products, department]);
   const departmentId = departments.find((item) => item.slug === department)?.id;
   const sources = useMemo(() => discoverFilterSources(scopedProducts, definitions.filter((definition) => definition.departmentId === departmentId)), [scopedProducts, definitions, departmentId]);
@@ -40,11 +38,10 @@ export default function FilterManager({ products, productsLoading, definitions, 
   const unused = sources.filter((source) => !leaves.some((node) => node.sources.includes(source.id) || node.options.some((option) => option.conditions.some((condition) => condition.source === source.id))));
   const errors = draft ? validateFilterConfiguration(draft) : [];
   const previewProducts = storefrontProducts.filter((product) => (product.department || 'satovi') === department);
-  const previewResults = draft ? filterConfiguredProducts(previewProducts, previewParams, draft) : [];
 
   useEffect(() => {
     let cancelled = false;
-    setState(null); setDraft(null); setError(''); setNotice(''); setActiveId(''); setSelectedIds([]); setPreviewParams(new URLSearchParams());
+    setState(null); setDraft(null); setError(''); setNotice(''); setActiveId(''); setSelectedIds([]);
     filterConfigurationApi.draft(department).then((result) => {
       if (cancelled) return;
       setState(result);
@@ -157,12 +154,7 @@ export default function FilterManager({ products, productsLoading, definitions, 
     <p className="fm-help">{dirty ? 'Ima nesačuvanih promena. ' : ''}Nacrt ne menja sajt do objavljivanja. Skrivanje, preimenovanje i spajanje ne menjaju podatke proizvoda.</p>
     {error && <div role="alert" className="fm-error">{error}</div>}{notice && <div role="status" className="fm-notice">{notice}</div>}
     {!draft ? <p>{error ? 'Podešavanja nisu učitana.' : 'Učitavanje filtera…'}</p> : <>
-      {preview && <div className="fm-preview"><div className="fm-toolbar"><h3>Pregled nacrta</h3><button type="button" onClick={() => setMobile(!mobile)}>{mobile ? 'Desktop prikaz' : 'Mobilni prikaz'}</button><span>{previewResults.length} proizvoda</span></div>
-        <div className={`fm-preview-layout ${mobile ? 'is-mobile' : ''}`}><ConfiguredFilters key={`${department}-${mobile}`} products={previewProducts} configuration={draft} params={previewParams} onParams={setPreviewParams} />
-          <div className="fm-preview-products">{previewResults.slice(0, 12).map((product) => <div key={product.id}><strong>{product.brand}</strong><span>{product.name}</span><small>{Number(product.price || 0).toLocaleString('sr-Latn')} RSD</small></div>)}</div>
-        </div>
-      </div>}
-      <div className="fm-layout"><div className="fm-sidebar"><h3>Redosled i grupe</h3><p className="fm-help fm-order-help">Prevuci ručicu na željeno mesto ili koristi strelice. Podfilteri se pomeraju unutar svoje grupe.</p><FilterOrderTree nodes={draft.filters} activeId={activeId} selectedIds={selectedIds} onSelect={setActiveId} onSelection={setSelectedIds} onMove={move} onReorder={(filters) => setDraft((current) => ({ ...current, filters }))} disabled={!canWrite || busy} />
+      <div className={`fm-layout ${preview ? "has-preview" : ""}`}><div className="fm-sidebar"><h3>Redosled i grupe</h3><p className="fm-help fm-order-help">Prevuci ručicu na željeno mesto ili koristi strelice. Podfilteri se pomeraju unutar svoje grupe.</p><FilterOrderTree nodes={draft.filters} activeId={activeId} selectedIds={selectedIds} onSelect={setActiveId} onSelection={setSelectedIds} onMove={move} onReorder={(filters) => setDraft((current) => ({ ...current, filters }))} disabled={!canWrite || busy} />
         <div className="fm-toolbar"><button type="button" disabled={selectedIds.length < 2 || !canWrite || busy} onClick={() => merge('group')}>Spoji u sekciju</button><button type="button" disabled={selectedIds.length < 2 || !canWrite || busy} onClick={() => merge('options')}>Spoji checkboxove</button></div>
         <button type="button" disabled={!canWrite || busy} onClick={() => append({ id: 'feature:', label: 'Funkcije', values: [] })}>+ Prazan filter funkcija</button>
         <h3>Neraspoređeni izvori</h3><p className="fm-help">Novi izvori se ne objavljuju automatski.</p>
@@ -208,7 +200,7 @@ export default function FilterManager({ products, productsLoading, definitions, 
           }}>Dodaj opciju</button></div>
         </>}
         <button className="fm-danger" type="button" onClick={() => { setDraft({ ...draft, filters: removeNodes(draft.filters, [active.id]) }); setActiveId(''); setSelectedIds(selectedIds.filter((id) => id !== active.id)); }}>Ukloni filter iz prikaza</button>
-      </fieldset>}{errors.map((message) => <p className="fm-error" key={message}>{message}</p>)}</div></div>
+      </fieldset>}{errors.map((message) => <p className="fm-error" key={message}>{message}</p>)}</div>{preview && <FilterLivePreview key={department} draft={draft} products={previewProducts} activeId={activeId} loading={storefrontLoading} />}</div>
       <details className="fm-history"><summary>Objavljene verzije ({state?.history?.length || 0})</summary>{state?.history?.map((version) => <div className="fm-source" key={version.revision}><span>Verzija {version.revision} · {new Date(version.publishedAt).toLocaleString('sr-Latn')}</span><button type="button" disabled={busy || !canWrite} onClick={() => {
         if (dirty && !window.confirm('Vraćanje verzije će zameniti nesačuvani nacrt. Nastavi?')) return;
         action(true, version.revision);
