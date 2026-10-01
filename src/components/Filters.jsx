@@ -7,6 +7,7 @@ import { catalogSpecValue, diameterValue, filterCatalogProducts, isDiameterSpec,
 import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 import DiameterFilter from './DiameterFilter.jsx';
 import ColorFilter, { isColorSpec } from './ColorFilter.jsx';
+import MaterialFilter, { isBraceletMaterialSpec } from './MaterialFilter.jsx';
 
 function specificationOrder(key) {
   const label = formatProductSpecLabel(key)
@@ -499,6 +500,9 @@ export default function Filters({ products, fixedGender, onClose }) {
                         })} />
                     ) : isColorSpec(spec.key) ? (
                       <ColorFilter values={spec.values} selected={sp.getAll(`spec_${spec.key}`)}
+                        label={formatProductSpecLabel(spec.key)} onToggle={(value) => toggleParam(`spec_${spec.key}`, value)} />
+                    ) : isBraceletMaterialSpec(spec.key) ? (
+                      <MaterialFilter values={spec.values} selected={sp.getAll(`spec_${spec.key}`)}
                         label={formatProductSpecLabel(spec.key)} onToggle={(value) => toggleParam(`spec_${spec.key}`, value)} />
                     ) : (
                     <div className="filter-list" role="group">
