@@ -389,6 +389,10 @@ export default function AdminProductModal({
   const [tempSpecVal, setTempSpecVal] = useState('');
   const [saveSpecOption, setSaveSpecOption] = useState(false);
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
+  const savedProductIdRef = useRef(null);
+  const [mediaReady, setMediaReady] = useState(!product?.id);
+  const [imageBusy, setImageBusy] = useState(false);
   const [deletedVariantIds, setDeletedVariantIds] = useState([]);
   const [pendingPrice, setPendingPrice] = useState(null);
   const [flash, setFlash] = useState({ open: false });
@@ -487,6 +491,10 @@ export default function AdminProductModal({
   }, []);
 
   useEffect(() => {
+    // Realtime catalog refreshes replace the product object while editing.
+    // Initialize once per product so they cannot erase media link IDs or edits.
+    const key = product?.id || null;
+    savedProductIdRef.current = key;
     setDeletedVariantIds([]);
     setRemovedMediaLinkIds([]);
     pendingUploadIdsRef.current.clear();
@@ -669,7 +677,9 @@ export default function AdminProductModal({
       sub3();
       sub4();
     };
-  }, [product]);
+  // Keep the active form stable when realtime refresh replaces the object.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
 
   useEffect(() => {
     if (product || !onDraftChange) return;
@@ -716,6 +726,7 @@ export default function AdminProductModal({
   useEffect(() => {
     if (!product?.id) return undefined;
     let cancelled = false;
+    setMediaReady(false);
     void mediaApi
       .listProductMedia(product.id)
       .then((rows) => {
@@ -730,8 +741,13 @@ export default function AdminProductModal({
           altText: row.altText || row.alt_text || '',
         }));
         setForm((previous) => ({ ...previous, images }));
+        setMediaReady(true);
       })
-      .catch((error) => console.error('Učitavanje galerije proizvoda nije uspelo:', error));
+      .catch((error) => {
+        if (cancelled) return;
+        console.error('Učitavanje galerije proizvoda nije uspelo:', error);
+        setFlash({ open: true, title: 'Galerija nije učitana. Ponovo otvorite artikal pre čuvanja.', ok: false });
+      });
     return () => {
       cancelled = true;
     };
@@ -747,6 +763,7 @@ export default function AdminProductModal({
   };
 
   const closeModal = () => {
+    if (submittingRef.current || imageBusy) return;
     // A new product draft may contain images already uploaded to R2. Keep
     // them attached to the draft when the user uses Back or closes the modal.
     if (product) discardPendingUploads();
@@ -1157,6 +1174,7 @@ export default function AdminProductModal({
     }));
 
   const handleSubmit = async (options = {}) => {
+    if (submittingRef.current || imageBusy || !mediaReady) return;
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
     const shouldReconcileQuantity = !product || quantityEditedRef.current;
     const shouldPersistPlacement = !product || placementEditedRef.current;
@@ -1215,6 +1233,7 @@ export default function AdminProductModal({
     // await so a parent re-render with the new (empty) EPC cannot erase the
     // value we still need to unassign.
     const epcBeforeSave = initialEpcRef.current;
+    submittingRef.current = true;
     setLoading(true);
     try {
       // Validate price dates before POST/PATCH. This prevents a product from
@@ -1256,6 +1275,7 @@ export default function AdminProductModal({
 
       const payload = {
         ...form,
+        ...(savedProductIdRef.current ? { id: savedProductIdRef.current } : {}),
         epc: pieces[0]?.epc || '',
         price: Number(form.price),
         image: form.mainImageUrl || form.images[0]?.url || '',
@@ -1330,10 +1350,11 @@ export default function AdminProductModal({
         payload.primaryCategoryId = selectedCategory.id;
       } else payload.primaryCategoryId = null;
 
-      if (!product) delete payload.id;
-      else payload.id = product.id;
+      if (!savedProductIdRef.current) delete payload.id;
+      else payload.id = savedProductIdRef.current;
 
       const savedProductId = await saveProduct(payload);
+      savedProductIdRef.current = savedProductId;
       if (savedProductId && pendingPrice) {
         const savedVariants =
           await adminCatalogApi.listVariants(savedProductId);
@@ -1533,28 +1554,20 @@ export default function AdminProductModal({
         (image) => image.mediaId && !image.linkId,
       );
       if (savedProductId && pendingMedia.length) {
-        const linked = await Promise.all(
-          pendingMedia.map((image) => {
-            const position = savedImages.indexOf(image);
-            return mediaApi.attachToProduct(savedProductId, image.mediaId, {
-              position,
-              isPrimary: position === 0,
-              altText: image.altText || null,
-            });
-          }),
-        );
-        linked.forEach((link) => newlyLinkedMediaIds.add(link.mediaId));
-        savedImages = savedImages.map((image) => {
-          const link = linked.find((item) => item.mediaId === image.mediaId);
-          return link
-            ? {
-                ...image,
-                linkId: link.id,
-                position: link.position,
-                isPrimary: link.isPrimary,
-              }
-            : image;
-        });
+        // Persist each successful link immediately. A later failure/retry must
+        // reuse it, and closing the modal must never discard an attached asset.
+        for (const image of pendingMedia) {
+          const position = savedImages.indexOf(image);
+          const link = await mediaApi.attachToProduct(savedProductId, image.mediaId, {
+            position, isPrimary: position === 0, altText: image.altText || null,
+          });
+          newlyLinkedMediaIds.add(link.mediaId);
+          pendingUploadIdsRef.current.delete(image.mediaId);
+          savedImages = savedImages.map((current) => current.mediaId === image.mediaId
+            ? { ...current, mediaId: link.mediaId, linkId: link.id, position: link.position, isPrimary: link.isPrimary }
+            : current);
+          setForm((previous) => ({ ...previous, images: savedImages }));
+        }
       }
       if (savedProductId) {
         const retainedLinks = new Set(savedImages.map((image) => image.linkId).filter(Boolean));
@@ -1605,6 +1618,7 @@ export default function AdminProductModal({
         ok: false,
       });
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -1929,7 +1943,7 @@ export default function AdminProductModal({
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-8 flex flex-col gap-6">
-              {reviewContext && <WorkforceReviewNotes product={reviewContext.product} onReturn={note => handleSubmit({ reviewNote: note })} disabled={loading} />}
+              {reviewContext && <WorkforceReviewNotes product={reviewContext.product} onReturn={note => handleSubmit({ reviewNote: note })} disabled={loading || imageBusy || !mediaReady} />}
               <div className="bg-white p-5 rounded-xl shadow-none border border-neutral-200 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 [&_label>span:first-child]:mb-1 [&_label>span:first-child]:block [&_label>span:first-child]:text-xs [&_label>span:first-child]:font-bold [&_label>span:first-child]:uppercase [&_label>span:first-child]:tracking-wider [&_label>span:first-child]:text-neutral-500 [&_input]:bg-neutral-50 [&_input]:border-neutral-200 [&_input]:!rounded-xl [&_input]:px-4 [&_input]:py-3 [&_input]:text-sm">
                 <div
                   className="relative z-20"
@@ -2903,6 +2917,8 @@ export default function AdminProductModal({
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
                 {/* PROSLEĐUJEMO onImageClick */}
                 <ImageManager
+                  disabled={loading || !mediaReady}
+                  onBusyChange={setImageBusy}
                   images={form.images}
                   onChange={handleImageChange} // KORISTIMO DEDICIRANI HANDLER
                   onImageClick={(index) => setGalleryIndex(index)} // OTVARA GALERIJU
@@ -2962,7 +2978,7 @@ export default function AdminProductModal({
             <button type="button" onClick={() => setDuplicateWarning(null)} className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700">
               Vrati se
             </button>
-            <button type="button" onClick={() => handleSubmit({ confirmDuplicate: true })} disabled={loading} className="rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">
+            <button type="button" onClick={() => handleSubmit({ confirmDuplicate: true })} disabled={loading || imageBusy || !mediaReady} className="rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">
               Sačuvaj ipak
             </button>
           </div>
@@ -3008,7 +3024,7 @@ export default function AdminProductModal({
           </button>
           <button
             onClick={() => handleSubmit()}
-            disabled={loading}
+            disabled={loading || imageBusy || !mediaReady}
             className="bg-neutral-900 text-white px-8 py-2.5 rounded-xl font-bold hover:bg-black hover:shadow-lg hover:shadow-neutral-200 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-wait"
           >
             {loading ? (

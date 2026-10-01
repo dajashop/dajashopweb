@@ -1,5 +1,5 @@
 // src/pages/Admin/components/ImageManager.jsx
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { Reorder, motion, AnimatePresence } from 'framer-motion';
 import {
@@ -39,6 +39,8 @@ function ImageManager({
   productSlug,
   productName,
   onRemoteUploadSuccess,
+  disabled = false,
+  onBusyChange,
 }) {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -47,9 +49,12 @@ function ImageManager({
   // --- NOVI STATE ZA URL ---
   const [urlInput, setUrlInput] = useState('');
   const [urlLoading, setUrlLoading] = useState(false);
+  const busyRef = useRef(false);
+  useEffect(() => { onBusyChange?.(uploading || urlLoading); }, [uploading, urlLoading, onBusyChange]);
 
   // --- POSTOJEĆI UPLOAD (LOKALNI FAJLOVI) ---
   const handleUpload = async (e) => {
+    if (disabled || busyRef.current) return;
     const files = e.target.files;
     if (!files?.length) return;
 
@@ -64,6 +69,8 @@ function ImageManager({
       return;
     }
 
+    busyRef.current = true;
+    onBusyChange?.(true);
     setUploading(true);
     try {
       const uploaded = await uploadProductImages(
@@ -84,6 +91,7 @@ function ImageManager({
       console.error('Upload failed', err);
       alert('Greška pri otpremanju slika.');
     } finally {
+      busyRef.current = false;
       setUploading(false);
       setProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = null;
@@ -92,6 +100,7 @@ function ImageManager({
 
   // --- NOVO: URL UPLOAD HANDLER ---
   const handleUrlUpload = async () => {
+    if (disabled || busyRef.current) return;
     const sanitizedUrlInput = urlInput.trim();
     if (!sanitizedUrlInput) {
       alert('Molim vas unesite validan URL slike.');
@@ -108,6 +117,8 @@ function ImageManager({
       return;
     }
 
+    busyRef.current = true;
+    onBusyChange?.(true);
     setUrlLoading(true);
     try {
       const asset = await mediaApi.registerExternal(sanitizedUrlInput, {
@@ -152,6 +163,7 @@ function ImageManager({
         }`,
       );
     } finally {
+      busyRef.current = false;
       setUrlLoading(false);
     }
   };
@@ -171,7 +183,7 @@ function ImageManager({
   };
 
   return (
-    <div className="space-y-4">
+    <fieldset className="space-y-4 min-w-0" disabled={disabled || uploading || urlLoading}>
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
           Galerija
@@ -271,13 +283,14 @@ function ImageManager({
       {/* --- LISTA SLIKA (Reorder) --- */}
       <Reorder.Group
         axis="y"
+        style={disabled || uploading || urlLoading ? { pointerEvents: "none" } : undefined}
         values={images}
         onReorder={onChange}
         className="space-y-2 max-h-75 overflow-y-auto custom-scrollbar pr-1"
       >
         {images.map((img, idx) => (
           <Reorder.Item
-            key={img.url}
+            key={img.linkId || img.mediaId || img.url}
             value={img}
             className="cursor-grab active:cursor-grabbing"
           >
@@ -341,7 +354,7 @@ function ImageManager({
           <span className="text-sm font-medium">Nema slika</span>
         </div>
       )}
-    </div>
+    </fieldset>
   );
 }
 
