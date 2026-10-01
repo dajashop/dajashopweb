@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import ColorFilter from './ColorFilter.jsx';
 import MaterialFilter from './MaterialFilter.jsx';
 import DiameterFilter from './DiameterFilter.jsx';
+import SectionHeader from './FilterSectionHeader.jsx';
+import { motion, AnimatePresence } from 'framer-motion';
 import { configuredFilterParams, configuredFilterChips, filterConfiguredProducts, filterLeaves, numericFilterValue, optionMatches, orderedNodes, rangeKey, selectionKey } from '../utils/filterConfiguration.js';
 import './Filters.css';
 
@@ -48,28 +50,43 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
         return <DiameterFilter values={diameterRaw} selected={params.has(minKey) || params.has(maxKey) ? diameterRaw.filter((value) => { const number = numericFilterValue(value).number; return number >= min && number <= max; }) : []}
           onChange={(chosen) => { const sizes = chosen.map((value) => numericFilterValue(value).number); if (sizes.length) setRange(Math.min(...sizes), Math.max(...sizes)); }} />;
       }
-      return <div className="configured-numeric-range">
-        <output>{min.toLocaleString('sr-Latn')} — {max.toLocaleString('sr-Latn')} {node.unit}</output>
-        <label>Od<input type="range" aria-label={`${node.title} od`} min={numbers[0]} max={numbers.at(-1)} step={node.sources[0] === 'price' ? 1 : .1} value={min} onChange={(event) => setRange(Math.min(Number(event.target.value), max), max)} /></label>
-        <label>Do<input type="range" aria-label={`${node.title} do`} min={numbers[0]} max={numbers.at(-1)} step={node.sources[0] === 'price' ? 1 : .1} value={max} onChange={(event) => setRange(min, Math.max(Number(event.target.value), min))} /></label>
+      const lower = node.sources[0] === 'price' ? 0 : numbers[0];
+      const upper = numbers.at(-1);
+      const from = params.has(minKey) ? min : lower;
+      const percent = (value) => upper > lower ? (value - lower) / (upper - lower) * 100 : 0;
+      return <div className="price-wrapper">
+        <div className="price-values"><span>{from.toLocaleString('sr-Latn')} {node.unit}</span><span>{max.toLocaleString('sr-Latn')} {node.unit}</span></div>
+        <div className="slider-container">
+          <div className="slider-track-bg" />
+          <div className="slider-track-fill" style={{ left: `${percent(from)}%`, width: `${percent(max) - percent(from)}%` }} />
+          <input className="thumb thumb--left" style={{ zIndex: from > upper - 100 ? 5 : 3 }} type="range" aria-label={`${node.title} od`} min={lower} max={upper} step={node.sources[0] === 'price' ? 1 : .1} value={from} onChange={(event) => setRange(Math.min(Number(event.target.value), max), max)} />
+          <input className="thumb thumb--right" style={{ zIndex: 4 }} type="range" aria-label={`${node.title} do`} min={lower} max={upper} step={node.sources[0] === 'price' ? 1 : .1} value={max} onChange={(event) => setRange(from, Math.max(Number(event.target.value), from))} />
+        </div>
       </div>;
     }
     return <div className="filter-list" role="group" aria-label={node.title} style={node.columns > 1 ? { display: 'grid', gridTemplateColumns: `repeat(${node.columns}, minmax(0, 1fr))` } : undefined}>{values.map((value) => <label key={value.value} className={`filter-row ${selected.includes(value.value) ? 'is-active' : ''}`}>
-      <input type="checkbox" checked={selected.includes(value.value)} onChange={() => toggle(node, value.value)} />
+      <input className="filter-input-hidden" type="checkbox" checked={selected.includes(value.value)} onChange={() => toggle(node, value.value)} />
       <span className="filter-text">{value.label}</span>{node.showCounts && <span className="filter-count">{value.count}</span>}
+      {selected.includes(value.value) && <div className="filter-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg></div>}
     </label>)}</div>;
   };
   return <aside className="filters card glass configured-filters" aria-label="Filteri kataloga" data-lenis-prevent>
-    <div className="f-top"><h3 className="f-top-title">Filteri</h3>{chips.length > 0 && <button type="button" className="f-clear" onClick={clearAll}>Očisti sve</button>}</div>
+    <div className="f-top"><h3 className="f-top-title">Filteri</h3><div className="f-top-actions">{chips.length > 0 && <><span className="f-badge">{chips.length}</span><button type="button" className="f-clear" onClick={clearAll}>Očisti sve</button></>}</div></div>
+    <div className="f-scroll-container">
     {orderedNodes(configuration.filters).filter((node) => node.visible && !(fixedGender && node.sources.includes('gender'))).map((node) => {
       const expanded = open[node.id] ?? node.open;
       const active = chips.filter((chip) => filterLeaves({ filters: [node] }).some((leaf) => [selectionKey(leaf), `range:${leaf.id}`].includes(chip.key))).length;
-      return <div className="f-section" key={node.id}>
-        <div className="f-head"><button type="button" className="configured-filter-heading" aria-expanded={expanded} onClick={() => setOpen((previous) => ({ ...previous, [node.id]: !expanded }))}><span className="f-title">{node.title}</span><span aria-hidden="true">{expanded ? '⌃' : '⌄'}</span></button>
-          {active > 0 && <button type="button" className="f-clear" onClick={() => clearNode(node)}>Očisti</button>}</div>
-        {expanded && <div className="f-content-inner">{node.description && <p className="configured-filter-description">{node.description}</p>}{content(node)}</div>}
+      return <div className={`f-section ${expanded ? 'is-open' : ''}`} key={node.id}>
+        <SectionHeader title={node.title} count={active} onClear={() => clearNode(node)} isOpen={expanded} onToggle={() => setOpen((previous) => ({ ...previous, [node.id]: !expanded }))} />
+        <AnimatePresence initial={false}>
+          {expanded && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="f-content-wrapper"><div className="f-content-inner">{node.description && <p className="configured-filter-description">{node.description}</p>}{content(node)}</div></motion.div>}
+        </AnimatePresence>
       </div>;
     })}
-    {onClose && <button type="button" className="btn-large-close" onClick={onClose}>Zatvori filtere</button>}
+    <div className="f-bottom-actions">
+      {chips.length > 0 && <button type="button" className="btn-large-reset" onClick={clearAll}>Ukloni sve filtere</button>}
+      {onClose && <button type="button" className="btn-large-close" onClick={onClose}>Zatvori filtere</button>}
+    </div>
+    </div>
   </aside>;
 }
