@@ -6,6 +6,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { catalogSpecValue, filterCatalogProducts, normalizedCatalogGender } from '../utils/catalogFilters.js';
 import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 
+function specificationOrder(key) {
+  const label = formatProductSpecLabel(key)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[-\s]+/g, ' ').trim();
+  if (/^(stil|style|dizajn)$/.test(label)) return 0;
+  if (/^(serija|series)$/.test(label)) return 1;
+  if (/^(precnik|diameter|case diameter)\b/.test(label)) return 2;
+  if (/^(tip mehanizma|mehanizam|movement( type)?)$/.test(label)) return 3;
+  if (/^(staklo|tip stakla|glass|crystal( type)?)$/.test(label)) return 4;
+  if (/(boja|boje|color|colour|materijal|material)/.test(label)) return 5;
+  return 6;
+}
+
 function countBy(products, getValue) {
   const counts = new Map();
   products.forEach((product) => {
@@ -126,7 +139,8 @@ export default function Filters({ products, fixedGender, onClose }) {
         };
       })
       .filter((spec) => spec.values.length > 0)
-      .sort((a, b) => a.key.localeCompare(b.key));
+      .sort((a, b) => specificationOrder(a.key) - specificationOrder(b.key)
+        || a.key.localeCompare(b.key, 'sr-Latn'));
   }, [sp, baseData, fixedGender]);
 
   const maxPriceLimit = useMemo(() => {
