@@ -532,8 +532,8 @@
 
 .color-filter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
   padding: 4px;
 }
 .color-filter-card {
@@ -542,9 +542,10 @@
   align-items: flex-end;
   aspect-ratio: 1;
   min-width: 0;
-  padding: 12px;
+  min-height: 72px;
+  padding: 5px;
   border: 1px solid rgb(0 0 0 / 8%);
-  border-radius: 13px;
+  border-radius: 9px;
   text-align: left;
   font-family: inherit;
   cursor: pointer;
@@ -557,22 +558,22 @@
 .color-filter-card:focus-visible { outline: 3px solid #0875ff; outline-offset: 3px; }
 .color-filter-count {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 4px;
+  right: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 25px;
-  height: 25px;
-  padding: 0 5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3px;
   border-radius: 50%;
   background: color-mix(in srgb, currentColor 18%, transparent);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 750;
   text-shadow: none;
 }
 .color-filter-name {
-  font-size: 14px;
+  font-size: 10px;
   font-weight: 750;
   line-height: 1.2;
   overflow-wrap: anywhere;
