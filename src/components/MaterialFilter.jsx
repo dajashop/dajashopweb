@@ -4,6 +4,8 @@ import steel from '../assets/filter-materials/steel.webp';
 import titanium from '../assets/filter-materials/titanium.webp';
 import silicone from '../assets/filter-materials/silicone.webp';
 import resin from '../assets/filter-materials/resin.webp';
+import quartz from '../assets/filter-movements/quartz.webp';
+import automatic from '../assets/filter-movements/automatic.webp';
 
 export function isBraceletMaterialSpec(key) {
   const label = String(key || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -11,7 +13,9 @@ export function isBraceletMaterialSpec(key) {
 }
 
 function materialImage(value) {
-  const label = String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const label = String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  if (/^(kvarc(?:ni)?|quartz)$/.test(label)) return quartz;
+  if (/^(automatski|automatik|automatic|self[- ]winding)$/.test(label)) return automatic;
   if (/(koz|leather)/.test(label)) return leather;
   if (/(celik|steel|inox|metal|mesh)/.test(label)) return steel;
   if (/(titan|titanium)/.test(label)) return titanium;
