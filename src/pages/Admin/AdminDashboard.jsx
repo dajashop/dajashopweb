@@ -5,6 +5,7 @@ import React, {
   useRef,
   useCallback,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../hooks/useAuth';
 import {
   adminCatalogApi,
@@ -224,6 +225,57 @@ const OfferedAnswersDropdown = ({
   compact = false,
 }) => {
   const answers = splitOfferedAnswers(value);
+  const anchorRef = useRef(null);
+  const popupRef = useRef(null);
+  const [popupStyle, setPopupStyle] = useState(null);
+  useEffect(() => {
+    if (!open) { setPopupStyle(null); return; }
+    const position = () => {
+      const anchor = anchorRef.current;
+      if (!anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      const viewport = window.visualViewport;
+      const viewportTop = viewport?.offsetTop || 0;
+      const viewportBottom = viewportTop + (viewport?.height || window.innerHeight);
+      const list = anchor.closest('[data-spec-scroll]');
+      const listRect = list?.getBoundingClientRect();
+      if (rect.bottom <= viewportTop || rect.top >= viewportBottom || (listRect && (rect.bottom <= listRect.top || rect.top >= listRect.bottom))) {
+        onOpenChange(false); return;
+      }
+      const below = viewportBottom - rect.bottom - 14;
+      const above = rect.top - viewportTop - 14;
+      const upwards = below < 160 && above > below;
+      const maxHeight = Math.min(190, upwards ? above : below);
+      if (maxHeight < 40) { onOpenChange(false); return; }
+      const width = Math.min(Math.max(200, rect.width), window.innerWidth - 16);
+      setPopupStyle({ position: 'fixed', zIndex: 12000, width, maxHeight,
+        left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+        top: upwards ? rect.top - 6 : rect.bottom + 6,
+        transform: upwards ? 'translateY(-100%)' : undefined,
+        overflowY: 'auto', overscrollBehavior: 'contain', scrollbarGutter: 'stable' });
+    };
+    const dismissOutside = (event) => {
+      if (!anchorRef.current?.contains(event.target) && !popupRef.current?.contains(event.target)) onOpenChange(false);
+    };
+    position();
+    const observer = new ResizeObserver(position);
+    if (anchorRef.current) observer.observe(anchorRef.current);
+    window.addEventListener('scroll', position, true);
+    window.addEventListener('resize', position);
+    window.visualViewport?.addEventListener('resize', position);
+    window.visualViewport?.addEventListener('scroll', position);
+    document.addEventListener('pointerdown', dismissOutside);
+    document.addEventListener('focusin', dismissOutside);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', position, true);
+      window.removeEventListener('resize', position);
+      window.visualViewport?.removeEventListener('resize', position);
+      window.visualViewport?.removeEventListener('scroll', position);
+      document.removeEventListener('pointerdown', dismissOutside);
+      document.removeEventListener('focusin', dismissOutside);
+    };
+  }, [open, onOpenChange]);
   const addAnswer = () => {
     const nextAnswer = draft.trim();
     if (!nextAnswer) return;
@@ -233,15 +285,15 @@ const OfferedAnswersDropdown = ({
   };
 
   return (
-    <div className="relative">
+    <div ref={anchorRef} className="relative min-w-0">
       <div className="relative">
         <input
           className="h-10 w-full !rounded-[8px] border border-primary-dark bg-white/5 px-3 pr-10 text-sm outline-none transition-colors focus:border-primary focus:bg-white/10"
           value={draft}
           onChange={(event) => onDraftChange(event.target.value)}
           onFocus={() => onOpenChange(true)}
-          onBlur={() => window.setTimeout(() => onOpenChange(false), 120)}
           onKeyDown={(event) => {
+            if (event.key === 'Escape') { onOpenChange(false); return; }
             if (event.key === 'Enter') {
               event.preventDefault();
               addAnswer();
@@ -263,18 +315,21 @@ const OfferedAnswersDropdown = ({
           <Plus size={compact ? 15 : 17} />
         </button>
       </div>
-      {open && (
+      {open && popupStyle && createPortal(
         <div
-          className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl"
-          onMouseDown={(event) => event.preventDefault()}
+          ref={popupRef}
+          style={popupStyle}
+          data-lenis-prevent
+          className="rounded-xl border border-neutral-200 bg-white shadow-xl custom-scrollbar"
         >
           {answers.length ? (
-            <ul className="max-h-44 overflow-y-auto py-1.5 custom-scrollbar">
+            <ul className="py-1.5">
               {answers.map((answer) => (
                 <li key={answer} className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-50">
                   <span className="min-w-0 truncate">{answer}</span>
                   <button
                     type="button"
+                    onMouseDown={(event) => event.preventDefault()}
                     onClick={() => onValueChange(answers.filter((item) => item !== answer).join(', '))}
                     className="shrink-0 rounded-md p-1 text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
                     aria-label={`Ukloni odgovor ${answer}`}
@@ -287,7 +342,7 @@ const OfferedAnswersDropdown = ({
           ) : (
             <p className="px-3 py-3 text-xs text-neutral-500">Upišite odgovor i pritisnite + da ga dodate u listu.</p>
           )}
-        </div>
+        </div>, document.body
       )}
     </div>
   );
@@ -2217,10 +2272,10 @@ function AdminDashboardContent() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto"
+            className="max-w-2xl mx-auto w-full min-w-0"
           >
             {' '}
-            <div className="card glass p-6 h-full flex flex-col">
+            <div className="card glass p-4 sm:p-6 flex flex-col min-w-0 overflow-hidden">
               {' '}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-white/10 pb-4">
                 {' '}
@@ -2336,7 +2391,7 @@ function AdminDashboardContent() {
                   <Plus size={18} />{' '}
                 </button>{' '}
               </form>{' '}
-              <div className={`flex-1 ${editingSpecOptionsOpen ? 'overflow-visible' : 'overflow-y-auto'} pr-1 space-y-2 custom-scrollbar max-h-[500px]`}>
+              <div data-spec-scroll data-lenis-prevent className="min-h-0 min-w-0 overflow-y-scroll overflow-x-hidden pr-1 space-y-2 custom-scrollbar max-h-[500px]" style={{ scrollbarGutter: 'stable', overscrollBehavior: 'contain' }}>
                 {' '}
                 <AnimatePresence initial={false}>
                   {' '}
@@ -2347,26 +2402,26 @@ function AdminDashboardContent() {
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-primary group transition-colors"
+                      className="flex min-w-0 items-center justify-between gap-2 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-primary group transition-colors"
                     >
                       {' '}
                       {editingSpecId === item.id ? (
-                        <div className="flex flex-1 items-center gap-2">
+                        <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_96px_28px_28px] sm:grid-cols-[minmax(0,1fr)_80px_minmax(140px,1fr)_28px_28px] items-center gap-2">
                           {' '}
                           <input
-                            className={`flex-1 ${catalogInlineFieldClass}`}
+                            className={`w-full ${catalogInlineFieldClass}`}
                             value={editingSpecName}
                             onChange={(e) => setEditingSpecName(e.target.value)}
                             autoFocus
                           />{' '}
                           <input
-                            className={`w-24 ${catalogInlineFieldClass}`}
+                            className={`w-full ${catalogInlineFieldClass}`}
                             value={editingSpecUnit}
                             onChange={(e) => setEditingSpecUnit(e.target.value)}
                             placeholder="Jedinica"
                             aria-label="Jedinica specifikacije"
                           />{' '}
-                          <div className="flex-1 min-w-[180px]">
+                          <div className="min-w-0 col-span-4 col-start-1 row-start-2 sm:col-span-1 sm:col-start-3 sm:row-start-1">
                             <OfferedAnswersDropdown
                               value={editingSpecOptions}
                               draft={editingSpecOptionDraft}
@@ -2390,7 +2445,7 @@ function AdminDashboardContent() {
                               setEditingSpecOptionDraft('');
                               setEditingSpecOptionsOpen(false);
                             }}
-                            className="text-red-400 p-1 hover:bg-white/10 rounded-lg"
+                            aria-label="Otkaži uređivanje specifikacije" className="col-start-4 row-start-1 sm:col-start-5 text-red-400 p-1 hover:bg-white/10 rounded-lg"
                           >
                             {' '}
                             <X size={16} />{' '}
@@ -2399,7 +2454,7 @@ function AdminDashboardContent() {
                       ) : (
                         <>
                           {' '}
-                          <div className="flex items-center gap-2">
+                          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                             {' '}
                             <span className="font-medium text-sm">
                               {' '}
@@ -2411,7 +2466,7 @@ function AdminDashboardContent() {
                                 ({item.unit}){' '}
                               </span>
                             )}{' '}
-                            {Array.isArray(item.optionValues) && item.optionValues.length > 0 && <span className="text-[10px] text-neutral-400">{item.optionValues.join(', ')}</span>}{' '}
+                            {Array.isArray(item.optionValues) && item.optionValues.length > 0 && <span className="min-w-0 max-w-full break-words text-[10px] text-neutral-400">{item.optionValues.join(', ')}</span>}{' '}
                             {specFilters.length !== 1 && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-neutral-400 border border-white/5 uppercase tracking-wider">
                                 {' '}
@@ -2422,7 +2477,7 @@ function AdminDashboardContent() {
                               </span>
                             )}{' '}
                           </div>{' '}
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex shrink-0 gap-1 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
                             {' '}
                             <button
                               onClick={() => {
