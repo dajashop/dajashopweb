@@ -529,3 +529,51 @@
 }
 .diameter-presets button:hover:not(:disabled) { border-color: #2875ff; }
 .diameter-presets button:disabled { opacity: .4; cursor: default; }
+
+.color-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
+  gap: 12px;
+  padding: 4px;
+}
+.color-filter-card {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgb(0 0 0 / 8%);
+  border-radius: 13px;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.color-filter-card.is-active {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #0875ff;
+}
+.color-filter-card:hover { transform: translateY(-1px); }
+.color-filter-card:focus-visible { outline: 3px solid #0875ff; outline-offset: 3px; }
+.color-filter-count {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 25px;
+  height: 25px;
+  padding: 0 5px;
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  font-size: 12px;
+  font-weight: 750;
+  text-shadow: none;
+}
+.color-filter-name {
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}

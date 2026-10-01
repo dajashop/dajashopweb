@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { catalogSpecValue, diameterValue, filterCatalogProducts, isDiameterSpec, normalizedCatalogGender } from '../utils/catalogFilters.js';
 import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 import DiameterFilter from './DiameterFilter.jsx';
+import ColorFilter, { isColorSpec } from './ColorFilter.jsx';
 
 function specificationOrder(key) {
   const label = formatProductSpecLabel(key)
@@ -477,6 +478,9 @@ export default function Filters({ products, fixedGender, onClose }) {
                           params.delete(`spec_${spec.key}`);
                           values.forEach((value) => params.append(`spec_${spec.key}`, value));
                         })} />
+                    ) : isColorSpec(spec.key) ? (
+                      <ColorFilter values={spec.values} selected={sp.getAll(`spec_${spec.key}`)}
+                        label={formatProductSpecLabel(spec.key)} onToggle={(value) => toggleParam(`spec_${spec.key}`, value)} />
                     ) : (
                     <div className="filter-list" role="group">
                       {spec.values.map(({ value, count }) => (
