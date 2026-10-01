@@ -1,3 +1,14 @@
+export function isDiameterSpec(key) {
+  const label = String(key || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[_\s-]+/g, ' ').trim();
+  return /^(precnik|diameter|case diameter)\b/.test(label);
+}
+
+export function diameterValue(value) {
+  const match = String(value ?? '').trim().replace(',', '.').match(/^(\d+(?:\.\d+)?)\s*(?:mm)?$/i);
+  return match ? Number(match[1]) : null;
+}
+
 export function normalizedCatalogGender(value) {
   const compact = String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
   if (!compact || compact === 'UNISEX') return 'UNISEX';

@@ -1,9 +1,5 @@
 import React from 'react';
-
-export function diameterValue(value) {
-  const match = String(value ?? '').trim().replace(',', '.').match(/^(\d+(?:\.\d+)?)\s*(?:mm)?$/i);
-  return match ? Number(match[1]) : null;
-}
+import { diameterValue } from '../utils/catalogFilters.js';
 
 const format = (value) => Number(value.toFixed(1)).toLocaleString('sr-Latn');
 

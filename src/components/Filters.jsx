@@ -3,9 +3,9 @@ import './Filters.css';
 import { useSearchParams } from 'react-router-dom';
 import catalog from '../services/CatalogService.js';
 import { motion, AnimatePresence } from 'framer-motion';
-import { catalogSpecValue, filterCatalogProducts, normalizedCatalogGender } from '../utils/catalogFilters.js';
+import { catalogSpecValue, diameterValue, filterCatalogProducts, isDiameterSpec, normalizedCatalogGender } from '../utils/catalogFilters.js';
 import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
-import DiameterFilter, { diameterValue } from './DiameterFilter.jsx';
+import DiameterFilter from './DiameterFilter.jsx';
 
 function specificationOrder(key) {
   const label = formatProductSpecLabel(key)
@@ -13,7 +13,7 @@ function specificationOrder(key) {
     .toLowerCase().replace(/[-\s]+/g, ' ').trim();
   if (/^(stil|style|dizajn)$/.test(label)) return 0;
   if (/^(serija|series)$/.test(label)) return 1;
-  if (/^(precnik|diameter|case diameter)\b/.test(label)) return 2;
+  if (isDiameterSpec(key)) return 2;
   if (/^(tip mehanizma|mehanizam|movement( type)?)$/.test(label)) return 3;
   if (/^(staklo|tip stakla|glass|crystal( type)?)$/.test(label)) return 4;
   if (/(boja|boje|color|colour|materijal|material)/.test(label)) return 5;
@@ -250,8 +250,8 @@ export default function Filters({ products, fixedGender, onClose }) {
     countSelected('category') +
     (sp.get('min') || sp.get('max') ? 1 : 0);
 
-  Array.from(sp.keys()).forEach((k) => {
-    if (k.startsWith('spec_')) activeTotal += sp.getAll(k).length;
+  [...new Set(sp.keys())].forEach((k) => {
+    if (k.startsWith('spec_')) activeTotal += isDiameterSpec(k.slice(5)) ? 1 : new Set(sp.getAll(k)).size;
   });
 
   if (baseData.length === 0) {
@@ -457,7 +457,7 @@ export default function Filters({ products, fixedGender, onClose }) {
           >
             <SectionHeader
               title={formatProductSpecLabel(spec.key)}
-              count={countSelected(`spec_${spec.key}`)}
+              count={spec.diameterValues?.length ? Number(countSelected(`spec_${spec.key}`) > 0) : countSelected(`spec_${spec.key}`)}
               onClear={() => clearKey(`spec_${spec.key}`)}
               isOpen={!!openSections[spec.key]}
               onToggle={() => toggleSection(spec.key)}

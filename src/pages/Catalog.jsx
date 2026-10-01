@@ -16,7 +16,7 @@ import { seoConfig } from '../config/seo.js';
 
 // Hookovi
 import useProducts from '../hooks/useProducts.js';
-import { filterCatalogProducts } from '../utils/catalogFilters.js';
+import { diameterValue, filterCatalogProducts, isDiameterSpec } from '../utils/catalogFilters.js';
 import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 
 // --- ADMIN IMPORTI (Potrebni da bismo znali da li da prikažemo skrivene satove) ---
@@ -148,10 +148,18 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       });
     }
 
-    Array.from(sp.keys()).forEach((k) => {
+    [...new Set(sp.keys())].forEach((k) => {
       if (k.startsWith('spec_')) {
         const labelKey = k.replace('spec_', '');
-        sp.getAll(k).forEach((v) => {
+        const values = [...new Set(sp.getAll(k))];
+        const diameters = values.map(diameterValue);
+        if (isDiameterSpec(labelKey) && diameters.length && diameters.every((value) => value !== null)) {
+          const from = Math.min(...diameters).toLocaleString('sr-Latn');
+          const to = Math.max(...diameters).toLocaleString('sr-Latn');
+          active.push({ key: k, val: null, label: `Prečnik kućišta: ${from}–${to} mm` });
+          return;
+        }
+        values.forEach((v) => {
           active.push({ key: k, val: v, label: `${formatProductSpecLabel(labelKey)}: ${v}` });
         });
       }
@@ -167,6 +175,8 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       next.delete('max');
     } else if (key === 'q') {
       next.delete('q');
+    } else if (val === null) {
+      next.delete(key);
     } else {
       const values = next.getAll(key).filter((v) => v !== val);
       next.delete(key);
