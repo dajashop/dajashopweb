@@ -7,7 +7,7 @@ import {
   onStaffAccessTokenChange,
   toArrayPayload,
 } from './apiClient';
-import { io } from 'socket.io-client';
+import { createRealtimeSocket } from './realtimeSocket.js';
 import { getAccessToken, getStaffAccessToken } from './apiClient';
 import { readStoredValue, writeStoredValue } from './consentStorage.js';
 import { visibleProductSpecs } from '../utils/catalogPresentation.js';
@@ -20,11 +20,7 @@ const staffCatalogListeners = new Set();
 const OAUTH_WAKEUP_TIMEOUT_MS = 90_000;
 const OAUTH_WAKEUP_RETRY_MS = 2_000;
 const OAUTH_WAKEUP_REQUEST_TIMEOUT_MS = 12_000;
-// Render occasionally closes a direct WebSocket upgrade before it completes.
-// Socket.IO polling keeps the same real-time event stream without retrying a
-// broken native WebSocket connection in every open tab.
 const REALTIME_ENABLED = true;
-const REALTIME_TRANSPORTS = ['polling'];
 
 const delay = (duration) =>
   new Promise((resolve) => window.setTimeout(resolve, duration));
@@ -97,12 +93,7 @@ function ensureStaffCatalogSocket() {
     staffCatalogListeners.forEach((candidate) => candidate.onError?.(error));
     return;
   }
-  staffCatalogSocket = io(realtimeNamespaceUrl(), {
-    path: '/socket.io',
-    transports: REALTIME_TRANSPORTS,
-    auth: { token: `Bearer ${token}` },
-    reconnection: true,
-  });
+  staffCatalogSocket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ token: `Bearer ${getStaffAccessToken() || ''}` }));
   staffCatalogSocket.on('product.updated', (event) => {
     staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
   });
@@ -995,7 +986,7 @@ export function subscribeReaderSession(sessionId, onEvent, onError) {
   if (!REALTIME_ENABLED) return () => {};
   const token = getStaffAccessToken();
   if (!token) { onError?.(new Error('Staff token nije dostupan za Reader Station.')); return () => {}; }
-  const socket = io(realtimeNamespaceUrl(), { path: '/socket.io', transports: REALTIME_TRANSPORTS, auth: { token: `Bearer ${token}` }, reconnection: true });
+  const socket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ token: `Bearer ${getStaffAccessToken() || ''}` }));
   const channels = ['reader.scan.product', 'reader.scan.completed', 'reader.scan.cancelled'];
   socket.on('connect', () => socket.emit('reader.scan.subscribe', { sessionId }, (result) => {
     if (result?.ok === false) onError?.(new Error('Nije moguće povezati sesiju očitavanja.'));
@@ -1009,7 +1000,7 @@ export function subscribeReaderFind(sessionId, onEvent, onError) {
   if (!REALTIME_ENABLED) return () => {};
   const token = getStaffAccessToken();
   if (!token) { onError?.(new Error('Staff token nije dostupan za Reader Station.')); return () => {}; }
-  const socket = io(realtimeNamespaceUrl(), { path: '/socket.io', transports: REALTIME_TRANSPORTS, auth: { token: `Bearer ${token}` }, reconnection: true });
+  const socket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ token: `Bearer ${getStaffAccessToken() || ''}` }));
   const channels = ['reader.find.proximity', 'reader.find.completed', 'reader.find.cancelled'];
   socket.on('connect', () => socket.emit('reader.find.subscribe', { sessionId }, (result) => { if (result?.ok === false) onError?.(new Error('Nije moguće povezati sesiju pronalaženja.')); }));
   channels.forEach((channel) => socket.on(channel, onEvent)); socket.on('connect_error', onError || (() => {}));
@@ -1425,13 +1416,7 @@ export function subscribeRealtime(channels, onEvent, onError) {
       onError?.(new Error('Staff token nije dostupan za real-time vezu.'));
       return;
     }
-    socket = io(realtimeNamespaceUrl(), {
-      path: '/socket.io',
-      transports: REALTIME_TRANSPORTS,
-      auth: { token: `Bearer ${token}` },
-      reconnection: true,
-      reconnectionAttempts: 3,
-    });
+    socket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ token: `Bearer ${getStaffAccessToken() || ''}` }));
     channels.forEach((channel) => socket.on(channel, onEvent));
     socket.on('connect_error', onError || (() => {}));
   };
@@ -1452,13 +1437,7 @@ export function subscribeCustomerRealtime(onEvent, onError) {
   if (!REALTIME_ENABLED) return () => {};
   const token = getAccessToken();
   if (!token) return () => {};
-  const socket = io(realtimeNamespaceUrl(), {
-    path: '/socket.io',
-    transports: REALTIME_TRANSPORTS,
-    auth: { token: `Bearer ${token}` },
-    reconnection: true,
-    reconnectionAttempts: 5,
-  });
+  const socket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ token: `Bearer ${getAccessToken() || ''}` }));
   socket.on('customer.email_verified', onEvent);
   socket.on('connect_error', onError || (() => {}));
   return () => {
@@ -1486,13 +1465,7 @@ export function subscribePublicCatalogRealtime(onEvent, onError) {
   if (!REALTIME_ENABLED) return () => {};
   publicCatalogListeners.add(onEvent);
   if (!publicCatalogSocket) {
-    publicCatalogSocket = io(realtimeNamespaceUrl(), {
-      path: '/socket.io',
-      transports: REALTIME_TRANSPORTS,
-      auth: { publicCatalog: true },
-      reconnection: true,
-      reconnectionAttempts: 5,
-    });
+    publicCatalogSocket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ publicCatalog: true }));
     publicCatalogSocket.on('product.updated', (event) => {
       publicCatalogListeners.forEach((listener) => listener(event));
     });
