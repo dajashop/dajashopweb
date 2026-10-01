@@ -536,6 +536,13 @@
   gap: 10px;
   padding: 4px;
 }
+.filter-subsection + .filter-subsection { margin-top: 14px; }
+.filter-subsection-title {
+  margin: 0 4px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-muted, #6e6e73);
+}
 .color-filter-card {
   position: relative;
   display: flex;

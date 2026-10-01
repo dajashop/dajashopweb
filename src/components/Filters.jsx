@@ -148,6 +148,22 @@ export default function Filters({ products, fixedGender, onClose }) {
         || a.key.localeCompare(b.key, 'sr-Latn'));
   }, [sp, baseData, fixedGender]);
 
+  const specificationSections = useMemo(() => {
+    const braceletSpecs = specifications.filter((spec) => {
+      const label = formatProductSpecLabel(spec.key).toLowerCase();
+      return /(narukvic|kais|kaiš|bracelet|strap|band)/.test(label)
+        && (isColorSpec(spec.key) || /(materijal|material)/.test(label));
+    });
+    if (braceletSpecs.length < 2) return specifications.map((spec) => ({ key: spec.key, title: formatProductSpecLabel(spec.key), specs: [spec] }));
+    let braceletAdded = false;
+    return specifications.flatMap((spec) => {
+      if (!braceletSpecs.includes(spec)) return [{ key: spec.key, title: formatProductSpecLabel(spec.key), specs: [spec] }];
+      if (braceletAdded) return [];
+      braceletAdded = true;
+      return [{ key: 'bracelet_filters', title: 'Narukvica', specs: [...braceletSpecs].sort((a, b) => Number(isColorSpec(a.key)) - Number(isColorSpec(b.key))) }];
+    });
+  }, [specifications]);
+
   const maxPriceLimit = useMemo(() => {
     if (!baseData || baseData.length === 0) return 50000;
     return Math.max(...baseData.map((p) => p.price));
@@ -451,20 +467,20 @@ export default function Filters({ products, fixedGender, onClose }) {
           </div>
         )}
 
-        {specifications.map((spec) => (
+        {specificationSections.map((section) => (
           <div
-            key={spec.key}
-            className={`f-section ${openSections[spec.key] ? 'is-open' : ''}`}
+            key={section.key}
+            className={`f-section ${openSections[section.key] ? 'is-open' : ''}`}
           >
             <SectionHeader
-              title={formatProductSpecLabel(spec.key)}
-              count={spec.diameterValues?.length ? Number(countSelected(`spec_${spec.key}`) > 0) : countSelected(`spec_${spec.key}`)}
-              onClear={() => clearKey(`spec_${spec.key}`)}
-              isOpen={!!openSections[spec.key]}
-              onToggle={() => toggleSection(spec.key)}
+              title={section.title}
+              count={section.specs.reduce((total, spec) => total + (spec.diameterValues?.length ? Number(countSelected(`spec_${spec.key}`) > 0) : countSelected(`spec_${spec.key}`)), 0)}
+              onClear={() => setParams((params) => section.specs.forEach((spec) => params.delete(`spec_${spec.key}`)))}
+              isOpen={!!openSections[section.key]}
+              onToggle={() => toggleSection(section.key)}
             />
             <AnimatePresence initial={false}>
-              {openSections[spec.key] && (
+              {openSections[section.key] && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
@@ -472,6 +488,9 @@ export default function Filters({ products, fixedGender, onClose }) {
                   className="f-content-wrapper"
                 >
                   <div className="f-content-inner">
+                    {section.specs.map((spec) => (
+                    <div key={spec.key} className={section.specs.length > 1 ? 'filter-subsection' : undefined}>
+                    {section.specs.length > 1 && <h4 className="filter-subsection-title">{isColorSpec(spec.key) ? 'Boja' : 'Materijal'}</h4>}
                     {spec.diameterValues?.length ? (
                       <DiameterFilter values={spec.diameterValues} selected={sp.getAll(`spec_${spec.key}`)}
                         onChange={(values) => setParams((params) => {
@@ -518,6 +537,8 @@ export default function Filters({ products, fixedGender, onClose }) {
                       ))}
                     </div>
                     )}
+                    </div>
+                    ))}
                   </div>
                 </motion.div>
               )}
