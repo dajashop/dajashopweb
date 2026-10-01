@@ -49,4 +49,3 @@ export default function SectionHeader({ title, count, onClear, isOpen, onToggle 
     </div>
   );
 }
-
