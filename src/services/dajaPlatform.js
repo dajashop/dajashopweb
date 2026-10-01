@@ -414,6 +414,13 @@ export const authApi = {
 };
 
 export const catalogApi = {
+  async search(params = {}, { signal } = {}) {
+    const data = await apiRequest('/public/catalog/search', { auth: false, query: params, signal });
+    if (!data || typeof data !== 'object' || !Array.isArray(data.items)) {
+      throw new Error('Pretraga nije vratila očekivani odgovor.');
+    }
+    return { ...data, items: data.items.map(normalizeProduct), recommendations: (data.recommendations || []).map(normalizeProduct) };
+  },
   async listProducts(params = {}) {
     const fetchAll = params.all === true;
     const requestedLimit = fetchAll ? Infinity : Math.max(1, Number(params.limit) || 20);

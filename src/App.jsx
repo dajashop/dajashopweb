@@ -12,6 +12,7 @@ export default function App() {
 
   const isWidePage =
     pathname.startsWith('/catalog') ||
+    pathname === '/search' ||
     pathname === '/muski-satovi' ||
     pathname === '/zenski-satovi' ||
     pathname === '/daljinski' ||

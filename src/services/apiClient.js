@@ -313,6 +313,7 @@ export async function apiRequest(path, options = {}) {
     auth = true,
     staff = false,
     retry = true,
+    signal,
   } = options;
 
   const requestHeaders = { ...headers };
@@ -346,8 +347,10 @@ export async function apiRequest(path, options = {}) {
       // Public catalog/privacy requests do not need a browser session and
       // therefore must not attach incidental cookies before consent.
       credentials: auth ? 'include' : 'omit',
+      signal,
     });
   } catch (error) {
+    if (error.name === 'AbortError') throw error;
     throw new Error(
       `DAJA API nije dostupan. Proveri da li je pokrenut backend (${error.message}).`,
     );
