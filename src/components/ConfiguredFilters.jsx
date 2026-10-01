@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ColorFilter from './ColorFilter.jsx';
 import MaterialFilter from './MaterialFilter.jsx';
@@ -8,10 +8,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { configuredFilterParams, configuredFilterChips, filterConfiguredProducts, filterLeaves, numericFilterValue, optionMatches, orderedNodes, rangeKey, selectionKey, sourceValues } from '../utils/filterConfiguration.js';
 import './Filters.css';
 
-export default function ConfiguredFilters({ products, configuration, fixedGender, onClose, params: previewParams, onParams, expandIds = [], showUnavailableOptions = false }) {
+export default function ConfiguredFilters({ products, configuration, fixedGender, onClose, params: previewParams, onParams, expandIds = [], showUnavailableOptions = false, focusId = '' }) {
   const [urlParams, setUrlParams] = useSearchParams();
   const params = configuredFilterParams(previewParams || urlParams, configuration, fixedGender);
   const [open, setOpen] = useState({});
+  const container = useRef(null);
+  const contains = (node) => node.id === focusId || node.children.some(contains);
+  const focusSectionId = focusId ? configuration.filters.find(contains)?.id : '';
+  const orderKey = configuration.filters.map((node) => `${node.id}:${node.priority}`).join('|');
+  useEffect(() => {
+    if (!focusId || !focusSectionId) return;
+    setOpen((previous) => ({ ...previous, [focusSectionId]: true }));
+    // Wait for the same accordion animation used on the storefront. Scroll
+    // only the preview's filter viewport, leaving the admin editor in place.
+    const timer = window.setTimeout(() => {
+      const target = Array.from(container.current?.querySelectorAll('[data-filter-id]') || []).find((element) => element.dataset.filterId === focusId);
+      if (!target) return;
+      let viewport = container.current;
+      while (viewport && !['auto', 'scroll'].includes(window.getComputedStyle(viewport).overflowY)) viewport = viewport.parentElement;
+      if (!viewport) return;
+      viewport.scrollTo({ top: Math.max(0, viewport.scrollTop + target.getBoundingClientRect().top - viewport.getBoundingClientRect().top - 64), behavior: 'smooth' });
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [focusId, focusSectionId, orderKey]);
   const paramsKey = params.toString();
   const facets = useMemo(() => {
     const selections = new URLSearchParams(paramsKey);
@@ -55,7 +74,7 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
   const chips = configuredFilterChips(params, configuration);
   const content = (node) => {
     if (node.mode === 'group') return orderedNodes(node.children).filter(available).map((child) => (
-      <div className="filter-subsection" key={child.id}><h4 className="filter-subsection-title">{child.title}</h4>{child.description && <p className="configured-filter-description">{child.description}</p>}{content(child)}</div>
+      <div className="filter-subsection" data-filter-id={child.id} key={child.id}><h4 className="filter-subsection-title">{child.title}</h4>{child.description && <p className="configured-filter-description">{child.description}</p>}{content(child)}</div>
     ));
     const { values, selected, numbers } = facets.get(node.id);
     if (node.style === 'color') return <ColorFilter values={values} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} columns={node.columns} showCounts={node.showCounts} />;
@@ -94,13 +113,13 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
       {selected.includes(value.value) && <div className="filter-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg></div>}
     </label>)}</div>;
   };
-  return <aside className="filters card glass configured-filters" aria-label="Filteri kataloga" data-lenis-prevent>
+  return <aside ref={container} className="filters card glass configured-filters" aria-label="Filteri kataloga" data-lenis-prevent>
     <div className="f-top"><h3 className="f-top-title">Filteri</h3><div className="f-top-actions">{chips.length > 0 && <><span className="f-badge">{chips.length}</span><button type="button" className="f-clear" onClick={clearAll}>Očisti sve</button></>}</div></div>
     <div className="f-scroll-container">
     {orderedNodes(configuration.filters).filter(available).map((node) => {
       const expanded = open[node.id] ?? (expandIds.includes(node.id) || node.open);
       const active = chips.filter((chip) => filterLeaves({ filters: [node] }).some((leaf) => [selectionKey(leaf), `range:${leaf.id}`].includes(chip.key))).length;
-      return <div className={`f-section ${expanded ? 'is-open' : ''}`} key={node.id}>
+      return <div className={`f-section ${expanded ? 'is-open' : ''}`} data-filter-id={node.id} key={node.id}>
         <SectionHeader title={node.title} count={active} onClear={() => clearNode(node)} isOpen={expanded} onToggle={() => setOpen((previous) => ({ ...previous, [node.id]: !expanded }))} />
         <AnimatePresence initial={false}>
           {expanded && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="f-content-wrapper"><div className="f-content-inner">{node.description && <p className="configured-filter-description">{node.description}</p>}{content(node)}</div></motion.div>}
