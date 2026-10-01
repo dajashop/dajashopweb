@@ -61,15 +61,14 @@ export default function ColorFilter({ values, selected, onToggle, label }) {
   return (
     <>
     <div className="color-filter-grid" role="group" aria-label={label}>
-      {values.map(({ value, count }) => (
+      {values.map(({ value }) => (
         <button key={value} type="button" className={`color-filter-card ${selected.includes(value) ? 'is-active' : ''}`}
-          style={swatch(value)} aria-pressed={selected.includes(value)} aria-label={`${value}: ${count} proizvoda`}
+          style={swatch(value)} aria-pressed={selected.includes(value)} aria-label={value}
           aria-describedby={tooltip?.value === value ? tooltipId : undefined}
           onMouseEnter={(event) => showName(event, value)} onMouseLeave={() => setTooltip(null)}
           onFocus={(event) => showName(event, value)} onBlur={() => setTooltip(null)}
           onKeyDown={(event) => { if (event.key === 'Escape') setTooltip(null); }}
           onClick={(event) => { showName(event, value); onToggle(value); }}>
-          <span className="color-filter-count">{count}</span>
         </button>
       ))}
     </div>
