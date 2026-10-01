@@ -2,10 +2,10 @@
 .filter-manager h2 { font-size: 24px; font-weight: 800; margin: 0; }
 .filter-manager h3 { font-size: 16px; font-weight: 750; margin: 16px 0 10px; }
 .filter-manager h4 { font-weight: 700; margin: 10px 0; }
-.filter-manager button:not(.filters button), .filter-manager select:not(.filters select), .filter-manager input:not([type=checkbox]):not(.filters input), .filter-manager textarea:not(.filters textarea) { font: inherit; border: 1px solid #ddd; border-radius: 8px; padding: 7px 10px; background: #fff; color: #222; font-size: 13px; }
-.filter-manager button:not(.filters button) { cursor: pointer; }
-.filter-manager button:not(.filters button):hover:not(:disabled) { border-color: #2875ff; }
-.filter-manager button:not(.filters button):disabled { opacity: .45; cursor: default; }
+:where(.filter-manager) button:not(:where(.filters button)), .filter-manager select:not(.filters select), .filter-manager input:not([type=checkbox]):not(.filters input), .filter-manager textarea:not(.filters textarea) { font: inherit; border: 1px solid #ddd; border-radius: 8px; padding: 7px 10px; background: #fff; color: #222; font-size: 13px; }
+:where(.filter-manager) button:not(:where(.filters button)) { cursor: pointer; }
+:where(.filter-manager) button:not(:where(.filters button)):hover:not(:disabled) { border-color: #2875ff; }
+:where(.filter-manager) button:not(:where(.filters button)):disabled { opacity: .45; cursor: default; }
 .filter-manager .fm-primary { background: #171717; color: white; }
 .filter-manager label:not(.filters label) { display: block; font-size: 12px; margin: 9px 0; }
 .filter-manager label:not(.filters label) input:not([type=checkbox]), .filter-manager label:not(.filters label) textarea, .filter-manager label:not(.filters label) select { display: block; width: 100%; margin-top: 4px; }
@@ -17,7 +17,7 @@
 .fm-error, .fm-notice { padding: 10px; margin: 10px 0; border-radius: 8px; font-size: 13px; }
 .fm-error { background: #fff0f0; color: #9e2525; }
 .fm-notice { background: #eaf7ef; color: #26723c; }
-.fm-layout { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.fm-layout { display: grid; grid-template-columns: minmax(340px, 380px) minmax(0, 1fr); gap: 20px; align-items: start; }
 .fm-sidebar, .fm-editor, .fm-preview { background: #fff; border: 1px solid #e5e5e8; border-radius: 14px; padding: 16px; box-shadow: 0 3px 14px rgb(20 35 60 / 3%); }
 .fm-sidebar { max-height: 85vh; overflow: auto; }
 .fm-tree-row { position: relative; display: flex; align-items: center; gap: 6px; padding: 9px 8px; border: 1px solid transparent; border-radius: 10px; transition: background .15s, border-color .15s, box-shadow .15s; }
@@ -77,7 +77,7 @@
 .fm-preview-products > div { display: flex; flex-direction: column; gap: 8px; border: 1px solid #eee; padding: 12px; border-radius: 10px; font-size: 12px; }
 @media (max-width: 850px) { .fm-layout { grid-template-columns: 1fr; } .fm-sidebar { max-height: 400px; } .fm-fields { grid-template-columns: 1fr; } .fm-preview-layout { grid-template-columns: 220px minmax(150px, 1fr); } }
 
-.fm-layout.has-preview { grid-template-columns: minmax(240px, 280px) minmax(330px, 1fr) minmax(290px, 350px); gap: 16px; }
+.fm-layout.has-preview { grid-template-columns: minmax(340px, 380px) minmax(280px, 1fr) minmax(290px, 350px); gap: 16px; }
 .fm-live-preview { position: sticky; top: 18px; max-height: calc(100vh - 36px); overflow: auto; padding: 14px; border: 1px solid #dce5f2; border-radius: 14px; background: #fff; box-shadow: 0 4px 18px rgb(30 55 90 / 5%); min-width: 0; scrollbar-width: thin; }
 .fm-live-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 12px; }
 .fm-live-heading h3 { display: flex; align-items: center; gap: 7px; margin: 0; }
@@ -100,7 +100,7 @@
 .fm-preview-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 9px; }
 .fm-preview-chips span { padding: 4px 7px; border-radius: 999px; background: #edf4ff; color: #2866cd; font-size: 10px; }
 @media (max-width: 1250px) and (min-width: 851px) {
-  .fm-layout.has-preview { grid-template-columns: 280px minmax(0, 1fr); grid-template-rows: minmax(0, 35vh) auto; }
+  .fm-layout.has-preview { grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: minmax(0, 35vh) auto; }
   .fm-layout.has-preview .fm-sidebar { grid-column: 1; grid-row: 1; max-height: 35vh; }
   .fm-layout.has-preview .fm-editor { grid-column: 2; grid-row: 1 / span 2; }
   .fm-layout.has-preview .fm-live-preview { grid-column: 1; grid-row: 2; max-height: 60vh; }
