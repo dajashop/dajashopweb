@@ -42,7 +42,7 @@ function swatch(value) {
   return { background: `linear-gradient(125deg, ${highlight}, ${base})`, color: foreground };
 }
 
-export default function ColorFilter({ values, selected, onToggle, label }) {
+export default function ColorFilter({ values, selected, onToggle, label, columns = 5, showCounts = false }) {
   const [tooltip, setTooltip] = useState(null);
   const tooltipId = useId();
   useEffect(() => {
@@ -60,15 +60,16 @@ export default function ColorFilter({ values, selected, onToggle, label }) {
   };
   return (
     <>
-    <div className="color-filter-grid" role="group" aria-label={label}>
-      {values.map(({ value }) => (
+    <div className="color-filter-grid" role="group" aria-label={label} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+      {values.map(({ value, label: name = value, count, color, image }) => (
         <button key={value} type="button" className={`color-filter-card ${selected.includes(value) ? 'is-active' : ''}`}
-          style={swatch(value)} aria-pressed={selected.includes(value)} aria-label={value}
-          aria-describedby={tooltip?.value === value ? tooltipId : undefined}
-          onMouseEnter={(event) => showName(event, value)} onMouseLeave={() => setTooltip(null)}
-          onFocus={(event) => showName(event, value)} onBlur={() => setTooltip(null)}
+          style={image ? { background: `url("${encodeURI(image).replace(/"/g, '%22')}") center / cover`, color: '#fff' } : color ? { background: color, color: '#fff' } : swatch(name)} aria-pressed={selected.includes(value)} aria-label={name}
+          aria-describedby={tooltip?.value === name ? tooltipId : undefined}
+          onMouseEnter={(event) => showName(event, name)} onMouseLeave={() => setTooltip(null)}
+          onFocus={(event) => showName(event, name)} onBlur={() => setTooltip(null)}
           onKeyDown={(event) => { if (event.key === 'Escape') setTooltip(null); }}
-          onClick={(event) => { showName(event, value); onToggle(value); }}>
+          onClick={(event) => { showName(event, name); onToggle(value); }}>
+          {showCounts && <span className="color-filter-count">{count}</span>}
         </button>
       ))}
     </div>

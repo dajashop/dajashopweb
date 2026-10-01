@@ -635,3 +635,10 @@
   font-size: 12px;
   font-weight: 700;
 }
+.configured-filter-heading { display: flex; flex: 1; align-items: center; justify-content: space-between; gap: 8px; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; padding: 0; }
+.configured-filter-description { margin: 0 4px 10px; color: var(--color-muted, #6e6e73); font-size: 12px; }
+.configured-numeric-range { padding: 8px; border-radius: 12px; background: #f5f5f7; }
+.configured-numeric-range output { display: block; text-align: center; font-weight: 700; margin-bottom: 12px; }
+.configured-numeric-range label { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-size: 12px; }
+.configured-numeric-range input { flex: 1; min-width: 0; accent-color: #2875ff; }
+.configured-filters .filter-row { gap: 8px; }

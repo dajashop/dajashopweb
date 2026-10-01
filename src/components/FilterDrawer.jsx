@@ -85,7 +85,7 @@ function useHeaderHeight(active) {
   }, [active]);
 }
 
-export default function FilterDrawer({ className = '', products, fixedGender }) {
+export default function FilterDrawer({ className = '', products, fixedGender, configuration, configurationLoading, configurationError }) {
   const [open, setOpen] = useState(false);
   const activeCount = useActiveCount();
 
@@ -240,7 +240,7 @@ export default function FilterDrawer({ className = '', products, fixedGender }) 
 
             <div className="fd-content">
               {/* PROSLEĐUJEMO onClose funkciju */}
-              <Filters products={products} fixedGender={fixedGender} onClose={() => setOpen(false)} />
+              <Filters products={products} fixedGender={fixedGender} configuration={configuration} configurationLoading={configurationLoading} configurationError={configurationError} onClose={() => setOpen(false)} />
             </div>
           </div>
         </div>

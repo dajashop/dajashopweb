@@ -58,6 +58,7 @@ import SEOHead from '../../components/seo/SEOHead.jsx';
 import PolicyPublicationPanel from './components/PolicyPublicationPanel.jsx';
 import SupplierQueuePanel from './components/SupplierQueuePanel.jsx';
 import PromotionManager from './components/PromotionManager.jsx';
+import FilterManager from './components/FilterManager.jsx';
 import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
 
 // ... (sanitizeItem i generateSlug funkcije ostaju iste)
@@ -509,6 +510,8 @@ function AdminDashboardContent() {
 
   // ... (State varijable ostaju iste: activeTab, searchTerm, filters...)
   const [activeTab, setActiveTab] = useState('products');
+  const [filtersVisited, setFiltersVisited] = useState(false);
+  useEffect(() => { if (activeTab === 'filters') setFiltersVisited(true); }, [activeTab]);
   useEffect(() => {
     const refreshIfVisible = () => {
       if (document.visibilityState === 'visible' && activeTab === 'products') refreshProducts();
@@ -576,7 +579,7 @@ function AdminDashboardContent() {
   }, []);
 
   useEffect(() => {
-    if (isCatalogContributor && !['products', 'brands', 'categories', 'specs', 'suppliers', 'my-workforce'].includes(activeTab)) {
+    if (isCatalogContributor && !['products', 'brands', 'categories', 'specs', 'filters', 'suppliers', 'my-workforce'].includes(activeTab)) {
       setActiveTab('products');
     }
   }, [activeTab, isCatalogContributor]);
@@ -1146,6 +1149,9 @@ function AdminDashboardContent() {
               icon={List}
               label="Specifikacije"
             />
+            {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
+              <TabButton active={activeTab === 'filters'} onClick={() => setActiveTab('filters')} icon={Filter} label="Filteri" />
+            )}
             {staffAccessLoaded && isCatalogContributor && staffAccess?.permissions?.includes('catalog.read') && (
               <TabButton active={activeTab === 'suppliers'} onClick={() => setActiveTab('suppliers')} icon={Truck} label="Dobavljači" />
             )}
@@ -1174,6 +1180,10 @@ function AdminDashboardContent() {
       </div>
 
       <div className="container mt-8">
+        {(activeTab === 'filters' || filtersVisited) && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
+          <div hidden={activeTab !== 'filters'}><FilterManager products={products} productsLoading={productsLoading} definitions={specs} departments={departments}
+            canWrite={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))} /></div>
+        )}
         {activeTab === 'promotions' && (
           <PromotionManager
             products={products}

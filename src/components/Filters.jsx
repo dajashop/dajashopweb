@@ -8,6 +8,7 @@ import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 import DiameterFilter from './DiameterFilter.jsx';
 import ColorFilter, { isColorSpec } from './ColorFilter.jsx';
 import MaterialFilter, { isBraceletMaterialSpec } from './MaterialFilter.jsx';
+import ConfiguredFilters from './ConfiguredFilters.jsx';
 
 function specificationOrder(key) {
   const label = formatProductSpecLabel(key)
@@ -86,7 +87,12 @@ function SectionHeader({ title, count, onClear, isOpen, onToggle }) {
   );
 }
 
-export default function Filters({ products, fixedGender, onClose }) {
+export default function Filters(props) {
+  if (props.configurationLoading || props.configurationError) return <aside className="filters card glass"><p>{props.configurationError ? 'Filteri trenutno nisu dostupni. Osveži stranicu.' : 'Učitavanje filtera…'}</p></aside>;
+  return props.configuration ? <ConfiguredFilters {...props} /> : <LegacyFilters {...props} />;
+}
+
+function LegacyFilters({ products, fixedGender, onClose }) {
   // <--- Dodat onClose prop
   const [sp, setSp] = useSearchParams();
 

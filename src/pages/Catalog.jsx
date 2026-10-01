@@ -16,6 +16,8 @@ import { seoConfig } from '../config/seo.js';
 
 // Hookovi
 import useProducts from '../hooks/useProducts.js';
+import useFilterConfiguration from '../hooks/useFilterConfiguration.js';
+import { configuredFilterParams, configuredFilterChips, filterConfiguredProducts } from '../utils/filterConfiguration.js';
 import { diameterValue, filterCatalogProducts, isDiameterSpec } from '../utils/catalogFilters.js';
 import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 
@@ -74,6 +76,11 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
 
   const [sp, setSp] = useSearchParams();
+  const { configuration: filterConfiguration, loading: filterConfigurationLoading, error: filterConfigurationError } = useFilterConfiguration(department);
+  const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration, fixedGender) : sp, [sp, filterConfiguration, fixedGender]);
+  useEffect(() => {
+    if (filterConfiguration && configuredParams.toString() !== sp.toString()) setSp(configuredParams, { replace: true });
+  }, [configuredParams, filterConfiguration, sp, setSp]);
   const spKey = sp.toString();
   const hasFilteredCatalogUrl = spKey.length > 0;
   const navType = useNavigationType();
@@ -123,6 +130,14 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
   // --- FILTRIRANJE ---
   const activeFilters = useMemo(() => {
+    if (filterConfigurationLoading || filterConfigurationError) return [];
+    if (filterConfiguration) {
+      const chips = configuredFilterChips(configuredParams, filterConfiguration);
+      const q = configuredParams.get('q');
+      if (q) chips.unshift({ key: 'q', val: q, label: `Traži: "${q}"` });
+      if (fixedGender) chips.unshift({ key: 'gender', val: fixedGender, label: fixedGender });
+      return chips;
+    }
     const active = [];
     const brands = sp.getAll('brand');
     const genders = fixedGender ? [fixedGender] : sp.getAll('gender');
@@ -166,11 +181,14 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     });
 
     return active;
-  }, [fixedGender, sp]);
+  }, [fixedGender, sp, configuredParams, filterConfiguration, filterConfigurationLoading, filterConfigurationError]);
 
   const removeFilter = (key, val) => {
-    const next = new URLSearchParams(sp);
-    if (key === 'price') {
+    const next = new URLSearchParams(configuredParams);
+    if (key.startsWith('range:')) {
+      next.delete(`cf_min_${key.slice(6)}`);
+      next.delete(`cf_max_${key.slice(6)}`);
+    } else if (key === 'price') {
       next.delete('min');
       next.delete('max');
     } else if (key === 'q') {
@@ -214,7 +232,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
   // Glavna logika filtriranja (Pretraga, Brendovi...)
   const filteredData = useMemo(() => {
-    const out = filterCatalogProducts(departmentItems, sp, { fixedGender });
+    const out = filterConfiguration ? filterConfiguredProducts(departmentItems, configuredParams, filterConfiguration, { fixedGender }) : filterCatalogProducts(departmentItems, filterConfigurationError ? new URLSearchParams({ q: sp.get('q') || '' }) : sp, { fixedGender });
 
     const collator = new Intl.Collator('sr-RS', { sensitivity: 'base' });
     const getDate = (val) => {
@@ -258,7 +276,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       ...sorted.filter((product) => product.isVisible !== false),
       ...sorted.filter((product) => product.isVisible === false),
     ];
-  }, [departmentItems, fixedGender, sp, isAdmin, sortParam]);
+  }, [departmentItems, fixedGender, sp, isAdmin, sortParam, filterConfiguration, configuredParams, filterConfigurationError]);
 
   const [page, setPage] = useState(1);
   const totalCount = filteredData.length;
@@ -321,7 +339,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   const showingCount = itemsToShow.length;
 
   const renderContent = () => {
-    if (loading) {
+    if (loading || filterConfigurationLoading) {
       return (
         <div className="flex justify-center items-center h-64 text-muted">
           <motion.div
@@ -399,12 +417,12 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       />
 
       <div className="catalog-mobile-trigger lg:hidden mb-4">
-        <FilterDrawer products={departmentItems} fixedGender={fixedGender} />
+        <FilterDrawer products={departmentItems} fixedGender={fixedGender} configuration={filterConfiguration} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
       </div>
 
       <div className="catalog-layout lg:grid lg:grid-cols-[260px_1fr] lg:gap-8 items-start">
         <aside className="sidebar-filters hidden lg:block sticky top-24">
-          <Filters products={departmentItems} fixedGender={fixedGender} />
+          <Filters products={departmentItems} fixedGender={fixedGender} configuration={filterConfiguration} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
         </aside>
 
         <main className="catalog-main min-w-0">
