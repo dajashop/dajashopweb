@@ -4,6 +4,8 @@ import { specKeyService } from '../../../services/admin.js';
 import useProducts from '../../../hooks/useProducts.js';
 import ConfiguredFilters from '../../../components/ConfiguredFilters.jsx';
 import { defaultFilterConfiguration, discoverFilterSources, filterConfiguredProducts, filterId, filterLeaves, newFilter, orderedNodes, specificationSourceKey, validateFilterConfiguration } from '../../../utils/filterConfiguration.js';
+import FilterOrderTree from './FilterOrderTree.jsx';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import './FilterManager.css';
 
 const departmentsList = [['satovi', 'Satovi'], ['daljinski', 'Daljinski'], ['baterije', 'Baterije'], ['naocare', 'Naočare']];
@@ -28,7 +30,6 @@ export default function FilterManager({ products, productsLoading, definitions, 
   const [previewParams, setPreviewParams] = useState(new URLSearchParams());
   const [newSpec, setNewSpec] = useState({ name: '', unit: '', values: '' });
   const [optionDraft, setOptionDraft] = useState({ label: '', source: '', values: [] });
-  const [dragged, setDragged] = useState(null);
   const { items: storefrontProducts } = useProducts({ admin: false, all: true });
   const scopedProducts = useMemo(() => products.filter((product) => (product.department || 'satovi') === department), [products, department]);
   const departmentId = departments.find((item) => item.slug === department)?.id;
@@ -142,27 +143,6 @@ export default function FilterManager({ products, productsLoading, definitions, 
     const source = sources.find((item) => item.id === sourceId);
     return (source?.values || []).filter((value) => !active.options.some((option) => option.conditions.some((condition) => condition.source === sourceId && condition.values.includes(value)))).map((value) => ({ source: sourceId, value }));
   }) : [];
-  const tree = (nodes, depth = 0) => orderedNodes(nodes).map((node) => (
-    <div key={node.id}>
-      <div className={`fm-tree-row ${activeId === node.id ? 'is-active' : ''}`} style={{ paddingLeft: 8 + depth * 14 }}>
-        {depth === 0 && <input type="checkbox" aria-label={`Izaberi ${node.title} za spajanje`} checked={selectedIds.includes(node.id)} disabled={!canWrite || busy} onChange={(event) => setSelectedIds(event.target.checked ? [...selectedIds, node.id] : selectedIds.filter((id) => id !== node.id))} />}
-        <span draggable={canWrite && !busy} className="fm-drag" title="Prevuci za redosled" onDragStart={() => setDragged(node.id)} onDragEnd={() => setDragged(null)}>⋮⋮</span>
-        <button className="fm-tree-name" type="button" onClick={() => setActiveId(node.id)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => {
-          event.preventDefault();
-          const reorder = (siblings) => {
-            const ordered = orderedNodes(siblings); const from = ordered.findIndex((item) => item.id === dragged); const to = ordered.findIndex((item) => item.id === node.id);
-            if (from >= 0 && to >= 0) { ordered.splice(to, 0, ordered.splice(from, 1)[0]); return reprioritize(ordered); }
-            return siblings.map((item) => ({ ...item, children: reorder(item.children) }));
-          };
-          if (canWrite && dragged) setDraft({ ...draft, filters: reorder(draft.filters) }); setDragged(null);
-        }}>{node.title}<small>{node.visible ? node.mode === 'group' ? 'Grupa' : node.style : 'Skriven'}</small></button>
-        <button type="button" disabled={!canWrite || busy} aria-label={`Pomeri ${node.title} gore`} onClick={() => move(node.id, -1)}>↑</button>
-        <button type="button" disabled={!canWrite || busy} aria-label={`Pomeri ${node.title} dole`} onClick={() => move(node.id, 1)}>↓</button>
-      </div>
-      {tree(node.children, depth + 1)}
-    </div>
-  ));
-
   return <section className="filter-manager">
     <div className="fm-toolbar"><h2>Filteri</h2><select value={department} disabled={busy} onChange={(event) => {
       if (dirty && !window.confirm('Promene nacrta nisu sačuvane. Promeni odeljenje?')) return;
@@ -182,7 +162,7 @@ export default function FilterManager({ products, productsLoading, definitions, 
           <div className="fm-preview-products">{previewResults.slice(0, 12).map((product) => <div key={product.id}><strong>{product.brand}</strong><span>{product.name}</span><small>{Number(product.price || 0).toLocaleString('sr-Latn')} RSD</small></div>)}</div>
         </div>
       </div>}
-      <div className="fm-layout"><div className="fm-sidebar"><h3>Redosled i grupe</h3>{tree(draft.filters)}
+      <div className="fm-layout"><div className="fm-sidebar"><h3>Redosled i grupe</h3><p className="fm-help fm-order-help">Prevuci ručicu na željeno mesto ili koristi strelice. Podfilteri se pomeraju unutar svoje grupe.</p><FilterOrderTree nodes={draft.filters} activeId={activeId} selectedIds={selectedIds} onSelect={setActiveId} onSelection={setSelectedIds} onMove={move} onReorder={(filters) => setDraft((current) => ({ ...current, filters }))} disabled={!canWrite || busy} />
         <div className="fm-toolbar"><button type="button" disabled={selectedIds.length < 2 || !canWrite || busy} onClick={() => merge('group')}>Spoji u sekciju</button><button type="button" disabled={selectedIds.length < 2 || !canWrite || busy} onClick={() => merge('options')}>Spoji checkboxove</button></div>
         <button type="button" disabled={!canWrite || busy} onClick={() => append({ id: 'feature:', label: 'Funkcije', values: [] })}>+ Prazan filter funkcija</button>
         <h3>Neraspoređeni izvori</h3><p className="fm-help">Novi izvori se ne objavljuju automatski.</p>
@@ -216,8 +196,8 @@ export default function FilterManager({ products, productsLoading, definitions, 
               {option.conditions.length > 1 && <button type="button" onClick={() => updateOption(option.id, { conditions: option.conditions.filter((_, index) => index !== conditionIndex) })}>Ukloni uslov</button>}
             </div>)}
             <div className="fm-toolbar"><button type="button" onClick={() => updateOption(option.id, { conditions: [...option.conditions, { source: option.conditions[0].source, values: [...option.conditions[0].values] }] })}>+ Alternativni uslov</button>
-            <button type="button" disabled={index === 0} onClick={() => { const options = [...active.options]; options.splice(index - 1, 0, options.splice(index, 1)[0]); edit(active.id, { options }); }}>↑</button>
-            <button type="button" disabled={index === active.options.length - 1} onClick={() => { const options = [...active.options]; options.splice(index + 1, 0, options.splice(index, 1)[0]); edit(active.id, { options }); }}>↓</button>
+            <button type="button" className="fm-icon-button" aria-label={`Pomeri opciju ${option.label} gore`} title="Pomeri gore" disabled={index === 0} onClick={() => { const options = [...active.options]; options.splice(index - 1, 0, options.splice(index, 1)[0]); edit(active.id, { options }); }}><ChevronUp size={16} aria-hidden="true" /></button>
+            <button type="button" className="fm-icon-button" aria-label={`Pomeri opciju ${option.label} dole`} title="Pomeri dole" disabled={index === active.options.length - 1} onClick={() => { const options = [...active.options]; options.splice(index + 1, 0, options.splice(index, 1)[0]); edit(active.id, { options }); }}><ChevronDown size={16} aria-hidden="true" /></button>
             <button type="button" onClick={() => edit(active.id, { options: active.options.filter((item) => item.id !== option.id) })}>Ukloni opciju</button></div>
           </details>)}
           {missingOptions.length > 0 && <div className="fm-unassigned"><h4>Neraspoređene opcije</h4>{missingOptions.map(({ source, value }) => <button type="button" key={`${source}-${value}`} onClick={() => edit(active.id, { options: [...active.options, { id: filterId(), label: value, visible: true, color: '', image: '', conditions: [{ source, values: [value] }] }] })}>+ {value}</button>)}</div>}
