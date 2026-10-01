@@ -333,7 +333,7 @@ export default function AdminProductModal({
   const nameCheckRef = useRef(nameCheck);
   const nameCheckTimerRef = useRef(null);
   const [nameFocused, setNameFocused] = useState(false);
-  const [duplicateWarning, setDuplicateWarning] = useState(null);
+  const [saveWarning, setSaveWarning] = useState(null);
   const [supplierPreviews, setSupplierPreviews] = useState({});
   const supplierPreviewUrlRef = useRef({});
   const [priceFocused, setPriceFocused] = useState(false);
@@ -808,7 +808,7 @@ export default function AdminProductModal({
       supplierPreviewUrlRef.current[provider] = String(value || '').trim();
       setSupplierPreviews((previous) => ({ ...previous, [provider]: null }));
     }
-    if (field === 'name') setDuplicateWarning(null);
+    if (field === 'name' || field === 'brand') setSaveWarning(null);
     if (field === 'quantity') quantityEditedRef.current = true;
     if (field === 'locationId' || field === 'zoneId' || field === 'binId') {
       placementEditedRef.current = true;
@@ -1216,18 +1216,24 @@ export default function AdminProductModal({
       setFlash({ open: true, title: gtinValidation.error, ok: false });
       return;
     }
-    if (!product && !options.confirmDuplicate) {
-      const matches = nameCheckRef.current.name === form.name.trim() ? nameCheckRef.current.matches : [];
-      if (matches.length) {
-        setDuplicateWarning({
+    const brandName = String(form.brand || '').trim();
+    if (!options.confirmWarnings) {
+      const matches = !product && nameCheckRef.current.name === form.name.trim()
+        ? nameCheckRef.current.matches : [];
+      const missingBrand = !brandName;
+      if (matches.length || missingBrand) {
+        setSaveWarning({
           name: form.name.trim(),
+          brand: brandName,
           count: matches.length,
           exact: matches.some((match) => match.exact),
+          missingBrand,
+          options,
         });
         return;
       }
     }
-    setDuplicateWarning(null);
+    setSaveWarning(null);
     window.clearTimeout(nameCheckTimerRef.current);
     // saveProduct notifies the parent synchronously. Capture this before any
     // await so a parent re-render with the new (empty) EPC cannot erase the
@@ -2959,19 +2965,19 @@ export default function AdminProductModal({
           </div>
         </div>
 
-        {duplicateWarning?.name === form.name.trim() && (
-          <div className={`border-t px-8 py-3 flex flex-wrap items-center gap-3 ${duplicateWarning.exact ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`} role="alert">
-            <p className={`mr-auto text-sm font-semibold ${duplicateWarning.exact ? 'text-red-800' : 'text-amber-800'}`}>
-              {duplicateWarning.unavailable
-                ? 'Provera duplikata nije završena. Proverite naziv pre čuvanja.'
-                : duplicateWarning.exact
-                ? 'Artikal sa istim nazivom već postoji. Da li ipak želite da sačuvate novi?'
-                : `Pronađeno je ${duplicateWarning.count} sličnih artikala. Da li ipak želite da sačuvate novi?`}
-            </p>
-            <button type="button" onClick={() => setDuplicateWarning(null)} className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700">
+        {saveWarning?.name === form.name.trim() && saveWarning.brand === String(form.brand || '').trim() && (
+          <div className={`border-t px-8 py-3 flex flex-wrap items-center gap-3 ${saveWarning.exact ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`} role="alert">
+            <div className={`mr-auto text-sm font-semibold ${saveWarning.exact ? 'text-red-800' : 'text-amber-800'}`}>
+              {saveWarning.count > 0 && <p>{saveWarning.exact
+                ? 'Artikal sa istim nazivom već postoji.'
+                : `Pronađeno je ${saveWarning.count} sličnih artikala.`}</p>}
+              {saveWarning.missingBrand && <p>Brend nije izabran. Artikal će biti sačuvan bez brenda.</p>}
+              <p>Da li ipak želite da sačuvate?</p>
+            </div>
+            <button type="button" onClick={() => setSaveWarning(null)} className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700">
               Vrati se
             </button>
-            <button type="button" onClick={() => handleSubmit({ confirmDuplicate: true })} disabled={loading || imageBusy || !mediaReady} className="rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">
+            <button type="button" onClick={() => handleSubmit({ ...saveWarning.options, confirmWarnings: true })} disabled={loading || imageBusy || !mediaReady} className="rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">
               Sačuvaj ipak
             </button>
           </div>
