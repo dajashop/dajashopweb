@@ -1717,12 +1717,6 @@ export default function AdminProductModal({
         // U svim ostalim slučajevima (dodavanje slika na index > 0) NE diramo primarne URL-ove
         return prev;
       });
-
-      setFlash({
-        open: true,
-        title: 'Slika preuzeta i optimizovana!',
-        ok: true,
-      });
     }
   };
 
