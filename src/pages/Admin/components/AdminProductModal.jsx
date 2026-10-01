@@ -569,7 +569,7 @@ export default function AdminProductModal({
                 ]
               : [],
         sku: product.variants?.[0]?.sku || product.sku || '',
-        variantName: product.variants?.[0]?.name || product.variantName || product.name || '',
+        variantName: product.variants?.[0]?.name ?? product.variantName ?? '',
         barcode: product.variants?.[0]?.barcode || product.barcode || '',
         mpn: product.variants?.[0]?.mpn || product.mpn || '',
         itemCondition: product.itemCondition || product.item_condition || 'new',
@@ -1288,9 +1288,8 @@ export default function AdminProductModal({
             sku: form.sku?.trim() || null,
             barcode: gtinValidation.value || null,
             mpn: form.mpn?.trim() || null,
-            // The UI has one internal sellable row. Blank means use the
-            // product title, never store an unnamed POS item.
-            name: form.variantName?.trim() || form.name.trim(),
+            // The POS name is independent; blank explicitly clears it.
+            name: form.variantName?.trim() || null,
             // null explicitly clears the RFID relation in the variant PATCH.
             epc: pieces[0]?.epc || null,
             ...(!product || regularPriceEditedRef.current
@@ -2011,7 +2010,7 @@ export default function AdminProductModal({
                       value={form.variantName || ''}
                       onChange={(e) => handleChange('variantName', e.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-400 transition-all font-medium"
-                      placeholder="Ako ostavite prazno, koristi se naziv artikla"
+                      placeholder="Unesite poseban naziv za kasu"
                     />
                   </label>
                 </div>
