@@ -5,6 +5,7 @@ import catalog from '../services/CatalogService.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import { catalogSpecValue, filterCatalogProducts, normalizedCatalogGender } from '../utils/catalogFilters.js';
 import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
+import DiameterFilter, { diameterValue } from './DiameterFilter.jsx';
 
 function specificationOrder(key) {
   const label = formatProductSpecLabel(key)
@@ -136,6 +137,9 @@ export default function Filters({ products, fixedGender, onClose }) {
         return {
           key,
           values,
+          diameterValues: specificationOrder(key) === 2
+            ? [...new Set(baseData.map((product) => catalogSpecValue(product.specs?.[key])).filter((value) => diameterValue(value) !== null))]
+            : null,
         };
       })
       .filter((spec) => spec.values.length > 0)
@@ -467,6 +471,13 @@ export default function Filters({ products, fixedGender, onClose }) {
                   className="f-content-wrapper"
                 >
                   <div className="f-content-inner">
+                    {spec.diameterValues?.length ? (
+                      <DiameterFilter values={spec.diameterValues} selected={sp.getAll(`spec_${spec.key}`)}
+                        onChange={(values) => setParams((params) => {
+                          params.delete(`spec_${spec.key}`);
+                          values.forEach((value) => params.append(`spec_${spec.key}`, value));
+                        })} />
+                    ) : (
                     <div className="filter-list" role="group">
                       {spec.values.map(({ value, count }) => (
                         <label
@@ -502,6 +513,7 @@ export default function Filters({ products, fixedGender, onClose }) {
                         </label>
                       ))}
                     </div>
+                    )}
                   </div>
                 </motion.div>
               )}
