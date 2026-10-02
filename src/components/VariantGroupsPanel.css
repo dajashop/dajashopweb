@@ -197,7 +197,7 @@
   margin:20px 0 10px
 }
 .vg-members{
-  max-height:390px;
+  max-height:500px;
   overflow:auto;
   border:1px solid #ededf0;
   border-radius:10px;
@@ -262,9 +262,13 @@
   margin-top:20px
 }
 .vg-search-results{
-  max-height:280px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  align-items:start;
+  gap:12px;
+  padding:4px;
+  max-height:580px;
   overflow:auto;
-  border:1px solid #eee;
   border-radius:10px
 }
 .vg-search-product,.vg-ungrouped{
@@ -278,6 +282,40 @@
   flex:1;
   min-width:0;
   overflow-wrap:anywhere
+}
+.vg-search-product{
+  flex-direction:column;
+  align-items:stretch;
+  border:1px solid #e3e3e8;
+  border-radius:12px;
+  background:#fff;
+  padding:12px
+}
+.vg-search-product img,.vg-search-product .vg-no-photo{
+  width:100%;
+  height:210px;
+  object-fit:contain;
+  background:#fff;
+  border-radius:8px
+}
+.vg-search-product>div{
+  min-height:54px
+}
+.vg-search-product strong{
+  display:block;
+  font-size:13px;
+  margin-bottom:4px
+}
+.vg-search-product button{
+  width:100%
+}
+.vg-search-results>.vg-empty{
+  grid-column:1/-1
+}
+.vg-product img,.vg-product .vg-no-photo{
+  width:80px;
+  height:104px;
+  background:#fff
 }
 .vg-ungrouped button{
   padding:6px;
@@ -360,6 +398,16 @@
 }
 .vg-detail{
   padding:14px
+}
+.vg-search-results{
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:8px
+}
+.vg-search-product{
+  padding:9px
+}
+.vg-search-product img,.vg-search-product .vg-no-photo{
+  height:175px
 }
 .vg-badge{
   white-space:normal

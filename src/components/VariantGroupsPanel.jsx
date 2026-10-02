@@ -49,7 +49,10 @@ export default function VariantGroupsPanel({ onDirtyChange }) {
   const products = useMemo(() => new Map(data.products.map(p => [p.id, p])), [data.products]);
   const groups = useMemo(() => new Map(data.groups.map(g => [g.key, g])), [data.groups]);
   const matchesFilter = p => p && (!brand || p.brand === brand) && (!department || p.department === department);
-  const visibleGroups = data.groups.filter(g =>
+  const newGroup = draft?.key === null ? { ...draft, key: 'new-draft', name: draft.internalName.trim() ||
+    (draft.memberIds.length ? `Grupa — ${products.get(draft.memberIds[0])?.name || 'proizvod'}` : 'Nova grupa') } : null;
+  const listedGroups = newGroup ? [newGroup, ...data.groups] : data.groups;
+  const visibleGroups = listedGroups.filter(g =>
     (mode === 'all' || mode === 'automatic' && g.kind === 'automatic' && !g.customized ||
       mode === 'customized' && g.customized && g.kind === 'automatic' || mode === 'custom' && g.kind === 'custom') &&
     (!brand && !department || g.memberIds.some(id => matchesFilter(products.get(id)))) &&
@@ -64,7 +67,8 @@ export default function VariantGroupsPanel({ onDirtyChange }) {
   };
   const create = () => {
     if (busy || !canLeave()) return;
-    setMode('custom'); setOriginal(null); setChecked([]); setProductSearch('');
+    setMode('all'); setSearch(''); setBrand(''); setDepartment('');
+    setOriginal(null); setChecked([]); setProductSearch(''); setError('');
     setDraft({ key: null, id: null, kind: 'custom', name: 'Nova grupa', internalName: '', followAuto: false,
       memberIds: [], automaticMemberIds: [], manualMemberIds: [], excludedIds: [], removedIds: [], addedIds: [], revision: data.revision, catalogRevision: data.catalogRevision });
   };
@@ -127,7 +131,7 @@ export default function VariantGroupsPanel({ onDirtyChange }) {
     {error && <div className="vg-error" role="alert">{error}</div>}
     <div className="vg-filters"><input aria-label="Pretraga grupa" placeholder="Pretraži grupe ili modele…" value={search} onChange={e => setSearch(e.target.value)} /><select aria-label="Vrsta grupe" value={mode} onChange={e => setMode(e.target.value)}>{modes.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select><select aria-label="Brend" value={brand} onChange={e => setBrand(e.target.value)}><option value="">Svi brendovi</option>{[...new Set(data.products.map(p => p.brand).filter(Boolean))].sort().map(name => <option key={name}>{name}</option>)}</select><select aria-label="Odeljenje" value={department} onChange={e => setDepartment(e.target.value)}><option value="">Sva odeljenja</option>{[...new Set(data.products.map(p => p.department).filter(Boolean))].sort().map(name => <option key={name}>{name}</option>)}</select></div>
     {loading ? <p className="vg-empty">Učitavanje grupa…</p> : <div className="vg-layout"><aside className="vg-list"><div className="vg-list-caption">{mode === 'ungrouped' ? `${ungrouped.length} proizvoda bez grupe` : `${visibleGroups.length} grupa`}</div>
-      {mode === 'ungrouped' ? ungrouped.map(p => <div key={p.id} className="vg-ungrouped"><Photo product={p} /><div><strong>{p.name}</strong><small>{p.brand || 'Bez brenda'}</small></div><button disabled={busy} onClick={() => action('product-reset', p.id)}>Vrati automatiku</button></div>) : visibleGroups.map(group => <button key={group.key} disabled={busy} className={`vg-group ${draft?.key === group.key ? 'selected' : ''}`} onClick={() => select(group)}><span className="vg-group-title"><strong>{group.name}</strong><span>{group.memberIds.length}</span></span><small>{kindLabel(group)}</small><div className="vg-thumbnails">{group.memberIds.slice(0,5).map(id => <Photo key={id} product={products.get(id)} />)}{group.memberIds.length > 5 && <span>+{group.memberIds.length - 5}</span>}</div></button>)}
+      {mode === 'ungrouped' ? ungrouped.map(p => <div key={p.id} className="vg-ungrouped"><Photo product={p} /><div><strong>{p.name}</strong><small>{p.brand || 'Bez brenda'}</small></div><button disabled={busy} onClick={() => action('product-reset', p.id)}>Vrati automatiku</button></div>) : visibleGroups.map(group => <button key={group.key} disabled={busy} className={`vg-group ${draft?.key === group.key || group.key === 'new-draft' ? 'selected' : ''}`} onClick={() => { if (group.key !== 'new-draft') select(group); }}><span className="vg-group-title"><strong>{group.name}</strong><span>{group.memberIds.length}</span></span><small>{kindLabel(group)}</small><div className="vg-thumbnails">{group.memberIds.slice(0,5).map(id => <Photo key={id} product={products.get(id)} />)}{group.memberIds.length > 5 && <span>+{group.memberIds.length - 5}</span>}</div></button>)}
       {!(mode === 'ungrouped' ? ungrouped.length : visibleGroups.length) && <p className="vg-empty">Nema rezultata za ove filtere.</p>}</aside>
       <main className="vg-detail">{!draft ? <div className="vg-empty"><h3>Izaberi grupu ili napravi novu</h3><p>Automatika ostaje uključena dok ne promeniš članstvo ili zaključaš grupu.</p></div> : <>
         <div className="vg-detail-heading"><div><h3>{title}</h3><small>{kindLabel(draft)} · {members.length} članova · {members.filter(p => p.public).length} javno dostupnih</small></div>{dirty && <span className="vg-badge">Nesnimljene izmene</span>}</div>
