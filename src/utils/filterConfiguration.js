@@ -44,7 +44,22 @@ export function newFilter(source) {
       : /(narukvic|kais|strap|bracelet)/.test(label) && /(materijal|material)/.test(label) ? 'material' : 'checkbox';
   const unit = source.unit || numericFilterValue(source.values.find((value) => numericFilterValue(value)?.unit))?.unit || '';
   const values = source.id === 'price' && source.values.length ? [...new Set([String(Math.min(...source.values.map(Number))), String(Math.max(...source.values.map(Number)))])] : source.values;
-  return { id: filterId(), title: source.label, description: '', visible: true, open: ['gender', 'brand', 'price'].includes(source.id), priority: 0, mode: 'options', style: style === 'range' && !values.length ? 'checkbox' : style, match: 'any', columns: style === 'color' ? 5 : 1, showCounts: style !== 'color', unit, sources: [source.id], children: [], options: values.map((value) => ({ id: filterId(), label: source.id.startsWith('feature:') ? source.label : value, visible: true, color: '', image: '', conditions: [{ source: source.id, values: [value] }] })) };
+  return { id: filterId(), title: source.label, description: '', visible: true, autoAddOptions: true, open: ['gender', 'brand', 'price'].includes(source.id), priority: 0, mode: 'options', style: style === 'range' && !values.length ? 'checkbox' : style, match: 'any', columns: style === 'color' ? 5 : 1, showCounts: style !== 'color', unit, sources: [source.id], children: [], options: values.map((value) => ({ id: filterId(), label: source.id.startsWith('feature:') ? source.label : value, visible: true, color: '', image: '', conditions: [{ source: source.id, values: [value] }] })) };
+}
+// Same response-only expansion as the API, using all products before active facets.
+export function automaticFilterConfiguration(configuration, products) {
+  if (!configuration) return configuration;
+  const expand = (nodes) => nodes.map((node) => {
+    if (node.mode === 'group') return { ...node, children: expand(node.children) };
+    if (node.autoAddOptions === false) return node;
+    const additions = node.sources.flatMap((source) => [...new Set(products.flatMap((product) => sourceValues(product, source)))]
+      .filter((value) => !node.options.some((option) => option.conditions.some((condition) => condition.source === source && condition.values.includes(value))))
+      .filter((value) => node.style !== 'range' || (numericFilterValue(value) && (!numericFilterValue(value).unit || numericFilterValue(value).unit === (node.unit || '').toLowerCase())))
+      .sort((a, b) => a.localeCompare(b, 'sr-Latn', { numeric: true }))
+      .map((value) => ({ id: `auto_${encodeURIComponent(source)}:${encodeURIComponent(value)}`, label: source.startsWith('feature:') ? source.slice(8) : value, visible: true, color: '', image: '', conditions: [{ source, values: [value] }] })));
+    return { ...node, options: [...node.options, ...additions] };
+  });
+  return { ...configuration, filters: expand(configuration.filters) };
 }
 export function defaultFilterConfiguration(products, definitions = []) {
   const sources = discoverFilterSources(products, definitions).filter((source) => !source.id.startsWith('feature:'));

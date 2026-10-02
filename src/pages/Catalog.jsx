@@ -17,7 +17,7 @@ import { seoConfig } from '../config/seo.js';
 // Hookovi
 import useProducts from '../hooks/useProducts.js';
 import useFilterConfiguration from '../hooks/useFilterConfiguration.js';
-import { configuredFilterParams, configuredFilterChips, filterConfiguredProducts } from '../utils/filterConfiguration.js';
+import { automaticFilterConfiguration, configuredFilterParams, configuredFilterChips, filterConfiguredProducts } from '../utils/filterConfiguration.js';
 import { diameterValue, filterCatalogProducts, isDiameterSpec } from '../utils/catalogFilters.js';
 import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 
@@ -76,11 +76,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
 
   const [sp, setSp] = useSearchParams();
-  const { configuration: filterConfiguration, loading: filterConfigurationLoading, error: filterConfigurationError } = useFilterConfiguration(department);
-  const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration, fixedGender) : sp, [sp, filterConfiguration, fixedGender]);
-  useEffect(() => {
-    if (filterConfiguration && configuredParams.toString() !== sp.toString()) setSp(configuredParams, { replace: true });
-  }, [configuredParams, filterConfiguration, sp, setSp]);
+  const { configuration: savedFilterConfiguration, loading: filterConfigurationLoading, error: filterConfigurationError } = useFilterConfiguration(department);
   const spKey = sp.toString();
   const hasFilteredCatalogUrl = spKey.length > 0;
   const navType = useNavigationType();
@@ -229,6 +225,12 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       return true;
     });
   }, [allItems, department, isAdmin]); // Dodat isAdmin u zavisnosti
+
+  const filterConfiguration = useMemo(() => automaticFilterConfiguration(savedFilterConfiguration, departmentItems.filter((product) => product.isVisible !== false)), [savedFilterConfiguration, departmentItems]);
+  const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration, fixedGender) : sp, [sp, filterConfiguration, fixedGender]);
+  useEffect(() => {
+    if (filterConfiguration && configuredParams.toString() !== sp.toString()) setSp(configuredParams, { replace: true });
+  }, [configuredParams, filterConfiguration, sp, setSp]);
 
   // Glavna logika filtriranja (Pretraga, Brendovi...)
   const filteredData = useMemo(() => {

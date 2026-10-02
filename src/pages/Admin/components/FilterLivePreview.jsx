@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Monitor, Smartphone, Eye, RotateCcw } from 'lucide-react';
 import ConfiguredFilters from '../../../components/ConfiguredFilters.jsx';
 import '../../../components/FilterDrawer.css';
-import { configuredFilterChips, filterConfiguredProducts, newFilter } from '../../../utils/filterConfiguration.js';
+import { automaticFilterConfiguration, configuredFilterChips, filterConfiguredProducts, newFilter } from '../../../utils/filterConfiguration.js';
 
 const kinds = [
   ['checkbox', 'Checkboxovi', 'Više opcija u listi, sa oznakom izabranih vrednosti.'],
@@ -31,8 +31,8 @@ export default function FilterLivePreview({ draft, products, activeId, loading }
   const [params, setParams] = useState(new URLSearchParams());
   // Keep the whole draft so surrounding sections and facet dependencies match the storefront.
   const section = draft.filters.find((node) => contains(node, activeId)) || draft.filters.find((node) => node.visible);
-  const configuration = mode === 'examples' ? examples[kind] : draft;
   const previewProducts = mode === 'examples' ? [] : products;
+  const configuration = automaticFilterConfiguration(mode === 'examples' ? examples[kind] : draft, previewProducts);
   const results = filterConfiguredProducts(previewProducts, params, configuration);
   const chips = configuredFilterChips(params, configuration);
   const changeMode = (value) => { setMode(value); setParams(new URLSearchParams()); };
