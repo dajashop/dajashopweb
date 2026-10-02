@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuth } from './useAuth';
 import { workforceApi } from '../services/dajaPlatform';
 import { getStaffAccessToken } from '../services/apiClient';
@@ -13,10 +13,20 @@ function loadQueue(key) {
   } catch { return {}; }
 }
 async function drain(key) {
-  if (runningQueues.has(key)) return runningQueues.get(key);
-  const task = (async () => {
+  const running = runningQueues.get(key);
+  if (running) {
+    const failed = await running;
+    // A terminal snapshot may arrive as the previous drain is finishing.
+    // Send it before this caller completes, including after modal unmount.
+    if (!failed && Object.keys(pendingRequests.get(key) || {}).length) return drain(key);
+    return;
+  }
+  // Register the running drain before it inspects the queue. A flush in the
+  // same turn must never join an empty, already-resolved drain.
+  const task = Promise.resolve().then(async () => {
     const queue = pendingRequests.get(key) || loadQueue(key);
     pendingRequests.set(key, queue);
+    let blocked = false;
     while (Object.keys(queue).length) {
       let failed = false;
       for (const [token, request] of Object.entries(queue)) {
@@ -25,15 +35,17 @@ async function drain(key) {
           // Drain newer terminal snapshots before a modal unmount stops its timer.
           if (queue[token]?.body.sequence === request.body.sequence) delete queue[token];
         } catch {
-          if (queue[token]) queue[token].body.complete = false;
+          // A transport failure is pending delivery, not proof of lost time.
+          // The backend determines completeness from accepted heartbeat gaps.
           failed = true;
         }
       }
       writeStoredValue(key, Object.keys(queue).length ? JSON.stringify(queue) : null);
-      if (failed) break;
+      if (failed) { blocked = true; break; }
     }
     writeStoredValue(key, Object.keys(queue).length ? JSON.stringify(queue) : null);
-  })();
+    return blocked;
+  });
   runningQueues.set(key, task);
   try { await task; } finally { runningQueues.delete(key); }
 }
@@ -44,7 +56,6 @@ export default function useWorkTiming({ product, draft, reviewContext }) {
   const draftProductId = useRef(draft?.savedProductId);
   const initialComplete = useRef(!draft || Boolean(draft.workTiming));
   const controller = useRef(null);
-  const [notice, setNotice] = useState('');
   const userKey = user?.id || user?.uid || user?.email;
   const isReview = Boolean(reviewContext);
   useEffect(() => {
@@ -61,7 +72,6 @@ export default function useWorkTiming({ product, draft, reviewContext }) {
     let activeSeconds = 0;
     let sequence = 0;
     let complete = initialComplete.current;
-    if (!complete) setNotice('Početak starog nacrta nije zabeležen; merenje je nepotpuno.');
     let terminal = false;
     let lastTick = Date.now();
     let lastInput = lastTick;
@@ -83,16 +93,12 @@ export default function useWorkTiming({ product, draft, reviewContext }) {
       queue[`${meta.current.id}:${ownerId}`] = { id: meta.current.id, body };
       pendingRequests.set(key, queue);
       if (!writeStoredValue(key, JSON.stringify(queue))) {
+        // Without durable replay, a closed/offline tab can lose measurements.
+        // Keep that uncertainty in admin statistics, never in the worker form.
         complete = false;
         body.complete = false;
-        setNotice('Evidencija vremena nije potpuna; čuvanje artikla radi normalno.');
       }
-      void drain(key).then(() => {
-        if (Object.values(queue).some((request) => request.id === meta.current.id)) {
-          complete = false;
-          setNotice('Evidencija vremena čeka slanje; merenje može biti nepotpuno.');
-        }
-      });
+      void drain(key);
     };
     const interact = () => { if (!terminal) { settle(); lastInput = Date.now(); } };
     const focusChanged = () => {
@@ -116,7 +122,6 @@ export default function useWorkTiming({ product, draft, reviewContext }) {
       }
     };
     // Queue replay is independent of the product save operation.
-    void drain(key);
     flush();
     const timer = window.setInterval(() => { if (!terminal) flush(); else void drain(key); }, 30_000);
     const pageHide = () => { if (!terminal) flush('open', undefined, undefined, true); };
@@ -137,7 +142,7 @@ export default function useWorkTiming({ product, draft, reviewContext }) {
       controller.current = null;
     };
   }, [userKey, staffReady, product?.id, isReview]);
-  return { meta: meta.current, notice,
+  return { meta: meta.current,
     interact: () => controller.current?.interact(),
     finish: (id) => controller.current?.finish(id),
     attach: (id) => controller.current?.attach(id),

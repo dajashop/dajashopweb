@@ -1939,7 +1939,6 @@ export default function AdminProductModal({
             <p className="text-sm text-neutral-500">
               Popuni detalje i upravljaj inventarom.
             </p>
-            {workTiming.notice && <p className="mt-1 text-xs text-amber-700" role="status">{workTiming.notice}</p>}
           </div>
           <button
             onClick={closeModal}
