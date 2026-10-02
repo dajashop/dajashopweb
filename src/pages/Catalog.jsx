@@ -380,13 +380,18 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     return (
       <>
         <ProductGrid items={itemsToShow} />
-        <div className="mt-8">
-          <Pagination
-            page={page}
-            total={totalCount}
-            perPage={PER_PAGE}
-            onChange={setPage}
-          />
+        <div className="catalog__footer">
+          <div className="catalog__pagination">
+            <Pagination
+              page={page}
+              total={totalCount}
+              perPage={PER_PAGE}
+              onChange={setPage}
+            />
+          </div>
+          <p className="catalog__page-count">
+            Prikazano {itemsToShow.length} od ukupno {totalCount} proizvoda
+          </p>
         </div>
       </>
     );

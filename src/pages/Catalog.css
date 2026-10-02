@@ -261,6 +261,45 @@
   }
 }
 
+.catalog__footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.catalog__pagination {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.catalog__pagination .pagination {
+  margin-top: 0;
+}
+
+.catalog__page-count {
+  margin: 0;
+  justify-self: end;
+  text-align: right;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-muted, #71717a);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 767px) {
+  .catalog__footer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .catalog__page-count {
+    align-self: flex-end;
+  }
+}
+
 @media (min-width: 1031px) {
   .catalog__showing {
     font-size: 19px;
