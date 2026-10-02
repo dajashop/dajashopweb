@@ -1,21 +1,23 @@
 import React from 'react';
 import { diameterValue } from '../utils/catalogFilters.js';
+import useSliderDraft from '../hooks/useSliderDraft.js';
 
 const format = (value) => Number(value.toFixed(1)).toLocaleString('sr-Latn');
 
 export default function DiameterFilter({ values, selected, onChange }) {
   const sizes = [...new Set(values.map(diameterValue).filter((value) => value !== null))].sort((a, b) => a - b);
-  if (!sizes.length) return null;
   const chosen = selected.map(diameterValue).filter((value) => value !== null);
-  const lower = chosen.length ? Math.min(...chosen) : sizes[0];
-  const upper = chosen.length ? Math.max(...chosen) : sizes.at(-1);
-  const start = Math.max(0, sizes.indexOf(lower));
-  const end = Math.max(start, sizes.indexOf(upper));
-  const percent = (index) => sizes.length === 1 ? 50 : index / (sizes.length - 1) * 100;
+  const committedLower = chosen.length ? Math.min(...chosen) : sizes[0] ?? 0;
+  const committedUpper = chosen.length ? Math.max(...chosen) : sizes.at(-1) ?? 0;
   const selectRange = (from, to) => onChange(values.filter((value) => {
     const number = diameterValue(value);
     return number !== null && number >= from && number <= to;
   }));
+  const { range: [lower, upper], change, finish } = useSliderDraft(committedLower, committedUpper, selectRange, sizes.join(','));
+  if (!sizes.length) return null;
+  const start = Math.max(0, sizes.indexOf(lower));
+  const end = Math.max(start, sizes.indexOf(upper));
+  const percent = (index) => sizes.length === 1 ? 50 : index / (sizes.length - 1) * 100;
   const ticks = [...new Set(Array.from({ length: Math.min(5, sizes.length) }, (_, i) =>
     Math.round(i * (sizes.length - 1) / Math.max(1, Math.min(5, sizes.length) - 1))))];
   const presets = [
@@ -31,13 +33,13 @@ export default function DiameterFilter({ values, selected, onChange }) {
         <div className="diameter-track" />
         <div className="diameter-fill" style={{ left: `${percent(start)}%`, width: `${percent(end) - percent(start)}%` }} />
         {ticks.map((index) => <span key={index} className={`diameter-dot ${index >= start && index <= end ? 'is-selected' : ''}`} style={{ left: `${percent(index)}%` }} />)}
-        <input className="diameter-thumb" type="range" min="0" max={sizes.length - 1} step="1" value={start}
+        <input {...finish} className="diameter-thumb" type="range" min="0" max={sizes.length - 1} step="1" value={start}
           style={{ zIndex: start === end && end === sizes.length - 1 ? 5 : 3 }}
           disabled={sizes.length === 1} aria-label="Prečnik kućišta od" aria-valuetext={`${format(lower)} mm`}
-          onChange={(event) => selectRange(sizes[Math.min(Number(event.target.value), end)], upper)} />
-        <input className="diameter-thumb" type="range" min="0" max={sizes.length - 1} step="1" value={end}
+          onChange={(event) => change([sizes[Math.min(Number(event.target.value), end)], upper])} />
+        <input {...finish} className="diameter-thumb" type="range" min="0" max={sizes.length - 1} step="1" value={end}
           disabled={sizes.length === 1} aria-label="Prečnik kućišta do" aria-valuetext={`${format(upper)} mm`}
-          onChange={(event) => selectRange(lower, sizes[Math.max(Number(event.target.value), start)])} />
+          onChange={(event) => change([lower, sizes[Math.max(Number(event.target.value), start)]])} />
       </div>
       <div className="diameter-ticks">
         {ticks.map((index) => <span key={index} style={{ left: `${percent(index)}%` }}>{format(sizes[index])}</span>)}

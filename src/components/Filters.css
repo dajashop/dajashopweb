@@ -494,6 +494,7 @@
   pointer-events: auto;
   cursor: grab;
 }
+.slider-container input[type='range'], .diameter-thumb { touch-action: none; }
 .diameter-thumb:focus-visible { outline: none; z-index: 6 !important; }
 .diameter-thumb:focus-visible::-webkit-slider-thumb { outline: 3px solid #a8c9ff; outline-offset: 3px; }
 .diameter-thumb:focus-visible::-moz-range-thumb { outline: 3px solid #a8c9ff; outline-offset: 3px; }

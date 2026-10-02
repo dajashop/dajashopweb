@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import ColorFilter from './ColorFilter.jsx';
 import MaterialFilter from './MaterialFilter.jsx';
 import DiameterFilter from './DiameterFilter.jsx';
+import RangeFilterSlider from './RangeFilterSlider.jsx';
 import SectionHeader from './FilterSectionHeader.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { configuredFilterParams, configuredFilterChips, filterConfiguredProducts, filterLeaves, numericFilterValue, optionMatches, orderedNodes, rangeKey, selectionKey, sourceValues } from '../utils/filterConfiguration.js';
@@ -96,16 +97,7 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
       const lower = Math.min(node.sources[0] === 'price' ? 0 : numbers[0], min);
       const upper = Math.max(numbers.at(-1), max);
       const from = params.has(minKey) ? min : lower;
-      const percent = (value) => upper > lower ? (value - lower) / (upper - lower) * 100 : 0;
-      return <div className="price-wrapper">
-        <div className="price-values"><span>{from.toLocaleString('sr-Latn')} {node.unit}</span><span>{max.toLocaleString('sr-Latn')} {node.unit}</span></div>
-        <div className="slider-container">
-          <div className="slider-track-bg" />
-          <div className="slider-track-fill" style={{ left: `${percent(from)}%`, width: `${percent(max) - percent(from)}%` }} />
-          <input className="thumb thumb--left" style={{ zIndex: from > upper - 100 ? 5 : 3 }} type="range" aria-label={`${node.title} od`} min={lower} max={upper} step={node.sources[0] === 'price' ? 1 : .1} value={from} onChange={(event) => setRange(Math.min(Number(event.target.value), max), max)} />
-          <input className="thumb thumb--right" style={{ zIndex: 4 }} type="range" aria-label={`${node.title} do`} min={lower} max={upper} step={node.sources[0] === 'price' ? 1 : .1} value={max} onChange={(event) => setRange(from, Math.max(Number(event.target.value), from))} />
-        </div>
-      </div>;
+      return <RangeFilterSlider node={node} lower={lower} upper={upper} from={from} to={max} onChange={setRange} />;
     }
     return <div className="filter-list" role="group" aria-label={node.title} style={node.columns > 1 ? { display: 'grid', gridTemplateColumns: `repeat(${node.columns}, minmax(0, 1fr))` } : undefined}>{values.map((value) => <label key={value.value} className={`filter-row ${selected.includes(value.value) ? 'is-active' : ''}`}>
       <input className="filter-input-hidden" type="checkbox" checked={selected.includes(value.value)} onChange={() => toggle(node, value.value)} />
