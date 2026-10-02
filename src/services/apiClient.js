@@ -7,9 +7,10 @@ const ACCESS_KEY = 'daja_customer_access_token';
 const REFRESH_KEY = 'daja_customer_refresh_token';
 const STAFF_ACCESS_KEY = 'daja_staff_access_token';
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
+const SESSION_REQUEST_TIMEOUT_MS = 20_000;
 const CUSTOMER_REFRESH_LOCK_KEY = 'daja_customer_refresh_lock';
-const CUSTOMER_REFRESH_LOCK_TIMEOUT_MS = 20_000;
-const CUSTOMER_REFRESH_LOCK_TTL_MS = 15_000;
+const CUSTOMER_REFRESH_LOCK_TIMEOUT_MS = 25_000;
+const CUSTOMER_REFRESH_LOCK_TTL_MS = 60_000;
 const CUSTOMER_REFRESH_LOCK_RETRY_MS = 80;
 
 let refreshPromise = null;
@@ -111,6 +112,19 @@ async function parseResponse(response) {
   return response.text();
 }
 
+async function sessionRequest(path, options, phase) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), SESSION_REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(buildUrl(path), { ...options, signal: controller.signal });
+    const data = await parseResponse(response);
+    return { response, data };
+  } catch (error) {
+    error.authPhase = phase;
+    throw error;
+  } finally { window.clearTimeout(timer); }
+}
+
 function unwrapEnvelope(data) {
   if (
     data &&
@@ -127,7 +141,13 @@ function unwrapEnvelope(data) {
 async function refreshAccessToken() {
   if (!refreshPromise) {
     const requestedRefreshToken = getRefreshToken();
-    if (!requestedRefreshToken) throw new Error('Refresh token nije dostupan.');
+    if (!requestedRefreshToken) {
+      const error = new Error('Prijava nema token za obnovu. Prijavi se ponovo.');
+      error.status = 401;
+      error.authPhase = 'customer-refresh';
+      clearAuthTokens();
+      throw error;
+    }
 
     // Refresh tokens rotate after every use. The browser keeps customer
     // credentials in shared localStorage, so two tabs must never send the
@@ -140,22 +160,32 @@ async function refreshAccessToken() {
         throw new Error('Sesija je promenjena u drugom tabu.');
       }
 
-      const response = await fetch(buildUrl('/customer-auth/refresh'), {
+      const { response, data } = await sessionRequest('/customer-auth/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: requestedRefreshToken }),
-      });
-      const data = await parseResponse(response);
+      }, 'customer-refresh');
       if (!response.ok) {
-        const error = new Error(data?.message || 'Sesija je istekla.');
+        const error = new Error(data?.message || data?.error?.message || 'Obnova sesije nije uspela.');
         error.status = response.status;
+        error.authPhase = 'customer-refresh';
+        error.code = data?.code || data?.error?.code;
+        // A late response from an old session must not log out a new login.
+        if ((response.status === 401 || response.status === 403) && getRefreshToken() === requestedRefreshToken) clearAuthTokens();
         throw error;
       }
       const tokens = unwrapEnvelope(data);
+      if ((!tokens?.accessToken && !tokens?.access_token) || (!tokens?.refreshToken && !tokens?.refresh_token)) {
+        throw new Error('Obnova sesije nije vratila potpune tokene.');
+      }
+      if (getRefreshToken() !== requestedRefreshToken) throw new Error('Sesija je promenjena tokom obnove.');
       // Rotacija tokena ne menja nalog. Ponovno učitavanje korisnika bi
       // privremeno ugasilo staffReady i izbacilo admina sa stranice.
       setAuthTokens(tokens, { notify: false });
       return tokens?.accessToken || tokens?.access_token;
+    }).catch(error => {
+      error.authPhase ||= 'customer-refresh';
+      throw error;
     })
       .finally(() => {
         refreshPromise = null;
@@ -241,22 +271,24 @@ async function currentCustomerAccessToken() {
   const token = getAccessToken();
   if (!token || !accessTokenExpiresSoon(token)) return token;
 
+  // Preserve the renewal failure instead of sending a known-expired token.
+  await refreshAccessToken();
+  return getAccessToken();
+}
+
+function customerSessionIdentity(token) {
   try {
-    await refreshAccessToken();
-    return getAccessToken();
-  } catch (error) {
-    if (error?.status === 401 || error?.status === 403) {
-      clearAuthTokens();
-      return null;
-    }
-    return getAccessToken();
-  }
+    const encoded = token.split('.')[1].replaceAll('-', '+').replaceAll('_', '/');
+    const bytes = Uint8Array.from(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, '=')), char => char.charCodeAt(0));
+    const payload = JSON.parse(new TextDecoder().decode(bytes));
+    return `${payload.sub}:${payload.org}:${payload.fam}`;
+  } catch { return null; }
 }
 
 async function refreshStaffAccessToken() {
   if (!staffRefreshPromise) {
     staffRefreshPromise = (async () => {
-      const customerToken = await currentCustomerAccessToken();
+      let customerToken = await currentCustomerAccessToken();
       if (!customerToken) throw new Error('Customer token nije dostupan.');
 
       const storageKey = 'daja_staff_device_id';
@@ -266,26 +298,44 @@ async function refreshStaffAccessToken() {
         writeStorage(storageKey, deviceId);
       }
 
-      const response = await fetch(buildUrl('/customer-auth/admin/session'), {
+      const mint = accessToken => sessionRequest('/customer-auth/admin/session', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${customerToken}`,
+          Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ deviceId }),
         credentials: 'include',
-      });
-      const data = unwrapEnvelope(await parseResponse(response));
+      }, 'staff-refresh');
+      let result = await mint(customerToken);
+      if (result.response.status === 401) {
+        // The customer token may have expired server-side, or another tab
+        // rotated its session between the preflight and this request.
+        if (getAccessToken() === customerToken) await refreshAccessToken();
+        customerToken = await currentCustomerAccessToken();
+        if (!customerToken) throw new Error('Customer token nije dostupan.');
+        result = await mint(customerToken);
+      }
+      const { response, data: rawData } = result;
+      const data = unwrapEnvelope(rawData);
       if (!response.ok) {
         const error = new Error(data?.message || data?.error?.message || 'Staff sesija nije dostupna.');
         error.status = response.status;
+        error.authPhase = 'staff-refresh';
+        error.code = data?.code || data?.error?.code;
         throw error;
       }
       const accessToken = data?.accessToken || data?.access_token;
       if (!accessToken) throw new Error('Staff sesija nije vratila token.');
+      if (!customerSessionIdentity(customerToken) || customerSessionIdentity(customerToken) !== customerSessionIdentity(getAccessToken())) {
+        throw new Error('Nalog je promenjen tokom obnove administratorske prijave.');
+      }
       setStaffAccessToken(accessToken);
       return accessToken;
-    })().finally(() => {
+    })().catch(error => {
+      error.authPhase ||= 'staff-refresh';
+      throw error;
+    }).finally(() => {
       staffRefreshPromise = null;
     });
   }
@@ -294,14 +344,15 @@ async function refreshStaffAccessToken() {
 
 async function currentStaffAccessToken() {
   const token = getStaffAccessToken();
-  if (!token) return getAccessToken();
+  if (!token) return refreshStaffAccessToken();
   if (!accessTokenExpiresSoon(token)) return token;
-  try {
-    return await refreshStaffAccessToken();
-  } catch {
-    // The ordinary 401 retry still handles a renewal that failed temporarily.
-    return token;
-  }
+  return refreshStaffAccessToken();
+}
+
+export async function resumeAuthSession() {
+  if (!getAccessToken()) return;
+  await currentCustomerAccessToken();
+  if (getStaffAccessToken()) await currentStaffAccessToken();
 }
 
 export async function apiRequest(path, options = {}) {
@@ -357,26 +408,16 @@ export async function apiRequest(path, options = {}) {
   }
 
   if (response.status === 401 && auth && retry && !staff) {
-    try {
-      await refreshAccessToken();
-      return apiRequest(path, { ...options, retry: false });
-    } catch (error) {
-      if (error?.status === 401 || error?.status === 403) clearAuthTokens();
-    }
+    // Another request/tab may already have replaced this request's token.
+    if (getAccessToken() === token) await refreshAccessToken();
+    return apiRequest(path, { ...options, retry: false });
   }
 
   if (response.status === 401 && auth && retry && staff) {
-    try {
-      // The staff token is minted from the customer token. After the dashboard
-      // has been idle, both may have expired; renewing only the staff token
-      // then calls `/admin/session` with an expired customer credential.
-      await refreshAccessToken();
-      await refreshStaffAccessToken();
-      return apiRequest(path, { ...options, retry: false });
-    } catch {
-      // Do not clear the customer session: only the separate staff session
-      // failed or the user is no longer authorized as staff.
-    }
+    // Staff renewal refreshes the customer only if needed. Do not rotate a
+    // healthy customer session for every late 401 from an admin request.
+    if (getStaffAccessToken() === token) await refreshStaffAccessToken();
+    return apiRequest(path, { ...options, retry: false });
   }
 
   const rawData = await parseResponse(response);

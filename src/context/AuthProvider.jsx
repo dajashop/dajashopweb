@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Ctx } from './AuthContext';
 import {
@@ -11,6 +11,7 @@ import {
   getStaffAccessToken,
   onAuthTokenChange,
   setAuthTokens,
+  resumeAuthSession,
 } from '../services/apiClient';
 import { useConsent } from './ConsentContext.jsx';
 import {
@@ -48,8 +49,10 @@ export function AuthProvider({ children }) {
   const [pendingPhone, setPendingPhone] = useState(null);
   const [pendingEmailVerify, setPendingEmailVerify] = useState(false);
   const [oauthJustSucceeded, setOauthJustSucceeded] = useState(false);
+  const loadSequence = useRef(0);
 
   const loadMe = useCallback(async () => {
+    const sequence = ++loadSequence.current;
     if (!getAccessToken()) {
       setUser(null);
       setUserInfo(null);
@@ -63,11 +66,13 @@ export function AuthProvider({ children }) {
     setStaffReady(false);
     try {
       const me = await authApi.me();
+      if (sequence !== loadSequence.current) return null;
 
       // The API is authoritative: configured owners and explicitly assigned
       // catalog contributors may both exchange their Google customer session
       // for a staff session. A normal customer simply gets no staff token.
       await authApi.createAdminSession().catch(() => null);
+      if (sequence !== loadSequence.current) return null;
       setStaffReady(Boolean(getStaffAccessToken()));
 
       // Publish the admin user only after the staff-session exchange. This
@@ -75,6 +80,7 @@ export function AuthProvider({ children }) {
       // customer token while the staff token is still being created.
       try {
         const customer = await customerApi.me();
+        if (sequence !== loadSequence.current) return null;
         const hydratedUser = {
           ...me,
           ...customer,
@@ -84,22 +90,30 @@ export function AuthProvider({ children }) {
         setUserInfo(customer);
         return hydratedUser;
       } catch {
+        if (sequence !== loadSequence.current || !getAccessToken()) return null;
         setUser(me);
         setUserInfo(me);
         return me;
       }
-    } catch {
+    } catch (error) {
+      if (sequence !== loadSequence.current) return null;
+      if (getAccessToken() && error?.status !== 401 && error?.status !== 403) {
+        // An offline wake-up/server outage must not erase an existing login.
+        setStaffReady(Boolean(getStaffAccessToken()));
+        return null;
+      }
       setUser(null);
       setUserInfo(null);
       setStaffReady(false);
       return null;
     } finally {
-      setAuthReady(true);
+      if (sequence === loadSequence.current) setAuthReady(true);
     }
   }, []);
 
   useEffect(() => {
     if (!hasDecision) {
+      loadSequence.current += 1;
       setUser(null);
       setUserInfo(null);
       setAuthReady(false);
@@ -110,6 +124,28 @@ export function AuthProvider({ children }) {
     loadMe();
     return onAuthTokenChange(loadMe);
   }, [hasDecision, loadMe]);
+
+  useEffect(() => {
+    if (!hasDecision) return undefined;
+    const resume = () => {
+      if (document.visibilityState !== 'visible') return;
+      void resumeAuthSession().then(() => {
+        if (getAccessToken() && !user) void loadMe();
+      }).catch(error => {
+        console.warn('Obnova prijave nije uspela', { phase: error.authPhase || 'session-renewal', status: error.status || null, code: error.code || null });
+      });
+    };
+    const timer = window.setInterval(resume, 60_000);
+    window.addEventListener('focus', resume);
+    window.addEventListener('online', resume);
+    document.addEventListener('visibilitychange', resume);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', resume);
+      window.removeEventListener('online', resume);
+      document.removeEventListener('visibilitychange', resume);
+    };
+  }, [hasDecision, user, loadMe]);
 
   useEffect(() => {
     if (!hasDecision || !user?.id) return undefined;
