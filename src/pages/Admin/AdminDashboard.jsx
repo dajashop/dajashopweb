@@ -61,6 +61,7 @@ import SupplierQueuePanel from './components/SupplierQueuePanel.jsx';
 import PromotionManager from './components/PromotionManager.jsx';
 import FilterManager from './components/FilterManager.jsx';
 import VariantGroupsPanel from '../../components/VariantGroupsPanel.jsx';
+import './TaxonomyMobile.css';
 import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
 
 // ... (sanitizeItem i generateSlug funkcije ostaju iste)
@@ -1861,10 +1862,10 @@ function AdminDashboardContent() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto"
+            className="max-w-2xl mx-auto admin-taxonomy-panel"
           >
             {' '}
-            <div className="card glass p-6 h-full flex flex-col">
+            <div className="card glass p-6 h-full flex flex-col taxonomy-card">
               {' '}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-white/10 pb-4">
                 {' '}
@@ -1906,7 +1907,7 @@ function AdminDashboardContent() {
                   )}{' '}
                 </div>{' '}
               </div>{' '}
-              <form onSubmit={handleAddBrand} className="flex gap-2 mb-4">
+              <form onSubmit={handleAddBrand} className="flex gap-2 mb-4 taxonomy-add">
                 {' '}
                 {brandFilters.length !== 1 && (
                   <select
@@ -1939,7 +1940,7 @@ function AdminDashboardContent() {
                   <Plus size={18} />{' '}
                 </button>{' '}
               </form>{' '}
-              <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar max-h-[500px]">
+              <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar max-h-[500px] taxonomy-list">
                 {' '}
                 <AnimatePresence initial={false}>
                   {' '}
@@ -1950,11 +1951,11 @@ function AdminDashboardContent() {
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-primary group transition-colors"
+                      className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-primary group transition-colors taxonomy-row"
                     >
                       {' '}
                       {editingBrandId === item.id ? (
-                        <div className="flex flex-1 items-center gap-2">
+                        <div className="flex flex-1 items-center gap-2 taxonomy-edit">
                           {' '}
                           <input
                             className={`flex-1 ${catalogInlineFieldClass}`}
@@ -1966,6 +1967,7 @@ function AdminDashboardContent() {
                           />{' '}
                           <button
                             onClick={handleUpdateBrand}
+                            aria-label="Sačuvaj brend"
                             className="text-emerald-500 p-1 hover:bg-white/10 rounded-lg"
                           >
                             {' '}
@@ -1973,6 +1975,7 @@ function AdminDashboardContent() {
                           </button>{' '}
                           <button
                             onClick={() => setEditingBrandId(null)}
+                            aria-label="Otkaži izmenu brenda"
                             className="text-red-400 p-1 hover:bg-white/10 rounded-lg"
                           >
                             {' '}
@@ -1982,7 +1985,7 @@ function AdminDashboardContent() {
                       ) : (
                         <>
                           {' '}
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 taxonomy-details">
                             {' '}
                             <span className="font-medium text-sm">
                               {' '}
@@ -1998,9 +2001,10 @@ function AdminDashboardContent() {
                               </span>
                             )}{' '}
                           </div>{' '}
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity taxonomy-actions">
                             {' '}
                             <button
+                              aria-label={`Izmeni brend ${item.name}`}
                               onClick={() => {
                                 setEditingBrandId(item.id);
                                 setEditingBrandName(item.name);
@@ -2012,6 +2016,7 @@ function AdminDashboardContent() {
                             </button>{' '}
                             <button
                               onClick={() => handleDeleteBrand(item.id)}
+                              aria-label={`Obriši brend ${item.name}`}
                               className="p-1.5 hover:bg-white/10 rounded-lg text-muted hover:text-red-400 transition-colors"
                             >
                               {' '}
@@ -2031,14 +2036,14 @@ function AdminDashboardContent() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto"
+            className="max-w-2xl mx-auto admin-taxonomy-panel"
           >
             {' '}
-            <div className="card glass p-6 h-full flex flex-col">
+            <div className="card glass p-6 h-full flex flex-col taxonomy-card">
               {' '}
               <div className="flex flex-col gap-4 mb-6 border-b border-white/10 pb-4">
                 {' '}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between taxonomy-header">
                   {' '}
                   <div className="flex items-center gap-3">
                     {' '}
@@ -2080,7 +2085,7 @@ function AdminDashboardContent() {
                     )}{' '}
                   </div>{' '}
                 </div>{' '}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 taxonomy-details">
                   {' '}
                   <Filter size={16} className="text-neutral-400" />{' '}
                   <select
@@ -2101,7 +2106,7 @@ function AdminDashboardContent() {
               </div>{' '}
               <form
                 onSubmit={handleAddCategory}
-                className="flex flex-wrap gap-2 mb-4 items-end"
+                className="flex flex-wrap gap-2 mb-4 items-end taxonomy-add"
               >
                 {' '}
                 {catFilters.length !== 1 && (
@@ -2183,7 +2188,7 @@ function AdminDashboardContent() {
                   <Plus size={18} />{' '}
                 </button>{' '}
               </form>{' '}
-              <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar max-h-[500px]">
+              <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar max-h-[500px] taxonomy-list">
                 {' '}
                 <AnimatePresence initial={false}>
                   {' '}
@@ -2194,11 +2199,11 @@ function AdminDashboardContent() {
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-primary group transition-colors"
+                      className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-primary group transition-colors taxonomy-row"
                     >
                       {' '}
                       {editingCatId === item.id ? (
-                        <div className="flex flex-1 items-center gap-2">
+                        <div className="flex flex-1 items-center gap-2 taxonomy-edit">
                           {' '}
                           <input
                             className={`flex-1 ${catalogInlineFieldClass}`}
@@ -2227,6 +2232,7 @@ function AdminDashboardContent() {
                           </select>
                           <button
                             onClick={handleUpdateCategory}
+                            aria-label="Sačuvaj kolekciju"
                             className="text-emerald-500 p-1 hover:bg-white/10 rounded-lg"
                           >
                             {' '}
@@ -2234,6 +2240,7 @@ function AdminDashboardContent() {
                           </button>{' '}
                           <button
                             onClick={() => setEditingCatId(null)}
+                            aria-label="Otkaži izmenu kolekcije"
                             className="text-red-400 p-1 hover:bg-white/10 rounded-lg"
                           >
                             {' '}
@@ -2243,7 +2250,7 @@ function AdminDashboardContent() {
                       ) : (
                         <>
                           {' '}
-                          <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap taxonomy-details">
                             {' '}
                             <span className="font-medium text-sm">
                               {' '}
@@ -2264,9 +2271,10 @@ function AdminDashboardContent() {
                               </span>
                             )}{' '}
                           </div>{' '}
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity taxonomy-actions">
                             {' '}
                             <button
+                              aria-label={`Izmeni kolekciju ${item.name}`}
                               onClick={() => {
                                 setEditingCatId(item.id);
                                 setEditingCatName(item.name);
@@ -2279,6 +2287,7 @@ function AdminDashboardContent() {
                             </button>{' '}
                             <button
                               onClick={() => handleDeleteCategory(item.id)}
+                              aria-label={`Obriši kolekciju ${item.name}`}
                               className="p-1.5 hover:bg-white/10 rounded-lg text-muted hover:text-red-400 transition-colors"
                             >
                               {' '}
