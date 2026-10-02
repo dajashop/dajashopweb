@@ -336,7 +336,6 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
   const start = (page - 1) * PER_PAGE;
   const itemsToShow = filteredData.slice(start, start + PER_PAGE);
-  const showingCount = itemsToShow.length;
 
   const renderContent = () => {
     if (loading || filterConfigurationLoading) {
@@ -483,7 +482,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
             <div className="catalog__subrow">
               <div className="catalog__showing">
-                Prikazano {showingCount} proizvoda
+                Ukupno {totalCount} proizvoda
               </div>
               <div className="catalog__sort-block">
                 <span className="catalog__sort-label">Sortiraj</span>
