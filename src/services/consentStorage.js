@@ -105,6 +105,11 @@ export function clearOptionalStorage() {
   if (typeof window === 'undefined') return;
   OPTIONAL_STORAGE_KEYS.forEach(removeStoredValue);
   try {
+    Object.keys(window.localStorage).filter((key) => key.startsWith('daja_workforce_layout:')).forEach(removeStoredValue);
+  } catch {
+    // Optional layout storage may be unavailable.
+  }
+  try {
     Object.keys(window.sessionStorage)
       .filter((key) => key.startsWith('catalog-scroll:'))
       .forEach((key) => window.sessionStorage.removeItem(key));

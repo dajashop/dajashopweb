@@ -2550,7 +2550,11 @@ function AdminDashboardContent() {
             </button>
             <button
               type="button"
-              onClick={() => saveProductDraft(null)}
+              onClick={() => {
+                const timingId = productDraft?.payload?.workTiming?.id;
+                if (timingId) void workforceApi.abandonSession(timingId, productDraft.payload.workTiming.startedAt).catch(() => {});
+                saveProductDraft(null);
+              }}
               className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600"
               aria-label="Obriši nacrt proizvoda"
               title="Obriši nacrt"

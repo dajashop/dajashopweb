@@ -52,39 +52,6 @@ function Metric({ label, value }) {
     </div>
   );
 }
-function Bars({ values, label }) {
-  const max = Math.max(1, ...values.map((v) => Number(v.count)));
-  return (
-    <section className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-5">
-      <h3 className="text-sm font-bold">{label}</h3>
-      <div
-        className="mt-5 flex h-28 items-end gap-1"
-        role="img"
-        aria-label={values.map((v) => `${v.label}: ${v.count}`).join(', ')}
-      >
-        {values.map((v) => (
-          <div
-            key={v.label}
-            title={`${v.label}: ${v.count} proizvoda`}
-            className="flex h-full min-w-0 flex-1 items-end"
-          >
-            <div
-              className={`w-full rounded-t ${v.count ? 'bg-emerald-600' : 'bg-neutral-200'}`}
-              style={{
-                height: `${Math.max(3, (Number(v.count) / max) * 100)}%`,
-              }}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 flex justify-between text-xs text-neutral-400">
-        <span>{values[0]?.label}</span>
-        <span>{values.at(-1)?.label}</span>
-      </div>
-    </section>
-  );
-}
-
 export default function WorkforcePanel({ departments = [], categories = [], brands = [] }) {
   const [members, setMembers] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -310,6 +277,9 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
         </p>
       ) : (
         <>
+          <WorkforceTimeline key={selected.id} userId={selected.id} revision={revision} products={detail.products} />
+          <details className="rounded-2xl border border-neutral-200 bg-white p-5">
+            <summary className="mb-3 cursor-pointer text-sm font-bold">Ukupni podaci zaposlenog i obračun</summary>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
             <Metric label="Danas" value={worker.createdToday} />
             <Metric label="Juče" value={worker.createdYesterday} />
@@ -339,16 +309,7 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
             Europe/Belgrade. Ukupni unosi i obračun uključuju kasnije obrisane
             artikle.
           </p>
-          <div className="grid gap-4">
-            <Bars
-              label="Unosi po danima — poslednjih 30 dana"
-              values={(worker.daily || []).map((d) => ({
-                label: d.date.slice(5, 10),
-                count: d.count,
-              }))}
-            />
-          </div>
-          <WorkforceTimeline key={selected.id} userId={selected.id} revision={revision} />
+          </details>
           <WorkforcePricing
             key={selected.id}
             userId={selected.id}

@@ -30,6 +30,7 @@ import { RichDescription } from '../../../components/RichDescription.jsx';
 import { descriptionText } from '../../../components/description.js';
 import ProductOperationsPanel from './ProductOperationsPanel.jsx';
 import WorkforceReviewNotes from './WorkforceReviewNotes.jsx';
+import useWorkTiming from '../../../hooks/useWorkTiming';
 import {
   visibleProductFeatures,
   visibleProductSpecs,
@@ -252,6 +253,8 @@ export default function AdminProductModal({
   draft: productDraft,
   onDraftChange,
 }) {
+  const workTiming = useWorkTiming({ product, draft: productDraft, reviewContext });
+  const timingHasDraft = useRef(Boolean(productDraft));
   const buildSeoDefaults = (baseProduct = {}) => {
     const baseTitle =
       `${baseProduct.brand || ''} ${baseProduct.name || ''}`.trim();
@@ -345,7 +348,7 @@ export default function AdminProductModal({
     const result = {
       name,
       matches: !product && !catalogLoading && !catalogError
-        ? findSimilarProducts(name, existingProducts)
+        ? findSimilarProducts(name, existingProducts.filter((item) => item.id !== savedProductIdRef.current))
         : [],
       unavailable: Boolean(catalogLoading || catalogError),
     };
@@ -494,7 +497,7 @@ export default function AdminProductModal({
     // Realtime catalog refreshes replace the product object while editing.
     // Initialize once per product so they cannot erase media link IDs or edits.
     const key = product?.id || null;
-    savedProductIdRef.current = key;
+    savedProductIdRef.current = key || initialProductDraftRef.current?.savedProductId || null;
     setDeletedVariantIds([]);
     setRemovedMediaLinkIds([]);
     pendingUploadIdsRef.current.clear();
@@ -714,9 +717,10 @@ export default function AdminProductModal({
           piece.barcode?.trim() || piece.epc?.trim() || piece.locationId || piece.zoneId || piece.binId,
         ),
     );
+    timingHasDraft.current = hasDraftContent;
     onDraftChange(
       hasDraftContent
-        ? { form, pieceDetails, selectedPieceIndex }
+        ? { form, pieceDetails, selectedPieceIndex, workTiming: workTiming.meta, savedProductId: savedProductIdRef.current }
         : null,
     );
   }, [form, onDraftChange, pieceDetails, product, selectedPieceIndex]);
@@ -764,6 +768,7 @@ export default function AdminProductModal({
 
   const closeModal = () => {
     if (submittingRef.current || imageBusy) return;
+    workTiming.close(!product && Boolean(onDraftChange) && timingHasDraft.current);
     // A new product draft may contain images already uploaded to R2. Keep
     // them attached to the draft when the user uses Back or closes the modal.
     if (product) discardPendingUploads();
@@ -1360,6 +1365,8 @@ export default function AdminProductModal({
 
       const savedProductId = await saveProduct(payload);
       savedProductIdRef.current = savedProductId;
+      workTiming.attach(savedProductId);
+      if (!product && onDraftChange) onDraftChange({ form, pieceDetails, selectedPieceIndex, workTiming: workTiming.meta, savedProductId });
       if (savedProductId && pendingPrice) {
         const savedVariants =
           await adminCatalogApi.listVariants(savedProductId);
@@ -1608,6 +1615,7 @@ export default function AdminProductModal({
       if (reviewContext && typeof options.reviewNote === 'string') {
         await workforceApi.reviewProduct(savedProductId, 'changes_requested', options.reviewNote);
       }
+      workTiming.finish(savedProductId);
       await onSuccess?.({ created: !product });
 
       setFlash({ open: true, title: options.reviewNote ? 'Sačuvano i vraćeno na doradu!' : 'Uspešno sačuvano!', ok: true });
@@ -1914,6 +1922,10 @@ export default function AdminProductModal({
 
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.96 }}
+        onPointerDownCapture={workTiming.interact}
+        onKeyDownCapture={workTiming.interact}
+        onChangeCapture={workTiming.interact}
+        onScrollCapture={workTiming.interact}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.96 }}
         data-lenis-prevent
@@ -1927,6 +1939,7 @@ export default function AdminProductModal({
             <p className="text-sm text-neutral-500">
               Popuni detalje i upravljaj inventarom.
             </p>
+            {workTiming.notice && <p className="mt-1 text-xs text-amber-700" role="status">{workTiming.notice}</p>}
           </div>
           <button
             onClick={closeModal}

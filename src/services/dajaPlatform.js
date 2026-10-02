@@ -932,6 +932,15 @@ export const ordersApi = {
 };
 
 export const workforceApi = {
+  dashboard(userId, params) {
+    return apiRequest(`/admin/workforce/${encodeURIComponent(userId)}/dashboard`, { staff: true, query: params });
+  },
+  recordSession(id, body) {
+    return apiRequest(`/admin/work-sessions/${encodeURIComponent(id)}`, { staff: true, method: 'PUT', body });
+  },
+  abandonSession(id, startedAt) {
+    return apiRequest(`/admin/work-sessions/${encodeURIComponent(id)}/abandon`, { staff: true, method: 'POST', body: { startedAt } });
+  },
   timeline(userId, date) {
     return apiRequest(`/admin/workforce/${encodeURIComponent(userId)}/timeline`, { staff: true, query: { date } });
   },
