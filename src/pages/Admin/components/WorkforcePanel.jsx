@@ -13,6 +13,7 @@ import {
 import { adminCatalogApi, workforceApi } from '../../../services/dajaPlatform';
 import AdminProductModal from './AdminProductModal';
 import WorkforcePricing from './WorkforcePricing';
+import WorkforceTimeline from './WorkforceTimeline';
 import { rsd } from '../utils/workforce';
 
 const date = (value) =>
@@ -338,7 +339,7 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
             Europe/Belgrade. Ukupni unosi i obračun uključuju kasnije obrisane
             artikle.
           </p>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4">
             <Bars
               label="Unosi po danima — poslednjih 30 dana"
               values={(worker.daily || []).map((d) => ({
@@ -346,14 +347,8 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
                 count: d.count,
               }))}
             />
-            <Bars
-              label="Današnji unosi po satima"
-              values={Array.from({ length: 24 }, (_, h) => ({
-                label: `${String(h).padStart(2, '0')}:00`,
-                count: worker.hourly?.[String(h).padStart(2, '0')] || 0,
-              }))}
-            />
           </div>
+          <WorkforceTimeline key={selected.id} userId={selected.id} revision={revision} />
           <WorkforcePricing
             key={selected.id}
             userId={selected.id}

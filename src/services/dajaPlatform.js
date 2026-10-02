@@ -932,6 +932,9 @@ export const ordersApi = {
 };
 
 export const workforceApi = {
+  timeline(userId, date) {
+    return apiRequest(`/admin/workforce/${encodeURIComponent(userId)}/timeline`, { staff: true, query: { date } });
+  },
   pricing(userId) {
     return apiRequest('/admin/workforce-pricing', { staff: true, query: userId ? { userId } : {} });
   },
