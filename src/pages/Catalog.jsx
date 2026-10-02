@@ -124,6 +124,33 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     publicRealtime: true,
   });
 
+  // --- GLAVNA LOGIKA: Odeljenje + Vidljivost ---
+  const departmentItems = useMemo(() => {
+    if (!allItems) return [];
+
+    return allItems.filter((p) => {
+      // 1. Provera odeljenja
+      const productDept = p.department || 'satovi';
+      if (productDept !== department) return false;
+
+      // 2. LOGIKA VIDLJIVOSTI:
+      // Ako je proizvod sakriven (isVisible === false)...
+      if (p.isVisible === false) {
+        // ...prikazujemo ga SAMO ako je korisnik ADMIN.
+        // Ako nije admin, sakrivamo ga (return false).
+        if (!isAdmin) return false;
+      }
+
+      return true;
+    });
+  }, [allItems, department, isAdmin]); // Dodat isAdmin u zavisnosti
+
+  const filterConfiguration = useMemo(() => automaticFilterConfiguration(savedFilterConfiguration, departmentItems.filter((product) => product.isVisible !== false)), [savedFilterConfiguration, departmentItems]);
+  const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration, fixedGender) : sp, [sp, filterConfiguration, fixedGender]);
+  useEffect(() => {
+    if (filterConfiguration && configuredParams.toString() !== sp.toString()) setSp(configuredParams, { replace: true });
+  }, [configuredParams, filterConfiguration, sp, setSp]);
+
   // --- FILTRIRANJE ---
   const activeFilters = useMemo(() => {
     if (filterConfigurationLoading || filterConfigurationError) return [];
@@ -204,33 +231,6 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     if (sp.get('sort')) next.set('sort', sp.get('sort'));
     setSp(next, { replace: true });
   };
-
-  // --- GLAVNA LOGIKA: Odeljenje + Vidljivost ---
-  const departmentItems = useMemo(() => {
-    if (!allItems) return [];
-
-    return allItems.filter((p) => {
-      // 1. Provera odeljenja
-      const productDept = p.department || 'satovi';
-      if (productDept !== department) return false;
-
-      // 2. LOGIKA VIDLJIVOSTI:
-      // Ako je proizvod sakriven (isVisible === false)...
-      if (p.isVisible === false) {
-        // ...prikazujemo ga SAMO ako je korisnik ADMIN.
-        // Ako nije admin, sakrivamo ga (return false).
-        if (!isAdmin) return false;
-      }
-
-      return true;
-    });
-  }, [allItems, department, isAdmin]); // Dodat isAdmin u zavisnosti
-
-  const filterConfiguration = useMemo(() => automaticFilterConfiguration(savedFilterConfiguration, departmentItems.filter((product) => product.isVisible !== false)), [savedFilterConfiguration, departmentItems]);
-  const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration, fixedGender) : sp, [sp, filterConfiguration, fixedGender]);
-  useEffect(() => {
-    if (filterConfiguration && configuredParams.toString() !== sp.toString()) setSp(configuredParams, { replace: true });
-  }, [configuredParams, filterConfiguration, sp, setSp]);
 
   // Glavna logika filtriranja (Pretraga, Brendovi...)
   const filteredData = useMemo(() => {
