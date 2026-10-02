@@ -100,6 +100,9 @@ function ensureStaffCatalogSocket() {
   staffCatalogSocket.on('catalog.taxonomy.updated', (event) => {
     staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
   });
+  staffCatalogSocket.on('catalog.variant-groups.updated', (event) => {
+    staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
+  });
   staffCatalogSocket.on('connect_error', (error) => {
     staffCatalogListeners.forEach((candidate) => candidate.onError?.(error));
   });
@@ -454,6 +457,19 @@ export const catalogApi = {
     );
     if (data?.redirectTo) return { redirectTo: data.redirectTo };
     return normalizeProduct(data?.product || data);
+  },
+};
+
+export const variantGroupsApi = {
+  list: () => apiRequest('/admin/variant-groups', { staff: true }),
+  save: (body) => apiRequest('/admin/variant-groups', { staff: true, method: 'POST', body }),
+  reset: (key, expectedRevision, expectedCatalogRevision) => apiRequest(`/admin/variant-groups/${encodeURIComponent(key)}/reset`, { staff: true, method: 'POST', body: { expectedRevision, expectedCatalogRevision } }),
+  remove: (key, expectedRevision, expectedCatalogRevision) => apiRequest(`/admin/variant-groups/${encodeURIComponent(key)}`, { staff: true, method: 'DELETE', body: { expectedRevision, expectedCatalogRevision } }),
+  resetProduct: (id, expectedRevision, expectedCatalogRevision) => apiRequest(`/admin/variant-groups/products/${encodeURIComponent(id)}/automatic`, { staff: true, method: 'POST', body: { expectedRevision, expectedCatalogRevision } }),
+  async publicMembers(slug, signal) {
+    const data = await apiRequest(`/public/catalog/products/${encodeURIComponent(slug)}/variants`, { auth: false, signal });
+    if (!data || !Array.isArray(data.items)) throw new Error('Varijante nisu dostupne.');
+    return data.items.map(normalizeProduct);
   },
 };
 
@@ -1486,6 +1502,9 @@ export function subscribePublicCatalogRealtime(onEvent, onError) {
   if (!publicCatalogSocket) {
     publicCatalogSocket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ publicCatalog: true }));
     publicCatalogSocket.on('product.updated', (event) => {
+      publicCatalogListeners.forEach((listener) => listener(event));
+    });
+    publicCatalogSocket.on('catalog.variant-groups.updated', (event) => {
       publicCatalogListeners.forEach((listener) => listener(event));
     });
     publicCatalogSocket.on('connect_error', (error) => {

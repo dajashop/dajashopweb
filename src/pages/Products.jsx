@@ -7,6 +7,7 @@ import { useFlash } from '../hooks/useFlash.js';
 import { useWishlist } from '../context/WishlistProvider.jsx';
 import useProduct from '../hooks/useProduct.js';
 import useProducts from '../hooks/useProducts.js';
+import useProductVariantGroup from '../hooks/useProductVariantGroup.js';
 
 // Import komponenti
 import ProductGallery from '../components/product/ProductGallery.jsx';
@@ -57,15 +58,7 @@ export default function Product() {
     if (p?.redirectTo) navigate(p.redirectTo, { replace: true });
   }, [navigate, p?.redirectTo]);
 
-  const relatedVariants = useMemo(() => {
-    if (!p || !allProducts.length) return [];
-    const parts = p.name.split('-');
-    if (parts.length < 2) return [];
-    const baseName = parts.slice(0, -1).join('-');
-    return allProducts.filter(
-      (item) => item.id !== p.id && item.name.startsWith(baseName),
-    );
-  }, [p, allProducts]);
+  const relatedVariants = useProductVariantGroup(slug);
 
   // --- [LOGIKA] Da li proizvod ima unete funkcionalnosti? ---
   const hasFeatures = useMemo(() => {

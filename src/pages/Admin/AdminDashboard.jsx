@@ -60,6 +60,7 @@ import PolicyPublicationPanel from './components/PolicyPublicationPanel.jsx';
 import SupplierQueuePanel from './components/SupplierQueuePanel.jsx';
 import PromotionManager from './components/PromotionManager.jsx';
 import FilterManager from './components/FilterManager.jsx';
+import VariantGroupsPanel from '../../components/VariantGroupsPanel.jsx';
 import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
 
 // ... (sanitizeItem i generateSlug funkcije ostaju iste)
@@ -564,7 +565,15 @@ function AdminDashboardContent() {
   });
 
   // ... (State varijable ostaju iste: activeTab, searchTerm, filters...)
-  const [activeTab, setActiveTab] = useState('products');
+  const [activeTab, updateActiveTab] = useState('products');
+  const variantGroupsDirty = useRef(false);
+  const onVariantGroupsDirty = useCallback(value => { variantGroupsDirty.current = value; }, []);
+  const setActiveTab = useCallback(next => {
+    if (next === activeTab) return;
+    if (variantGroupsDirty.current && !window.confirm('Postoje nesnimljene izmene grupe. Odbaciti ih?')) return;
+    variantGroupsDirty.current = false;
+    updateActiveTab(next);
+  }, [activeTab]);
   const [filtersVisited, setFiltersVisited] = useState(false);
   useEffect(() => { if (activeTab === 'filters') setFiltersVisited(true); }, [activeTab]);
   useEffect(() => {
@@ -591,6 +600,7 @@ function AdminDashboardContent() {
   const [staffAccess, setStaffAccess] = useState(null);
   const [staffAccessLoaded, setStaffAccessLoaded] = useState(false);
   const canManageSupplierChecks = Boolean(staffAccess?.isOwner || staffAccess?.canManageSupplierChecks);
+  const canManageVariantGroups = Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.variant_groups.manage'));
   const isCatalogContributor = Boolean(
     !staffAccess?.isOwner && staffAccess?.roles?.includes('Unosilac kataloga'),
   );
@@ -634,10 +644,10 @@ function AdminDashboardContent() {
   }, []);
 
   useEffect(() => {
-    if (isCatalogContributor && !['products', 'brands', 'categories', 'specs', 'filters', 'suppliers', 'my-workforce'].includes(activeTab)) {
+    if (isCatalogContributor && !(activeTab === 'variant-groups' && canManageVariantGroups) && !['products', 'brands', 'categories', 'specs', 'filters', 'suppliers', 'my-workforce'].includes(activeTab)) {
       setActiveTab('products');
     }
-  }, [activeTab, isCatalogContributor]);
+  }, [activeTab, isCatalogContributor, canManageVariantGroups, setActiveTab]);
 
   // ... (Ostali state-ovi za brendove, kategorije...)
   const [brands, setBrands] = useState([]);
@@ -806,6 +816,20 @@ function AdminDashboardContent() {
   }, [activeTab]);
 
   const contributorRole = accessRoles.find((role) => role.code === 'catalog_contributor');
+  const variantGroupsRole = accessRoles.find((role) => role.code === 'variant_groups_manager');
+  const toggleEmployeeVariantGroups = async (employee, enabled) => {
+    if (!variantGroupsRole || accessLoading) return;
+    setAccessLoading(true); setAccessError('');
+    try {
+      const assignments = (employee.assignments || []).filter(item => item.roleId !== variantGroupsRole.id)
+        .map(item => ({ roleId: item.roleId, scope: item.scope, primary: Boolean(item.primary),
+          ...(item.scope === 'location' ? { locationId: item.locationId } : {}) }));
+      if (enabled) assignments.push({ roleId: variantGroupsRole.id, scope: 'all_locations', primary: false });
+      await accessControlApi.updateAssignments(employee.id, assignments);
+      setAccessUsers(await accessControlApi.users());
+    } catch (error) { setAccessError(error?.message || 'Dozvola za grupe varijanti nije promenjena.'); }
+    finally { setAccessLoading(false); }
+  };
   const createEmployee = async (event) => {
     event.preventDefault();
     if (!contributorRole) return;
@@ -1207,6 +1231,7 @@ function AdminDashboardContent() {
             {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
               <TabButton active={activeTab === 'filters'} onClick={() => setActiveTab('filters')} icon={Filter} label="Filteri" />
             )}
+            {staffAccessLoaded && canManageVariantGroups && <TabButton active={activeTab === 'variant-groups'} onClick={() => setActiveTab('variant-groups')} icon={Layers} label="Grupe varijanti" />}
             {staffAccessLoaded && isCatalogContributor && staffAccess?.permissions?.includes('catalog.read') && (
               <TabButton active={activeTab === 'suppliers'} onClick={() => setActiveTab('suppliers')} icon={Truck} label="Dobavljači" />
             )}
@@ -1235,6 +1260,7 @@ function AdminDashboardContent() {
       </div>
 
       <div className="container mt-8">
+        {activeTab === 'variant-groups' && canManageVariantGroups && <VariantGroupsPanel onDirtyChange={onVariantGroupsDirty} />}
         {(activeTab === 'filters' || filtersVisited) && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
           <div hidden={activeTab !== 'filters'}><FilterManager products={products} productsLoading={productsLoading} definitions={specs} departments={departments}
             canWrite={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))} /></div>
@@ -1825,7 +1851,7 @@ function AdminDashboardContent() {
             {accessError && <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{accessError}</div>}
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
               <div className="border-b border-neutral-100 p-4 text-sm font-bold">Zaposleni sa pristupom</div>
-              {accessLoading ? <p className="p-8 text-center text-neutral-500">Učitavanje korisnika…</p> : <div className="divide-y divide-neutral-100">{accessUsers.map((employee) => { const assignment = employee.assignments?.find((item) => item.roleId === contributorRole?.id); return <div key={employee.id} className="flex flex-wrap items-center justify-between gap-3 p-4"><div><div className="font-semibold text-neutral-900">{employee.displayName}</div><div className="text-sm text-neutral-500">{employee.email}</div></div><div className="flex items-center gap-3"><span className={`rounded-full px-3 py-1 text-xs font-bold ${assignment ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>{assignment ? 'Unosilac kataloga' : 'Druga rola'}</span>{assignment && <button type="button" onClick={() => void removeEmployeeAccess(employee)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600">Ukloni pristup</button>}</div></div>; })}{!accessUsers.length && !accessLoading && <p className="p-8 text-center text-neutral-500">Nema korisnika.</p>}</div>}
+              {accessLoading ? <p className="p-8 text-center text-neutral-500">Učitavanje korisnika…</p> : <div className="divide-y divide-neutral-100">{accessUsers.map((employee) => { const assignment = employee.assignments?.find((item) => item.roleId === contributorRole?.id); return <div key={employee.id} className="flex flex-wrap items-center justify-between gap-3 p-4"><div><div className="font-semibold text-neutral-900">{employee.displayName}</div><div className="text-sm text-neutral-500">{employee.email}</div></div><div className="flex items-center gap-3 flex-wrap">{variantGroupsRole && <label className="flex items-center gap-2 text-xs text-neutral-600"><input type="checkbox" checked={Boolean(employee.assignments?.some(item => item.roleId === variantGroupsRole.id))} disabled={accessLoading} onChange={event => void toggleEmployeeVariantGroups(employee, event.target.checked)} />Grupe varijanti</label>}<span className={`rounded-full px-3 py-1 text-xs font-bold ${assignment ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>{assignment ? 'Unosilac kataloga' : 'Druga rola'}</span>{assignment && <button type="button" onClick={() => void removeEmployeeAccess(employee)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600">Ukloni pristup</button>}</div></div>; })}{!accessUsers.length && !accessLoading && <p className="p-8 text-center text-neutral-500">Nema korisnika.</p>}</div>}
             </div>
           </motion.div>
         )}
