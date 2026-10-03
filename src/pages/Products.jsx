@@ -12,6 +12,8 @@ import useProductVariantGroup from '../hooks/useProductVariantGroup.js';
 // Import komponenti
 import ProductGallery from '../components/product/ProductGallery.jsx';
 import ProductHeader from '../components/product/ProductHeader.jsx';
+import ProductAdminTools from '../components/product/ProductAdminTools.jsx';
+import { useAuth } from '../hooks/useAuth.js';
 import ProductVariants from '../components/product/ProductVariants.jsx';
 import ProductActions from '../components/product/ProductActions.jsx';
 import ProductFeatures from '../components/product/ProductFeatures.jsx';
@@ -43,7 +45,8 @@ const DEPARTMENT_PATHS = {
 export default function Product() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { product: p, loading, error } = useProduct(slug);
+  const { product: p, loading, error, updateProduct } = useProduct(slug);
+  const { staffReady } = useAuth();
   const { items: allProducts } = useProducts();
   const { dispatch } = useCart();
   const { flash } = useFlash();
@@ -172,7 +175,12 @@ export default function Product() {
 
         {/* DESNA KOLONA */}
         <div className="product__info">
-          <ProductHeader product={p} />
+          <ProductHeader product={p} adminTools={staffReady ? <ProductAdminTools key={p.id} product={p}
+            onUpdated={(patch) => {
+              updateProduct(patch);
+              if (patch.slug && patch.slug !== slug) navigate(`/product/${patch.slug}`, { replace: true });
+            }}
+            onDeleted={() => navigate(departmentPath, { replace: true })} /> : null} />
           <ProductVariants product={p} relatedVariants={relatedVariants} />
 
           <ProductActions

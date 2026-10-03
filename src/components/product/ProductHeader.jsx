@@ -1,13 +1,10 @@
 import React from 'react';
 import Breadcrumbs from '../Breadcrumbs.jsx';
 import { money } from '../../utils/currency.js';
-import { useAuth } from '../../hooks/useAuth.js';
-import { isAdminEmail } from '../../services/dajaPlatform.js';
 import { storefrontFeatures } from '../../config/storefrontFeatures.js';
 import './ProductHeader.css'; // OBAVEZNO: Uvozi svoj CSS
 
-export default function ProductHeader({ product }) {
-  const { user } = useAuth();
+export default function ProductHeader({ product, adminTools }) {
   if (!product) return null;
   const legacyRegularPrice =
     product.regularPrice ??
@@ -28,7 +25,7 @@ export default function ProductHeader({ product }) {
   const availableQuantity =
     product.availability?.availableQuantity ?? product.availableQuantity;
   const showStock =
-    isAdminEmail(user?.email) || storefrontFeatures.customerStockVisibility;
+    !adminTools && storefrontFeatures.customerStockVisibility;
   const hasPublicIdentifiers = product.barcode || product.mpn;
 
   return (
@@ -42,6 +39,8 @@ export default function ProductHeader({ product }) {
       />
 
       {/* Naslov i Brend */}
+      <div className={adminTools ? 'product-header-summary has-admin-tools' : 'product-header-summary'}>
+      <div className="product-header-main">
       <h1 className="header-title">
         <span className="brand-label">{product.brand}</span>
         <span className="model-name">{product.name}</span>
@@ -70,7 +69,7 @@ export default function ProductHeader({ product }) {
         </p>
       )}
 
-      {hasPublicIdentifiers && (
+      {hasPublicIdentifiers && !adminTools && (
         <dl className="product-identifiers">
           {product.barcode ? (
             <>
@@ -86,6 +85,9 @@ export default function ProductHeader({ product }) {
           ) : null}
         </dl>
       )}
+      </div>
+      {adminTools}
+      </div>
     </div>
   );
 }

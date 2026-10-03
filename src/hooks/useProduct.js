@@ -1,5 +1,5 @@
 // src/hooks/useProduct.js
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { fetchProductBySlug } from "../services/products";
 
 export default function useProduct(slug) {
@@ -37,11 +37,16 @@ export default function useProduct(slug) {
   useEffect(() => {
     const updateCurrentProduct = (event) => {
       const change = event.detail;
-      if (change?.type === 'upsert' && change.product?.slug === slug) {
-        setProduct(change.product);
+      if (change?.type === 'upsert' && change.product) {
+        setProduct((current) => change.product.slug === slug || (current && change.product.id === current.id)
+          ? { ...current, ...change.product }
+          : current);
       }
       if (change?.type === 'deleteBySlug' && change.slug === slug) {
         setProduct(null);
+      }
+      if (change?.type === 'delete') {
+        setProduct((current) => current?.id === change.id ? null : current);
       }
     };
     window.addEventListener('daja:products-changed', updateCurrentProduct);
@@ -63,5 +68,6 @@ export default function useProduct(slug) {
     return () => window.clearTimeout(timer);
   }, [product?.salePrice, product?.saleValidUntil, slug]);
 
-  return { product, loading, error };
+  const updateProduct = useCallback((patch) => setProduct((current) => current ? { ...current, ...patch } : current), []);
+  return { product, loading, error, updateProduct };
 }
