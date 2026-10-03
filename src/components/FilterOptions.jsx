@@ -1,6 +1,6 @@
 import React, { useId, useState } from 'react';
 
-export default function FilterOptions({ values, selected = [], limit = 6, children }) {
+export default function FilterOptions({ values, selected = [], limit = 3, children }) {
   const [expanded, setExpanded] = useState(false);
   const id = useId();
   const visible = expanded ? values : values.filter((value, index) => index < limit || selected.includes(value.value));
