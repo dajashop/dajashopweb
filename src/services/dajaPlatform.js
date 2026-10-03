@@ -415,7 +415,7 @@ export const catalogApi = {
     if (!data || typeof data !== 'object' || !Array.isArray(data.items)) {
       throw new Error('Pretraga nije vratila očekivani odgovor.');
     }
-    return { ...data, items: data.items.map(normalizeProduct), recommendations: (data.recommendations || []).map(normalizeProduct) };
+    return { ...data, items: data.items.map(normalizeProduct), recommendations: (data.recommendations || []).map(normalizeProduct), similar: (data.similar || []).map(item => ({ ...item, product: normalizeProduct(item.product) })) };
   },
   async listProducts(params = {}) {
     const fetchAll = params.all === true;
@@ -1516,3 +1516,5 @@ export function subscribePublicCatalogRealtime(onEvent, onError) {
 }
 
 export const specificationEditorApi = (body) => apiRequest("/specification-editor", { staff: true, method: "POST", body });
+
+export const catalogSearchSettingsApi = { get: () => apiRequest("/catalog-search-settings", { staff: true }), save: body => apiRequest("/catalog-search-settings", { staff: true, method: "PUT", body }) };

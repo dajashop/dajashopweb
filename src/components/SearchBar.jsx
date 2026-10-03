@@ -11,17 +11,17 @@ import './search/LiveSearch.css';
 
 export default function SearchBar() {
   const [q, setQ] = useState('');
+  const [literal, setLiteral] = useState(false);
   const [open, setOpen] = useState(false);
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
   const [position, setPosition] = useState({});
   const [seed, setSeed] = useState('catalog');
   const [active, setActive] = useState(-1);
-  const [recommendations, setRecommendations] = useState([]);
   const inputRef = useRef(null); const mobileInput = useRef(null); const anchor = useRef(null); const panel = useRef(null);
   const openRef = useRef(false); const queryRef = useRef(q); queryRef.current = q;
   const navigate = useNavigate(); const location = useLocation();
   const id = `search-${useId().replace(/:/g, '')}`;
-  const { data, loading, error, retry } = useCatalogSearch({ q, enabled: open, seed });
+  const { data, loading, error, retry } = useCatalogSearch({ q, enabled: open, seed, literal });
   const history = useSearchHistory();
   const hasValue = q.trim().length > 0;
   const close = useCallback(() => { if (openRef.current) recordSearchQuery(queryRef.current); openRef.current = false; setOpen(false); setActive(-1); }, []);
@@ -30,7 +30,7 @@ export default function SearchBar() {
     if (open) return;
     openRef.current = true;
     // Keep portal focus in the user gesture so iOS keeps its keyboard.
-    flushSync(() => { setSeed(crypto.randomUUID()); setRecommendations([]); setActive(-1); setOpen(true); });
+    flushSync(() => { setSeed(crypto.randomUUID()); setActive(-1); setOpen(true); });
     if (mobile) mobileInput.current?.focus({ preventScroll: true });
   }
   function dismiss() {
@@ -39,9 +39,9 @@ export default function SearchBar() {
     else inputRef.current?.blur();
   }
   function go(href) { close(); inputRef.current?.blur(); mobileInput.current?.blur(); navigate(href); }
-  function submit() { if (q.trim().length >= 2) go(`/search?q=${encodeURIComponent(q.trim())}`); }
-  function clear() { setQ(''); setActive(-1); (mobile && open ? mobileInput : inputRef).current?.focus({ preventScroll: true }); }
-  function correct(value) { setQ(value); setActive(-1); (mobile && open ? mobileInput : inputRef).current?.focus({ preventScroll: true }); }
+  function submit() { if (q.trim().length >= 2) go(`/search?q=${encodeURIComponent(q.trim())}${literal?'&literal=yes':''}`); }
+  function clear() { setLiteral(false); setQ(''); setActive(-1); (mobile && open ? mobileInput : inputRef).current?.focus({ preventScroll: true }); }
+  function correct(value) { setLiteral(false); setQ(value); setActive(-1); (mobile && open ? mobileInput : inputRef).current?.focus({ preventScroll: true }); }
   function onKeyDown(event) {
     if (event.nativeEvent.isComposing) return;
     if (event.key === 'Escape') { event.preventDefault(); dismiss(); return; }
@@ -66,10 +66,9 @@ export default function SearchBar() {
     }
   }
   useEffect(() => { setActive(-1); }, [q, data, history]);
-  useEffect(() => { if (data?.recommendations?.length) setRecommendations((existing) => existing.length ? existing : data.recommendations); }, [data]);
   useEffect(() => {
     close();
-    if (location.pathname === '/search') setQ(new URLSearchParams(location.search).get('q') || '');
+    if (location.pathname === '/search') { setQ(new URLSearchParams(location.search).get('q') || ''); setLiteral(new URLSearchParams(location.search).get('literal') === 'yes'); }
   }, [location.pathname, location.search, close]);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 768px)');
@@ -116,13 +115,13 @@ export default function SearchBar() {
   const accessibility = { role: 'combobox', 'aria-autocomplete': 'list', 'aria-expanded': open, 'aria-controls': open ? `${id}-list` : undefined,
     'aria-activedescendant': active >= 0 ? `${id}-option-${active}` : undefined, 'aria-label': 'Pretraži modele, brendove i kolekcije' };
   const content = <SearchSuggestions data={data} loading={loading} error={error} retry={retry} query={q}
-    recommendations={!loading && !error && q.trim().length >= 2 && data?.message ? recommendations : []}
+    recommendations={data?.recommendations||[]}
     history={history} onClearHistory={clearSearchHistory}
-    onNavigate={go} onCorrect={correct} active={active} onActive={setActive} idPrefix={id} />;
+    onNavigate={go} onCorrect={correct} onLiteral={()=>setLiteral(true)} literal={literal} active={active} onActive={setActive} idPrefix={id} />;
   return <>
     <div ref={anchor} className={`searchNeo ${open ? 'is-focused' : ''} ${hasValue ? 'has-value' : ''}`} role="search" aria-label="Pretraga" tabIndex={-1}>
       <Search className="s2__leading" size={18} aria-hidden="true" />
-      <input ref={inputRef} className="s2__input" value={q} maxLength={120} onChange={(event) => setQ(event.target.value)} onKeyDown={onKeyDown} onFocus={show}
+      <input ref={inputRef} className="s2__input" value={q} maxLength={120} onChange={(event) => { setLiteral(false); setQ(event.target.value); }} onKeyDown={onKeyDown} onFocus={show}
         placeholder="Pretraži modele, brendove…" inputMode="search" autoComplete="off" {...accessibility} aria-hidden={mobile && open ? 'true' : undefined} tabIndex={mobile && open ? -1 : 0} />
       <button type="button" className="s2__clear" onClick={clear} aria-label="Obriši pretragu" tabIndex={hasValue ? 0 : -1}><X size={14} /></button>
       <button type="button" className="s2__submit" onClick={submit} disabled={q.trim().length < 2} aria-label="Prikaži sve rezultate" tabIndex={hasValue ? 0 : -1}><ArrowRight size={18} /></button>
@@ -131,7 +130,7 @@ export default function SearchBar() {
       role={mobile ? 'dialog' : undefined} aria-modal={mobile ? 'true' : undefined} aria-label="Pretraga kataloga" onKeyDown={mobile ? onKeyDown : undefined}>
       {mobile && <div className="live-search__mobile-header">
         <button type="button" onClick={dismiss} aria-label="Zatvori pretragu"><ArrowLeft size={22} /></button>
-        <div className="live-search__mobile-field"><Search size={19} aria-hidden="true" /><input ref={mobileInput} value={q} maxLength={120} onChange={(event) => setQ(event.target.value)} placeholder="Model, brend, kolekcija…" inputMode="search" enterKeyHint="search" autoComplete="off" {...accessibility} />
+        <div className="live-search__mobile-field"><Search size={19} aria-hidden="true" /><input ref={mobileInput} value={q} maxLength={120} onChange={(event) => { setLiteral(false); setQ(event.target.value); }} placeholder="Model, brend, kolekcija…" inputMode="search" enterKeyHint="search" autoComplete="off" {...accessibility} />
           {hasValue && <button type="button" onClick={clear} aria-label="Obriši pretragu"><X size={18} /></button>}</div>
       </div>}
       <div className="live-search__scroll" data-lenis-prevent id={`${id}-list`} role="listbox" aria-label="Predlozi pretrage" aria-busy={loading}>{content}</div>

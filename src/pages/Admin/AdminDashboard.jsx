@@ -1,3 +1,4 @@
+import CatalogSearchSettings from './components/CatalogSearchSettings.jsx';
 import { SpecificationSettings } from '../../components/specifications/SpecificationEditor';
 import { specificationEditorApi } from '../../services/dajaPlatform';
 import React, {
@@ -647,7 +648,7 @@ function AdminDashboardContent() {
   }, []);
 
   useEffect(() => {
-    if (isCatalogContributor && !(activeTab === 'variant-groups' && canManageVariantGroups) && !['products', 'brands', 'categories', 'specs', 'filters', 'suppliers', 'my-workforce'].includes(activeTab)) {
+    if (isCatalogContributor && !(activeTab === 'variant-groups' && canManageVariantGroups) && !['products', 'brands', 'categories', 'specs', 'filters', 'search-settings', 'suppliers', 'my-workforce'].includes(activeTab)) {
       setActiveTab('products');
     }
   }, [activeTab, isCatalogContributor, canManageVariantGroups, setActiveTab]);
@@ -1234,6 +1235,7 @@ function AdminDashboardContent() {
             {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
               <TabButton active={activeTab === 'filters'} onClick={() => setActiveTab('filters')} icon={Filter} label="Filteri" />
             )}
+            {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && <TabButton active={activeTab === 'search-settings'} onClick={() => setActiveTab('search-settings')} icon={Search} label="Pretraga" />}
             {staffAccessLoaded && canManageVariantGroups && <TabButton active={activeTab === 'variant-groups'} onClick={() => setActiveTab('variant-groups')} icon={Layers} label="Grupe varijanti" />}
             {staffAccessLoaded && isCatalogContributor && staffAccess?.permissions?.includes('catalog.read') && (
               <TabButton active={activeTab === 'suppliers'} onClick={() => setActiveTab('suppliers')} icon={Truck} label="Dobavljači" />
@@ -2305,6 +2307,7 @@ function AdminDashboardContent() {
             </div>{' '}
           </motion.div>
         )}
+        {activeTab === 'search-settings' && <CatalogSearchSettings canWrite={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))} />}
         {activeTab === 'specs' /* ... kod za specifikacije ... */ && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

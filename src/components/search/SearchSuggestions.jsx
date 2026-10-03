@@ -1,4 +1,4 @@
-import { ArrowUpRight, ArrowRight, History, PackageSearch, RefreshCw, Search, Watch } from 'lucide-react';
+import { ArrowUpRight, ArrowRight, History, PackageSearch, RefreshCw, Search, Watch, X } from 'lucide-react';
 import { money } from '../../utils/currency.js';
 
 export function SearchProductRow({ product, ...props }) {
@@ -18,7 +18,7 @@ const categories = [
   { label: 'Daljinski', href: '/daljinski' }, { label: 'Baterije', href: '/baterije' }
 ];
 
-export default function SearchSuggestions({ data, loading, error, retry, query, recommendations, history = [], onClearHistory, onNavigate, onCorrect, active, onActive, idPrefix = 'live-search' }) {
+export default function SearchSuggestions({ data, loading, error, retry, query, recommendations, history = [], onClearHistory, onNavigate, onCorrect, onLiteral, literal = false, active, onActive, idPrefix = 'live-search' }) {
   const hasQuery = query.trim().length >= 2;
   const groups = data?.groups || {};
   const order = data?.intent === 'collections' ? ['collections', 'brands', 'attributes'] : ['brands', 'collections', 'attributes'];
@@ -41,6 +41,7 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
         <span><strong>{item.label}</strong><small>{departmentNames[item.detail] || item.detail}</small></span><ArrowUpRight size={14} aria-hidden="true" />
       </a>)}
     </section>)}
+    {hasQuery && data?.completions?.length > 0 && <section className="live-search__group"><h3>Nastavi pretragu</h3>{data.completions.map(item=><button type="button" key={item.query} className="live-search__completion" {...option(()=>onCorrect(item.query))}><span>{item.label}</span><small>{item.count}</small><ArrowUpRight size={14}/></button>)}</section>}
     <section className="live-search__group live-search__categories" aria-label="Odeljenja"><h3>Istražite odeljenja</h3><div>
       {categories.map((item) => <a key={item.href} href={item.href} className="live-search__category" {...link(item.href)}>{item.label}<ArrowUpRight size={12} aria-hidden="true" /></a>)}
     </div></section>
@@ -49,6 +50,8 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
     {!hasQuery ? <div className="live-search__start"><span><Search size={28} aria-hidden="true" /></span><h2>Pronađite baš ono što tražite.</h2><p>Počnite da kucate model, brend ili osobine proizvoda.</p><small>Na primer: ORIENT, ženski automatik ili srebrna narukvica.</small></div>
       : loading ? <><div className="live-search__loading" role="status"><Search size={15} aria-hidden="true" /> Tražimo najbolje rezultate…</div><div className="live-search__product-grid" aria-hidden="true">{Array.from({ length: 6 }, (_, i) => <div className="live-search__skeleton" key={i}><span /><i /><i /></div>)}</div></>
         : error ? null : <>
+          {data?.appliedCorrection && <div className="live-search__feedback" role="status">Prikazujemo rezultate za „{data.appliedCorrection.query}“. <button type="button" className="live-search__correction" {...option(()=>onLiteral?.())}>Traži originalni unos</button></div>}
+          {data?.conditions?.length > 0 && <div className="live-search__conditions" aria-label="Prepoznati uslovi">{data.conditions.map(condition=><button type="button" key={condition.id} {...option(()=>onCorrect(condition.query))} aria-label={`Ukloni uslov: ${condition.label}`}>{condition.label}<X size={12}/></button>)}</div>}
           {noResults && <div className="live-search__feedback" role="status" aria-live="polite">
             <div className="live-search__empty"><PackageSearch size={22} aria-hidden="true" /><span>{data.message || 'Nema rezultata za ovu pretragu.'}</span></div>
             {data.corrections?.length > 0 && <div className="live-search__corrections"><span>Da li ste mislili…?</span>{data.corrections.map((item) => <button type="button" key={item.query} className="live-search__correction" {...option(() => onCorrect(item.query))}>{item.label}<ArrowUpRight size={14} aria-hidden="true" /></button>)}</div>}
@@ -57,6 +60,7 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
             <h3>{noResults ? 'Možda će vam se svideti' : 'Proizvodi'}</h3>
             <div className="live-search__product-grid">{(noResults ? suggestedProducts : data.items).map((product) => <SearchProductRow key={product.id} product={product} {...link(`/product/${encodeURIComponent(product.slug)}`)} />)}</div>
           </>}
+          {data?.similar?.length > 0 && <><h3>Slični rezultati</h3><div className="live-search__product-grid">{data.similar.map(({product,reason})=><div key={product.id}><SearchProductRow product={product} {...link(`/product/${encodeURIComponent(product.slug)}`)}/><small className="live-search__difference">{reason}</small></div>)}</div></>}
         </>}
   </section>;
   let left; let right;
@@ -64,7 +68,7 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
   else { left = renderLeft(); right = renderRight(); }
   const recent = history.filter((item) => item.toLocaleLowerCase('sr') !== query.trim().toLocaleLowerCase('sr'));
   const recentButtons = recent.map((item) => <button type="button" key={item} title={item} className="live-search__history-query" {...option(() => onCorrect(item))}><History size={13} aria-hidden="true" /><span>{item}</span></button>);
-  const seeAllHref = `/search?q=${encodeURIComponent(query.trim())}`;
+  const seeAllHref = `/search?q=${encodeURIComponent(query.trim())}${literal?'&literal=yes':''}`;
   const allProps = hasQuery && data && !loading && !error ? link(seeAllHref) : null;
   return <>
     <div className="live-search__body" data-lenis-prevent>
