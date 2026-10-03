@@ -28,6 +28,20 @@
   padding-bottom: var(--filter-anchor-after, 0px);
 }
 
+.filter-show-more {
+  display: block;
+  margin: 8px 4px 12px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text, #111);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 .filters::-webkit-scrollbar-thumb {
   background-color: var(--color-muted, #6e6e73);
   border-radius: 999px;

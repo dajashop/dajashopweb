@@ -3,6 +3,12 @@ import { formatProductSpecLabel, visibleProductFeatures, isInternalCatalogKey } 
 
 export const filterId = () => crypto.randomUUID();
 export const normalizedFilterText = (value) => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[_\s-]+/g, ' ').trim();
+export function movementFilterRole(node) {
+  const labels = [...(node.sources || []).map((source) => source.replace(/^spec:/, '')), node.title].map(normalizedFilterText);
+  if (labels.some((label) => /^(tip mehanizma|movement type|type of movement)$/.test(label))) return 'type';
+  if (labels.some((label) => /^(mehanizam|movement|kalibar|caliber|calibre|model mehanizma|movement model)$/.test(label))) return 'model';
+  return '';
+}
 export const specificationSourceKey = (value) => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'specification';
 export function numericFilterValue(value) {
   const match = String(value ?? '').trim().replace(',', '.').match(/^(\d+(?:\.\d+)?)\s*([^\d]*)$/);
@@ -126,6 +132,13 @@ export function configuredFilterParams(params, configuration, fixedGender) {
       options.filter((option) => selected.has(option.id)).forEach((option) => next.append(key, option.id));
     }
   });
+  const leaves = filterLeaves(configuration);
+  const movementTypes = leaves.filter((node) => movementFilterRole(node) === 'type');
+  if (movementTypes.length && !movementTypes.some((node) => next.has(selectionKey(node)))) {
+    leaves.filter((node) => movementFilterRole(node) === 'model').forEach((node) => {
+      next.delete(selectionKey(node)); next.delete(rangeKey(node, 'min')); next.delete(rangeKey(node, 'max'));
+    });
+  }
   [...new Set(next.keys())].forEach((key) => { if (['brand', 'gender', 'category', 'min', 'max'].includes(key) || key.startsWith('spec_') || (key.startsWith('cf_') && !permitted.has(key))) next.delete(key); });
   return next;
 }
