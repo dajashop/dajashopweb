@@ -17,6 +17,9 @@ export default function FilterOptions({ values, selected = [], limit = 3, childr
       </button>
     </div>}
     {expanded && values.length > limit && <button type="button" className="filter-show-more"
-      aria-expanded={true} aria-controls={id} onClick={() => setExpanded(false)}>Prikaži manje</button>}
+      aria-expanded={true} aria-controls={id} onClick={() => setExpanded(false)}>
+      Prikaži manje
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
+    </button>}
   </div>;
 }
