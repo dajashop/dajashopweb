@@ -77,7 +77,7 @@ function ValueInput({spec,value,options,disabled,onCommit,onSave,onLink,onEditin
   </div>;
 }
 
-export function SpecificationEditor({api,departmentId,brand='',values,onChange,online=true,disabled=false,images=[],onPreview,onAddImage,onBusyChange}: {api:EditorApi;departmentId:string;brand?:string;values:Record<string,string>;onChange:(values:Record<string,string>)=>void;online?:boolean;disabled?:boolean;images?:string[];onPreview?:(index:number)=>void;onAddImage?:()=>void;onBusyChange?:(busy:boolean)=>void}) {
+export function SpecificationEditor({api,departmentId,brand='',values,onChange,online=true,disabled=false,images=[],onPreview,onAddImage,onBusyChange,showPreview=true}: {api:EditorApi;departmentId:string;brand?:string;values:Record<string,string>;onChange:(values:Record<string,string>)=>void;online?:boolean;disabled?:boolean;images?:string[];onPreview?:(index:number)=>void;onAddImage?:()=>void;onBusyChange?:(busy:boolean)=>void;showPreview?:boolean}) {
   const connected=useConnected();online=online&&connected;
   const {data,setData,error,loading,reload}=useEditor(api,departmentId,brand,values);
   const [emptyOnly,setEmptyOnly]=useState(false);const [collapsed,setCollapsed]=useState<Record<string,boolean>>({});const [image,setImage]=useState(0);
@@ -110,7 +110,7 @@ export function SpecificationEditor({api,departmentId,brand='',values,onChange,o
     {!online&&<p role="alert">Za uređivanje specifikacija potrebna je internet veza. Unos je zadržan.</p>}
     {error&&<p className="se-error" role="alert">{error} <button type="button" onClick={reload}>Ponovo učitaj</button></p>}
     {loading&&!data&&<p>Učitavanje specifikacija…</p>}
-    <div className="se-layout"><div className="se-fields">
+    <div className={`se-layout${showPreview ? '' : ' se-layout-fields-only'}`}><div className="se-fields">
       {data&&groups.map(group=>{
         const specs=data.specifications.filter(s=>fields.find(f=>f.specId===s.id)?.groupId===group.id).sort((a,b)=>(fields.find(f=>f.specId===a.id)?.order||0)-(fields.find(f=>f.specId===b.id)?.order||0));
         const applicable=specs.filter(s=>matches(fields.find(f=>f.specId===s.id)?.visibility||[],data,values,brand));
@@ -125,7 +125,26 @@ export function SpecificationEditor({api,departmentId,brand='',values,onChange,o
         </section>;
       })}
       {data&&extra.length>0&&<section className="se-group"><strong>Ostali postojeći podaci</strong>{extra.map(key=><label className="se-field" key={key}>{key}<input disabled={disabled||!online||!!error} value={values[key]} onChange={e=>{const next={...values};if(e.target.value)next[key]=e.target.value;else delete next[key];onChange(next);}}/></label>)}</section>}
-    </div><aside className="se-preview"><div className="se-preview-sticky">{images.length?<><button className="se-main-image" type="button" onClick={()=>onPreview?.(Math.min(image,images.length-1))}><img src={images[Math.min(image,images.length-1)]} alt="Sat — pregled za unos specifikacija"/></button><div className="se-thumbnails">{images.map((url,i)=><button type="button" key={`${url}-${i}`} className={i===image?'is-selected':''} onClick={()=>setImage(i)} aria-label={`Fotografija ${i+1}`}><img src={url} alt=""/></button>)}</div><small>Klikni na sliku za uvećanje.</small></>:<button className="se-empty-image" type="button" disabled={disabled||!online} onClick={onAddImage}>＋ Dodaj fotografiju sata<br/><small>Upload ili link kroz galeriju proizvoda</small></button>}</div></aside></div>
+    </div><aside className={`se-preview${showPreview ? '' : ' se-inline-mobile-preview'}`}><div className="se-preview-sticky">{images.length?<><button className="se-main-image" type="button" onClick={()=>onPreview?.(Math.min(image,images.length-1))}><img src={images[Math.min(image,images.length-1)]} alt="Sat — pregled za unos specifikacija"/></button><div className="se-thumbnails">{images.map((url,i)=><button type="button" key={`${url}-${i}`} className={i===image?'is-selected':''} onClick={()=>setImage(i)} aria-label={`Fotografija ${i+1}`}><img src={url} alt=""/></button>)}</div><small>Klikni na sliku za uvećanje.</small></>:<button className="se-empty-image" type="button" disabled={disabled||!online} onClick={onAddImage}>＋ Dodaj fotografiju sata<br/><small>Upload ili link kroz galeriju proizvoda</small></button>}</div></aside></div>
+  </section>;
+}
+
+export function SpecificationPreview({images,onPreview,onAddImage,disabled=false,followTargetId}: {images:string[];onPreview:(index:number)=>void;onAddImage:()=>void;disabled?:boolean;followTargetId?:string}) {
+  const [image,setImage]=useState(0);
+  const [visible,setVisible]=useState(!followTargetId);
+  useEffect(()=>setImage(0),[images[0]]);
+  useEffect(()=>{
+    if(!followTargetId)return;
+    const target=document.getElementById(followTargetId);
+    if(!target)return;
+    const observer=new IntersectionObserver(entries=>setVisible(entries.some(entry=>entry.isIntersecting)));
+    observer.observe(target);
+    return()=>observer.disconnect();
+  },[followTargetId]);
+  if(!visible)return null;
+  const selected=Math.min(image,images.length-1);
+  return <section className="specification-editor se-preview-card" aria-label="Pregled sata"><h3>Pregled sata</h3>
+    {images.length ? <><button className="se-main-image" type="button" onClick={()=>onPreview(selected)}><img src={images[selected]} alt="Sat — pregled za unos specifikacija"/></button><div className="se-thumbnails">{images.map((url,i)=><button key={`${url}-${i}`} className={selected===i?'is-selected':''} type="button" onClick={()=>setImage(i)} aria-label={`Fotografija ${i+1}`}><img src={url} alt=""/></button>)}</div><small>Klikni na sliku za uvećanje.</small></> : <button type="button" className="se-empty-image" disabled={disabled} onClick={onAddImage}>＋ Dodaj fotografiju sata<br/><small>Upload ili link kroz galeriju proizvoda</small></button>}
   </section>;
 }
 

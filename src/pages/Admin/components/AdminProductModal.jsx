@@ -1,7 +1,7 @@
 // src/pages/Admin/components/AdminProductModal.jsx
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { SpecificationEditor } from '../../../components/specifications/SpecificationEditor';
+import { SpecificationEditor, SpecificationPreview } from '../../../components/specifications/SpecificationEditor';
 import { specificationEditorApi } from '../../../services/dajaPlatform';
 import { createPortal } from 'react-dom';
 // eslint-disable-next-line no-unused-vars
@@ -2202,6 +2202,23 @@ export default function AdminProductModal({
                 </div>
               </div>
 
+              <div id="web-specification-fields">
+                <SpecificationEditor
+                  showPreview={false}
+                  api={specificationEditorApi}
+                  departmentId={departments.find(d => d.slug === form.department)?.id || ''}
+                  brand={form.brand || ''}
+                  values={form.specs || {}}
+                  onChange={specs => setForm(prev => ({ ...prev, specs }))}
+                  online={specOnline}
+                  disabled={loading}
+                  onBusyChange={busy => { addingSpecRef.current = busy; setAddingSpec(busy); }}
+                  images={(form.images || []).map(image => image.url).filter(Boolean)}
+                  onPreview={setGalleryIndex}
+                  onAddImage={() => document.getElementById('product-image-manager')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                />
+              </div>
+
               {isLegacyVariantPanelOpen && (
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
                   <div className="flex items-center justify-between mb-4">
@@ -2676,7 +2693,14 @@ export default function AdminProductModal({
 
             </div>
 
-            <div className="lg:col-span-4 space-y-6">
+            <div className="lg:col-span-4 space-y-6 se-follow-sidebar">
+              <SpecificationPreview
+                followTargetId="web-specification-fields"
+                images={(form.images || []).map(image => image.url).filter(Boolean)}
+                onPreview={setGalleryIndex}
+                onAddImage={() => document.getElementById('product-image-manager')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                disabled={loading || !specOnline}
+              />
               <div id="product-image-manager" className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
                 {/* PROSLEĐUJEMO onImageClick */}
                 <ImageManager
@@ -2726,21 +2750,7 @@ export default function AdminProductModal({
                 </label>
               </div>
             </div>
-            <div className="lg:col-span-12">
-              <SpecificationEditor
-                api={specificationEditorApi}
-                departmentId={departments.find(d => d.slug === form.department)?.id || ''}
-                brand={form.brand || ''}
-                values={form.specs || {}}
-                onChange={specs => setForm(prev => ({ ...prev, specs }))}
-                online={specOnline}
-                disabled={loading}
-                onBusyChange={busy => { addingSpecRef.current = busy; setAddingSpec(busy); }}
-                images={(form.images || []).map(image => image.url).filter(Boolean)}
-                onPreview={setGalleryIndex}
-                onAddImage={() => document.getElementById('product-image-manager')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-              />
-            </div>
+
           </div>
         </div>
 
