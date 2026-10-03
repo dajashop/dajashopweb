@@ -1,16 +1,17 @@
 // src/pages/Admin/components/AdminProductModal.jsx
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { SpecificationEditor } from '../../../components/specifications/SpecificationEditor';
+import { specificationEditorApi } from '../../../services/dajaPlatform';
 import { createPortal } from 'react-dom';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 // [IZMENA] Dodat Trash2 za brisanje redova
-import { X, Save, Plus, Trash2, ChevronDown, Check } from 'lucide-react';
+import { X, Save, Plus, Trash2 } from 'lucide-react';
 import {
   brandService,
   categoryService,
   departmentService,
-  specKeyService,
 } from '../../../services/admin';
 import { saveProduct } from '../../../services/products';
 import {
@@ -105,152 +106,6 @@ function catalogAttributeKey(value) {
   return normalized || 'specification';
 }
 
-function SpecificationValueInput({ value, onChange, options, unit, inputRef, disabled }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
-  const normalizedOptions = [...new Set((options || []).filter(Boolean))];
-  const visibleOptions = normalizedOptions.filter((option) =>
-    option.toLocaleLowerCase('sr-RS').includes(value.trim().toLocaleLowerCase('sr-RS')),
-  );
-
-  useEffect(() => {
-    const handlePointerDown = (event) => {
-      if (!containerRef.current?.contains(event.target)) setIsOpen(false);
-    };
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
-
-  return (
-    <div className="relative" ref={containerRef} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false); }}>
-      <input
-        ref={inputRef}
-        onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); setIsOpen(false); } }}
-        disabled={disabled}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onFocus={() => setIsOpen(true)}
-        className={`w-full bg-white border border-neutral-200 rounded-xl pl-4 py-3 text-sm outline-none transition-colors focus:border-neutral-400 ${unit ? 'pr-24' : 'pr-11'}`}
-        placeholder="npr. 200"
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-      />
-      {unit ? <span className="absolute right-11 top-1/2 -translate-y-1/2 text-neutral-400 text-xs font-bold pointer-events-none">{unit}</span> : null}
-      <button
-        type="button" disabled={disabled}
-        onClick={() => setIsOpen((current) => !current)}
-        className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-neutral-500 hover:bg-neutral-100 transition-colors"
-        aria-label="Prikaži ponuđene odgovore"
-      >
-        <ChevronDown size={16} className={isOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
-      </button>
-      {isOpen ? (
-        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl" role="listbox">
-          {visibleOptions.length ? visibleOptions.map((option) => (
-            <button
-              key={option}
-              type="button" disabled={disabled}
-              onClick={() => {
-                onChange(option);
-                inputRef.current?.focus();
-                setIsOpen(false);
-              }}
-              className="flex w-full items-center px-4 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
-            >
-              {option}
-            </button>
-          )) : <p className="px-4 py-3 text-xs text-neutral-500">Nema ponuđenih odgovora.</p>}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function SpecificationKeySelect({ value, onChange, options, selectedValues, placeholder, inputRef, onSelect, disabled }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const containerRef = useRef(null);
-  const selectedOption = options.find((option) => option.value === value);
-  const visibleOptions = options.filter((option) =>
-    option.label.toLocaleLowerCase('sr-RS').includes(query.trim().toLocaleLowerCase('sr-RS')),
-  );
-
-  useEffect(() => {
-    const handlePointerDown = (event) => {
-      if (!containerRef.current?.contains(event.target)) setIsOpen(false);
-    };
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
-
-  return (
-    <div className="relative min-w-0" ref={containerRef} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false); }}>
-      <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-neutral-500">Osobina</span>
-      <input
-        ref={inputRef}
-        onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); setIsOpen(false); } }}
-        disabled={disabled}
-        value={isOpen ? query : selectedOption?.label || ''}
-        onFocus={(event) => {
-          setQuery('');
-          setIsOpen(true);
-          event.currentTarget.select();
-        }}
-        onChange={(event) => {
-          setQuery(event.target.value);
-          if (value) onChange('');
-        }}
-        placeholder={placeholder}
-        className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-4 pr-11 text-sm outline-none transition-colors focus:border-neutral-800 focus:ring-2 focus:ring-neutral-100"
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-      />
-      <button
-        type="button" disabled={disabled}
-        onClick={() => {
-          setQuery('');
-          setIsOpen((current) => !current);
-        }}
-        className="absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-lg text-neutral-500 hover:bg-neutral-100 transition-colors"
-        aria-label="Prikaži osobine"
-      >
-        <ChevronDown size={16} className={isOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
-      </button>
-      {isOpen ? (
-        <div className="absolute z-50 mt-2 max-h-60 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white p-1 shadow-xl custom-scrollbar" role="listbox">
-          {visibleOptions.map((option) => {
-            const alreadyAdded = Object.prototype.hasOwnProperty.call(selectedValues || {}, option.value);
-            return (
-              <button
-                key={option.id || option.value}
-                type="button" disabled={disabled}
-                onClick={() => {
-                  onChange(option.value);
-                  setQuery('');
-                  setIsOpen(false);
-                  onSelect?.();
-                }}
-                className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
-              >
-                <span className="min-w-0 truncate">{option.label}</span>
-                {alreadyAdded ? <Check size={16} className="shrink-0 text-emerald-600" aria-label="Već dodato" /> : null}
-              </button>
-            );
-          })}
-          {!visibleOptions.length ? <p className="px-3 py-3 text-xs text-neutral-500">Nema odgovarajućih osobina.</p> : null}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-// --- 1. Custom Select ---
-
-// --- 3. Main Modal Component ---
-/**
- * Admin Product Modal
- * ... (dokumentacija ostaje ista) ...
- */
 export default function AdminProductModal({
   product,
   existingProducts = [],
@@ -297,7 +152,6 @@ export default function AdminProductModal({
     bins: [],
   });
   const [cats, setCats] = useState([]);
-  const [specKeys, setSpecKeys] = useState([]);
   const [isSeoOpen, setIsSeoOpen] = useState(true);
   const [ogImageSize, setOgImageSize] = useState(null);
   const [seoPeers, setSeoPeers] = useState([]);
@@ -397,20 +251,14 @@ export default function AdminProductModal({
   // State za Image Gallery Modal
   const [galleryIndex, setGalleryIndex] = useState(null);
 
-  const [tempSpecKey, setTempSpecKey] = useState('');
-  const [tempSpecVal, setTempSpecVal] = useState('');
-  const [saveSpecOption, setSaveSpecOption] = useState(false);
   const [addingSpec, setAddingSpec] = useState(false);
   const addingSpecRef = useRef(false);
-  const specKeyInputRef = useRef(null);
-  const specValueInputRef = useRef(null);
-  const [specFocusTarget, setSpecFocusTarget] = useState(null);
-  const [specError, setSpecError] = useState('');
+  const [specOnline, setSpecOnline] = useState(navigator.onLine);
   useEffect(() => {
-    if (addingSpec || !specFocusTarget) return;
-    (specFocusTarget === 'key' ? specKeyInputRef : specValueInputRef).current?.focus();
-    setSpecFocusTarget(null);
-  }, [addingSpec, specFocusTarget]);
+    const update = () => setSpecOnline(navigator.onLine);
+    window.addEventListener('online', update); window.addEventListener('offline', update);
+    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
+  }, []);
   const [loading, setLoading] = useState(false);
   const submittingRef = useRef(false);
   const savedProductIdRef = useRef(null);
@@ -528,7 +376,6 @@ export default function AdminProductModal({
     initialEpcRef.current = validateEpcInput(product?.epc || '').value;
     const sub1 = brandService.subscribe(setBrands);
     const sub2 = categoryService.subscribe(setCats);
-    const sub3 = specKeyService.subscribe(setSpecKeys);
     const sub4 = departmentService.subscribe(setDepartments);
 
     if (product) {
@@ -697,7 +544,6 @@ export default function AdminProductModal({
     return () => {
       sub1();
       sub2();
-      sub3();
       sub4();
     };
   // Keep the active form stable when realtime refresh replaces the object.
@@ -1162,42 +1008,6 @@ export default function AdminProductModal({
   };
   // --------------------------------------------------------
 
-  const addSpec = async () => {
-    if (!tempSpecKey || !tempSpecVal.trim() || addingSpecRef.current) return;
-    addingSpecRef.current = true;
-    setAddingSpec(true);
-    setSpecError('');
-    const def = specKeys.find((k) => k.name === tempSpecKey);
-    let finalVal = tempSpecVal.trim();
-    if (def?.unit && !finalVal.endsWith(def.unit)) {
-      finalVal = `${finalVal} ${def.unit}`;
-    }
-    try {
-      if (saveSpecOption) {
-        if (!def?.id) throw new Error('Osobina nije pronađena. Ponovo izaberite osobinu.');
-        const optionValues = [...new Set([...(Array.isArray(def.optionValues) ? def.optionValues : []), finalVal])];
-        await specKeyService.update(def.id, def.name, { departmentId: def.departmentId, unit: def.unit || null, optionValues });
-      }
-      setForm((prev) => ({ ...prev, specs: { ...prev.specs, [tempSpecKey]: finalVal } }));
-      setTempSpecKey('');
-      setTempSpecVal('');
-      setSaveSpecOption(false);
-      setSpecFocusTarget('key');
-    } catch (error) {
-      setSpecError(`Specifikacija nije dodata: ${error?.message || 'Čuvanje ponuđene vrednosti nije uspelo. Pokušajte ponovo ili isključite čuvanje ponuđene opcije.'}`);
-      setSpecFocusTarget('value');
-    } finally {
-      addingSpecRef.current = false;
-      setAddingSpec(false);
-    }
-  };
-
-  const removeSpec = (key) => {
-    const newSpecs = { ...form.specs };
-    delete newSpecs[key];
-    setForm((prev) => ({ ...prev, specs: newSpecs }));
-  };
-
   // The database keeps one internal sellable record, but the admin UI treats
   // it as the product's own SKU/barcode rather than a user-managed variant.
   const updateVariant = (index, field, value) =>
@@ -1210,6 +1020,7 @@ export default function AdminProductModal({
 
   const handleSubmit = async (options = {}) => {
     if (submittingRef.current || imageBusy || !mediaReady || addingSpecRef.current) return;
+    if (!navigator.onLine) { setFlash({ open: true, title: 'Za čuvanje proizvoda potrebna je internet veza. Unos je zadržan.', ok: false }); return; }
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
     const shouldReconcileQuantity = !product || quantityEditedRef.current;
     const shouldPersistPlacement = !product || placementEditedRef.current;
@@ -1801,27 +1612,6 @@ export default function AdminProductModal({
     id: c.id,
   }));
 
-  const filteredSpecs = useMemo(() => {
-    const departmentId = departments.find(
-      (department) => department.slug === form.department,
-    )?.id;
-
-    // New records are related through departmentId; the fallback preserves
-    // support for older records that stored the department slug directly.
-    return specKeys.filter((specKey) =>
-      departmentId
-        ? String(specKey.departmentId) === String(departmentId)
-        : specKey.department === form.department,
-    );
-  }, [specKeys, departments, form.department]);
-
-  const specOptions = filteredSpecs.map((k) => ({
-    value: k.name,
-    label: k.name,
-    id: k.id,
-    unit: k.unit,
-  }));
-
   const departmentOptions = useMemo(() => {
     if (departments.length) {
       return departments
@@ -1844,9 +1634,6 @@ export default function AdminProductModal({
     { value: 'MUŠKI', label: 'Muški' },
     { value: 'ŽENSKI', label: 'Ženski' },
   ];
-
-  const activeUnit =
-    specOptions.find((o) => o.value === tempSpecKey)?.unit || '';
 
   const fallbackSeoTitle = `${form.brand || ''} ${form.name || ''}`.trim();
   const fallbackSeoDescription = (
@@ -2886,92 +2673,11 @@ export default function AdminProductModal({
               </div>
               {/* --- KRAJ MANUAL FEATURE --- */}
 
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
-                <h3 className="text-sm font-bold text-neutral-900 mb-4">
-                  Tehničke Specifikacije
-                </h3>
-                <div className="flex gap-3 items-end mb-6 bg-neutral-50 p-3 rounded-xl border border-neutral-100">
-                  <div className="flex-1 min-w-[140px]">
-                    <SpecificationKeySelect
-                      inputRef={specKeyInputRef}
-                      onSelect={() => specValueInputRef.current?.focus()}
-                      disabled={addingSpec}
-                      value={tempSpecKey}
-                      options={specOptions}
-                      onChange={(value) => { setTempSpecKey(value); setSpecError(''); }}
-                      selectedValues={form.specs}
-                      placeholder={
-                        specOptions.length === 0 ? 'Nema opcija' : 'Izaberi...'
-                      }
-                    />
-                  </div>
-                  <div className="flex-1 relative">
-                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      Vrednost
-                    </span>
-                    <SpecificationValueInput
-                      inputRef={specValueInputRef}
-                      disabled={addingSpec}
-                      value={tempSpecVal}
-                      onChange={(value) => { setTempSpecVal(value); setSpecError(''); }}
-                      options={specKeys.find((item) => item.name === tempSpecKey)?.optionValues || []}
-                      unit={activeUnit}
-                    />
-                  </div>
-                  <button
-                    onClick={() => void addSpec()}
-                    disabled={addingSpec || !tempSpecKey || !tempSpecVal.trim()}
-                    aria-label={addingSpec ? 'Čuvanje specifikacije' : 'Dodaj specifikaciju'}
-                    className="bg-neutral-900 text-white p-3 rounded-xl hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-neutral-200"
-                  >
-                    {addingSpec ? <span className="text-xs">Čuvanje…</span> : <Plus size={20} />}
-                  </button>
-                </div>
-                {tempSpecKey && (
-                  <label className="-mt-3 mb-4 flex items-center gap-2 text-xs text-neutral-600 cursor-pointer">
-                    <input type="checkbox" disabled={addingSpec} checked={saveSpecOption} onChange={(event) => { setSaveSpecOption(event.target.checked); setSpecError(''); }} />
-                    Sačuvaj ovu vrednost kao ponuđenu opciju za buduće artikle
-                  </label>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {specError && <p role="alert" className="col-span-full mb-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">{specError} Vaš unos je sačuvan u poljima; možete pokušati ponovo.</p>}
-                  <AnimatePresence>
-                    {Object.entries(form.specs).map(([key, val]) => (
-                      <motion.div
-                        key={key}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex justify-between items-center p-3 bg-neutral-50 border border-neutral-100 rounded-xl group"
-                      >
-                        <div>
-                          <span className="text-xs text-neutral-400 block uppercase font-bold">
-                            {key}
-                          </span>
-                          <span className="text-sm font-medium text-neutral-800">
-                            {val}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => removeSpec(key)}
-                          className="text-neutral-300 hover:text-red-500 transition-colors p-1"
-                        >
-                          <X size={16} />
-                        </button>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-                {Object.keys(form.specs).length === 0 && (
-                  <div className="text-center py-6 text-neutral-400 text-sm border-2 border-dashed border-neutral-100 rounded-xl">
-                    Nema dodatih specifikacija
-                  </div>
-                )}
-              </div>
+
             </div>
 
             <div className="lg:col-span-4 space-y-6">
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
+              <div id="product-image-manager" className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
                 {/* PROSLEĐUJEMO onImageClick */}
                 <ImageManager
                   disabled={loading || !mediaReady}
@@ -3019,6 +2725,21 @@ export default function AdminProductModal({
                   />
                 </label>
               </div>
+            </div>
+            <div className="lg:col-span-12">
+              <SpecificationEditor
+                api={specificationEditorApi}
+                departmentId={departments.find(d => d.slug === form.department)?.id || ''}
+                brand={form.brand || ''}
+                values={form.specs || {}}
+                onChange={specs => setForm(prev => ({ ...prev, specs }))}
+                online={specOnline}
+                disabled={loading}
+                onBusyChange={busy => { addingSpecRef.current = busy; setAddingSpec(busy); }}
+                images={(form.images || []).map(image => image.url).filter(Boolean)}
+                onPreview={setGalleryIndex}
+                onAddImage={() => document.getElementById('product-image-manager')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              />
             </div>
           </div>
         </div>

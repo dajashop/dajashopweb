@@ -1514,3 +1514,5 @@ export function subscribePublicCatalogRealtime(onEvent, onError) {
     }
   };
 }
+
+export const specificationEditorApi = (body) => apiRequest("/specification-editor", { staff: true, method: "POST", body });

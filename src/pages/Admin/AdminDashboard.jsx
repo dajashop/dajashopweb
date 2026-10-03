@@ -1,3 +1,5 @@
+import { SpecificationSettings } from '../../components/specifications/SpecificationEditor';
+import { specificationEditorApi } from '../../services/dajaPlatform';
 import React, {
   useState,
   useEffect,
@@ -2307,9 +2309,10 @@ function AdminDashboardContent() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto w-full min-w-0"
+            className="max-w-4xl mx-auto w-full min-w-0"
           >
             {' '}
+            <SpecificationSettings api={specificationEditorApi} departments={departments.map(d => ({ id: d.id, name: d.name }))} disabled={!Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))} />
             <div className="card glass p-4 sm:p-6 flex flex-col min-w-0 overflow-hidden">
               {' '}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-white/10 pb-4">
