@@ -58,6 +58,10 @@
   pointer-events: none;
 }
 
+.filter-options-faded:has(> .color-filter-grid)::after {
+  height: calc(33.333% - 5px);
+}
+
 .filter-options-reveal {
   position: relative;
   min-height: 30px;

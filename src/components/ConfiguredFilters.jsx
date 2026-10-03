@@ -86,7 +86,7 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
       <div className="filter-subsection" data-filter-id={child.id} key={child.id}><h4 className="filter-subsection-title">{child.title}</h4>{child.description && <p className="configured-filter-description">{child.description}</p>}{content(child)}</div>
     ));
     const { values, selected, numbers } = facets.get(node.id);
-    if (node.style === 'color') return <FilterOptions values={values} selected={selected}>{(visible) => <ColorFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} columns={node.columns} showCounts={node.showCounts} />}</FilterOptions>;
+    if (node.style === 'color') return <FilterOptions values={values} selected={selected} limit={(node.columns || 5) * 3}>{(visible) => <ColorFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} columns={node.columns || 5} showCounts={node.showCounts} />}</FilterOptions>;
     if (node.style === 'material') return <FilterOptions values={values} selected={selected}>{(visible) => <MaterialFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} showCounts={node.showCounts} />}</FilterOptions>;
     if (node.style === 'range') {
       if (!numbers.length) return <p className="configured-filter-description">Nema dostupnih vrednosti.</p>;
