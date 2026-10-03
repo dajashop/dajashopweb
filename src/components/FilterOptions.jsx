@@ -5,11 +5,9 @@ export default function FilterOptions({ values, selected = [], limit = 3, childr
   const id = useId();
   const visible = expanded ? values : values.filter((value, index) => index < limit || selected.includes(value.value));
   const hidden = values.length - visible.length;
-  const preview = hidden > 0 ? values.find((value) => !visible.includes(value)) : null;
   return <div className="filter-options">
-    <div id={id} className={preview ? 'filter-options-faded' : undefined}>{children(visible)}</div>
-    {preview && <div className="filter-options-reveal">
-      <div className="filter-options-preview" aria-hidden="true" inert="">{children([preview])}</div>
+    <div id={id} className={hidden > 0 ? 'filter-options-faded' : undefined}>{children(visible)}</div>
+    {hidden > 0 && <div className="filter-options-reveal">
       <button type="button" className="filter-show-more filter-show-more-overlay"
         aria-expanded={false} aria-controls={id} onClick={() => setExpanded(true)}>
         Prikaži više <span className="filter-show-more-count">({hidden})</span>
