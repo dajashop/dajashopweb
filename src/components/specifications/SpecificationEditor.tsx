@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import './specification-editor.css';
 
 export type Condition = { specId?: string; brand?: boolean; value: string; operator: 'equals' | 'notEquals' };
@@ -6,7 +6,7 @@ export type Rules = Condition[][];
 export type Spec = { id: string; name: string; slug: string; unit?: string | null; optionValues: string[] };
 export type Field = { specId: string; groupId: string; order: number; visibility: Rules; options: { value: string; rules: Rules }[] };
 export type Configuration = { groups: { id: string; name: string }[]; fields: Field[] };
-export type EditorData = { version: number; configuration: Configuration; specifications: Spec[]; ranking: Record<string, Record<string, number>>; usageCounts?: Record<string, Record<string, number>> };
+export type EditorData = { version: number; configuration: Configuration; specifications: Spec[]; ranking: Record<string, Record<string, number>>; usageCounts?: Record<string, Record<string, number>>; brands?: {id:string;name:string}[] };
 export type EditorRequest = { action: 'get' | 'configure' | 'option'; departmentId: string; brand?: string; specs?: Record<string,string>; version?: number; configuration?: Configuration; specId?: string; value?: string; linkType?: string };
 export type EditorApi = (request: EditorRequest) => Promise<EditorData>;
 const usageCount = (data: EditorData, specId: string, value: string) => data.usageCounts?.[specId]?.[value];
@@ -142,13 +142,37 @@ export function SpecificationPreview({images,onPreview,onAddImage,disabled=false
   </section>;
 }
 
-function RuleEditor({rules,onChange,specs,self,disabled}: {rules:Rules;onChange:(rules:Rules)=>void;specs:Spec[];self:string;disabled:boolean}) {
-  return <div className="se-rules"><small>{rules.length?'Svi uslovi jednog reda moraju važiti. Alternativni redovi: ILI.':'Bez uslova — uvek dostupno.'}</small>{rules.map((row,i)=><div className="se-rule" key={i}>{row.map((c,j)=><div className="se-condition" key={j}>
-    <select disabled={disabled} aria-label="Uslov zavisi od" value={c.brand?'brand':c.specId||''} onChange={e=>{const next=rules.map(r=>r.map(v=>({...v})));next[i][j]=e.target.value==='brand'?{brand:true,value:c.value,operator:c.operator}:{specId:e.target.value,value:c.value,operator:c.operator};onChange(next);}}><option value="brand">Brend</option>{specs.filter(s=>s.id!==self).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
-    <select disabled={disabled} aria-label="Poređenje" value={c.operator} onChange={e=>{const next=rules.map(r=>r.map(v=>({...v})));next[i][j].operator=e.target.value as Condition['operator'];onChange(next);}}><option value="equals">je</option><option value="notEquals">nije</option></select>
-    <input disabled={disabled} aria-label="Vrednost uslova" placeholder="Vrednost" value={c.value} onChange={e=>{const next=rules.map(r=>r.map(v=>({...v})));next[i][j].value=e.target.value;onChange(next);}}/>
-    <button type="button" disabled={disabled} onClick={()=>onChange(rules.map((r,k)=>k===i?r.filter((_,n)=>n!==j):r).filter(r=>r.length))} aria-label="Ukloni uslov">×</button>
-  </div>)}<button type="button" disabled={disabled} onClick={()=>onChange(rules.map((r,k)=>k===i?[...r,{brand:true,value:'',operator:'equals' as const}]:r))}>＋ I uslov</button></div>)}<button type="button" disabled={disabled} onClick={()=>onChange([...rules,[{brand:true,value:'',operator:'equals' as const}]])}>＋ {rules.length?'ILI pravilo':'Uslov'}</button></div>;
+function RuleEditor({rules,onChange,specs,brands,self,disabled}: {rules:Rules;onChange:(rules:Rules)=>void;specs:Spec[];brands:{id:string;name:string}[];self:string;disabled:boolean}) {
+  const ruleId=useId();
+  const changeCondition=(i:number,j:number,patch:Partial<Condition>)=>{
+    const next=rules.map(r=>r.map(v=>({...v})));next[i][j]={...next[i][j],...patch};onChange(next);
+  };
+  return <div className="se-rules">
+    <p className="se-rule-help">{rules.length?'I: svi uslovi u istoj grupi moraju važiti. ILI: dovoljno je da važi jedna cela grupa.':'Bez uslova — dostupno za sve brendove i vrednosti.'}</p>
+    {rules.map((row,i)=><div className="se-rule" key={i}>
+      <strong className="se-rule-group-label">{i ? 'ILI — druga mogućnost' : 'Prva grupa uslova'}</strong>
+      {row.map((c,j)=>{
+        const spec=specs.find(s=>s.id===c.specId);
+        const options=c.brand?brands.map(b=>b.name):spec?.optionValues||[];
+        return <div className="se-condition" key={j}>
+          <select disabled={disabled} aria-label="Uslov zavisi od" value={c.brand?'brand':c.specId||''} onChange={e=>{
+            const next=rules.map(r=>r.map(v=>({...v})));
+            next[i][j]=e.target.value==='brand'?{brand:true,value:'',operator:c.operator}:{specId:e.target.value,value:'',operator:c.operator};onChange(next);
+          }}><option value="brand">Brend</option>{specs.filter(s=>s.id!==self).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
+          <select disabled={disabled} aria-label="Poređenje" value={c.operator} onChange={e=>changeCondition(i,j,{operator:e.target.value as Condition['operator']})}><option value="equals">je</option><option value="notEquals">nije</option></select>
+          {c.brand?<select disabled={disabled} aria-label="Izaberi brend" value={c.value} onChange={e=>changeCondition(i,j,{value:e.target.value})}>
+            <option value="">Izaberi brend…</option>
+            {c.value&&!options.includes(c.value)&&<option value={c.value}>{c.value} (postojeći uslov)</option>}
+            {brands.map(b=><option key={b.id} value={b.name}>{b.name}</option>)}
+          </select>:<input disabled={disabled} aria-label={`Vrednost za ${spec?.name||'specifikaciju'}`} placeholder={spec?`Vrednost: ${spec.name}`:'Upiši vrednost…'} list={`se-rule-values-${ruleId}-${i}-${j}`} value={c.value} onChange={e=>changeCondition(i,j,{value:e.target.value})}/>}
+          {!c.brand&&<datalist id={`se-rule-values-${ruleId}-${i}-${j}`}>{options.map(value=><option key={value} value={value}/>)}</datalist>}
+          <button type="button" disabled={disabled} onClick={()=>onChange(rules.map((r,k)=>k===i?r.filter((_,n)=>n!==j):r).filter(r=>r.length))} aria-label="Ukloni uslov">×</button>
+        </div>;
+      })}
+      <button type="button" disabled={disabled} onClick={()=>onChange(rules.map((r,k)=>k===i?[...r,{brand:true,value:'',operator:'equals' as const}]:r))}>＋ I — dodaj obavezan uslov</button>
+    </div>)}
+    <button type="button" disabled={disabled} onClick={()=>onChange([...rules,[{brand:true,value:'',operator:'equals' as const}]])}>＋ {rules.length?'ILI — dodaj drugu mogućnost':'Dodaj uslov'}</button>
+  </div>;
 }
 
 export function SpecificationSettings({api,departments,online=true,disabled=false}: {api:EditorApi;departments:{id:string;name:string}[];online?:boolean;disabled?:boolean}) {
@@ -162,9 +186,10 @@ export function SpecificationSettings({api,departments,online=true,disabled=fals
   const save=async()=>{if(!data||!config)return;setBusy(true);setError('');setNotice('');try{const result=await api({action:'configure',departmentId,version:data.version,configuration:config});setData(result);setNotice('Podešavanja su sačuvana.');}catch(e){setError(e instanceof Error?e.message:'Čuvanje nije uspelo.');}finally{setBusy(false);}};
   return <section className="specification-editor se-settings"><header className="se-toolbar"><h3>Kategorije i pravila unosa</h3><select value={departmentId} disabled={busy} onChange={e=>{if(!config||!data||JSON.stringify(config)===JSON.stringify(data.configuration)||window.confirm('Odbaci nesačuvana podešavanja i promeni odeljenje?'))setDepartment(e.target.value);}}>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></header>
     {!online&&<p role="alert">Podešavanja zahtevaju internet vezu.</p>}{error&&<p className="se-error" role="alert">{error} <button type="button" onClick={()=>{if(window.confirm('Ponovo učitaj i odbaci nesačuvana podešavanja?'))reload();}}>Ponovo učitaj</button></p>}{notice&&<p role="status">{notice}</p>}
+    <p className="se-rule-help">Vrednost je ono što porediš sa unosom proizvoda: za brend biraš stvaran brend, a za specifikaciju, na primer, „Automatski“. „Je“ traži poklapanje; „nije“ ga isključuje. Pravila polja određuju kada se polje vidi, a pravila ponuđene vrednosti kada je taj odgovor dostupan.</p>
     {config&&data&&<><div className="se-group-fields">{config.groups.map((g,i)=><div className="se-category" key={g.id}><input disabled={locked} aria-label="Naziv kategorije" value={g.name} onChange={e=>setConfig({...config,groups:config.groups.map(v=>v.id===g.id?{...v,name:e.target.value}:v)})}/><button type="button" disabled={locked||!i} onClick={()=>{const list=[...config.groups];[list[i-1],list[i]]=[list[i],list[i-1]];setConfig({...config,groups:list});}} aria-label="Pomeri kategoriju gore">↑</button><button type="button" disabled={locked||i===config.groups.length-1} onClick={()=>{const list=[...config.groups];[list[i+1],list[i]]=[list[i],list[i+1]];setConfig({...config,groups:list});}} aria-label="Pomeri kategoriju dole">↓</button><button type="button" disabled={locked} onClick={()=>setConfig({...config,groups:config.groups.filter(v=>v.id!==g.id),fields:config.fields.map(f=>f.groupId===g.id?{...f,groupId:'other'}:f)})} aria-label="Obriši kategoriju">×</button></div>)}</div>
       <div className="se-category"><input disabled={locked} placeholder="Nova kategorija" value={name} onChange={e=>setName(e.target.value)}/><button type="button" disabled={locked||!name.trim()} onClick={()=>{setConfig({...config,groups:[...config.groups,{id:crypto.randomUUID(),name:name.trim()}]});setName('');}}>Dodaj kategoriju</button></div>
-      {data.specifications.map(s=>{const f=config.fields.find(f=>f.specId===s.id);if(!f)return null;return <details className="se-group" key={s.id}><summary>{s.name}</summary><div className="se-settings-field"><label>Kategorija<select disabled={locked} value={f.groupId} onChange={e=>updateField(s.id,{groupId:e.target.value})}>{config.groups.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}<option value="other">Ostalo</option></select></label><label>Redosled<input disabled={locked} type="number" min="0" value={f.order} onChange={e=>updateField(s.id,{order:Math.max(0,Number(e.target.value)||0)})}/></label></div><h4>Prikazivanje polja</h4><RuleEditor rules={f.visibility} specs={data.specifications} self={s.id} disabled={locked} onChange={visibility=>updateField(s.id,{visibility})}/><details><summary>Pravila ponuđenih vrednosti</summary>{[...s.optionValues].sort((a,b)=>compareOptions(data,s.id,a,b)).map(value=>{const option=f.options.find(o=>normalizeSpec(o.value)===normalizeSpec(value));return <div className="se-option-rule" key={value}><div className="se-option-heading"><strong>{value}</strong>{usageCount(data,s.id,value)!==undefined&&<small title="Broj trenutnih satova u katalogu; ne broj komada na stanju">{usageLabel(usageCount(data,s.id,value)!)}</small>}</div><RuleEditor rules={option?.rules||[]} specs={data.specifications} self={s.id} disabled={locked} onChange={rules=>updateField(s.id,{options:[...f.options.filter(o=>normalizeSpec(o.value)!==normalizeSpec(value)),{value,rules}]})}/></div>;})}</details></details>;})}
+      {data.specifications.map(s=>{const f=config.fields.find(f=>f.specId===s.id);if(!f)return null;return <details className="se-group" key={s.id}><summary>{s.name}</summary><div className="se-settings-field"><label>Kategorija<select disabled={locked} value={f.groupId} onChange={e=>updateField(s.id,{groupId:e.target.value})}>{config.groups.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}<option value="other">Ostalo</option></select></label><label>Redosled<input disabled={locked} type="number" min="0" value={f.order} onChange={e=>updateField(s.id,{order:Math.max(0,Number(e.target.value)||0)})}/></label></div><h4>Prikazivanje polja</h4><RuleEditor rules={f.visibility} specs={data.specifications} brands={data.brands||[]} self={s.id} disabled={locked} onChange={visibility=>updateField(s.id,{visibility})}/><details><summary>Pravila ponuđenih vrednosti</summary>{[...s.optionValues].sort((a,b)=>compareOptions(data,s.id,a,b)).map(value=>{const option=f.options.find(o=>normalizeSpec(o.value)===normalizeSpec(value));return <div className="se-option-rule" key={value}><div className="se-option-heading"><strong>{value}</strong>{usageCount(data,s.id,value)!==undefined&&<small title="Broj trenutnih satova u katalogu; ne broj komada na stanju">{usageLabel(usageCount(data,s.id,value)!)}</small>}</div><RuleEditor rules={option?.rules||[]} specs={data.specifications} brands={data.brands||[]} self={s.id} disabled={locked} onChange={rules=>updateField(s.id,{options:[...f.options.filter(o=>normalizeSpec(o.value)!==normalizeSpec(value)),{value,rules}]})}/></div>;})}</details></details>;})}
       <button className="se-primary" type="button" disabled={locked} onClick={()=>void save()}>{busy?'Čuvanje…':'Sačuvaj kategorije i pravila'}</button>
     </>}
   </section>;
