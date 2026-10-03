@@ -17,7 +17,7 @@ const initial = () => {
 function reducer(state, action) {
   switch (action.type) {
     case 'ADD': {
-      const i = state.findIndex((x) => x.id === action.item.id);
+      const i = state.findIndex((x) => (x.lineId || x.id) === (action.item.lineId || action.item.id));
       if (i >= 0) {
         const next = [...state];
         next[i] = { ...next[i], qty: next[i].qty + (action.qty || 1) };
@@ -34,7 +34,16 @@ function reducer(state, action) {
       ];
     }
     case 'REMOVE':
-      return state.filter((x) => x.id !== action.id);
+      return state.filter((x) => (x.lineId || x.id) !== action.id);
+    case 'APPLY_ENGRAVING': {
+      const index = state.findIndex((item) => (item.lineId || item.id) === action.lineId);
+      if (index < 0) {
+        const same = state.findIndex((item) => item.lineId === action.item.lineId);
+        if (same >= 0) return state.map((item, i) => i === same ? { ...action.item, qty: item.qty + 1 } : item);
+        return [...state, { ...action.item, qty: 1 }];
+      }
+      return state.map((item, i) => i === index ? { ...action.item, qty: item.qty } : item);
+    }
     case 'REMOVE_PRODUCT':
       return state.filter(
         (item) =>
@@ -68,7 +77,7 @@ function reducer(state, action) {
       });
     case 'SET_QTY':
       return state.map((x) =>
-        x.id === action.id ? { ...x, qty: Math.max(1, action.qty) } : x,
+        (x.lineId || x.id) === action.id ? { ...x, qty: Math.max(1, action.qty) } : x,
       );
     case 'CLEAR':
       return [];
@@ -122,7 +131,7 @@ export function CartProvider({ children }) {
         const localItems = initial();
         const merged = [...serverCart];
         localItems.forEach((localItem) => {
-          if (!merged.some((item) => item.id === localItem.id)) merged.push(localItem);
+          if (!merged.some((item) => (item.lineId || item.id) === (localItem.lineId || localItem.id))) merged.push(localItem);
         });
         isServerUpdate.current = true;
         dispatch({ type: 'REPLACE', items: merged });

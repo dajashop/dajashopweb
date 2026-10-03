@@ -1,6 +1,7 @@
 // File: src/pages/Usluge.jsx
 // Stranica za prikaz usluga - Sve u jednoj komponenti
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 // Ažurirano: Uklanjamo ShieldCheck, dodajemo KeyRound za daljinske
 import { Store, BatteryCharging, Wrench, KeyRound, Sparkles } from 'lucide-react';
@@ -142,6 +143,7 @@ export default function Usluge() {
                 <p className="lead" style={{ flexGrow: 1 }}>
                   {service.description}
                 </p>
+                {service.id === 1 && <Link className="btn" style={{ margin: '12px 0' }} to="/graviranje">Napravi gravuru na satu →</Link>}
 
                 <div style={highlightBoxStyle}>
                   <p

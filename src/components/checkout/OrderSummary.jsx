@@ -1,4 +1,6 @@
 import React from 'react';
+import { useCart } from '../../hooks/useCart';
+import EngravingSummary from '../engraving/EngravingSummary';
 import { ArrowRight, ShieldCheck, Ticket } from 'lucide-react'; // Dodao Ticket ikonicu
 
 export default function OrderSummary({
@@ -12,9 +14,11 @@ export default function OrderSummary({
   appliedPromo, // NOVO: Primamo objekat promo koda
   discountAmount, // NOVO: Iznos popusta
 }) {
+  const { items } = useCart();
   return (
     <div className="summary-card card glass">
       <h2>Pregled porudžbine</h2>
+      {items.filter((item) => item.engraving).map((item) => <div key={item.lineId || item.id}><b>{item.name}</b><EngravingSummary item={item} editable /></div>)}
       <div className="summary-rows">
         <div className="summary-row">
           <span className="muted">Međuzbir</span>

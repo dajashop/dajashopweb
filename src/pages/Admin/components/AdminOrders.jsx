@@ -1,5 +1,6 @@
 // src/pages/Admin/components/AdminOrders.jsx
 import React, { useState, useEffect } from 'react';
+import EngravingSummary from '../../../components/engraving/EngravingSummary';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -323,6 +324,7 @@ export default function AdminOrders() {
                                             {money(item.price * item.qty)}
                                           </span>
                                         </div>
+                                        <EngravingSummary item={item} admin />
                                         <div className="text-sm text-neutral-500 mt-1">
                                           Količina:{' '}
                                           <span className="font-bold text-neutral-900">

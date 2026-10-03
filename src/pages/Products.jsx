@@ -1,7 +1,7 @@
 import { descriptionText } from '../components/description.js';
 import React, { useEffect, useMemo } from 'react';
 import './Product.css';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCart } from '../hooks/useCart.js';
 import { useFlash } from '../hooks/useFlash.js';
 import { useWishlist } from '../context/WishlistProvider.jsx';
@@ -182,6 +182,7 @@ export default function Product() {
             }}
             onDeleted={() => navigate(departmentPath, { replace: true })} /> : null} />
           <ProductVariants product={p} relatedVariants={relatedVariants} />
+          {(p.department?.slug || p.department || 'satovi') === 'satovi' && <Link className="btn" style={{ margin: '12px 0' }} to={`/graviranje?slug=${encodeURIComponent(p.slug)}`}>Dodaj gravuru bez doplate</Link>}
 
           <ProductActions
             product={p}

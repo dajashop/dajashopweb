@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './Cart.css';
 import { Link } from 'react-router-dom';
 import { useCart } from '../hooks/useCart.js';
+import EngravingSummary from '../components/engraving/EngravingSummary';
 import { useUndo } from '../hooks/useUndo.js';
 import { usePromo } from '../hooks/usePromo.js';
 import { useAuth } from '../hooks/useAuth.js'; // NOVO: Importujemo Auth
@@ -216,7 +217,7 @@ export default function Cart() {
   }, [appliedPromo, items, loading, total, user, validateAndApply]);
 
   const performRemove = (item) => {
-    dispatch({ type: 'REMOVE', id: item.id });
+    dispatch({ type: 'REMOVE', id: item.lineId || item.id });
     showUndo(item, () => {
       dispatch({ type: 'ADD', item: item, qty: item.qty });
     });
@@ -224,7 +225,7 @@ export default function Cart() {
 
   const handleDecrease = (item) => {
     if (item.qty > 1) {
-      dispatch({ type: 'SET_QTY', id: item.id, qty: item.qty - 1 });
+      dispatch({ type: 'SET_QTY', id: item.lineId || item.id, qty: item.qty - 1 });
     } else {
       performRemove(item);
     }
@@ -300,7 +301,7 @@ export default function Cart() {
               <AnimatePresence initial={false} mode="popLayout">
                 {items.map((it) => (
                   <motion.div
-                    key={it.id}
+                    key={it.lineId || it.id}
                     className="cart__row"
                     layout
                     initial={{ opacity: 0, height: 0, marginBottom: 0 }}
@@ -325,6 +326,7 @@ export default function Cart() {
                         {it.name}
                       </Link>
                       <div className="cart__brand">{it.brand}</div>
+                      <EngravingSummary item={it} editable={Boolean(it.engraving) || (it.department?.slug || it.department || 'satovi') === 'satovi'} />
                     </div>
 
                     <div className="cart__qtyWrap">
@@ -335,14 +337,14 @@ export default function Cart() {
                         <Minus size={14} />
                       </button>
 
-                      <QtyInput value={it.qty} id={it.id} dispatch={dispatch} />
+                      <QtyInput value={it.qty} id={it.lineId || it.id} dispatch={dispatch} />
 
                       <button
                         className="qty__btn"
                         onClick={() =>
                           dispatch({
                             type: 'SET_QTY',
-                            id: it.id,
+                            id: it.lineId || it.id,
                             qty: clampQty(it.qty + 1),
                           })
                         }

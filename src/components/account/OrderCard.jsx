@@ -1,5 +1,6 @@
 // src/components/account/OrderCard.jsx
 import React, { useState } from 'react';
+import EngravingSummary from '../engraving/EngravingSummary';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package,
@@ -153,6 +154,7 @@ export default function OrderCard({ order }) {
 
                         <div className="flex-1 min-w-0">
                           {nameNode}
+                          <EngravingSummary item={item} />
                           {item.brand && (
                             <Link
                               to={`/catalog?brand=${encodeURIComponent(item.brand)}`}

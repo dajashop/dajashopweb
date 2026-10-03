@@ -9,6 +9,7 @@ import {
   MessageSquareQuote,
 } from 'lucide-react';
 import GoogleMapEmbed from '../privacy/GoogleMapEmbed.jsx';
+import EngravingSummary from '../engraving/EngravingSummary';
 
 const MAP_API_KEY = 'AIzaSyCwDMD-56pwnAqgEDqNCT8uMxFy_mPbAe0';
 const SHOP_ADDRESS_QUERY = 'Daja Shop, TPC Gorca lokal C31, Nis, Srbija';
@@ -98,6 +99,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
 
         <div className="receipt-details">
           <h3 className="details-title">Detalji porudžbine:</h3>
+          {(order.items || []).filter((item) => item.engraving).map((item) => <div key={item.lineId || item.id}><b>{item.name}</b><EngravingSummary item={item} /></div>)}
           <div className="item-list">
             {order.items.map((item) => (
               <div key={item.id} className="item-row">

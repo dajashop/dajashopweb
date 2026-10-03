@@ -1,4 +1,5 @@
 import AppRoutes from './router.jsx';
+import EngravingSync from './components/engraving/EngravingSync';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import AuthModal from './components/AuthModal.jsx';
@@ -37,6 +38,7 @@ export default function App() {
       }
     >
       <Header />
+      <EngravingSync />
       <main
         className={isWidePage ? 'w-full' : 'container'}
         style={isFullBleedPage ? undefined : { padding: '20px 0 48px' }}

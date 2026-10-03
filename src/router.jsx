@@ -16,6 +16,7 @@ import Logout from './pages/Logout.jsx';
 import FAQ from './pages/FAQ.jsx';
 import Contact from './pages/Contact.jsx';
 import Usluge from './pages/Usluge.jsx';
+import Engraving from './pages/Engraving.jsx';
 import OrdersPage from './pages/Admin/OrdersPage';
 import LegalDocument from './pages/LegalDocument.jsx';
 import Unsubscribe from './pages/Unsubscribe.jsx';
@@ -51,6 +52,7 @@ export default function AppRoutes() {
       <Route path="/faq" element={<FAQ />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/usluge" element={<Usluge />} />
+      <Route path="/graviranje" element={<Engraving />} />
       <Route path="/admin/orders" element={<OrdersPage />} />
       <Route path="/privacy" element={<LegalDocument kind="privacy" />} />
       <Route path="/cookies" element={<LegalDocument kind="cookies" />} />

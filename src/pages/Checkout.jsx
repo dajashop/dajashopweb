@@ -234,7 +234,7 @@ export default function Checkout() {
         console.error('Greška pri slanju porudžbine:', error);
         flash(
           'Greška',
-          'Nismo uspeli da sačuvamo porudžbinu. Pokušajte ponovo.',
+          items.some((item) => item.engraving) ? `Porudžbina nije poslata. ${error.status === 409 ? 'Gravura je promenjena. Otvorite je u korpi i ponovo potvrdite dizajn.' : error.message}` : 'Nismo uspeli da sačuvamo porudžbinu. Pokušajte ponovo.',
           'error',
         );
       } finally {
