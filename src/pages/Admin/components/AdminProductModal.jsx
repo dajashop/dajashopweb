@@ -2202,6 +2202,61 @@ export default function AdminProductModal({
                 </div>
               </div>
 
+
+            </div>
+
+            <div className="lg:col-span-4 space-y-6">
+
+              <div id="product-image-manager" className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
+                {/* PROSLEĐUJEMO onImageClick */}
+                <ImageManager
+                  disabled={loading || !mediaReady}
+                  onBusyChange={setImageBusy}
+                  images={form.images}
+                  onChange={handleImageChange} // KORISTIMO DEDICIRANI HANDLER
+                  onImageClick={(index) => setGalleryIndex(index)} // OTVARA GALERIJU
+                  productSlug={form.slug} // <--- Dodato
+                  productName={form.name} // <--- Dodato
+                  onRemoteUploadSuccess={handleRemoteImageSuccess}
+                />
+                <div className="mt-4 p-3 bg-blue-50 text-blue-700 text-xs rounded-lg border border-blue-100">
+                  <p className="flex gap-2 items-start">
+                    <span className="text-lg">💡</span>
+                    <span>
+                      Klikni na sliku za pregled. Prva slika je glavna.
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <ProductOperationsPanel
+                productId={product?.id}
+                variants={form.variants || []}
+                basePrice={form.price}
+                onBasePriceChange={(value) => {
+                  regularPriceEditedRef.current = true;
+                  handleChange('price', value);
+                }}
+                onPendingPrice={setPendingPrice}
+              />
+              <div className="bg-white p-5 rounded-2xl border border-neutral-100">
+                <h3 className="font-bold text-neutral-900">3D model</h3>
+                <p className="text-xs text-neutral-500 mt-1 mb-4">
+                  Dodajte GLB model za prikaz proizvoda.
+                </p>
+                <label className="block">
+                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
+                    URL 3D modela (.glb)
+                  </span>
+                  <input
+                    value={form.model3DUrl}
+                    onChange={(event) => handleChange('model3DUrl', event.target.value)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
+                    placeholder="/models/moj-artikal.glb"
+                  />
+                </label>
+              </div>
+            </div>
+            <div className="lg:col-span-12 se-specification-row">
               <div id="web-specification-fields">
                 <SpecificationEditor
                   showPreview={false}
@@ -2218,6 +2273,17 @@ export default function AdminProductModal({
                   onAddImage={() => document.getElementById('product-image-manager')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
                 />
               </div>
+              <div className="se-specification-preview-column">
+                <SpecificationPreview
+                  images={(form.images || []).map(image => image.url).filter(Boolean)}
+                  onPreview={setGalleryIndex}
+                  onAddImage={() => document.getElementById('product-image-manager')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                  disabled={loading || !specOnline}
+                />
+              </div>
+            </div>
+            <div className="lg:col-span-8 flex flex-col gap-6">
+
 
               {isLegacyVariantPanelOpen && (
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
@@ -2692,65 +2758,6 @@ export default function AdminProductModal({
 
 
             </div>
-
-            <div className="lg:col-span-4 space-y-6 se-follow-sidebar">
-              <SpecificationPreview
-                followTargetId="web-specification-fields"
-                images={(form.images || []).map(image => image.url).filter(Boolean)}
-                onPreview={setGalleryIndex}
-                onAddImage={() => document.getElementById('product-image-manager')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-                disabled={loading || !specOnline}
-              />
-              <div id="product-image-manager" className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
-                {/* PROSLEĐUJEMO onImageClick */}
-                <ImageManager
-                  disabled={loading || !mediaReady}
-                  onBusyChange={setImageBusy}
-                  images={form.images}
-                  onChange={handleImageChange} // KORISTIMO DEDICIRANI HANDLER
-                  onImageClick={(index) => setGalleryIndex(index)} // OTVARA GALERIJU
-                  productSlug={form.slug} // <--- Dodato
-                  productName={form.name} // <--- Dodato
-                  onRemoteUploadSuccess={handleRemoteImageSuccess}
-                />
-                <div className="mt-4 p-3 bg-blue-50 text-blue-700 text-xs rounded-lg border border-blue-100">
-                  <p className="flex gap-2 items-start">
-                    <span className="text-lg">💡</span>
-                    <span>
-                      Klikni na sliku za pregled. Prva slika je glavna.
-                    </span>
-                  </p>
-                </div>
-              </div>
-              <ProductOperationsPanel
-                productId={product?.id}
-                variants={form.variants || []}
-                basePrice={form.price}
-                onBasePriceChange={(value) => {
-                  regularPriceEditedRef.current = true;
-                  handleChange('price', value);
-                }}
-                onPendingPrice={setPendingPrice}
-              />
-              <div className="bg-white p-5 rounded-2xl border border-neutral-100">
-                <h3 className="font-bold text-neutral-900">3D model</h3>
-                <p className="text-xs text-neutral-500 mt-1 mb-4">
-                  Dodajte GLB model za prikaz proizvoda.
-                </p>
-                <label className="block">
-                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                    URL 3D modela (.glb)
-                  </span>
-                  <input
-                    value={form.model3DUrl}
-                    onChange={(event) => handleChange('model3DUrl', event.target.value)}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
-                    placeholder="/models/moj-artikal.glb"
-                  />
-                </label>
-              </div>
-            </div>
-
           </div>
         </div>
 

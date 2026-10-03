@@ -129,19 +129,9 @@ export function SpecificationEditor({api,departmentId,brand='',values,onChange,o
   </section>;
 }
 
-export function SpecificationPreview({images,onPreview,onAddImage,disabled=false,followTargetId}: {images:string[];onPreview:(index:number)=>void;onAddImage:()=>void;disabled?:boolean;followTargetId?:string}) {
+export function SpecificationPreview({images,onPreview,onAddImage,disabled=false}: {images:string[];onPreview:(index:number)=>void;onAddImage:()=>void;disabled?:boolean}) {
   const [image,setImage]=useState(0);
-  const [visible,setVisible]=useState(!followTargetId);
   useEffect(()=>setImage(0),[images[0]]);
-  useEffect(()=>{
-    if(!followTargetId)return;
-    const target=document.getElementById(followTargetId);
-    if(!target)return;
-    const observer=new IntersectionObserver(entries=>setVisible(entries.some(entry=>entry.isIntersecting)));
-    observer.observe(target);
-    return()=>observer.disconnect();
-  },[followTargetId]);
-  if(!visible)return null;
   const selected=Math.min(image,images.length-1);
   return <section className="specification-editor se-preview-card" aria-label="Pregled sata"><h3>Pregled sata</h3>
     {images.length ? <><button className="se-main-image" type="button" onClick={()=>onPreview(selected)}><img src={images[selected]} alt="Sat — pregled za unos specifikacija"/></button><div className="se-thumbnails">{images.map((url,i)=><button key={`${url}-${i}`} className={selected===i?'is-selected':''} type="button" onClick={()=>setImage(i)} aria-label={`Fotografija ${i+1}`}><img src={url} alt=""/></button>)}</div><small>Klikni na sliku za uvećanje.</small></> : <button type="button" className="se-empty-image" disabled={disabled} onClick={onAddImage}>＋ Dodaj fotografiju sata<br/><small>Upload ili link kroz galeriju proizvoda</small></button>}
