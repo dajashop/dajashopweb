@@ -10,6 +10,7 @@ import ColorFilter, { isColorSpec } from './ColorFilter.jsx';
 import MaterialFilter, { isBraceletMaterialSpec } from './MaterialFilter.jsx';
 import ConfiguredFilters from './ConfiguredFilters.jsx';
 import SectionHeader from './FilterSectionHeader.jsx';
+import useFilterAnchor from '../hooks/useFilterAnchor.js';
 
 function specificationOrder(key) {
   const label = formatProductSpecLabel(key)
@@ -47,6 +48,7 @@ export default function Filters(props) {
 function LegacyFilters({ products, fixedGender, onClose }) {
   // <--- Dodat onClose prop
   const [sp, setSp] = useSearchParams();
+  const filterAnchor = useFilterAnchor(sp.toString());
 
   const baseData = useMemo(() => {
     if (Array.isArray(products)) return products;
@@ -145,6 +147,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
   function setParams(mutator) {
     const next = new URLSearchParams(sp);
     mutator(next);
+    filterAnchor.prepare();
     setSp(next, { replace: true });
   }
 
@@ -240,6 +243,8 @@ function LegacyFilters({ products, fixedGender, onClose }) {
 
   return (
     <aside
+      ref={filterAnchor.container}
+      {...filterAnchor.events}
       className="filters card glass"
       aria-label="Filteri kataloga"
       data-lenis-prevent

@@ -8,6 +8,7 @@ import SectionHeader from './FilterSectionHeader.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { configuredFilterParams, configuredFilterChips, filterConfiguredProducts, filterLeaves, numericFilterValue, optionMatches, orderedNodes, rangeKey, selectionKey, sourceValues } from '../utils/filterConfiguration.js';
 import './Filters.css';
+import useFilterAnchor from '../hooks/useFilterAnchor.js';
 
 export default function ConfiguredFilters({ products, configuration, fixedGender, onClose, params: previewParams, onParams, expandIds = [], showUnavailableOptions = false, focusId = '' }) {
   const [urlParams, setUrlParams] = useSearchParams();
@@ -33,6 +34,7 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
     return () => window.clearTimeout(timer);
   }, [focusId, focusSectionId, orderKey]);
   const paramsKey = params.toString();
+  const filterAnchor = useFilterAnchor(paramsKey, container);
   const facets = useMemo(() => {
     const selections = new URLSearchParams(paramsKey);
     return new Map(filterLeaves(configuration).map((node) => {
@@ -61,6 +63,7 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
   const setParams = (mutate) => {
     const next = new URLSearchParams(params);
     mutate(next);
+    filterAnchor.prepare();
     if (onParams) onParams(next); else setUrlParams(next, { replace: true });
   };
   const clearNode = (node) => setParams((next) => filterLeaves({ filters: [node] }).forEach((leaf) => {
@@ -105,7 +108,7 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
       {selected.includes(value.value) && <div className="filter-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg></div>}
     </label>)}</div>;
   };
-  return <aside ref={container} className="filters card glass configured-filters" aria-label="Filteri kataloga" data-lenis-prevent>
+  return <aside ref={container} {...filterAnchor.events} className="filters card glass configured-filters" aria-label="Filteri kataloga" data-lenis-prevent>
     <div className="f-top"><h3 className="f-top-title">Filteri</h3><div className="f-top-actions">{chips.length > 0 && <><span className="f-badge">{chips.length}</span><button type="button" className="f-clear" onClick={clearAll}>Očisti sve</button></>}</div></div>
     <div className="f-scroll-container">
     {orderedNodes(configuration.filters).filter(available).map((node) => {

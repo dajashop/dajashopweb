@@ -15,10 +15,17 @@
 
   max-height: calc(100vh - 7rem);
   overflow-y: auto;
+  overflow-anchor: none;
+  scroll-behavior: auto;
 
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--color-muted, #6e6e73) transparent;
+}
+
+.f-scroll-container {
+  padding-top: var(--filter-anchor-before, 0px);
+  padding-bottom: var(--filter-anchor-after, 0px);
 }
 
 .filters::-webkit-scrollbar-thumb {
