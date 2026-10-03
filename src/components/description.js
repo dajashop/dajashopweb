@@ -37,8 +37,12 @@ export function descriptionText(value = '') {
 }
 
 // A short plain-text summary for meta, Open Graph and Twitter descriptions.
-export function metaDescription(value = '') {
-  const text = descriptionText(value).replace(/\s+/g, ' ').trim();
+export function metaDescription(value = '', firstParagraph = false) {
+  // Inline line breaks stay in their paragraph; block endings mark its boundary.
+  const source = firstParagraph ? descriptionHtml(value).replace(/<br\s*\/?>/gi, ' ').replace(/[\r\n]+/g, ' ') : value;
+  let text = descriptionText(source);
+  if (firstParagraph) text = text.split(/\r?\n/).find(paragraph => paragraph.trim()) || '';
+  text = text.replace(/\s+/g, ' ').trim();
   if (text.length <= 160) return text;
   const shortened = text.slice(0, 159);
   const boundary = shortened.lastIndexOf(' ');

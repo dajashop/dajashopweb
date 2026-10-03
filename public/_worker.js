@@ -211,19 +211,25 @@ function siteSchemas(siteUrl) {
 }
 
 // The Worker has no DOM: strip rich-text markup before writing metadata.
-function seoDescription(value) {
+function seoDescription(value, firstParagraph = false) {
   const entities = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
     ndash: '–', mdash: '—', hellip: '…', euro: '€', copy: '©', reg: '®',
     lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', bull: '•' };
-  const text = String(value ?? '')
+  let source = String(value ?? '');
+  if (firstParagraph && /<\/?[a-z][^>]*>/i.test(source)) {
+    source = source.replace(/[\r\n]+/g, ' ');
+  }
+  let text = source
     .replace(/<(script|style|iframe|object|svg|math|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, ' ')
+    .replace(/<\/(?:p|div|h[1-6]|li|blockquote)\s*>/gi, firstParagraph ? '\n' : ' ')
     .replace(/<[^>]*>/g, ' ')
     .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, code) => {
       if (code[0] !== '#') return entities[code.toLowerCase()] ?? entity;
       const n = code[1].toLowerCase() === 'x' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
       return n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : ' ';
-    })
-    .replace(/\s+/g, ' ').trim();
+    });
+  if (firstParagraph) text = text.split(/\r?\n/).find(paragraph => paragraph.trim()) || '';
+  text = text.replace(/\s+/g, ' ').trim();
   if (text.length <= 160) return text;
   const shortened = text.slice(0, 159);
   const boundary = shortened.lastIndexOf(' ');
@@ -234,7 +240,7 @@ function buildSeo({ siteUrl, product }) {
   const productName = `${product.brand_name || product.brand || ''} ${product.name || ''}`.trim();
   const title = product.seo?.metaTitle || productName || 'DajaShop';
   const description = seoDescription(product.seo?.metaDescription) ||
-    seoDescription(product.description) ||
+    seoDescription(product.description, true) ||
     seoDescription(`Kupite ${title} po odličnoj ceni u DajaShop prodavnici.`);
   const url = `${siteUrl}/product/${product.slug}`;
   const images = productImages(product);

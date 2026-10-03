@@ -97,7 +97,7 @@ export default function Product() {
     p.images?.[0]?.thumb ||
     p.image;
   const seoTitle = p.seo?.metaTitle || productTitle;
-  const seoDescription = metaDescription(p.seo?.metaDescription) || metaDescription(productDescription);
+  const seoDescription = metaDescription(p.seo?.metaDescription) || metaDescription(p.description, true) || metaDescription(productDescription);
   const seoKeywords = p.seo?.metaKeywords || undefined;
   const seoImage = p.seo?.ogImage || productImage;
   const department = p.department || 'satovi';
