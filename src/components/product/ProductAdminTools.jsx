@@ -12,6 +12,32 @@ import ConfirmModal from '../modals/ConfirmModal.jsx';
 const flags = { new: 'Novo', popular: 'Popularno', recommended: 'Preporučeno' };
 const suppliers = [['supplierUrl', 'Ekka'], ['bultimeUrl', 'Bultime'], ['linkelUrl', 'Linkel'], ['milanoUrl', 'Milano'], ['timezoneUrl', 'Timezone'], ['qandqUrl', 'Q&Q']];
 
+function SupplierCountdown({ nextCheckAt }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const target = Date.parse(nextCheckAt || '');
+  if (!Number.isFinite(target)) return null;
+  const remaining = Math.max(0, target - now);
+  const [unit, divisor] = remaining >= 86400000 ? ['d', 86400000] : remaining >= 3600000 ? ['h', 3600000] : remaining >= 60000 ? ['m', 60000] : ['s', 1000];
+  return <span title="Do sledeće provere">{unit === 's' ? Math.ceil(remaining / divisor) : Math.floor(remaining / divisor)}{unit}</span>;
+}
+
+function supplierPrice(amount, currency, rate) {
+  if (amount == null || !Number.isFinite(Number(amount))) return 'Cena nije potvrđena';
+  const value = Number(amount);
+  const code = String(currency || '').toUpperCase();
+  const format = (number) => number.toLocaleString('sr-RS', { maximumFractionDigits: 2 });
+  if (rate > 0 && ['RSD', 'EUR'].includes(code)) {
+    const rsd = code === 'RSD' ? value : value * rate;
+    const eur = code === 'EUR' ? value : value / rate;
+    return `${format(rsd)} RSD · ${format(eur)} EUR`;
+  }
+  return `${format(value)} ${code}`;
+}
+
 export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
   const { user } = useAuth();
   const { flash } = useFlash();
@@ -21,6 +47,15 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showFlags, setShowFlags] = useState(false);
+  const [eurRsdRate, setEurRsdRate] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    adminCatalogApi.getSupplierExchangeRate().then((data) => {
+      if (!cancelled) setEurRsdRate(Number(data.middleRate));
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,13 +103,6 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
   const inStock = record?.availability?.inStock ?? record?.inStock;
 
   return <div className="product-admin-tools" aria-label="Administracija proizvoda">
-    <div className="product-admin-commands">
-      <button type="button" disabled={!record || busy} onClick={() => setShowFlags((previous) => !previous)} title="Oznake proizvoda" aria-label="Oznake proizvoda" aria-expanded={showFlags} className={selectedFlags.length ? 'is-tagged' : ''}><Star size={16} fill={selectedFlags.length ? 'currentColor' : 'none'} /></button>
-      <button type="button" disabled={!record || busy} onClick={() => update({ isVisible: record.isVisible === false })} title={record?.isVisible === false ? 'Prikaži proizvod' : 'Sakrij proizvod'} aria-label={record?.isVisible === false ? 'Prikaži proizvod' : 'Sakrij proizvod'} className="is-visibility">{record?.isVisible === false ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-      <button type="button" disabled={!record || busy} onClick={() => setEditing(true)} title="Izmeni proizvod i linkove" aria-label="Izmeni proizvod i linkove" className="is-edit"><Edit3 size={16} /></button>
-      {isAdminEmail(user?.email) && <button type="button" disabled={!record || busy} onClick={() => setConfirmDelete(true)} title="Obriši proizvod" aria-label="Obriši proizvod" className="is-delete"><Trash2 size={16} /></button>}
-    </div>
-    {showFlags && <div className="product-admin-flags">{Object.entries(flags).map(([key, label]) => <button key={key} type="button" disabled={busy} aria-pressed={selectedFlags.includes(key)} onClick={() => update({ marketingFlags: selectedFlags.includes(key) ? selectedFlags.filter((flag) => flag !== key) : [...selectedFlags, key] })}>{label}</button>)}</div>}
     {error && <p className="product-admin-error" role="alert">{error}</p>}
     {!record && !error && <p className="product-admin-loading">Učitavanje admin podataka…</p>}
     {record && <>
@@ -95,12 +123,20 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
           : ({ missing: 'Link nedostupan', checking: 'Proverava se', disabled: 'Provera isključena', paused: 'Provera pauzirana', deferred: 'Provera odložena', waiting_confirmation: 'Čeka potvrdu' }[status] || 'Dostupnost nije potvrđena');
         return <div className="product-admin-supplier" key={field}>
           <div className="product-admin-supplier-heading"><a href={record[field]} target="_blank" rel="noopener noreferrer">{label}<ExternalLink size={12} /></a>
-            <span>{amount != null ? `${Number(amount).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} ${currency || ''}` : 'Cena nije potvrđena'}</span>
+            <SupplierCountdown nextCheckAt={record[`${prefix}NextCheckAt`]} />
           </div>
+          <span className="product-admin-supplier-price">{supplierPrice(amount, currency, eurRsdRate)}</span>
           <span className={`product-admin-supplier-status ${status === 'available' && stock !== 'out_of_stock' ? 'is-available' : stock === 'out_of_stock' || status === 'missing' ? 'is-unavailable' : ''}`}>{statusText}</span>
         </div>;
       })}</div>
     </>}
+    <div className="product-admin-commands">
+      <button type="button" disabled={!record || busy} onClick={() => setShowFlags((previous) => !previous)} title="Oznake proizvoda" aria-label="Oznake proizvoda" aria-expanded={showFlags} className={selectedFlags.length ? 'is-tagged' : ''}><Star size={16} fill={selectedFlags.length ? 'currentColor' : 'none'} /></button>
+      <button type="button" disabled={!record || busy} onClick={() => update({ isVisible: record.isVisible === false })} title={record?.isVisible === false ? 'Prikaži proizvod' : 'Sakrij proizvod'} aria-label={record?.isVisible === false ? 'Prikaži proizvod' : 'Sakrij proizvod'} className="is-visibility">{record?.isVisible === false ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+      <button type="button" disabled={!record || busy} onClick={() => setEditing(true)} title="Izmeni proizvod i linkove" aria-label="Izmeni proizvod i linkove" className="is-edit"><Edit3 size={16} /></button>
+      {isAdminEmail(user?.email) && <button type="button" disabled={!record || busy} onClick={() => setConfirmDelete(true)} title="Obriši proizvod" aria-label="Obriši proizvod" className="is-delete"><Trash2 size={16} /></button>}
+    </div>
+    {showFlags && <div className="product-admin-flags">{Object.entries(flags).map(([key, label]) => <button key={key} type="button" disabled={busy} aria-pressed={selectedFlags.includes(key)} onClick={() => update({ marketingFlags: selectedFlags.includes(key) ? selectedFlags.filter((flag) => flag !== key) : [...selectedFlags, key] })}>{label}</button>)}</div>}
     <AnimatePresence>{editing && record && <AdminProductModal product={record} onClose={() => setEditing(false)} onSuccess={afterEdit} />}</AnimatePresence>
     {createPortal(<div style={{ position: 'relative', zIndex: 3000 }}><ConfirmModal isOpen={confirmDelete} onClose={() => { if (!busy) setConfirmDelete(false); }} onConfirm={remove} title="Obriši proizvod?" description="Ova akcija je nepovratna." confirmText="Obriši" isDanger /></div>, document.body)}
   </div>;
