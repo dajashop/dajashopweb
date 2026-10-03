@@ -7,7 +7,7 @@ export default function FilterOptions({ values, selected = [], limit = 3, childr
   const hidden = values.length - visible.length;
   const preview = hidden > 0 ? values.find((value) => !visible.includes(value)) : null;
   return <div className="filter-options">
-    <div id={id}>{children(visible)}</div>
+    <div id={id} className={preview ? 'filter-options-faded' : undefined}>{children(visible)}</div>
     {preview && <div className="filter-options-reveal">
       <div className="filter-options-preview" aria-hidden="true" inert="">{children([preview])}</div>
       <button type="button" className="filter-show-more filter-show-more-overlay"

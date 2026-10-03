@@ -37,12 +37,17 @@
   padding: 6px 0;
   border: 0;
   background: transparent;
-  color: var(--color-text, #111);
+  color: var(--color-muted, #6e6e73);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
   transition: color .2s ease;
   cursor: pointer;
+}
+
+.filter-options-faded {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), rgba(0, 0, 0, .8) 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), rgba(0, 0, 0, .8) 100%);
 }
 
 .filter-options-reveal {
@@ -60,18 +65,18 @@
   user-select: none;
   filter: blur(.65px);
   opacity: .8;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, .8) 45%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, .8) 45%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, .6) 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, .6) 45%, transparent 100%);
 }
 
 .filter-show-more-overlay {
   position: absolute;
   z-index: 1;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  transform: translateX(-50%);
   margin: 0;
-  padding: 8px 13px;
+  padding: 4px 13px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -81,7 +86,7 @@
 }
 
 .filter-show-more:hover {
-  color: #2875ff;
+  color: #000;
 }
 
 .filter-show-more:focus-visible {
@@ -90,7 +95,7 @@
 }
 
 .filter-show-more-count {
-  color: var(--color-muted, #6e6e73);
+  color: inherit;
   font-weight: 400;
 }
 
