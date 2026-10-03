@@ -26,18 +26,70 @@ function Model({ canvas, rotate, reset, zoom, diameter }) {
     <OrbitControls ref={controls} enabled={rotate} enablePan={false} enableZoom={false} minPolarAngle={.1} maxPolarAngle={Math.PI - .1} />
   </>;
 }
-export default function WatchPreview({ canvas, rotate, reset, zoom, diameter, flat, onMove, onStart, onEnd }) {
+export default function WatchPreview({ canvas, rotate, reset, zoom, diameter, flat, onMove, onStart, onEnd, onZoom }) {
   const drag = useRef(false);
+  const stage = useRef(null);
+  const panGesture = useRef(null);
+  const touches = useRef(new Map());
+  const pinchDistance = useRef(0);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [failed, setFailed] = useState(false);
   const isFlat = flat || failed;
+  useEffect(() => { setPan({ x: 0, y: 0 }); }, [reset]);
+  useEffect(() => {
+    const element = stage.current;
+    const wheel = (event) => {
+      if (event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? element.clientHeight : 1);
+      onZoom?.((value) => Math.max(.7, Math.min(1.6, value * Math.exp(-delta * .0015))));
+    };
+    element.addEventListener('wheel', wheel, { passive: false });
+    return () => element.removeEventListener('wheel', wheel);
+  }, [onZoom]);
   const point = (event) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const scale = (isFlat ? Math.min(rect.width, rect.height) * .74 : rect.height * .95 / (3.4 * Math.tan(Math.PI / 9))) * zoom;
-    return { x: Math.max(0, Math.min(1000, 500 + (event.clientX - rect.left - rect.width / 2) / scale * 1000)), y: Math.max(0, Math.min(1000, 500 + (event.clientY - rect.top - rect.height / 2) / scale * 1000)) };
+    return { x: Math.max(0, Math.min(1000, 500 + (event.clientX - rect.left - rect.width / 2 - pan.x) / scale * 1000)), y: Math.max(0, Math.min(1000, 500 + (event.clientY - rect.top - rect.height / 2 - pan.y) / scale * 1000)) };
   };
   const flatPreview = <img className="engrave-flat" src={canvas?.toDataURL()} alt="Ravan pregled poklopca i gravure" style={{ transform: `scale(${zoom})` }} />;
-  return <div className="engrave-stage">
+  return <div ref={stage} data-lenis-prevent className={`engrave-stage${panGesture.current ? ' is-panning' : ''}`} onContextMenu={(event) => event.preventDefault()}
+    onPointerDownCapture={(event) => {
+      if (event.pointerType === 'touch') {
+        touches.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (touches.current.size === 2) {
+          const [a, b] = [...touches.current.values()]; pinchDistance.current = Math.hypot(a.x - b.x, a.y - b.y);
+          drag.current = false; onEnd?.(); event.stopPropagation();
+          event.currentTarget.setPointerCapture(event.pointerId); return;
+        }
+      }
+      if (event.button !== 2) return;
+      event.preventDefault(); event.stopPropagation();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      panGesture.current = { x: event.clientX, y: event.clientY, origin: pan };
+    }} onPointerMoveCapture={(event) => {
+      if (event.pointerType === 'touch' && touches.current.has(event.pointerId)) {
+        touches.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (touches.current.size === 2) {
+          const [a, b] = [...touches.current.values()]; const distance = Math.hypot(a.x - b.x, a.y - b.y);
+          const ratio = pinchDistance.current > 0 ? distance / pinchDistance.current : 1;
+          onZoom?.((value) => Math.max(.7, Math.min(1.6, value * ratio))); pinchDistance.current = distance;
+          event.stopPropagation(); return;
+        }
+      }
+      if (!panGesture.current) return;
+      event.stopPropagation(); const start = panGesture.current;
+      setPan({ x: Math.max(-event.currentTarget.clientWidth / 2, Math.min(event.currentTarget.clientWidth / 2, start.origin.x + event.clientX - start.x)), y: Math.max(-event.currentTarget.clientHeight / 2, Math.min(event.currentTarget.clientHeight / 2, start.origin.y + event.clientY - start.y)) });
+    }} onPointerUpCapture={(event) => {
+      touches.current.delete(event.pointerId); pinchDistance.current = 0;
+      if (!panGesture.current) return;
+      event.stopPropagation(); panGesture.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+      setPan((value) => ({ ...value }));
+    }} onPointerCancelCapture={(event) => { touches.current.delete(event.pointerId); pinchDistance.current = 0; panGesture.current = null; drag.current = false; onEnd?.(); }}>
+    <div className="engrave-stage-content" style={{ transform: `translate(${pan.x}px, ${pan.y}px)` }}>
     {canvas && (isFlat ? flatPreview : <Fallback fallback={flatPreview} onFailure={() => setFailed(true)}><Canvas camera={{ position: [0, 0, diameter / 20 * 3.4], fov: 40 }} gl={{ antialias: true }} onCreated={({ gl }) => { gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); setFailed(true); onEnd?.(); }, { once: true }); }}><Model canvas={canvas} rotate={rotate} reset={reset} zoom={zoom} diameter={diameter} /></Canvas></Fallback>)}
-    {!rotate && <div className="engrave-drag" role="application" aria-label="Pomerite izabrani element gravure" onPointerDown={(event) => { if (!onStart(point(event))) return; event.currentTarget.setPointerCapture(event.pointerId); drag.current = true; }} onPointerMove={(event) => { if (drag.current) onMove(point(event)); }} onPointerUp={(event) => { drag.current = false; event.currentTarget.releasePointerCapture(event.pointerId); onEnd(); }} onPointerCancel={() => { drag.current = false; onEnd(); }} />}
+    </div>
+    {!rotate && <div className="engrave-drag" role="application" aria-label="Pomerite izabrani element gravure" onPointerDown={(event) => { if (!onStart(point(event))) return; event.currentTarget.setPointerCapture(event.pointerId); drag.current = true; }} onPointerMove={(event) => { if (drag.current) onMove(point(event)); }} onPointerUp={(event) => { drag.current = false; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); onEnd(); }} onPointerCancel={() => { drag.current = false; onEnd(); }} />}
   </div>;
 }

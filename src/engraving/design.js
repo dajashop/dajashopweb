@@ -8,16 +8,16 @@ export function diameterOf(product) {
 }
 const glyphs = (text) => typeof Intl.Segmenter === 'function' ? [...new Intl.Segmenter('sr', { granularity: 'grapheme' }).segment(text)].map((part) => part.segment) : Array.from(text);
 export async function loadFonts() {
-  await Promise.all(Object.values(FONTS).map((font) => document.fonts.load(`44px "${font}"`, 'АБВабвČćŠšŽžĐđ')));
+  await Promise.all([...Object.values(FONTS).map((font) => document.fonts.load(`44px "${font}"`, 'АБВабвČćŠšŽžĐđ')), document.fonts.load('44px "Gravura Emoji"', '😊🌙🐾♥')]);
 }
 export function canvasOf(size = 1000) { const canvas = document.createElement('canvas'); canvas.width = canvas.height = size; return canvas; }
-function setFont(ctx, layer) { ctx.font = `${layer.italic ? 'italic' : 'normal'} ${layer.bold ? 700 : 400} ${layer.fontSize}px "${FONTS[layer.font]}"`; ctx.textBaseline = 'middle'; }
+function setFont(ctx, layer) { ctx.font = `${layer.italic ? 'italic' : 'normal'} ${layer.bold ? 700 : 400} ${layer.fontSize}px "${FONTS[layer.font]}", "Gravura Emoji"`; ctx.textBaseline = 'middle'; }
 export function normalizeDesign(design) {
   const ctx = canvasOf().getContext('2d');
   return { ...design, layers: design.layers.map((layer) => {
     if (layer.type !== 'text') return layer;
     setFont(ctx, layer);
-    const lines = layer.text.split('\n');
+    const lines = layer.text.replace(/\uFE0F/g, '').split('\n');
     const width = Math.max(1, ...lines.map((text) => glyphs(text).reduce((sum, char) => sum + ctx.measureText(char).width, 0) + Math.max(0, glyphs(text).length - 1) * layer.letterSpacing));
     return { ...layer, width, height: Math.max(1, lines.length * layer.fontSize * layer.lineSpacing) };
   }) };
@@ -74,7 +74,7 @@ export async function renderDesign(design, assets = [], { metal = false, guides 
     else {
       setFont(ctx, layer);
       if (layer.curve !== 'straight') {
-        const chars = glyphs(layer.text.replace(/\n/g, ' ')); const lower = layer.curve === 'lower';
+        const chars = glyphs(layer.text.replace(/\uFE0F/g, '').replace(/\n/g, ' ')); const lower = layer.curve === 'lower';
         const span = Math.min(layer.arc * Math.PI / 180, chars.reduce((sum, char) => sum + ctx.measureText(char).width + layer.letterSpacing, 0) / layer.radius);
         const widths = chars.map((char) => Math.max(1, ctx.measureText(char).width + layer.letterSpacing)); const total = widths.reduce((a, b) => a + b, 0);
         let cursor = -span / 2;
@@ -84,7 +84,7 @@ export async function renderDesign(design, assets = [], { metal = false, guides 
           ctx.save(); ctx.translate(Math.cos(theta) * layer.radius, Math.sin(theta) * layer.radius); ctx.rotate(theta + (lower ? -Math.PI / 2 : Math.PI / 2)); ctx.textAlign = 'center'; ctx.fillText(char, 0, 0); ctx.restore(); cursor += step;
         });
       } else {
-        const lines = layer.text.split('\n');
+        const lines = layer.text.replace(/\uFE0F/g, '').split('\n');
         lines.forEach((text, index) => {
           const chars = glyphs(text); const width = chars.reduce((sum, char) => sum + ctx.measureText(char).width, 0) + Math.max(0, chars.length - 1) * layer.letterSpacing;
           let x = layer.align === 'left' ? -layer.width / 2 : layer.align === 'right' ? layer.width / 2 - width : -width / 2;
