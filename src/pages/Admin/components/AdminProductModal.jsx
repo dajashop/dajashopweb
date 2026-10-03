@@ -105,7 +105,7 @@ function catalogAttributeKey(value) {
   return normalized || 'specification';
 }
 
-function SpecificationValueInput({ value, onChange, options, unit }) {
+function SpecificationValueInput({ value, onChange, options, unit, inputRef, disabled }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
   const normalizedOptions = [...new Set((options || []).filter(Boolean))];
@@ -122,8 +122,11 @@ function SpecificationValueInput({ value, onChange, options, unit }) {
   }, []);
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative" ref={containerRef} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false); }}>
       <input
+        ref={inputRef}
+        onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); setIsOpen(false); } }}
+        disabled={disabled}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onFocus={() => setIsOpen(true)}
@@ -134,7 +137,7 @@ function SpecificationValueInput({ value, onChange, options, unit }) {
       />
       {unit ? <span className="absolute right-11 top-1/2 -translate-y-1/2 text-neutral-400 text-xs font-bold pointer-events-none">{unit}</span> : null}
       <button
-        type="button"
+        type="button" disabled={disabled}
         onClick={() => setIsOpen((current) => !current)}
         className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-neutral-500 hover:bg-neutral-100 transition-colors"
         aria-label="Prikaži ponuđene odgovore"
@@ -146,9 +149,10 @@ function SpecificationValueInput({ value, onChange, options, unit }) {
           {visibleOptions.length ? visibleOptions.map((option) => (
             <button
               key={option}
-              type="button"
+              type="button" disabled={disabled}
               onClick={() => {
                 onChange(option);
+                inputRef.current?.focus();
                 setIsOpen(false);
               }}
               className="flex w-full items-center px-4 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
@@ -162,7 +166,7 @@ function SpecificationValueInput({ value, onChange, options, unit }) {
   );
 }
 
-function SpecificationKeySelect({ value, onChange, options, selectedValues, placeholder }) {
+function SpecificationKeySelect({ value, onChange, options, selectedValues, placeholder, inputRef, onSelect, disabled }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const containerRef = useRef(null);
@@ -180,9 +184,12 @@ function SpecificationKeySelect({ value, onChange, options, selectedValues, plac
   }, []);
 
   return (
-    <div className="relative min-w-0" ref={containerRef}>
+    <div className="relative min-w-0" ref={containerRef} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false); }}>
       <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-neutral-500">Osobina</span>
       <input
+        ref={inputRef}
+        onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); setIsOpen(false); } }}
+        disabled={disabled}
         value={isOpen ? query : selectedOption?.label || ''}
         onFocus={(event) => {
           setQuery('');
@@ -199,7 +206,7 @@ function SpecificationKeySelect({ value, onChange, options, selectedValues, plac
         aria-haspopup="listbox"
       />
       <button
-        type="button"
+        type="button" disabled={disabled}
         onClick={() => {
           setQuery('');
           setIsOpen((current) => !current);
@@ -216,11 +223,12 @@ function SpecificationKeySelect({ value, onChange, options, selectedValues, plac
             return (
               <button
                 key={option.id || option.value}
-                type="button"
+                type="button" disabled={disabled}
                 onClick={() => {
                   onChange(option.value);
                   setQuery('');
                   setIsOpen(false);
+                  onSelect?.();
                 }}
                 className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
               >
@@ -392,6 +400,17 @@ export default function AdminProductModal({
   const [tempSpecKey, setTempSpecKey] = useState('');
   const [tempSpecVal, setTempSpecVal] = useState('');
   const [saveSpecOption, setSaveSpecOption] = useState(false);
+  const [addingSpec, setAddingSpec] = useState(false);
+  const addingSpecRef = useRef(false);
+  const specKeyInputRef = useRef(null);
+  const specValueInputRef = useRef(null);
+  const [specFocusTarget, setSpecFocusTarget] = useState(null);
+  const [specError, setSpecError] = useState('');
+  useEffect(() => {
+    if (addingSpec || !specFocusTarget) return;
+    (specFocusTarget === 'key' ? specKeyInputRef : specValueInputRef).current?.focus();
+    setSpecFocusTarget(null);
+  }, [addingSpec, specFocusTarget]);
   const [loading, setLoading] = useState(false);
   const submittingRef = useRef(false);
   const savedProductIdRef = useRef(null);
@@ -768,7 +787,7 @@ export default function AdminProductModal({
   };
 
   const closeModal = () => {
-    if (submittingRef.current || imageBusy) return;
+    if (submittingRef.current || imageBusy || addingSpecRef.current) return;
     workTiming.close(!product && Boolean(onDraftChange) && timingHasDraft.current);
     // A new product draft may contain images already uploaded to R2. Keep
     // them attached to the draft when the user uses Back or closes the modal.
@@ -1144,23 +1163,33 @@ export default function AdminProductModal({
   // --------------------------------------------------------
 
   const addSpec = async () => {
-    if (!tempSpecKey || !tempSpecVal) return;
+    if (!tempSpecKey || !tempSpecVal.trim() || addingSpecRef.current) return;
+    addingSpecRef.current = true;
+    setAddingSpec(true);
+    setSpecError('');
     const def = specKeys.find((k) => k.name === tempSpecKey);
-    let finalVal = tempSpecVal;
-    if (def?.unit && !tempSpecVal.endsWith(def.unit)) {
-      finalVal = `${tempSpecVal} ${def.unit}`;
+    let finalVal = tempSpecVal.trim();
+    if (def?.unit && !finalVal.endsWith(def.unit)) {
+      finalVal = `${finalVal} ${def.unit}`;
     }
-    setForm((prev) => ({
-      ...prev,
-      specs: { ...prev.specs, [tempSpecKey]: finalVal },
-    }));
-    if (saveSpecOption && def?.id) {
-      const optionValues = [...new Set([...(Array.isArray(def.optionValues) ? def.optionValues : []), finalVal])];
-      await specKeyService.update(def.id, def.name, { departmentId: def.departmentId, unit: def.unit || null, optionValues });
+    try {
+      if (saveSpecOption) {
+        if (!def?.id) throw new Error('Osobina nije pronađena. Ponovo izaberite osobinu.');
+        const optionValues = [...new Set([...(Array.isArray(def.optionValues) ? def.optionValues : []), finalVal])];
+        await specKeyService.update(def.id, def.name, { departmentId: def.departmentId, unit: def.unit || null, optionValues });
+      }
+      setForm((prev) => ({ ...prev, specs: { ...prev.specs, [tempSpecKey]: finalVal } }));
+      setTempSpecKey('');
+      setTempSpecVal('');
+      setSaveSpecOption(false);
+      setSpecFocusTarget('key');
+    } catch (error) {
+      setSpecError(`Specifikacija nije dodata: ${error?.message || 'Čuvanje ponuđene vrednosti nije uspelo. Pokušajte ponovo ili isključite čuvanje ponuđene opcije.'}`);
+      setSpecFocusTarget('value');
+    } finally {
+      addingSpecRef.current = false;
+      setAddingSpec(false);
     }
-    setTempSpecKey('');
-    setTempSpecVal('');
-    setSaveSpecOption(false);
   };
 
   const removeSpec = (key) => {
@@ -1180,7 +1209,7 @@ export default function AdminProductModal({
     }));
 
   const handleSubmit = async (options = {}) => {
-    if (submittingRef.current || imageBusy || !mediaReady) return;
+    if (submittingRef.current || imageBusy || !mediaReady || addingSpecRef.current) return;
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
     const shouldReconcileQuantity = !product || quantityEditedRef.current;
     const shouldPersistPlacement = !product || placementEditedRef.current;
@@ -1942,6 +1971,7 @@ export default function AdminProductModal({
             </p>
           </div>
           <button
+            disabled={addingSpec}
             onClick={closeModal}
             className="p-2 hover:bg-neutral-100 rounded-full text-neutral-500 hover:text-neutral-900 transition"
           >
@@ -1955,7 +1985,7 @@ export default function AdminProductModal({
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-8 flex flex-col gap-6">
-              {reviewContext && <WorkforceReviewNotes product={reviewContext.product} onReturn={note => handleSubmit({ reviewNote: note })} disabled={loading || imageBusy || !mediaReady} />}
+              {reviewContext && <WorkforceReviewNotes product={reviewContext.product} onReturn={note => handleSubmit({ reviewNote: note })} disabled={loading || imageBusy || !mediaReady || addingSpec} />}
               <div className="bg-white p-5 rounded-xl shadow-none border border-neutral-200 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 [&_label>span:first-child]:mb-1 [&_label>span:first-child]:block [&_label>span:first-child]:text-xs [&_label>span:first-child]:font-bold [&_label>span:first-child]:uppercase [&_label>span:first-child]:tracking-wider [&_label>span:first-child]:text-neutral-500 [&_input]:bg-neutral-50 [&_input]:border-neutral-200 [&_input]:!rounded-xl [&_input]:px-4 [&_input]:py-3 [&_input]:text-sm">
                 <div
                   className="relative z-20"
@@ -2863,9 +2893,12 @@ export default function AdminProductModal({
                 <div className="flex gap-3 items-end mb-6 bg-neutral-50 p-3 rounded-xl border border-neutral-100">
                   <div className="flex-1 min-w-[140px]">
                     <SpecificationKeySelect
+                      inputRef={specKeyInputRef}
+                      onSelect={() => specValueInputRef.current?.focus()}
+                      disabled={addingSpec}
                       value={tempSpecKey}
                       options={specOptions}
-                      onChange={setTempSpecKey}
+                      onChange={(value) => { setTempSpecKey(value); setSpecError(''); }}
                       selectedValues={form.specs}
                       placeholder={
                         specOptions.length === 0 ? 'Nema opcija' : 'Izaberi...'
@@ -2877,27 +2910,31 @@ export default function AdminProductModal({
                       Vrednost
                     </span>
                     <SpecificationValueInput
+                      inputRef={specValueInputRef}
+                      disabled={addingSpec}
                       value={tempSpecVal}
-                      onChange={setTempSpecVal}
+                      onChange={(value) => { setTempSpecVal(value); setSpecError(''); }}
                       options={specKeys.find((item) => item.name === tempSpecKey)?.optionValues || []}
                       unit={activeUnit}
                     />
                   </div>
                   <button
                     onClick={() => void addSpec()}
-                    disabled={!tempSpecKey || !tempSpecVal}
+                    disabled={addingSpec || !tempSpecKey || !tempSpecVal.trim()}
+                    aria-label={addingSpec ? 'Čuvanje specifikacije' : 'Dodaj specifikaciju'}
                     className="bg-neutral-900 text-white p-3 rounded-xl hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-neutral-200"
                   >
-                    <Plus size={20} />
+                    {addingSpec ? <span className="text-xs">Čuvanje…</span> : <Plus size={20} />}
                   </button>
                 </div>
                 {tempSpecKey && (
                   <label className="-mt-3 mb-4 flex items-center gap-2 text-xs text-neutral-600 cursor-pointer">
-                    <input type="checkbox" checked={saveSpecOption} onChange={(event) => setSaveSpecOption(event.target.checked)} />
+                    <input type="checkbox" disabled={addingSpec} checked={saveSpecOption} onChange={(event) => { setSaveSpecOption(event.target.checked); setSpecError(''); }} />
                     Sačuvaj ovu vrednost kao ponuđenu opciju za buduće artikle
                   </label>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {specError && <p role="alert" className="col-span-full mb-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">{specError} Vaš unos je sačuvan u poljima; možete pokušati ponovo.</p>}
                   <AnimatePresence>
                     {Object.entries(form.specs).map(([key, val]) => (
                       <motion.div
@@ -2998,7 +3035,7 @@ export default function AdminProductModal({
             <button type="button" onClick={() => setSaveWarning(null)} className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700">
               Vrati se
             </button>
-            <button type="button" onClick={() => handleSubmit({ ...saveWarning.options, confirmWarnings: true })} disabled={loading || imageBusy || !mediaReady} className="rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">
+            <button type="button" onClick={() => handleSubmit({ ...saveWarning.options, confirmWarnings: true })} disabled={loading || imageBusy || !mediaReady || addingSpec} className="rounded-lg bg-neutral-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">
               Sačuvaj ipak
             </button>
           </div>
@@ -3037,6 +3074,7 @@ export default function AdminProductModal({
             </span>
           </button>
           <button
+            disabled={addingSpec}
             onClick={closeModal}
             className="px-6 py-2.5 rounded-xl font-semibold text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
           >
@@ -3044,7 +3082,7 @@ export default function AdminProductModal({
           </button>
           <button
             onClick={() => handleSubmit()}
-            disabled={loading || imageBusy || !mediaReady}
+            disabled={loading || imageBusy || !mediaReady || addingSpec}
             className="bg-neutral-900 text-white px-8 py-2.5 rounded-xl font-bold hover:bg-black hover:shadow-lg hover:shadow-neutral-200 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-wait"
           >
             {loading ? (
