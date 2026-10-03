@@ -100,7 +100,7 @@ export default function PrivacySection({ user }) {
 
   return (
     <section className="privacy-section section-content">
-      <header className="privacy-section__header">
+      <header className="privacy-section__header section-header-row">
         <div>
           <h3>Privatnost i obaveštenja</h3>
           <p>Ovde menjate izbor kolačića i upravljate email obaveštenjima.</p>
@@ -112,8 +112,8 @@ export default function PrivacySection({ user }) {
 
       {error && <p className="privacy-section__error">{error}</p>}
 
-      <article className="privacy-section__card">
-        <div className="privacy-section__title"><Cookie size={19} /><h4>Kolačići i lokalna memorija</h4></div>
+      <article className="privacy-section__card card glass">
+        <div className="privacy-section__title"><span className="privacy-section__icon"><Cookie size={24} /></span><h4>Kolačići i lokalna memorija</h4></div>
         <dl className="privacy-section__choices">
           <div><dt>Neophodno</dt><dd><Check size={16} /> Uključeno</dd></div>
           <div><dt>Funkcionalni</dt><dd>{categories.preferences && categories.externalGoogle ? <><Check size={16} /> Uključeno</> : 'Isključeno'}</dd></div>
@@ -123,8 +123,9 @@ export default function PrivacySection({ user }) {
         </dl>
       </article>
 
-      <article className="privacy-section__card">
-        <div className="privacy-section__title"><Mail size={19} /><h4>Novosti emailom</h4></div>
+      <div className="privacy-section__grid">
+      <article className="privacy-section__card card glass">
+        <div className="privacy-section__title"><span className="privacy-section__icon"><Mail size={24} /></span><h4>Novosti emailom</h4></div>
         {!hasEmail ? (
           <p>Dodajte email adresu u profilu da biste mogli da upravljate novostima emailom.</p>
         ) : newsletterActive ? (
@@ -148,8 +149,8 @@ export default function PrivacySection({ user }) {
         )}
       </article>
 
-      <article className="privacy-section__card">
-        <div className="privacy-section__title"><BellOff size={19} /><h4>Obaveštenja o artiklima</h4></div>
+      <article className="privacy-section__card card glass">
+        <div className="privacy-section__title"><span className="privacy-section__icon"><BellOff size={24} /></span><h4>Obaveštenja o artiklima</h4></div>
         {alerts.length === 0 ? (
           <p>Nemate aktivna obaveštenja o artiklima.</p>
         ) : (
@@ -192,6 +193,7 @@ export default function PrivacySection({ user }) {
         )}
       </article>
 
+      </div>
       {preview && (
         <div className="privacy-section__image-modal" role="dialog" aria-modal="true" aria-label={`Slika artikla: ${preview.name}`} onClick={() => setPreview(null)}>
           <div className="privacy-section__image-modal-content" onClick={(event) => event.stopPropagation()}>
