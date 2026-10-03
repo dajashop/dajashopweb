@@ -19,7 +19,8 @@ export function normalizeDesign(design) {
     setFont(ctx, layer);
     const lines = layer.text.replace(/\uFE0F/g, '').split('\n');
     const width = Math.max(1, ...lines.map((text) => glyphs(text).reduce((sum, char) => sum + ctx.measureText(char).width, 0) + Math.max(0, glyphs(text).length - 1) * layer.letterSpacing));
-    return { ...layer, width, height: Math.max(1, lines.length * layer.fontSize * layer.lineSpacing) };
+    const curved = layer.curve !== 'straight';
+    return { ...layer, width: curved ? 2 * (layer.radius + layer.fontSize) : width, height: curved ? 2 * (layer.radius + layer.fontSize) : Math.max(1, lines.length * layer.fontSize * layer.lineSpacing) };
   }) };
 }
 export function outsideZone(layer) {
@@ -65,8 +66,10 @@ export async function renderDesign(design, assets = [], { metal = false, guides 
     const gradient = ctx.createLinearGradient(0, 0, 1000, 1000);
     [[0, '#aeb2b8'], [0.24, '#f7f8f9'], [0.47, '#c6cbd0'], [0.72, '#eef0f2'], [1, '#969ca4']].forEach(([at, color]) => gradient.addColorStop(at, color));
     ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1000, 1000);
-    ctx.strokeStyle = 'rgba(80,90,100,.035)';
-    for (let y = 0; y < 1000; y += 3) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1000, y); ctx.stroke(); }
+    for (let radius = 2; radius < 710; radius += 1.7) {
+      ctx.strokeStyle = radius % 5 < 2 ? 'rgba(255,255,255,.18)' : 'rgba(55,60,65,.055)';
+      ctx.lineWidth = .65; ctx.beginPath(); ctx.arc(500, 500, radius, 0, Math.PI * 2); ctx.stroke();
+    }
   }
   for (const layer of design.layers) {
     ctx.save(); ctx.translate(layer.x, layer.y); ctx.rotate(layer.rotation * Math.PI / 180); ctx.fillStyle = '#141414';
@@ -75,7 +78,7 @@ export async function renderDesign(design, assets = [], { metal = false, guides 
       setFont(ctx, layer);
       if (layer.curve !== 'straight') {
         const chars = glyphs(layer.text.replace(/\uFE0F/g, '').replace(/\n/g, ' ')); const lower = layer.curve === 'lower';
-        const span = Math.min(layer.arc * Math.PI / 180, chars.reduce((sum, char) => sum + ctx.measureText(char).width + layer.letterSpacing, 0) / layer.radius);
+        const span = layer.curve === 'circle' ? Math.PI * 2 : Math.min(layer.arc * Math.PI / 180, chars.reduce((sum, char) => sum + ctx.measureText(char).width + layer.letterSpacing, 0) / layer.radius);
         const widths = chars.map((char) => Math.max(1, ctx.measureText(char).width + layer.letterSpacing)); const total = widths.reduce((a, b) => a + b, 0);
         let cursor = -span / 2;
         chars.forEach((char, index) => {
@@ -101,9 +104,10 @@ export async function renderDesign(design, assets = [], { metal = false, guides 
     ctx.putImageData(pixels, 0, 0);
   }
   if (guides) {
-    ctx.strokeStyle = '#696e75'; ctx.lineWidth = 2; ctx.setLineDash([9, 8]); ctx.beginPath(); ctx.arc(500, 500, 410, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = '#8ba6e8'; ctx.lineWidth = 2; ctx.setLineDash([9, 8]); ctx.beginPath(); ctx.arc(500, 500, 410, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#75829b'; ctx.font = '24px "Gravura Sans"'; ctx.textAlign = 'center'; ctx.fillText('ⓘ  Zona graviranja', 500, 850);
     const layer = design.layers.find((item) => item.id === selected);
-    if (layer) { ctx.save(); ctx.translate(layer.x, layer.y); ctx.rotate(layer.rotation * Math.PI / 180); ctx.strokeStyle = outsideZone(layer) ? '#d82b2b' : '#111'; ctx.lineWidth = 3; if (layer.type === 'text' && layer.curve !== 'straight') { ctx.beginPath(); ctx.arc(0, 0, layer.radius + layer.fontSize, 0, Math.PI * 2); ctx.stroke(); } else ctx.strokeRect(-layer.width / 2 - 8, -layer.height / 2 - 8, layer.width + 16, layer.height + 16); ctx.restore(); }
+    if (layer) { ctx.save(); ctx.translate(layer.x, layer.y); ctx.rotate(layer.rotation * Math.PI / 180); ctx.strokeStyle = outsideZone(layer) ? '#d82b2b' : '#a0b5e7'; ctx.lineWidth = 1.5; ctx.setLineDash([9, 8]); if (layer.type === 'text' && layer.curve !== 'straight') { ctx.beginPath(); ctx.arc(0, 0, layer.radius + layer.fontSize, 0, Math.PI * 2); ctx.stroke(); } else ctx.strokeRect(-layer.width / 2 - 8, -layer.height / 2 - 8, layer.width + 16, layer.height + 16); ctx.restore(); }
   }
   return canvas;
 }
