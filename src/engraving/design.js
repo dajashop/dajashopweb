@@ -106,6 +106,9 @@ export async function renderDesign(design, assets = [], { metal = false, guides 
   if (guides) {
     ctx.strokeStyle = '#8ba6e8'; ctx.lineWidth = 2; ctx.setLineDash([9, 8]); ctx.beginPath(); ctx.arc(500, 500, 410, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = '#75829b'; ctx.font = '24px "Gravura Sans"'; ctx.textAlign = 'center'; ctx.fillText('ⓘ  Zona graviranja', 500, 850);
+    if (design.reserveCenter !== false) {
+      ctx.save(); ctx.fillStyle = 'rgba(245,247,250,.32)'; ctx.strokeStyle = '#9ca5b3'; ctx.lineWidth = 1; ctx.setLineDash([5, 7]); ctx.beginPath(); ctx.arc(500, 500, 190, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = '#7a8392'; ctx.font = '19px "Gravura Sans"'; ctx.textAlign = 'center'; ctx.fillText('Prostor za fabričku gravuru', 500, 500); ctx.restore();
+    }
     const layer = design.layers.find((item) => item.id === selected);
     if (layer) { ctx.save(); ctx.translate(layer.x, layer.y); ctx.rotate(layer.rotation * Math.PI / 180); ctx.strokeStyle = outsideZone(layer) ? '#d82b2b' : '#a0b5e7'; ctx.lineWidth = 1.5; ctx.setLineDash([9, 8]); if (layer.type === 'text' && layer.curve !== 'straight') { ctx.beginPath(); ctx.arc(0, 0, layer.radius + layer.fontSize, 0, Math.PI * 2); ctx.stroke(); } else ctx.strokeRect(-layer.width / 2 - 8, -layer.height / 2 - 8, layer.width + 16, layer.height + 16); ctx.restore(); }
   }
