@@ -23,11 +23,6 @@
   scrollbar-color: var(--color-muted, #6e6e73) transparent;
 }
 
-.f-scroll-container {
-  padding-top: var(--filter-anchor-before, 0px);
-  padding-bottom: var(--filter-anchor-after, 0px);
-}
-
 .filter-show-more {
   display: inline-flex;
   align-items: center;

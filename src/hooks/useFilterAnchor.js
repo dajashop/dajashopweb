@@ -27,30 +27,43 @@ export default function useFilterAnchor(paramsKey, suppliedContainer) {
 
   useLayoutEffect(() => {
     const saved = anchor.current;
-    const viewport = container.current;
-    if (!saved?.pending || !viewport) return;
+    const panel = container.current;
+    if (!saved?.pending || !panel) return;
     saved.pending = false;
-    const content = viewport.querySelector('.f-scroll-container');
-    if (!content) return;
+    let viewport = panel;
+    while (viewport && !['auto', 'scroll'].includes(window.getComputedStyle(viewport).overflowY)) {
+      viewport = viewport.parentElement;
+    }
+    if (!viewport) return;
+    const sidebar = panel.closest('.sidebar-filters');
+    const layout = sidebar?.closest('.catalog-layout');
 
     const restore = () => {
-      if (anchor.current !== saved || !viewport.contains(saved.control)) return;
+      if (anchor.current !== saved || !panel.contains(saved.control)) return;
       const delta = saved.control.getBoundingClientRect().top - saved.top;
       if (Math.abs(delta) < 0.25) return;
-      const desired = viewport.scrollTop + delta;
-      // Leave enough space even when filtering removes almost every option
-      // before/after the control. Otherwise the browser clamps scrollTop.
-      if (desired < 0) {
-        const before = parseFloat(content.style.getPropertyValue('--filter-anchor-before')) || 0;
-        content.style.setProperty('--filter-anchor-before', `${before - desired}px`);
+      viewport.scrollTop += delta;
+      const remaining = saved.control.getBoundingClientRect().top - saved.top;
+      if (Math.abs(remaining) < 0.25 || !sidebar || !layout) return;
+
+      // At either end of the real filter content, move the document instead
+      // of adding empty space. A sticky sidebar only moves with the document
+      // before its top stop or after reaching the catalog's bottom boundary.
+      const wantedTop = sidebar.getBoundingClientRect().top - remaining;
+      const stickyTop = parseFloat(window.getComputedStyle(sidebar).top) || 0;
+      let pageTop;
+      if (wantedTop < stickyTop) {
+        const layoutBottom = layout.getBoundingClientRect().bottom + window.scrollY;
+        const bottomPadding = parseFloat(window.getComputedStyle(layout).paddingBottom) || 0;
+        pageTop = layoutBottom - bottomPadding - sidebar.offsetHeight - wantedTop;
       } else {
-        const missing = desired - (viewport.scrollHeight - viewport.clientHeight);
-        if (missing > 0) {
-          const after = parseFloat(content.style.getPropertyValue('--filter-anchor-after')) || 0;
-          content.style.setProperty('--filter-anchor-after', `${after + missing}px`);
-        }
+        const previousPosition = sidebar.style.position;
+        sidebar.style.position = 'static';
+        const naturalTop = sidebar.getBoundingClientRect().top + window.scrollY;
+        sidebar.style.position = previousPosition;
+        pageTop = naturalTop - wantedTop;
       }
-      viewport.scrollTop += saved.control.getBoundingClientRect().top - saved.top;
+      window.scrollTo({ top: Math.max(0, pageTop), left: window.scrollX, behavior: 'instant' });
     };
 
     restore();

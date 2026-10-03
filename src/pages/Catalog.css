@@ -38,6 +38,12 @@
   top: calc(var(--header-h, 76px) + 8px);
 }
 
+.sidebar-filters .filters {
+  box-sizing: border-box;
+  max-height: calc(100vh - var(--header-h, 76px) - 8px - 6vh - 24px);
+  max-height: calc(100dvh - var(--header-h, 76px) - 8px - 6vh - 24px);
+}
+
 .catalog-main {
   min-width: 0;
 }
