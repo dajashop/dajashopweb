@@ -11,6 +11,7 @@ const COMMERCE = {
   deliveryMaxDays: 3,
   returnDays: 14,
 };
+const CATALOG_PATHS = new Set(['/catalog', '/muski-satovi', '/zenski-satovi', '/naocare', '/baterije', '/daljinski']);
 const PRIVATE_PATHS = new Set([
   '/cart', '/checkout', '/account', '/orders', '/admin', '/verify-email',
   '/reset-password', '/logout', '/unsubscribe', '/privacy', '/cookies', '/terms',
@@ -79,6 +80,19 @@ const STATIC_PAGE_SEO = {
     description: 'Odgovori na najčešća pitanja o poručivanju, isporuci, plaćanju i reklamacijama u DajaShop-u.',
     type: 'FAQPage',
     name: 'Često postavljana pitanja',
+  },
+  '/graviranje': {
+    title: 'Konfigurator graviranja sata',
+    description: 'Napravite ličnu gravuru: tekst, simboli i slike na poklopcu sata.',
+    type: 'WebPage',
+    name: 'Graviranje sata',
+  },
+  '/search': {
+    title: 'Pretraga',
+    description: 'Pretražite modele, brendove, kolekcije i osobine proizvoda u DajaShop-u.',
+    type: 'SearchResultsPage',
+    name: 'Pretraga',
+    noIndex: true,
   },
   '/usluge': {
     title: 'Lasersko graviranje i usluge u Nišu',
@@ -196,13 +210,32 @@ function siteSchemas(siteUrl) {
   ];
 }
 
+// The Worker has no DOM: strip rich-text markup before writing metadata.
+function seoDescription(value) {
+  const entities = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+    ndash: '–', mdash: '—', hellip: '…', euro: '€', copy: '©', reg: '®',
+    lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', bull: '•' };
+  const text = String(value ?? '')
+    .replace(/<(script|style|iframe|object|svg|math|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, code) => {
+      if (code[0] !== '#') return entities[code.toLowerCase()] ?? entity;
+      const n = code[1].toLowerCase() === 'x' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+      return n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : ' ';
+    })
+    .replace(/\s+/g, ' ').trim();
+  if (text.length <= 160) return text;
+  const shortened = text.slice(0, 159);
+  const boundary = shortened.lastIndexOf(' ');
+  return (boundary > 100 ? shortened.slice(0, boundary) : shortened).trimEnd() + '…';
+}
+
 function buildSeo({ siteUrl, product }) {
   const productName = `${product.brand_name || product.brand || ''} ${product.name || ''}`.trim();
   const title = product.seo?.metaTitle || productName || 'DajaShop';
-  const description =
-    product.seo?.metaDescription ||
-    product.description ||
-    `Kupite ${title} po odličnoj ceni u DajaShop prodavnici.`;
+  const description = seoDescription(product.seo?.metaDescription) ||
+    seoDescription(product.description) ||
+    seoDescription(`Kupite ${title} po odličnoj ceni u DajaShop prodavnici.`);
   const url = `${siteUrl}/product/${product.slug}`;
   const images = productImages(product);
   const image = product.seo?.ogImage || images[0]?.url || `${siteUrl}/images/og-default.jpg`;
@@ -394,7 +427,7 @@ function rewriteStaticHtml(response, seo, siteUrl) {
     .join('');
   const metaValues = {
     description: seo.description,
-    robots: 'index,follow,max-image-preview:large',
+    robots: seo.noIndex ? 'noindex,follow,max-image-preview:large' : 'index,follow,max-image-preview:large',
     'og:title': fullTitle,
     'og:description': seo.description,
     'og:url': seo.url,
@@ -454,7 +487,11 @@ export default {
     }
     if (!isProductPath(url.pathname)) {
       const staticSeo = buildStaticSeo(normalizedPath, siteUrl);
-      if (staticSeo) return rewriteStaticHtml(response, staticSeo, siteUrl);
+      if (staticSeo) {
+        const hasParameters = url.searchParams.size > 0;
+        const noIndex = staticSeo.noIndex || (hasParameters && (CATALOG_PATHS.has(normalizedPath) || normalizedPath === '/graviranje'));
+        return rewriteStaticHtml(response, { ...staticSeo, noIndex }, siteUrl);
+      }
       return url.pathname.match(/\.\w{1,5}$/) ? response : rewritePublicHtml(response, siteUrl);
     }
 

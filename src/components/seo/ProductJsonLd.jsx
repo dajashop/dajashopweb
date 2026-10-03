@@ -97,7 +97,7 @@ export default function ProductJsonLd({ product, reviews = [] }) {
   const seoImageAlt = (product.seo?.imageAltText || '').trim();
   const productName = `${product.brand || ''} ${product.name || ''}`.trim();
   const description =
-    product.seo?.metaDescription ||
+    descriptionText(product.seo?.metaDescription) ||
     descriptionText(product.description) ||
     [
       productName,

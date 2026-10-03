@@ -1,4 +1,4 @@
-import { descriptionText } from '../components/description.js';
+import { descriptionText, metaDescription } from '../components/description.js';
 import React, { useEffect, useMemo } from 'react';
 import './Product.css';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -97,7 +97,7 @@ export default function Product() {
     p.images?.[0]?.thumb ||
     p.image;
   const seoTitle = p.seo?.metaTitle || productTitle;
-  const seoDescription = p.seo?.metaDescription || productDescription;
+  const seoDescription = metaDescription(p.seo?.metaDescription) || metaDescription(productDescription);
   const seoKeywords = p.seo?.metaKeywords || undefined;
   const seoImage = p.seo?.ogImage || productImage;
   const department = p.department || 'satovi';

@@ -1,13 +1,6 @@
 User-agent: *
 Allow: /
 
-# Privatne stranice
-Disallow: /cart
-Disallow: /checkout
-Disallow: /account
-Disallow: /orders
-Disallow: /admin
-Disallow: /verify-email
-
-# Sitemap (azurirati ako se promeni domen)
+# Privatne stranice imaju noindex u HTML-u.
+# Dozvoljen je obilazak kako bi pretrazivaci mogli da procitaju tu oznaku.
 Sitemap: https://dajashop.rs/sitemap.xml

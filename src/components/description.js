@@ -35,3 +35,12 @@ export function descriptionText(value = '') {
   for (const block of root.querySelectorAll('p, div, h3, li, blockquote, br')) block.append('\n');
   return (root.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
 }
+
+// A short plain-text summary for meta, Open Graph and Twitter descriptions.
+export function metaDescription(value = '') {
+  const text = descriptionText(value).replace(/\s+/g, ' ').trim();
+  if (text.length <= 160) return text;
+  const shortened = text.slice(0, 159);
+  const boundary = shortened.lastIndexOf(' ');
+  return (boundary > 100 ? shortened.slice(0, boundary) : shortened).trimEnd() + '…';
+}
