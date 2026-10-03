@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Edit3, Eye, EyeOff, Star, Trash2, ExternalLink } from 'lucide-react';
 import { adminCatalogApi, isAdminEmail } from '../../services/dajaPlatform.js';
@@ -79,14 +80,28 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
     {record && <>
       <p className={`product-stock ${inStock ? 'is-in-stock' : 'is-out-of-stock'}`}>{inStock ? `Na stanju: ${quantity ?? 0} kom` : 'Trenutno nije na stanju'}</p>
       <dl className="product-identifiers product-admin-identifiers">
-        <dt>Barkod</dt><dd>{variant?.barcode || record.barcode || '—'}</dd>
         <dt>SKU</dt><dd>{variant?.sku || record.sku || '—'}</dd>
         {record.mpn && <><dt>MPN</dt><dd>{record.mpn}</dd></>}
         <dt>Naziv u kasi</dt><dd>{variant?.name || record.variantName || '—'}</dd>
       </dl>
-      <div className="product-admin-links">{suppliers.filter(([field]) => record[field]).map(([field, label]) => <a key={field} href={record[field]} target="_blank" rel="noopener noreferrer">{label}<ExternalLink size={12} /></a>)}</div>
+      <div className="product-admin-links">{suppliers.filter(([field]) => record[field]).map(([field, label]) => {
+        const prefix = field.replace(/Url$/, '');
+        const status = record[`${prefix}Status`];
+        const stock = record[`${prefix}StockStatus`];
+        const amount = record[`${prefix}PriceAmount`];
+        const currency = record[`${prefix}PriceCurrency`];
+        const statusText = status === 'available'
+          ? stock === 'in_stock' ? 'Na stanju' : stock === 'out_of_stock' ? 'Nema na stanju' : 'Stranica dostupna'
+          : ({ missing: 'Link nedostupan', checking: 'Proverava se', disabled: 'Provera isključena', paused: 'Provera pauzirana', deferred: 'Provera odložena', waiting_confirmation: 'Čeka potvrdu' }[status] || 'Dostupnost nije potvrđena');
+        return <div className="product-admin-supplier" key={field}>
+          <div className="product-admin-supplier-heading"><a href={record[field]} target="_blank" rel="noopener noreferrer">{label}<ExternalLink size={12} /></a>
+            <span>{amount != null ? `${Number(amount).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} ${currency || ''}` : 'Cena nije potvrđena'}</span>
+          </div>
+          <span className={`product-admin-supplier-status ${status === 'available' && stock !== 'out_of_stock' ? 'is-available' : stock === 'out_of_stock' || status === 'missing' ? 'is-unavailable' : ''}`}>{statusText}</span>
+        </div>;
+      })}</div>
     </>}
     <AnimatePresence>{editing && record && <AdminProductModal product={record} onClose={() => setEditing(false)} onSuccess={afterEdit} />}</AnimatePresence>
-    <ConfirmModal isOpen={confirmDelete} onClose={() => { if (!busy) setConfirmDelete(false); }} onConfirm={remove} title="Obriši proizvod?" description="Ova akcija je nepovratna." confirmText="Obriši" isDanger />
+    {createPortal(<div style={{ position: 'relative', zIndex: 3000 }}><ConfirmModal isOpen={confirmDelete} onClose={() => { if (!busy) setConfirmDelete(false); }} onConfirm={remove} title="Obriši proizvod?" description="Ova akcija je nepovratna." confirmText="Obriši" isDanger /></div>, document.body)}
   </div>;
 }

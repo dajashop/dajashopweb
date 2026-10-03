@@ -150,9 +150,17 @@
 .product-admin-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 12px;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 10px;
 }
+
+.product-admin-supplier { display: flex; flex-direction: column; gap: 2px; }
+.product-admin-supplier-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.product-admin-supplier-heading > span { font-size: 11px; color: var(--color-muted, #666); }
+.product-admin-supplier-status { font-size: 11px; color: #a16207; }
+.product-admin-supplier-status.is-available { color: #087443; }
+.product-admin-supplier-status.is-unavailable { color: #b42318; }
 
 .product-admin-links a {
   display: inline-flex;

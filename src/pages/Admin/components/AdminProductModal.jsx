@@ -1,6 +1,7 @@
 // src/pages/Admin/components/AdminProductModal.jsx
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 // [IZMENA] Dodat Trash2 za brisanje redova
@@ -1904,8 +1905,8 @@ export default function AdminProductModal({
     },
   ];
 
-  return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+  return createPortal(
+    <div style={{ zIndex: 3000 }} className="fixed inset-0 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
       <FlashModal
         {...flash}
         onClose={() => setFlash({ ...flash, open: false })}
@@ -3056,6 +3057,7 @@ export default function AdminProductModal({
           </button>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body,
   );
 }

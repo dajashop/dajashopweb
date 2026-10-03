@@ -178,6 +178,8 @@ function normalizeProduct(product) {
     product.image ||
     product.images?.[0]?.url ||
     '';
+  const availableQuantity = Number(product.availability?.availableQuantity ?? product.availableQuantity ?? product.available_quantity ?? product.quantity ?? product.stockQuantity ?? 0);
+  const inStock = Boolean(product.availability?.inStock ?? product.inStock ?? product.in_stock ?? availableQuantity > 0);
   return {
     ...product,
     id: product.id || product.productId || product.product_id,
@@ -200,20 +202,11 @@ function normalizeProduct(product) {
     saleValidUntil: product.saleValidUntil || product.sale_valid_until || null,
     regularPrice: toDisplayPrice(regularPriceMinor, null),
     availability: product.availability || {
-      inStock: Boolean(product.inStock ?? product.in_stock),
-      availableQuantity: Number(
-        product.availableQuantity ?? product.available_quantity ?? 0,
-      ),
+      inStock,
+      availableQuantity,
     },
-    inStock: Boolean(
-      product.inStock ?? product.in_stock ?? product.availability?.inStock,
-    ),
-    availableQuantity: Number(
-      product.availableQuantity ??
-        product.available_quantity ??
-        product.availability?.availableQuantity ??
-        0,
-    ),
+    inStock,
+    availableQuantity,
     itemCondition: product.itemCondition || product.item_condition || 'new',
     mpn: product.mpn || firstVariant?.mpn || null,
     image: primaryImage,
