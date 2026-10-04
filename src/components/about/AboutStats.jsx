@@ -1,8 +1,8 @@
 // ==============================
 // File: src/components/about/AboutStats.jsx
-// Animacija ključnih pokazatelja (Stats) - KORIŠTENJE TAČNE OCENE 4.2
+// Animacija ključnih pokazatelja
 // ==============================
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 
 // Placeholder hook za animaciju brojeva (ostaje isti)
@@ -33,27 +33,6 @@ const useAnimatedNumber = (endValue) => {
   return { value: current, ref };
 };
 
-// MOCK HOOK za dinamičku ocenu (sada vraća 4.2)
-const useGoogleRating = () => {
-  // MOCK: Simuliramo učitavanje prave ocene 4.2
-  const [rating, setRating] = useState({
-    value: 4.2,
-    count: 580,
-    loading: true,
-  });
-
-  const fetchRating = useCallback(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 800)); // Simulacija kašnjenja
-    setRating({ value: 4.2, count: 580, loading: false });
-  }, []);
-
-  useEffect(() => {
-    fetchRating();
-  }, [fetchRating]);
-
-  return rating;
-};
-
 const itemVariants = {
   hidden: { opacity: 0, scale: 0.8 },
   visible: {
@@ -65,24 +44,12 @@ const itemVariants = {
 
 // GLAVNA KOMPONENTA ZA STATISTIKU
 export default function AboutStats() {
-  // Dohvatanje dinamičke ocene
-  const { value: dynamicRating, loading: ratingLoading } = useGoogleRating();
-
   const statsData = [
-    { type: 'number', label: 'Godina Iskustva', value: 18, suffix: '+' },
+    { label: 'Godina Iskustva', value: 18, suffix: '+' },
     {
-      type: 'number',
       label: 'Zadovoljnih Klijenata',
       value: 100000,
       suffix: '+',
-    },
-    // KORIŠTENJE DINAMIČKE VREDNOSTI 4.2
-    {
-      type: 'text',
-      label: 'Prosečna Ocena (Google)',
-      display: ratingLoading ? '...' : dynamicRating.toFixed(1), // Prikazuje 4.2
-      suffix: ratingLoading ? '' : '/5',
-      loading: ratingLoading,
     },
   ];
 
@@ -94,7 +61,7 @@ export default function AboutStats() {
     <section className="section" style={{ background: 'var(--color-surface)' }}>
       <div className="container">
         <motion.div
-          className="grid-3"
+          className="grid-2"
           variants={containerVariants}
           initial={false}
           whileInView="visible"
@@ -110,23 +77,16 @@ export default function AboutStats() {
   );
 }
 
-// POMOĆNA KOMPONENTA (StatItem ostaje isti)
-function StatItem({ label, value: endValue, suffix, display, type, loading }) {
-  const isAnimated = type === 'number';
+function StatItem({ label, value: endValue, suffix }) {
   const { value: animatedValue, ref } = useAnimatedNumber(endValue);
 
-  const finalValue = loading
-    ? '...'
-    : isAnimated
-    ? animatedValue.toLocaleString('sr-RS')
-    : display;
-  const finalRef = isAnimated ? ref : useRef(null);
+  const finalValue = animatedValue.toLocaleString('sr-RS');
 
   return (
     <motion.div
       className="stat-card"
       variants={itemVariants}
-      ref={finalRef}
+      ref={ref}
       style={{ textAlign: 'center' }}
     >
       <h3
@@ -137,9 +97,9 @@ function StatItem({ label, value: endValue, suffix, display, type, loading }) {
         <span
           style={{
             fontSize: '0.5em',
-            verticalAlign: type === 'text' ? 'middle' : 'top',
+            verticalAlign: 'top',
             fontWeight: 'bold',
-            marginLeft: type === 'text' ? '0px' : '2px',
+            marginLeft: '2px',
           }}
         >
           {suffix}
