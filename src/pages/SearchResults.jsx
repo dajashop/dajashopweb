@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, RefreshCw, ArrowRight, X } from 'lucide-react';
 import useCatalogSearch from '../hooks/useCatalogSearch.js';
-import { recordSearchQuery } from '../services/searchHistory.js';
 import ProductCard from '../components/ProductCard.jsx';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import '../components/ProductGrid.css';
@@ -24,7 +23,6 @@ export default function SearchResults() {
   const previousItems = page.key === queryKey ? page.items : [];
   const items = useMemo(() => [...previousItems, ...(data?.items || [])].filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index), [previousItems, data]);
   useEffect(() => { setField(q); }, [q]);
-  useEffect(() => { recordSearchQuery(q); }, [q]);
   useEffect(() => { setPage({ key: queryKey, cursor: undefined, items: [] }); }, [queryKey]);
   function update(key, value) { const next = new URLSearchParams(params); value ? next.set(key, value) : next.delete(key); if (key === 'q') next.delete('literal'); setParams(next); }
   function submit(event) { event.preventDefault(); if (field.trim().length >= 2) { const next = new URLSearchParams(); next.set('q', field.trim()); setParams(next); } }

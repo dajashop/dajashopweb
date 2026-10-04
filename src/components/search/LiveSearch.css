@@ -33,14 +33,6 @@
 .live-search__start p { margin: 0 0 8px; color: #737783; font-size: 14px; }
 .live-search__start small { max-width: 350px; color: #a0a3ad; font-size: 12px; line-height: 1.6; }
 .live-search__footer { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 16px 22px; background: #fff; border-top: 1px solid #eeeff3; }
-.live-search__history { flex: 1; min-width: 0; }
-.live-search__history-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.live-search__history-heading h3 { margin: 0; }
-.live-search__history-heading > button { margin-left: auto; font-size: 11px; color: #92959f; padding: 0; border: 0; background: transparent; }
-.live-search__history-list { display: flex; gap: 6px; overflow-x: auto; overscroll-behavior: contain; padding: 2px 1px 4px; scrollbar-width: thin; }
-.live-search__history-query { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; max-width: 220px; padding: 7px 10px; border: 1px solid #e9eaf0; border-radius: 8px; background: #f8f9fb; color: #666b77; font-size: 12px; }
-.live-search__history-query > svg { flex-shrink: 0; }
-.live-search__history-query > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .live-search a.live-search__all { display: inline-flex; flex: 0 0 auto; justify-content: center; align-items: center; gap: 12px; margin-left: auto; padding: 13px 19px; border-radius: 11px; background: #17181b; color: #fff; font-weight: 600; font-size: 13px; }
 .live-search a.live-search__all:hover, .live-search a.live-search__all[aria-selected="true"] { background: #333640; }
 .live-search__loading { display: flex; align-items: center; gap: 9px; color: #7c808a; font-size: 12px; margin: 0 0 12px; }
@@ -81,8 +73,6 @@
 .live-search--mobile .live-search__start h2 { font-size: 18px; }
 .live-search--mobile .live-search__start p { font-size: 13px; }
 .live-search--mobile .live-search__footer { flex-wrap: wrap; gap: 10px; padding: 12px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
-.live-search--mobile .live-search__history { flex-basis: 100%; }
-.live-search--mobile .live-search__history-query { max-width: 160px; }
 .live-search--mobile a.live-search__all { margin-left: auto; padding: 10px 15px; }
 .searchNeo .s2__submit { color: #fff; }
 @media (prefers-reduced-motion: reduce) { .live-search__loading svg, .live-search__skeleton > span { animation: none; } }

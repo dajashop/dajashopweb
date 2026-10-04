@@ -78,6 +78,8 @@ export function ConsentProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    // Remove history saved by older versions, regardless of consent choice.
+    try { window.localStorage.removeItem('dajashop_search_history'); } catch { /* Storage may be unavailable. */ }
     setConsentStorageState({ ready: false, preferences: false, externalGoogle: false });
     let cancelled = false;
     privacyApi

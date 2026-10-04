@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { isAnalyticsAllowed } from '../services/consentStorage.js';
 import { catalogApi } from '../services/dajaPlatform.js';
 
-// Local response cache; aggregated misses are sent only for consented submitted searches.
-const cache = new Map();
 export default function useCatalogSearch({ q = '', mode = 'suggestions', department, sort = 'relevance', cursor, seed = 'catalog', enabled = true, literal = false }) {
   const [state, setState] = useState({ data: null, loading: false, error: null });
   const [attempt, setAttempt] = useState(0);
@@ -14,18 +11,11 @@ export default function useCatalogSearch({ q = '', mode = 'suggestions', departm
   useEffect(() => {
     if (!enabled) { setState({ data: null, loading: false, error: null }); return; }
     const controller = new AbortController();
-    const cached = cache.get(key);
-    if (!attempt && cached && Date.now() - cached.at < 10_000) {
-      setState({ key, data: cached.data, loading: false, error: null });
-      return () => controller.abort();
-    }
     setState({ key, data: null, loading: true, error: null });
     const timer = window.setTimeout(async () => {
       try {
-        const data = await catalogApi.search({ q: effectiveQuery, mode, department, sort, cursor, seed, literal: literal ? 'yes' : 'no', track: mode === 'results' && isAnalyticsAllowed() ? 'yes' : 'no' }, { signal: controller.signal });
+        const data = await catalogApi.search({ q: effectiveQuery, mode, department, sort, cursor, seed, literal: literal ? 'yes' : 'no' }, { signal: controller.signal });
         if (controller.signal.aborted) return;
-        if (cache.size >= 80) cache.delete(cache.keys().next().value);
-        cache.set(key, { at: Date.now(), data });
         setState({ key, data, loading: false, error: null });
       } catch (error) {
         if (controller.signal.aborted || error.name === 'AbortError') return;

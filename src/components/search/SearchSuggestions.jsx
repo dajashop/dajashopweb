@@ -1,4 +1,4 @@
-import { ArrowUpRight, ArrowRight, History, PackageSearch, RefreshCw, Search, Watch, X } from 'lucide-react';
+import { ArrowUpRight, ArrowRight, PackageSearch, RefreshCw, Search, Watch, X } from 'lucide-react';
 import { money } from '../../utils/currency.js';
 
 export function SearchProductRow({ product, ...props }) {
@@ -18,7 +18,7 @@ const categories = [
   { label: 'Daljinski', href: '/daljinski' }, { label: 'Baterije', href: '/baterije' }
 ];
 
-export default function SearchSuggestions({ data, loading, error, retry, query, recommendations, history = [], onClearHistory, onNavigate, onCorrect, onLiteral, literal = false, active, onActive, idPrefix = 'live-search' }) {
+export default function SearchSuggestions({ data, loading, error, retry, query, recommendations, onNavigate, onCorrect, onLiteral, literal = false, active, onActive, idPrefix = 'live-search' }) {
   const hasQuery = query.trim().length >= 2;
   const groups = data?.groups || {};
   const order = data?.intent === 'collections' ? ['collections', 'brands', 'attributes'] : ['brands', 'collections', 'attributes'];
@@ -66,8 +66,6 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
   let left; let right;
   if (hasQuery && data?.intent === 'products') { right = renderRight(); left = renderLeft(); }
   else { left = renderLeft(); right = renderRight(); }
-  const recent = history.filter((item) => item.toLocaleLowerCase('sr') !== query.trim().toLocaleLowerCase('sr'));
-  const recentButtons = recent.map((item) => <button type="button" key={item} title={item} className="live-search__history-query" {...option(() => onCorrect(item))}><History size={13} aria-hidden="true" /><span>{item}</span></button>);
   const seeAllHref = `/search?q=${encodeURIComponent(query.trim())}${literal?'&literal=yes':''}`;
   const allProps = hasQuery && data && !loading && !error ? link(seeAllHref) : null;
   return <>
@@ -75,8 +73,7 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
       {error && <div className="live-search__error" role="alert">Pretraga trenutno nije dostupna.<button type="button" onClick={retry}><RefreshCw size={14} /> Pokušaj ponovo</button></div>}
       <div className={`live-search__layout ${hasQuery ? '' : 'is-idle'}`}>{left}{right}</div>
     </div>
-    {(recentButtons.length > 0 || allProps) && <footer className="live-search__footer">
-      {recentButtons.length > 0 && <section className="live-search__history" aria-label="Prethodne pretrage"><div className="live-search__history-heading"><h3>Prethodne pretrage</h3><button type="button" onClick={onClearHistory}>Obriši</button></div><div className="live-search__history-list" data-lenis-prevent>{recentButtons}</div></section>}
+    {allProps && <footer className="live-search__footer">
       {allProps && <a href={seeAllHref} className="live-search__all" {...allProps}>Prikaži sve ({data.total})<ArrowRight size={17} aria-hidden="true" /></a>}
     </footer>}
   </>;

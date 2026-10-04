@@ -3,8 +3,6 @@ import { createPortal, flushSync } from 'react-dom';
 import { Search, ArrowRight, ArrowLeft, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useCatalogSearch from '../hooks/useCatalogSearch.js';
-import useSearchHistory from '../hooks/useSearchHistory.js';
-import { clearSearchHistory, recordSearchQuery } from '../services/searchHistory.js';
 import SearchSuggestions from './search/SearchSuggestions.jsx';
 import './SearchBar.css';
 import './search/LiveSearch.css';
@@ -18,17 +16,14 @@ export default function SearchBar() {
   const [seed, setSeed] = useState('catalog');
   const [active, setActive] = useState(-1);
   const inputRef = useRef(null); const mobileInput = useRef(null); const anchor = useRef(null); const panel = useRef(null);
-  const openRef = useRef(false); const queryRef = useRef(q); queryRef.current = q;
   const navigate = useNavigate(); const location = useLocation();
   const id = `search-${useId().replace(/:/g, '')}`;
   const { data, loading, error, retry } = useCatalogSearch({ q, enabled: open, seed, literal });
-  const history = useSearchHistory();
   const hasValue = q.trim().length > 0;
-  const close = useCallback(() => { if (openRef.current) recordSearchQuery(queryRef.current); openRef.current = false; setOpen(false); setActive(-1); }, []);
+  const close = useCallback(() => { setOpen(false); setActive(-1); }, []);
 
   function show() {
     if (open) return;
-    openRef.current = true;
     // Keep portal focus in the user gesture so iOS keeps its keyboard.
     flushSync(() => { setSeed(crypto.randomUUID()); setActive(-1); setOpen(true); });
     if (mobile) mobileInput.current?.focus({ preventScroll: true });
@@ -65,7 +60,7 @@ export default function SearchBar() {
       if (selected) selected.click(); else submit();
     }
   }
-  useEffect(() => { setActive(-1); }, [q, data, history]);
+  useEffect(() => { setActive(-1); }, [q, data]);
   useEffect(() => {
     close();
     if (location.pathname === '/search') { setQ(new URLSearchParams(location.search).get('q') || ''); setLiteral(new URLSearchParams(location.search).get('literal') === 'yes'); }
@@ -116,7 +111,6 @@ export default function SearchBar() {
     'aria-activedescendant': active >= 0 ? `${id}-option-${active}` : undefined, 'aria-label': 'Pretraži modele, brendove i kolekcije' };
   const content = <SearchSuggestions data={data} loading={loading} error={error} retry={retry} query={q}
     recommendations={data?.recommendations||[]}
-    history={history} onClearHistory={clearSearchHistory}
     onNavigate={go} onCorrect={correct} onLiteral={()=>setLiteral(true)} literal={literal} active={active} onActive={setActive} idPrefix={id} />;
   return <>
     <div ref={anchor} className={`searchNeo ${open ? 'is-focused' : ''} ${hasValue ? 'has-value' : ''}`} role="search" aria-label="Pretraga" tabIndex={-1}>
