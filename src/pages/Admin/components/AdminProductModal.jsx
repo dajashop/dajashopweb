@@ -1,6 +1,6 @@
 // src/pages/Admin/components/AdminProductModal.jsx
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useState, useEffect, useMemo, useRef } from 'react';
 import { SpecificationEditor, SpecificationPreview } from '../../../components/specifications/SpecificationEditor';
 import { specificationEditorApi } from '../../../services/dajaPlatform';
 import { createPortal } from 'react-dom';
@@ -43,6 +43,7 @@ import {
 // product refresh cannot send the same supplier request twice.
 const supplierPreviewInFlight = new Map();
 const supplierPreviewCache = new Map();
+const MemoizedSpecificationEditor = memo(SpecificationEditor);
 
 function validateEpcInput(value) {
   const epc = value
@@ -253,6 +254,20 @@ export default function AdminProductModal({
 
   const [addingSpec, setAddingSpec] = useState(false);
   const addingSpecRef = useRef(false);
+  const changeSpecifications = useCallback((specs) => {
+    setForm((previous) => ({ ...previous, specs }));
+  }, []);
+  const changeSpecificationBusy = useCallback((busy) => {
+    addingSpecRef.current = busy;
+    setAddingSpec(busy);
+  }, []);
+  const scrollToImages = useCallback(() => {
+    document.getElementById('product-image-manager')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
+  const specificationImages = useMemo(
+    () => (form.images || []).map((image) => image.url).filter(Boolean),
+    [form.images],
+  );
   const [specOnline, setSpecOnline] = useState(navigator.onLine);
   useEffect(() => {
     const update = () => setSpecOnline(navigator.onLine);
@@ -1668,19 +1683,22 @@ export default function AdminProductModal({
     if (typeof image === 'string') return true;
     return !String(image?.altText || image?.alt_text || '').trim();
   });
-  const hasDuplicateSeo = seoPeers.some((peer) => {
-    if (!peer?.id || peer.id === product?.id) return false;
-    const peerTitle = `${peer.seo?.metaTitle || `${peer.brand || ''} ${peer.name || ''}`.trim()} | DajaShop`
-      .trim()
-      .toLocaleLowerCase('sr-RS');
-    const peerDescription = (peer.seo?.metaDescription || peer.description || '')
-      .trim()
-      .toLocaleLowerCase('sr-RS');
-    return (
-      (normalizedSeoTitle.length > 0 && peerTitle === normalizedSeoTitle) ||
-      (normalizedSeoDescription.length > 0 && peerDescription === normalizedSeoDescription)
-    );
-  });
+  // Normalize the catalog once, instead of scanning it on every keystroke.
+  const seoIndex = useMemo(() => {
+    const titles = new Set();
+    const descriptions = new Set();
+    for (const peer of seoPeers) {
+      if (!peer?.id || peer.id === product?.id) continue;
+      titles.add(`${peer.seo?.metaTitle || `${peer.brand || ''} ${peer.name || ''}`.trim()} | DajaShop`
+        .trim().toLocaleLowerCase('sr-RS'));
+      descriptions.add((peer.seo?.metaDescription || peer.description || '')
+        .trim().toLocaleLowerCase('sr-RS'));
+    }
+    return { titles, descriptions };
+  }, [seoPeers, product?.id]);
+  const hasDuplicateSeo =
+    (normalizedSeoTitle.length > 0 && seoIndex.titles.has(normalizedSeoTitle)) ||
+    (normalizedSeoDescription.length > 0 && seoIndex.descriptions.has(normalizedSeoDescription));
   const seoChecks = [
     {
       label: titleLen >= 30 && titleLen <= 60 ? 'Naslov je odgovarajuće dužine' : 'Naslov treba ciljati na 30–60 znakova',
@@ -1722,7 +1740,7 @@ export default function AdminProductModal({
   ];
 
   return createPortal(
-    <div style={{ zIndex: 3000 }} className="fixed inset-0 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+    <div style={{ zIndex: 3000 }} className="fixed inset-0 flex items-center justify-center p-4 bg-black/40">
       <FlashModal
         {...flash}
         onClose={() => setFlash({ ...flash, open: false })}
@@ -1748,7 +1766,7 @@ export default function AdminProductModal({
         data-lenis-prevent
         className="w-full max-w-5xl bg-[#f5f5f7] border border-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
       >
-        <div className="px-8 py-5 border-b border-neutral-200/60 bg-white/50 backdrop-blur-md flex justify-between items-center sticky top-0 z-10">
+        <div className="px-8 py-5 border-b border-neutral-200/60 bg-white flex justify-between items-center sticky top-0 z-10">
           <div>
             <h2 className="text-2xl font-extrabold text-neutral-900 tracking-tight">
               {product ? 'Izmena proizvoda' : 'Novi proizvod'}
@@ -2258,19 +2276,19 @@ export default function AdminProductModal({
             </div>
             <div className="lg:col-span-12 se-specification-row">
               <div id="web-specification-fields">
-                <SpecificationEditor
+                <MemoizedSpecificationEditor
                   showPreview={false}
                   api={specificationEditorApi}
                   departmentId={departments.find(d => d.slug === form.department)?.id || ''}
                   brand={form.brand || ''}
                   values={form.specs || {}}
-                  onChange={specs => setForm(prev => ({ ...prev, specs }))}
+                  onChange={changeSpecifications}
                   online={specOnline}
                   disabled={loading}
-                  onBusyChange={busy => { addingSpecRef.current = busy; setAddingSpec(busy); }}
-                  images={(form.images || []).map(image => image.url).filter(Boolean)}
+                  onBusyChange={changeSpecificationBusy}
+                  images={specificationImages}
                   onPreview={setGalleryIndex}
-                  onAddImage={() => document.getElementById('product-image-manager')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                  onAddImage={scrollToImages}
                 />
               </div>
               <div className="se-specification-preview-column">

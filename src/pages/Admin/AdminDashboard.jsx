@@ -1118,7 +1118,7 @@ function AdminDashboardContent() {
   };
 
   // --- Filtriranje Proizvoda ---
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = useMemo(() => products.filter((p) => {
     const term = searchTerm.toLowerCase();
     if (!term) return true;
     if (searchFilters.length > 0) {
@@ -1145,7 +1145,7 @@ function AdminDashboardContent() {
     if (rankDifference) return rankDifference;
     return new Date(right.qualityReviewedAt || right.updatedAt || 0).getTime()
       - new Date(left.qualityReviewedAt || left.updatedAt || 0).getTime();
-  });
+  }), [products, searchTerm, searchFilters, isCatalogContributor]);
   const returnedForRevisionCount = isCatalogContributor
     ? products.filter((product) => product.qualityReviewStatus === 'changes_requested').length
     : 0;
