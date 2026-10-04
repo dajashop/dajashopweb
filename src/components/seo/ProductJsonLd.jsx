@@ -170,5 +170,5 @@ export default function ProductJsonLd({ product, reviews = [] }) {
     };
   }
 
-  return <JsonLd data={schema} />;
+  return <JsonLd data={schema} defer={false} />;
 }

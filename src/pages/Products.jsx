@@ -71,10 +71,20 @@ export default function Product() {
   }, [p]);
 
   if (loading)
-    return <div className="container product-loading">Učitavanje...</div>;
+    return (
+      <div className="container product-loading">
+        <SEOHead title="Proizvod" keywords="" defer={false} />
+        <p role="status">Učitavanje...</p>
+      </div>
+    );
   if (error || !p)
     return <PageStatus status={error && error.status !== 404 ? 503 : 404} />;
-  if (p.redirectTo) return <div className="container product-loading">Preusmeravanje...</div>;
+  if (p.redirectTo) return (
+    <div className="container product-loading">
+      <SEOHead title="Proizvod" keywords="" defer={false} />
+      <p role="status">Preusmeravanje...</p>
+    </div>
+  );
 
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
   const productTitle = `${p.brand || ''} ${p.name || ''}`.trim();
@@ -142,8 +152,9 @@ export default function Product() {
   };
 
   return (
-    <div className="product-page-wrapper">
+    <div key={slug} className="product-page-wrapper">
       <SEOHead
+        defer={false}
         title={seoTitle}
         description={seoDescription}
         keywords={seoKeywords}
@@ -153,6 +164,7 @@ export default function Product() {
       />
       <ProductJsonLd product={p} reviews={p.reviews || []} />
       <BreadcrumbJsonLd
+        defer={false}
         items={[
           { name: departmentName, url: `${siteRoot}${departmentPath}` },
           { name: productTitle, url: `${siteRoot}/product/${p.slug}` },

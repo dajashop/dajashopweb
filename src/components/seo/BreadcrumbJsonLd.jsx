@@ -2,7 +2,7 @@ import React from 'react';
 import JsonLd from './JsonLd.jsx';
 import { seoConfig } from '../../config/seo.js';
 
-export default function BreadcrumbJsonLd({ items = [] }) {
+export default function BreadcrumbJsonLd({ items = [], defer = true }) {
   const homeUrl = seoConfig.siteUrl.replace(/\/$/, '');
   const list = [
     {
@@ -21,6 +21,7 @@ export default function BreadcrumbJsonLd({ items = [] }) {
 
   return (
     <JsonLd
+      defer={defer}
       data={{
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',

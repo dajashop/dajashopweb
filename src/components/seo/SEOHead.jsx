@@ -20,6 +20,7 @@ export default function SEOHead({
   type = 'website',
   noIndex = false,
   homeTitle,
+  defer = true,
   children,
 }) {
   const location = useLocation();
@@ -40,7 +41,7 @@ export default function SEOHead({
     : '';
 
   return (
-    <Helmet>
+    <Helmet defer={defer}>
       <html lang="sr" />
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
