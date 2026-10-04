@@ -489,9 +489,9 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
               />
             </div>
 
-            <h1 className="text-2xl font-bold text-text">{catalogTitle}</h1>
             <div className="catalog__toprow mt-4 pb-4 border-b border-(--color-border) relative min-h-[40px]">
               <div className="flex flex-wrap items-center gap-2 flex-1">
+                <h1 className="text-2xl font-bold text-text mr-2 whitespace-nowrap">{catalogTitle}</h1>
 
                 {activeFilters.length === 0 && (
                   <span className="catalog__pill catalog__pill--ghost">
