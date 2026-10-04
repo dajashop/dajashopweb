@@ -1,6 +1,7 @@
 import React from 'react';
 import JsonLd from './JsonLd.jsx';
 import { seoConfig } from '../../config/seo.js';
+import { socialProfiles } from '../../config/socialProfiles.js';
 
 export default function OrganizationJsonLd() {
   const { business } = seoConfig;
@@ -24,6 +25,7 @@ export default function OrganizationJsonLd() {
       addressCountry: business.country,
     },
     openingHours: business.hours,
+    ...(socialProfiles.length ? { sameAs: socialProfiles.map(profile => profile.href) } : {}),
   };
 
   return <JsonLd data={schema} />;

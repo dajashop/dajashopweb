@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Facebook,
-  Instagram,
   MapPin,
   Phone,
   Mail,
@@ -12,6 +10,7 @@ import {
   Unlock,
 } from 'lucide-react';
 import './Footer.css';
+import SocialLinks from './SocialLinks.jsx';
 import { useFlash } from '../hooks/useFlash';
 import { novostiApi } from '../services/dajaPlatform';
 import { useConsent } from '../context/ConsentContext.jsx';
@@ -164,24 +163,7 @@ export default function Footer() {
               Vaša pouzdana destinacija za originalne satove od 2007. Kvalitet,
               tradicija i stil na jednom mestu.
             </p>
-            <div className="footer__socials">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Facebook"
-              >
-                <Facebook size={20} />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Instagram"
-              >
-                <Instagram size={20} />
-              </a>
-            </div>
+            <SocialLinks className="footer__socials" />
           </div>
 
           <div className="footer__col">

@@ -100,6 +100,10 @@
   overflow: hidden;
   min-height: 1.25em;
 }
+
+@media (max-width: 767px) {
+  .product-card__name { overflow-wrap: anywhere; }
+}
 .product-card__price {
   color: var(--color-primary);
   font-weight: 700;

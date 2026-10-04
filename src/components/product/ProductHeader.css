@@ -183,3 +183,11 @@
   .product-admin-identifiers { grid-template-columns: 1fr; gap: 2px; }
   .product-admin-identifiers dd { margin-bottom: 4px; }
 }
+
+@media (max-width: 767px) {
+  .product-header .model-name,
+  .product-header .brand-label {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}

@@ -175,3 +175,11 @@ html.lenis body {
     font-size: max(1rem, 16px) !important;
   }
 }
+
+@media (max-width: 767px) {
+  .app-root main :is(h1, h2, h3) {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}

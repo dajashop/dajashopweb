@@ -22,6 +22,25 @@
 }
 
 /* LAYOUT: sidebar + sadržaj (desktop) */
+.catalog__description {
+  margin: 12px 0 16px;
+  max-width: 80ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-muted, #666);
+}
+
+@media (max-width: 767px) {
+  .catalog__title {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .catalog__toprow > div { min-width: 0; max-width: 100%; }
+  .catalog__pill { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+}
+
 .catalog-layout {
   display: grid;
   grid-template-columns: 280px 1fr;

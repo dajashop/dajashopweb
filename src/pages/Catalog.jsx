@@ -40,38 +40,49 @@ const SORT_OPTIONS = [
 ];
 
 const TITLES = {
-  satovi: 'Ručni Satovi',
-  daljinski: 'Daljinski Upravljači',
-  baterije: 'Baterije & Oprema',
-  naocare: 'Sunčane Naočare',
+  satovi: 'Ručni satovi',
+  daljinski: 'Daljinski upravljači',
+  baterije: 'Baterije i oprema',
+  naocare: 'Naočare',
 };
 
 const departmentSEO = {
   satovi: {
     title: 'Satovi - Katalog',
-    description: 'Pregledajte našu kolekciju satova poznatih brendova.',
+    description: 'Ručni satovi brendova Casio, Orient, Daniel Klein i Q&Q. Uporedite modele po mehanizmu, dimenzijama, staklu i ceni i pronađite sat za svoj stil.',
     keywords: 'satovi,rucni satovi,Casio,Orient,Daniel Klein',
     path: '/catalog',
   },
   daljinski: {
     title: 'Daljinski upravljači - Katalog',
-    description: 'Daljinski upravljači za televizore i uređaje.',
+    description: 'Pregledajte daljinske upravljače i pronađite odgovarajući model za svoj uređaj. Pre izbora proverite oznaku uređaja i kompatibilnost u opisu proizvoda.',
     keywords: 'daljinski upravljaci,remote,upravljaci',
     path: '/daljinski',
   },
   baterije: {
     title: 'Baterije - Katalog',
-    description: 'Baterije za satove i elektroniku.',
+    description: 'Baterije za satove i druge uređaje. Uporedite oznaku, dimenzije i napon sa postojećom baterijom kako biste izabrali odgovarajući model.',
     keywords: 'baterije,dugmaste baterije,baterije za sat',
     path: '/baterije',
   },
   naocare: {
     title: 'Naočare - Katalog',
-    description: 'Naočare za sunce i dioptrijske naočare.',
-    keywords: 'naocare,suncane naocare,dioptrijske naocare',
+    description: 'Otkrijte ponudu naočara u DajaShop prodavnici. Pregledajte dostupne modele, uporedite izgled i dimenzije i izaberite okvir koji vam odgovara.',
+    keywords: 'naocare,DajaShop,naocare Nis',
     path: '/naocare',
   },
 };
+
+const brandDescriptions = {
+  casio: 'Pregledajte Casio satove i uporedite prikaz vremena, funkcije i dimenzije kućišta. Detalji svakog modela pomažu vam da izaberete sat prema svojim navikama i budžetu.',
+  orient: 'Istražite Orient satove i uporedite mehanizme, vrstu stakla i izgled brojčanika. Otvorite model koji vas zanima da pogledate fotografije i njegove specifikacije.',
+  'daniel klein': 'Pronađite Daniel Klein sat prema svom stilu. Uporedite boje brojčanika, izgled narukvice ili kaiša, dimenzije i cenu dostupnih modela.',
+  'q&q': 'Pregledajte Q&Q satove i uporedite veličinu kućišta, prikaz vremena i funkcije. Izaberite model koji vam odgovara za svakodnevno nošenje.',
+};
+
+function brandDescription(name) {
+  return brandDescriptions[name.toLowerCase()] || `Pregledajte ${name} satove u DajaShop prodavnici. Uporedite mehanizam, dimenzije, vrstu stakla i cenu u detaljima svakog modela.`;
+}
 
 export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   const baseSeo = seo || departmentSEO[department] || departmentSEO.satovi;
@@ -92,7 +103,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   const brandName = selectedBrands.length === 1 ? brandDisplayName(selectedBrands[0].option.label)
     : !savedFilterConfiguration && routeBrand ? brandDisplayName(routeBrand === 'q-q' ? 'Q&Q' : routeBrand.replace(/-/g, ' ')) : '';
   const brandPath = brandName && department === 'satovi' && !fixedGender ? `/brend/${selectedBrands[0]?.slug || routeBrand}` : '';
-  const activeSeo = brandPath ? { ...baseSeo, path: brandPath, title: `${brandName} satovi`, description: `Pregledajte ${brandName} satove u DajaShop prodavnici. Izaberite model po mehanizmu, staklu, izgledu i ceni.` } : baseSeo;
+  const activeSeo = brandPath ? { ...baseSeo, path: brandPath, title: `${brandName} satovi`, description: brandDescription(brandName) } : baseSeo;
   const spKey = sp.toString();
   const hasFilteredCatalogUrl = [...sp.keys()].some(key => !['page', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid', ...(brandPath ? [`cf_${brandEntry?.node.id}`, 'brand'] : [])].includes(key));
   const navType = useNavigationType();
@@ -243,7 +254,11 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   const chosenMechanism = mechanismEntry?.options.filter(entry => configuredParams.getAll(`cf_${mechanismEntry.node.id}`).includes(entry.option.id)) || [];
   const nonBrandChips = activeFilters.filter(chip => chip.key !== `cf_${brandEntry?.node.id}`);
   const automaticOnly = brandName && nonBrandChips.length === 1 && chosenMechanism.length === 1 && urlSlug(chosenMechanism[0].option.label) === 'automatski';
-  const catalogTitle = brandName ? `${brandName}${fixedGender ? ` ${fixedGender.toLowerCase()}` : ''}${automaticOnly ? ' automatski' : ''} satovi` : TITLES[department] || activeSeo.title;
+  const catalogTitle = brandName ? `${brandName}${fixedGender ? ` ${fixedGender.toLowerCase()}` : ''}${automaticOnly ? ' automatski' : ''} satovi`
+    : fixedGender && department === 'satovi' ? `${fixedGender} satovi` : TITLES[department] || activeSeo.title;
+  const catalogDescription = automaticOnly
+    ? `Pregledajte automatske ${brandName} satove. Uporedite dimenzije kućišta, vrstu stakla, funkcije i cenu u detaljima svakog modela.`
+    : brandName ? brandDescription(brandName) : activeSeo.description;
 
   const removeFilter = (key, val) => {
     const next = new URLSearchParams(configuredParams);
@@ -453,7 +468,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     >
       <SEOHead
         title={`${brandName ? catalogTitle : activeSeo.title}${page > 1 ? ` — strana ${page}` : ''}`}
-        description={activeSeo.description}
+        description={catalogDescription}
         keywords={activeSeo.keywords}
         url={`${siteRoot}${activeSeo.path}${page > 1 ? `?page=${page}` : ''}`}
         noIndex={hasFilteredCatalogUrl}
@@ -491,7 +506,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
             <div className="catalog__toprow mt-4 pb-4 border-b border-(--color-border) relative min-h-[40px]">
               <div className="flex flex-wrap items-center gap-2 flex-1">
-                <h1 className="text-2xl font-bold text-text mr-2 whitespace-nowrap">{catalogTitle}</h1>
+                <h1 className="catalog__title text-2xl font-bold text-text mr-2 whitespace-nowrap">{catalogTitle}</h1>
 
                 {activeFilters.length === 0 && (
                   <span className="catalog__pill catalog__pill--ghost">
@@ -528,6 +543,8 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
               </div>
 
             </div>
+
+            <p className="catalog__description">{catalogDescription}</p>
 
             <div className="catalog__subrow">
               <div className="catalog__showing">

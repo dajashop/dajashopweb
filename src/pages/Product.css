@@ -27,6 +27,7 @@
 @media (max-width: 1023px) {
   .product-layout {
     gap: 32px;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

@@ -17,13 +17,12 @@ import { useAuth } from '../hooks/useAuth.js';
 
 import { isAdminEmail, ordersApi, subscribeRealtime } from '../services/dajaPlatform.js';
 import { getStaffAccessToken } from '../services/apiClient.js';
+import SocialLinks from './SocialLinks.jsx';
 
 // Ikonice
 import {
   Phone,
   HelpCircle,
-  Facebook,
-  Instagram,
   MapPin,
   X,
   ShieldCheck,
@@ -577,24 +576,7 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
               </div>
 
               <div className="hm__f-bottom">
-                <div className="hm__f-socials">
-                  <a
-                    href="https://facebook.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Facebook"
-                  >
-                    <Facebook size={18} />
-                  </a>
-                  <a
-                    href="https://instagram.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Instagram"
-                  >
-                    <Instagram size={18} />
-                  </a>
-                </div>
+                <SocialLinks className="hm__f-socials" size={18} />
                 <div className="hm__f-copy">
                   Daja Shop © {new Date().getFullYear()}
                 </div>
