@@ -5,7 +5,7 @@ import { usePageData } from '../ssr/PageData.jsx';
 
 export default function useProduct(slug) {
   const page = usePageData();
-  const initialProduct = page?.data?.product?.slug === slug ? page.data.product : null;
+  const initialProduct = page?.hydrating && page?.data?.product?.slug === slug ? page.data.product : null;
   const [result, setResult] = useState({
     slug, product: initialProduct, loading: Boolean(slug) && !initialProduct, error: null,
   });
@@ -35,7 +35,7 @@ export default function useProduct(slug) {
       }
     }
 
-    load();
+    if (!initialProduct) load();
 
     return () => {
       mounted = false;

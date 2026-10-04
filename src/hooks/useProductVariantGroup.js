@@ -6,7 +6,9 @@ import { usePageData } from '../ssr/PageData.jsx';
 export default function useProductVariantGroup(slug) {
   const { hasDecision } = useConsent();
   const page = usePageData();
-  const [result, setResult] = useState({ slug, items: page?.data?.product?.slug === slug ? page.data.relatedVariants || [] : [] });
+  const hasSeed = page?.hydrating && page?.data?.product?.slug === slug && page.data.relatedVariantsLoaded;
+  const initialItems = hasSeed ? page.data.relatedVariants || [] : [];
+  const [result, setResult] = useState({ slug, items: initialItems });
   useEffect(() => {
     if (!slug) return undefined;
     let mounted = true;
@@ -22,19 +24,24 @@ export default function useProductVariantGroup(slug) {
         if (mounted && !signal.aborted) setResult({ slug, items: [] });
       }
     };
-    void load();
-    const stop = hasDecision ? subscribePublicCatalogRealtime(event => {
-      if (['catalog.variant-groups.updated', 'product.updated'].includes(event.event)) void load();
-    }) : () => {};
+    if (!hasSeed) void load();
     window.addEventListener('focus', load);
     window.addEventListener('daja:variant-groups-changed', load);
     window.addEventListener('daja:products-changed', load);
     return () => {
-      mounted = false; controller?.abort(); stop();
+      mounted = false; controller?.abort();
       window.removeEventListener('focus', load);
       window.removeEventListener('daja:variant-groups-changed', load);
       window.removeEventListener('daja:products-changed', load);
     };
-  }, [slug, hasDecision]);
-  return result.slug === slug ? result.items : [];
+  }, [slug]);
+  useEffect(() => {
+    if (!hasDecision) return undefined;
+    return subscribePublicCatalogRealtime(event => {
+      if (['catalog.variant-groups.updated', 'product.updated'].includes(event.event)) {
+        window.dispatchEvent(new Event('daja:variant-groups-changed'));
+      }
+    });
+  }, [hasDecision]);
+  return result.slug === slug ? result.items : initialItems;
 }

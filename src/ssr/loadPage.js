@@ -59,7 +59,7 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
   };
   const relatedLoader = async () => {
     const related = await api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/related`, true);
-    return Array.isArray(related?.items) ? related.items.slice(0, 12) : [];
+    return Array.isArray(related?.items) ? related.items.slice(0, 12) : null;
   };
   const [catalog, product, filters, variants, related] = await Promise.all([
     needsCatalog ? (readCatalog ? readCatalog(catalogLoader) : catalogLoader()) : null,
@@ -74,6 +74,9 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
   data.product = product?.product || product;
   if (department) data.filters[department] = filters?.configuration ?? null;
   data.relatedVariants = variants?.items || [];
-  data.relatedProducts = related;
+  data.relatedProducts = related || [];
+  // Empty successful results are seeds too; failed optional requests can retry in the browser.
+  data.relatedVariantsLoaded = Array.isArray(variants?.items);
+  data.relatedProductsLoaded = Array.isArray(related);
   return data;
 }

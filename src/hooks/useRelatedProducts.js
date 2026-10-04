@@ -7,7 +7,8 @@ import { usePageData } from '../ssr/PageData.jsx';
 export default function useRelatedProducts(slug) {
   const page = usePageData();
   const { hasDecision } = useConsent();
-  const initialItems = page?.data?.product?.slug === slug ? page.data.relatedProducts || [] : [];
+  const hasSeed = page?.hydrating && page?.data?.product?.slug === slug && page.data.relatedProductsLoaded;
+  const initialItems = hasSeed ? page.data.relatedProducts || [] : [];
   const [result, setResult] = useState({ slug, items: initialItems });
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export default function useRelatedProducts(slug) {
         // Optional recommendations must never hide the main product page.
       }
     };
-    void load();
+    if (!hasSeed) void load();
     window.addEventListener('daja:products-changed', load);
     return () => {
       mounted = false;

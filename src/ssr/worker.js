@@ -46,7 +46,7 @@ async function cachedData(request, name, loader, ttl) {
   if (cached) return cached.json();
   const value = await loader();
   const seconds = ttl(value);
-  if (cache && seconds > 0 && !value?.missing && !value?.redirectTo) {
+  if (cache && value != null && seconds > 0 && !value?.missing && !value?.redirectTo) {
     await cache.put(cacheRequest, new Response(JSON.stringify(value), {
       headers: { 'Content-Type': 'application/json', 'Cache-Control': `public,max-age=${seconds}` },
     }));
