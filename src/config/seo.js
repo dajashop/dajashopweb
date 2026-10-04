@@ -26,9 +26,7 @@ export const commerceSeoConfig = {
   country: 'RS',
   currency: 'RSD',
   shippingCost: Number(import.meta.env.VITE_STOREFRONT_SHIPPING_COST_RSD || 380),
-  freeShippingThreshold: Number(
-    import.meta.env.VITE_STOREFRONT_FREE_SHIPPING_THRESHOLD_RSD || 10000,
-  ),
+  freeShippingThreshold: 8000,
   deliveryMinDays: Number(import.meta.env.VITE_STOREFRONT_DELIVERY_MIN_DAYS || 1),
   deliveryMaxDays: Number(import.meta.env.VITE_STOREFRONT_DELIVERY_MAX_DAYS || 3),
   returnDays: Number(import.meta.env.VITE_STOREFRONT_RETURN_DAYS || 14),

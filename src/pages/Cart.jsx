@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import SEOHead from '../components/seo/SEOHead.jsx';
+import { commerceSeoConfig } from '../config/seo.js';
 
 function QtyInput({ value, id, dispatch }) {
   const [localVal, setLocalVal] = useState(value);
@@ -171,7 +172,7 @@ export default function Cart() {
     loading,
   } = usePromo();
 
-  const FREE_SHIPPING_LIMIT = 10000;
+  const FREE_SHIPPING_LIMIT = commerceSeoConfig.freeShippingThreshold;
   const SHIPPING_COST = 380;
 
   const discountAmount = appliedPromo ? appliedPromo.amount : 0;

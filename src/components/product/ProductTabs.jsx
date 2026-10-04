@@ -6,6 +6,8 @@ import '../rich-description.css';
 import { formatProductSpecLabel, visibleProductSpecs } from '../../utils/catalogPresentation.js';
 // [NOVO] Importujemo recenzije
 import ProductReviews from './ProductReviews.jsx';
+import { commerceSeoConfig } from '../../config/seo.js';
+import { money } from '../../utils/currency.js';
 
 export default function ProductTabs({ product, hideSpecs = false }) {
   const [activeTab, setActiveTab] = useState('desc');
@@ -90,7 +92,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
               </div>
               <div>
                 <h4>Besplatna Isporuka</h4>
-                <p>Za porudžbine iznad 10.000 RSD.</p>
+                <p>Za porudžbine od {money(commerceSeoConfig.freeShippingThreshold)} nakon popusta.</p>
               </div>
             </div>
             <div className="delivery-item">

@@ -49,7 +49,7 @@ export default function ShippingSection({
                 <span className="radio-desc">
                                    {' '}
                   {isFreeShipping
-                    ? 'Iznad 8.000 RSD besplatno'
+                    ? 'Besplatna dostava'
                     : `Cena: ${money(COURIER_COST)}`}
                                  {' '}
                 </span>

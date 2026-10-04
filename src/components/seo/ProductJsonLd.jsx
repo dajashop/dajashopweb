@@ -55,12 +55,12 @@ function getAverageRating(reviews) {
   return Number(avg.toFixed(1));
 }
 
-function shippingDetails() {
+function shippingDetails(price) {
   return {
     '@type': 'OfferShippingDetails',
     shippingRate: {
       '@type': 'MonetaryAmount',
-      value: String(commerceSeoConfig.shippingCost),
+      value: String(Number(price) >= commerceSeoConfig.freeShippingThreshold ? 0 : commerceSeoConfig.shippingCost),
       currency: commerceSeoConfig.currency,
     },
     shippingDestination: {
@@ -142,7 +142,7 @@ export default function ProductJsonLd({ product, reviews = [] }) {
         '@type': 'Organization',
         name: seoConfig.siteName,
       },
-      shippingDetails: shippingDetails(),
+      shippingDetails: shippingDetails(product.price),
       hasMerchantReturnPolicy: {
         '@type': 'MerchantReturnPolicy',
         applicableCountry: commerceSeoConfig.country,

@@ -17,6 +17,7 @@ import ShippingSection from '../components/checkout/ShippingSection';
 import PaymentSection from '../components/checkout/PaymentSection';
 import OrderSummary from '../components/checkout/OrderSummary';
 import SEOHead from '../components/seo/SEOHead.jsx';
+import { commerceSeoConfig } from '../config/seo.js';
 
 export default function Checkout() {
   const { items, total, dispatch } = useCart();
@@ -74,7 +75,7 @@ export default function Checkout() {
   const discountAmount = appliedPromo ? appliedPromo.amount : 0;
   const subtotalAfterDiscount = total - discountAmount;
 
-  const FREE_SHIPPING_LIMIT = 8000;
+  const FREE_SHIPPING_LIMIT = commerceSeoConfig.freeShippingThreshold;
   const COURIER_COST = 380;
   // Besplatna dostava se gleda na iznos POSLE popusta (obično je tako u prodaji)
   const isFreeShipping = appliedPromo?.freeShipping || subtotalAfterDiscount >= FREE_SHIPPING_LIMIT;
