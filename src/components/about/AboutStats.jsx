@@ -4,6 +4,7 @@
 // ==============================
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
+import GoogleShopRating from './GoogleShopRating.jsx';
 
 // Placeholder hook za animaciju brojeva (ostaje isti)
 const useAnimatedNumber = (endValue) => {
@@ -61,7 +62,7 @@ export default function AboutStats() {
     <section className="section" style={{ background: 'var(--color-surface)' }}>
       <div className="container">
         <motion.div
-          className="grid-2"
+          className="grid-3"
           variants={containerVariants}
           initial={false}
           whileInView="visible"
@@ -71,6 +72,7 @@ export default function AboutStats() {
           {statsData.map((stat, index) => (
             <StatItem key={index} {...stat} />
           ))}
+          <GoogleShopRating />
         </motion.div>
       </div>
     </section>

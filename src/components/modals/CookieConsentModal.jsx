@@ -111,7 +111,7 @@ export default function CookieConsentModal({
               id="functional"
               title="Funkcionalni"
               count="2"
-              description="Pamte temu, prijavu, prikaz newsletter ponude i poziciju u katalogu, a omogućavaju i Google mapu naše lokacije i predlog adrese. Google može obraditi tehničke podatke pregledača i adresu koju unesete."
+              description="Pamte temu, prijavu, prikaz newsletter ponude i poziciju u katalogu, a omogućavaju i Google mapu naše lokacije, predlog adrese i prikaz Google ocene prodavnice. Google može obraditi tehničke podatke pregledača i adresu koju unesete."
               expanded={expandedCategories.functional}
               onToggle={() => toggleCategory('functional')}
               control={<ConsentSwitch checked={functionalEnabled} onChange={() => { setPreferences(!functionalEnabled); setExternalGoogle(!functionalEnabled); }} disabled={saving} label="Funkcionalni kolačići i usluge" />}
@@ -157,7 +157,7 @@ export default function CookieConsentModal({
           </div>
           <div className="cookie-consent__info-list">
             <div><ShieldCheck size={20} /><p><strong>Neophodno</strong> omogućava bezbedan rad korpe, naloga i vašeg izbora privatnosti.</p></div>
-            <div><Settings2 size={20} /><p><strong>Funkcionalni</strong> pamte temu, prijavu, prikaz newsletter ponude i poziciju u katalogu, kao i omogućavaju Google mapu naše lokacije i predlog adrese.</p></div>
+            <div><Settings2 size={20} /><p><strong>Funkcionalni</strong> pamte temu, prijavu, prikaz newsletter ponude i poziciju u katalogu, kao i omogućavaju Google mapu naše lokacije, predlog adrese i prikaz Google ocene prodavnice.</p></div>
             <div><BarChart3 size={20} /><p><strong>Analitika</strong> nam pokazuje kako posetioci koriste sajt, bez prikazivanja oglasa.</p></div>
             <div><Info size={20} /><p><strong>Marketing i neklasifikovani kolačići</strong> trenutno se ne koriste na sajtu.</p></div>
           </div>
@@ -173,7 +173,7 @@ export default function CookieConsentModal({
       <div className="cookie-consent__panel" id="cookie-consent-panel" role="tabpanel" aria-labelledby="cookie-consent-tab">
         <div className="cookie-consent__panel-heading">
           <h1 id="cookie-consent-title">Vaša privatnost</h1>
-          <p>Koristimo neophodne kolačiće za pouzdan rad sajta. Uz vašu dozvolu uključujemo funkcionalne opcije i analitiku radi boljeg iskustva kupovine. Funkcionalne opcije pamte vaša podešavanja i omogućavaju Google mapu i predlog adrese.</p>
+          <p>Koristimo neophodne kolačiće za pouzdan rad sajta. Uz vašu dozvolu uključujemo funkcionalne opcije i analitiku radi boljeg iskustva kupovine. Funkcionalne opcije pamte vaša podešavanja i omogućavaju Google mapu, predlog adrese i prikaz Google ocene prodavnice.</p>
         </div>
         <p className="cookie-consent__subcopy">Sve opcione kategorije možete uključiti, isključiti ili pregledati u Podešavanjima.</p>
       </div>

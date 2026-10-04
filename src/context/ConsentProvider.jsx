@@ -233,9 +233,9 @@ function GooglePermissionDialog({ onAccept, onDecline, saving }) {
         <button type="button" className="google-consent__close" onClick={onDecline} disabled={saving} aria-label="Zatvori"><X size={19} /></button>
         <div className="google-consent__icon"><MapPinned size={23} /></div>
         <h2 id="google-consent-title">Uključi funkcionalne usluge?</h2>
-        <p>Ovim izborom uključujete pamćenje funkcionalnih podešavanja, Google mapu naše lokacije i predlog adrese. Google pri tome može obraditi tehničke podatke pregledača i adresu koju unesete. Možete nastaviti i ručnim unosom adrese.</p>
+        <p>Ovim izborom uključujete pamćenje funkcionalnih podešavanja, Google mapu naše lokacije, predlog adrese i prikaz Google ocene prodavnice. Google pri tome može obraditi tehničke podatke pregledača i adresu koju unesete. Sajt i kupovina dostupni su i bez ovih Google usluga.</p>
         <div className="google-consent__actions">
-          <button type="button" className="google-consent__secondary" onClick={onDecline} disabled={saving}>Nastavi ručno</button>
+          <button type="button" className="google-consent__secondary" onClick={onDecline} disabled={saving}>Nastavi bez Google usluga</button>
           <button type="button" className="google-consent__primary" onClick={onAccept} disabled={saving}>{saving ? 'Čuvamo…' : 'Dozvoli funkcionalne usluge'}</button>
         </div>
       </section>
