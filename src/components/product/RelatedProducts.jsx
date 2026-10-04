@@ -1,17 +1,16 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { money } from '../../utils/currency';
 import './RelatedProducts.css';
 
 export default function RelatedProducts({ currentProduct, allProducts }) {
-  const navigate = useNavigate();
   const sliderRef = useRef(null);
 
   // State za drag funkcionalnost
   const [isDown, setIsDown] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const [isDragging, setIsDragging] = useState(false); // Da znamo da li vučemo ili klikćemo
+  const isDragging = useRef(false); // Drag suppression must survive mouseup until the click.
 
   const relatedItems = useMemo(() => {
     if (!currentProduct || !allProducts) return [];
@@ -29,8 +28,9 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
 
   // --- DRAG HANDLERS ---
   const handleMouseDown = (e) => {
+    if (e.button !== 0) return;
     setIsDown(true);
-    setIsDragging(false);
+    isDragging.current = false;
     setStartX(e.pageX - sliderRef.current.offsetLeft);
     setScrollLeft(sliderRef.current.scrollLeft);
   };
@@ -41,8 +41,6 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
 
   const handleMouseUp = () => {
     setIsDown(false);
-    // Malo kašnjenje da resetujemo dragging status da ne bi okinuo klik odmah
-    setTimeout(() => setIsDragging(false), 0);
   };
 
   const handleMouseMove = (e) => {
@@ -54,16 +52,8 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
 
     // Ako se pomerio više od 5px, računamo to kao drag, a ne klik
     if (Math.abs(walk) > 5) {
-      setIsDragging(true);
+      isDragging.current = true;
     }
-  };
-
-  const handleCardClick = (slug) => {
-    // Ako smo vukli (dragovali), ne radi navigaciju
-    if (isDragging) return;
-
-    navigate(`/product/${slug}`);
-    window.scrollTo(0, 0);
   };
 
   return (
@@ -79,13 +69,14 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
         onMouseMove={handleMouseMove}
       >
         {relatedItems.map((item) => (
-          <div
+          <Link
             key={item.id}
+            to={`/product/${item.slug}`}
             className="related-card"
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
             onClick={(e) => {
-              // Sprečavamo default da slika ne bi postala "ghost image" pri dragovanju
-              e.preventDefault();
-              handleCardClick(item.slug);
+              if (e.detail !== 0 && isDragging.current) e.preventDefault();
             }}
           >
             <div className="related-image-box">
@@ -107,7 +98,7 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
               <h4 className="related-name">{item.name}</h4>
               <div className="related-price">{money(item.price)}</div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

@@ -67,6 +67,9 @@
 
 /* --- KARTICA --- */
 .related-card {
+  color: inherit;
+  text-decoration: none;
+  font-weight: inherit;
   flex: 0 0 300px;
   background: #ffffff;
   border-radius: 20px;
@@ -79,6 +82,8 @@
 }
 
 .related-card:hover {
+  color: inherit;
+  text-decoration: none;
   transform: translateY(-8px);
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
 }

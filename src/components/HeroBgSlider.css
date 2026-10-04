@@ -22,6 +22,10 @@
   opacity: 1;
   pointer-events: auto;
 }
+.heroBg__slide:hover {
+  color: inherit;
+  text-decoration: none;
+}
 .heroBg__slide img {
   width: 100%;
   height: 100%;

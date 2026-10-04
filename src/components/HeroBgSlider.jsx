@@ -1,15 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import "./HeroBgSlider.css";
 
 export default function HeroBgSlider({ slides = [], interval = 5000 }) {
   const [i, setI] = useState(0);
-  const nav = useNavigate();
   const t = useRef(null);
   const dragging = useRef(false);
   const startX = useRef(0);
   const deltaX = useRef(0);
+  const wasDragged = useRef(false);
 
   function go(n) {
     setI((p) => (p + n + slides.length) % slides.length);
@@ -32,15 +32,19 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
   }, [slides.length, interval]);
 
   function onDown(e) {
+    if (e.button != null && e.button !== 0) return;
+    if (e.target.closest('.heroBg__controls, .heroBg__dots')) return;
     dragging.current = true;
     startX.current = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
     deltaX.current = 0;
+    wasDragged.current = false;
     stop();
   }
   function onMove(e) {
     if (!dragging.current) return;
     const x = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
     deltaX.current = x - startX.current;
+    if (Math.abs(deltaX.current) > 5) wasDragged.current = true;
   }
   function onUp() {
     if (!dragging.current) return;
@@ -69,17 +73,27 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
       aria-label="Pozadinski slajder"
     >
       {/* Slojevi slika */}
-      {slides.map((s, idx) => (
-        <button
-          key={idx}
-          className={`heroBg__slide ${idx === i ? "is-active" : ""}`}
-          onClick={() => s.to && nav(s.to)}
-          aria-label={s.alt ?? "Otvori"}
-        >
-          <img src={s.src} alt={s.alt ?? ""} draggable="false" />
-          {s.overlay && <div className="heroBg__overlay">{s.overlay}</div>}
-        </button>
-      ))}
+      {slides.map((s, idx) => {
+        const Slide = s.to ? Link : 'div';
+        return (
+          <Slide
+            key={idx}
+            {...(s.to ? { to: s.to } : {})}
+            className={`heroBg__slide ${idx === i ? "is-active" : ""}`}
+            onClick={(e) => {
+              if (e.detail !== 0 && wasDragged.current) e.preventDefault();
+            }}
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
+            tabIndex={idx === i ? undefined : -1}
+            aria-hidden={idx !== i}
+            aria-label={s.alt ?? "Otvori"}
+          >
+            <img src={s.src} alt={s.alt ?? ""} draggable="false" />
+            {s.overlay && <div className="heroBg__overlay">{s.overlay}</div>}
+          </Slide>
+        );
+      })}
 
       {/* Kontrole */}
       <div className="heroBg__controls">
