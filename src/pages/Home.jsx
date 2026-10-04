@@ -27,17 +27,26 @@ import { seoConfig } from '../config/seo.js';
 
 const HERO_SLIDES = [
   {
-    src: '/images/banner-watches-casio.png',
+    src: '/images/home/hero-casio-1920.webp',
+    srcSet: '/images/home/hero-casio-768.webp 768w, /images/home/hero-casio-1280.webp 1280w, /images/home/hero-casio-1920.webp 1920w',
+    width: 1920,
+    height: 640,
     alt: 'Casio kolekcija',
     to: '/catalog?brand=CASIO',
   },
   {
-    src: '/images/model_banner_bed6ebb9-b47f-438a-835e-f63534a7d455.jpg',
+    src: '/images/home/hero-daniel-klein-1519.webp',
+    srcSet: '/images/home/hero-daniel-klein-768.webp 768w, /images/home/hero-daniel-klein-1280.webp 1280w, /images/home/hero-daniel-klein-1519.webp 1519w',
+    width: 1519,
+    height: 550,
     alt: 'Daniel Klein izbor',
     to: '/catalog?brand=DANIEL%20KLEIN',
   },
   {
-    src: '/images/casio-g-shock-original-ga-2100-4aer-carbon-core-guard_183960_205228.jpg',
+    src: '/images/home/g-shock-1600.webp',
+    srcSet: '/images/home/g-shock-768.webp 768w, /images/home/g-shock-1280.webp 1280w, /images/home/g-shock-1600.webp 1600w',
+    width: 1600,
+    height: 900,
     alt: 'G-Shock GA-2100',
     to: '/catalog?brand=CASIO&category=G-SHOCK',
   },
@@ -57,17 +66,26 @@ const HOME_RECOMMENDED_RANK_FIELD = 'homeRecommendedRank';
 const CATEGORY_TILES = [
   {
     title: 'Ženski satovi',
-    image: '/images/daniel-klain-5252.PNG',
+    image: '/images/home/women-watches-960.webp',
+    srcSet: '/images/home/women-watches-480.webp 480w, /images/home/women-watches-960.webp 960w',
+    width: 960,
+    height: 686,
     to: '/zenski-satovi',
   },
   {
     title: 'G-SHOCK',
-    image: '/images/casio-g-shock-original-ga-2100-4aer-carbon-core-guard_183960_205228.jpg',
+    image: '/images/home/g-shock-1280.webp',
+    srcSet: '/images/home/g-shock-480.webp 480w, /images/home/g-shock-768.webp 768w, /images/home/g-shock-1280.webp 1280w',
+    width: 1280,
+    height: 720,
     to: '/catalog?brand=CASIO&category=G-SHOCK',
   },
   {
     title: 'Nakit & pokloni',
-    image: '/images/Casiothumb.webp',
+    image: '/images/home/gifts-1280.webp',
+    srcSet: '/images/home/gifts-480.webp 480w, /images/home/gifts-960.webp 960w, /images/home/gifts-1280.webp 1280w',
+    width: 1280,
+    height: 454,
     to: '/catalog?category=NAKIT',
     wide: true,
   },
@@ -664,7 +682,18 @@ export default function Home() {
               className={`categoryTile ${tile.wide ? 'categoryTile--wide' : ''}`}
             >
               <div className="categoryTile__img">
-                <img src={tile.image} alt={tile.title} loading="lazy" />
+                <img
+                  src={tile.image}
+                  srcSet={tile.srcSet}
+                  sizes={tile.wide
+                    ? '(max-width: 1280px) calc(100vw - 32px), 1248px'
+                    : '(max-width: 720px) calc(100vw - 32px), (max-width: 1280px) calc(50vw - 24px), 616px'}
+                  width={tile.width}
+                  height={tile.height}
+                  alt={tile.title}
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
               <h3 className="categoryTile__label">{tile.title}</h3>
             </Link>
@@ -678,6 +707,17 @@ export default function Home() {
       {/* SERVICE HERO CTA */}
       <section className="section container serviceHero">
         <Link to="/usluge" className="serviceHero__card">
+          <img
+            className="serviceHero__image"
+            src="/images/home/service-1536.webp"
+            srcSet="/images/home/service-640.webp 640w, /images/home/service-1280.webp 1280w, /images/home/service-1536.webp 1536w"
+            sizes="(max-width: 1280px) calc(100vw - 32px), 1248px"
+            width="1536"
+            height="1024"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
           <div className="serviceHero__content">
             <p className="eyebrow">Servis</p>
             <h2>Servis i tim koji zna svaki model.</h2>

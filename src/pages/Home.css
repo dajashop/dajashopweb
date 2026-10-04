@@ -213,11 +213,20 @@
   border-radius: clamp(24px, 2vw, 28px);
   overflow: hidden;
   aspect-ratio: 21 / 9;
-  background: #f8fbff url('/images/servisthumb.png') center/cover no-repeat;
+  background: #f8fbff;
   box-shadow: 0 16px 34px rgba(12, 37, 72, 0.14);
   color: #0b1d2f;
   isolation: isolate;
   --service-gradient-fade: 65%;
+}
+.serviceHero__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
 }
 .serviceHero__card::before {
   content: '';

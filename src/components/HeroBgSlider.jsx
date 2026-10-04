@@ -5,6 +5,7 @@ import "./HeroBgSlider.css";
 
 export default function HeroBgSlider({ slides = [], interval = 5000 }) {
   const [i, setI] = useState(0);
+  const [loadedSlides, setLoadedSlides] = useState(() => new Set([0]));
   const t = useRef(null);
   const dragging = useRef(false);
   const startX = useRef(0);
@@ -30,6 +31,24 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
     return stop;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slides.length, interval]);
+
+  useEffect(() => {
+    // Keep visited slides for the existing fade; warm only the next slide
+    // shortly before rotation instead of downloading every banner on entry.
+    setLoadedSlides((previous) => {
+      if (previous.has(i)) return previous;
+      return new Set([...previous, i]);
+    });
+    if (slides.length < 2) return;
+    const warmNext = setTimeout(() => {
+      const next = (i + 1) % slides.length;
+      setLoadedSlides((previous) => {
+        if (previous.has(next)) return previous;
+        return new Set([...previous, next]);
+      });
+    }, Math.max(0, interval - 1500));
+    return () => clearTimeout(warmNext);
+  }, [i, slides.length, interval]);
 
   function onDown(e) {
     if (e.button != null && e.button !== 0) return;
@@ -89,7 +108,20 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
             aria-hidden={idx !== i}
             aria-label={s.alt ?? "Otvori"}
           >
-            <img src={s.src} alt={s.alt ?? ""} draggable="false" />
+            {(idx === i || loadedSlides.has(idx)) && (
+              <img
+                src={s.src}
+                srcSet={s.srcSet}
+                sizes={s.srcSet ? '(max-width: 1280px) 100vw, 1280px' : undefined}
+                width={s.width}
+                height={s.height}
+                alt={s.alt ?? ""}
+                loading="eager"
+                fetchPriority={idx === i ? 'high' : 'low'}
+                decoding="async"
+                draggable="false"
+              />
+            )}
             {s.overlay && <div className="heroBg__overlay">{s.overlay}</div>}
           </Slide>
         );
