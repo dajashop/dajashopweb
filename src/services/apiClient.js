@@ -18,6 +18,7 @@ let staffRefreshPromise = null;
 const authListeners = new Set();
 const staffTokenListeners = new Set();
 const customerRefreshLockOwner =
+  import.meta.env.SSR ? 'server-render' :
   typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
     : `daja-refresh-${Math.random().toString(36).slice(2)}`;

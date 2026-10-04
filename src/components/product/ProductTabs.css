@@ -88,6 +88,10 @@
 }
 
 /* Isporuka */
+.tab-content > [hidden] {
+  display: none;
+}
+
 .delivery-info {
   display: flex;
   flex-direction: column;

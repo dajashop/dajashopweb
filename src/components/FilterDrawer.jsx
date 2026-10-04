@@ -89,10 +89,7 @@ export default function FilterDrawer({ className = '', products, fixedGender, co
   const [open, setOpen] = useState(false);
   const activeCount = useActiveCount();
 
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return false;
-    return window.matchMedia('(max-width: 1030px)').matches;
-  });
+  const [isMobile, setIsMobile] = useState(false);
   const [scrolledPastFab, setScrolledPastFab] = useState(false);
 
   useLockBody(open);

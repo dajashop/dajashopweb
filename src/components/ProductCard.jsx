@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { lazy, useMemo, useState } from 'react';
 import './ProductCard.css';
 import { Link } from 'react-router-dom';
 import { money } from '../utils/currency.js';
@@ -13,7 +13,8 @@ import ProgressiveImage from './ui/ProgressiveImage.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 
 // Uvozimo Modal
-import AdminProductModal from '../pages/Admin/components/AdminProductModal.jsx';
+import ClientOnly from './ClientOnly.jsx';
+const AdminProductModal = import.meta.env.SSR ? () => null : lazy(() => import('../pages/Admin/components/AdminProductModal.jsx'));
 import ConfirmModal from '../components/modals/ConfirmModal.jsx';
 
 const slideVariants = {
@@ -214,7 +215,7 @@ export default function ProductCard({ p }) {
         className={`product-card card relative overflow-hidden max-w-full md:max-w-full w-full bg-white dark:bg-zinc-900 rounded-2xl shadow-sm hover:shadow-md transition-shadow ${
           p.isVisible === false ? 'opacity-75 grayscale-[0.5]' : ''
         }`}
-        initial={{ opacity: 0 }}
+        initial={false}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -224,7 +225,7 @@ export default function ProductCard({ p }) {
           <div className="pointer-events-none absolute left-2 top-2 z-20 flex flex-wrap gap-1.5">
             {marketingFlags.includes('new') && (
               <motion.span
-                initial={{ scale: 0.8, opacity: 0 }}
+                initial={false}
                 animate={{ scale: 1, opacity: 1 }}
                 className="rounded-full bg-red-600 px-3 py-1 text-xs font-bold tracking-wide text-white shadow-sm"
               >
@@ -233,7 +234,7 @@ export default function ProductCard({ p }) {
             )}
             {marketingFlags.includes('popular') && (
               <motion.span
-                initial={{ scale: 0.8, opacity: 0 }}
+                initial={false}
                 animate={{ scale: 1, opacity: 1 }}
                 className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-zinc-800 shadow-sm"
               >
@@ -242,7 +243,7 @@ export default function ProductCard({ p }) {
             )}
             {marketingFlags.includes('recommended') && (
               <motion.span
-                initial={{ scale: 0.8, opacity: 0 }}
+                initial={false}
                 animate={{ scale: 1, opacity: 1 }}
                 className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-zinc-800 shadow-sm"
               >
@@ -501,7 +502,7 @@ export default function ProductCard({ p }) {
       {/* Modali */}
       <AnimatePresence>
         {isEditModalOpen && (
-          <AdminProductModal
+          <ClientOnly><AdminProductModal
             product={editingProduct}
             onClose={() => {
               setIsEditModalOpen(false);
@@ -511,7 +512,7 @@ export default function ProductCard({ p }) {
               setIsEditModalOpen(false);
               setEditingProduct(null);
             }}
-          />
+          /></ClientOnly>
         )}
       </AnimatePresence>
 

@@ -1,5 +1,5 @@
 export const seoConfig = {
-  siteUrl: import.meta.env.VITE_SITE_URL || '',
+  siteUrl: import.meta.env.VITE_SITE_URL || 'https://dajashop.rs',
   siteName: import.meta.env.VITE_SITE_NAME || 'DajaShop',
   siteDescription: import.meta.env.VITE_SITE_DESCRIPTION || '',
   siteKeywords: import.meta.env.VITE_SITE_KEYWORDS || '',

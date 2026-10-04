@@ -85,7 +85,7 @@ export default function AboutFAQ() {
       >
         <motion.h2
           className="h2 text-center"
-          initial={{ y: 20, opacity: 0 }}
+          initial={false}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -95,7 +95,7 @@ export default function AboutFAQ() {
         </motion.h2>
 
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={false}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.5, delay: 0.2 }}

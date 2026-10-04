@@ -59,8 +59,8 @@ export default function ProductTabs({ product, hideSpecs = false }) {
         )}
 
         {/* SPECIFIKACIJE */}
-        {!hideSpecs && activeTab === 'specs' && (
-          <div className="specs-wrapper">
+        {!hideSpecs && (
+          <div className="specs-wrapper" hidden={activeTab !== 'specs'}>
             {Object.keys(specs).length > 0 ? (
               <table className="specs-table">
                 <tbody>
@@ -82,8 +82,8 @@ export default function ProductTabs({ product, hideSpecs = false }) {
         {activeTab === 'reviews' && <ProductReviews product={product} />}
 
         {/* ISPORUKA */}
-        {activeTab === 'delivery' && (
-          <div className="delivery-info">
+        {(
+          <div className="delivery-info" hidden={activeTab !== 'delivery'}>
             <div className="delivery-item">
               <div className="del-icon">
                 <Truck size={20} />

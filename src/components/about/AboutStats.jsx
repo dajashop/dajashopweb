@@ -7,7 +7,7 @@ import { motion, useInView } from 'framer-motion';
 
 // Placeholder hook za animaciju brojeva (ostaje isti)
 const useAnimatedNumber = (endValue) => {
-  const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(endValue);
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.5 });
 
@@ -96,7 +96,7 @@ export default function AboutStats() {
         <motion.div
           className="grid-3"
           variants={containerVariants}
-          initial="hidden"
+          initial={false}
           whileInView="visible"
           viewport={{ once: true, amount: 0.5 }}
           style={{ gap: '40px' }}

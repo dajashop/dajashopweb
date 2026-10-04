@@ -1,5 +1,5 @@
 import { descriptionText, metaDescription } from '../components/description.js';
-import React, { useEffect, useMemo } from 'react';
+import React, { lazy, useEffect, useMemo } from 'react';
 import './Product.css';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCart } from '../hooks/useCart.js';
@@ -12,7 +12,8 @@ import useProductVariantGroup from '../hooks/useProductVariantGroup.js';
 // Import komponenti
 import ProductGallery from '../components/product/ProductGallery.jsx';
 import ProductHeader from '../components/product/ProductHeader.jsx';
-import ProductAdminTools from '../components/product/ProductAdminTools.jsx';
+import ClientOnly from '../components/ClientOnly.jsx';
+const ProductAdminTools = import.meta.env.SSR ? () => null : lazy(() => import('../components/product/ProductAdminTools.jsx'));
 import { useAuth } from '../hooks/useAuth.js';
 import ProductVariants from '../components/product/ProductVariants.jsx';
 import ProductActions from '../components/product/ProductActions.jsx';
@@ -175,12 +176,12 @@ export default function Product() {
 
         {/* DESNA KOLONA */}
         <div className="product__info">
-          <ProductHeader product={p} adminTools={staffReady ? <ProductAdminTools key={p.id} product={p}
+          <ProductHeader product={p} adminTools={staffReady ? <ClientOnly><ProductAdminTools key={p.id} product={p}
             onUpdated={(patch) => {
               updateProduct(patch);
               if (patch.slug && patch.slug !== slug) navigate(`/product/${patch.slug}`, { replace: true });
             }}
-            onDeleted={() => navigate(departmentPath, { replace: true })} /> : null} />
+            onDeleted={() => navigate(departmentPath, { replace: true })} /></ClientOnly> : null} />
           <ProductVariants product={p} relatedVariants={relatedVariants} />
           {(p.department?.slug || p.department || 'satovi') === 'satovi' && <Link className="btn" style={{ margin: '12px 0' }} to={`/graviranje?slug=${encodeURIComponent(p.slug)}`}>Dodaj gravuru bez doplate</Link>}
 

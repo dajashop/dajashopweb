@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { lazy, useState, useMemo, useEffect } from 'react';
 import { Box, Maximize2, Image as ImageIcon } from 'lucide-react';
-import Watch3DViewer from '../Watch3DViewer.jsx';
+import ClientOnly from '../ClientOnly.jsx';
+const Watch3DViewer = import.meta.env.SSR ? () => null : lazy(() => import('../Watch3DViewer.jsx'));
 import ImageGalleryModal from '../modals/ImageGalleryModal.jsx';
 import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import './ProductGallery.css';
@@ -30,9 +31,6 @@ export default function ProductGallery({ product }) {
   const mediaList = useMemo(() => {
     if (!product) return [];
     const list = [];
-    if (product.model3DUrl) {
-      list.push({ type: '3d', src: product.model3DUrl, id: 'model-3d' });
-    }
     const images =
       product.images && product.images.length > 0
         ? product.images.map((img) =>
@@ -52,6 +50,10 @@ export default function ProductGallery({ product }) {
         imageIndex: i,
       });
     });
+    // A photograph is visible immediately, including without JavaScript.
+    if (product.model3DUrl) {
+      list.push({ type: '3d', src: product.model3DUrl, id: 'model-3d' });
+    }
     // Dodajemo indeks da bismo ga sačuvali čak i kada neke thumb-ove sakrijemo
     return list.map((item, idx) => ({ ...item, mediaIndex: idx }));
   }, [product]);
@@ -102,7 +104,7 @@ export default function ProductGallery({ product }) {
       <div className="product__main-view card relative group">
         {activeItem?.type === '3d' ? (
           <div className="view-3d-wrapper" data-lenis-prevent>
-            <Watch3DViewer modelUrl={activeItem.src} />
+            <ClientOnly><Watch3DViewer modelUrl={activeItem.src} /></ClientOnly>
           </div>
         ) : (
           <div
@@ -111,6 +113,8 @@ export default function ProductGallery({ product }) {
           >
             <ProgressiveImage
               src={activeItem?.src}
+              loading="eager"
+              fetchPriority="high"
               thumbSrc={activeItem?.thumb}
               alt={mainImageAlt}
               className="product__img-full transition-transform duration-700 hover:scale-105"

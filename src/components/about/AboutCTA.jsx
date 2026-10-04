@@ -24,7 +24,7 @@ export default function AboutCTA() {
   return (
     <motion.section
       className="section"
-      initial="hidden"
+      initial={false}
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={sectionVariants}

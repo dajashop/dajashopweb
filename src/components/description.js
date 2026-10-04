@@ -1,39 +1,48 @@
-const allowed = new Set(['P', 'DIV', 'BR', 'STRONG', 'B', 'EM', 'I', 'U', 'UL', 'OL', 'LI', 'H3', 'BLOCKQUOTE']);
+import { decodeHTML } from 'entities';
+
+const allowed = new Set(['p', 'div', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'h3', 'blockquote']);
+const escapeText = (value) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export function descriptionHtml(value = '') {
   value = String(value ?? '');
-  const doc = document.implementation.createHTMLDocument('');
-  const root = doc.createElement('div');
   if (!/<\/?[a-z][^>]*>/i.test(value)) {
-    for (const line of value.split(/\r?\n/)) {
-      const p = doc.createElement('p');
-      p.textContent = line;
-      if (!line) p.append(doc.createElement('br'));
-      root.append(p);
-    }
-  } else {
-    root.innerHTML = value;
-    const clean = (parent) => {
-      for (const child of [...parent.children]) {
-        if (['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'SVG', 'MATH', 'TEMPLATE'].includes(child.tagName)) {
-          child.remove();
-          continue;
-        }
-        clean(child);
-        if (!allowed.has(child.tagName)) child.replaceWith(...child.childNodes);
-        else for (const attr of [...child.attributes]) child.removeAttribute(attr.name);
-      }
-    };
-    clean(root);
+    return value.split(/\r?\n/).map(line => `<p>${line ? escapeText(line) : '<br>'}</p>`).join('');
   }
-  return root.innerHTML;
+  // The same allowlist runs in the Worker and browser, without a DOM. Rebuild
+  // tags rather than trusting attributes, URLs, event handlers or raw markup.
+  const stack = [];
+  const source = value
+    .replace(/<(script|style|iframe|object|svg|math|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
+    .replace(/<(script|style|iframe|object|svg|math|template)\b[^>]*>[\s\S]*$/gi, '');
+  let output = '';
+  for (const token of source.match(/<!--[\s\S]*?-->|<[^>]*>|[^<]+|</g) || []) {
+    if (token.startsWith('<!--')) continue;
+    if (!token.startsWith('<')) { output += escapeText(decodeHTML(token)); continue; }
+    const tag = token.match(/^<\s*(\/?)\s*([a-z][a-z0-9]*)\b[^>]*>$/i);
+    if (!tag) { output += escapeText(token); continue; }
+    const name = tag[2].toLowerCase();
+    if (!allowed.has(name)) continue;
+    if (name === 'br') { output += '<br>'; continue; }
+    if (tag[1]) {
+      const index = stack.lastIndexOf(name);
+      if (index !== -1) while (stack.length > index) output += `</${stack.pop()}>`;
+    } else {
+      // Avoid browser repair of nested paragraphs, which would break hydration.
+      if (['p', 'div', 'ul', 'ol', 'h3', 'blockquote'].includes(name) && stack.includes('p')) {
+        while (stack.includes('p')) output += `</${stack.pop()}>`;
+      }
+      output += `<${name}>`; stack.push(name);
+    }
+  }
+  while (stack.length) output += `</${stack.pop()}>`;
+  return output;
 }
 
 export function descriptionText(value = '') {
-  const root = document.createElement('div');
-  root.innerHTML = descriptionHtml(value);
-  for (const block of root.querySelectorAll('p, div, h3, li, blockquote, br')) block.append('\n');
-  return (root.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+  return decodeHTML(descriptionHtml(value)
+    .replace(/<br>|<\/(?:p|div|h3|li|blockquote)>/g, '\n')
+    .replace(/<[^>]*>/g, ''))
+    .replace(/\n{3,}/g, '\n\n').trim();
 }
 
 // A short plain-text summary for meta, Open Graph and Twitter descriptions.

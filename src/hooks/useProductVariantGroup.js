@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { variantGroupsApi, subscribePublicCatalogRealtime } from '../services/dajaPlatform.js';
 import { useConsent } from '../context/ConsentContext.jsx';
+import { usePageData } from '../ssr/PageData.jsx';
 
 export default function useProductVariantGroup(slug) {
   const { hasDecision } = useConsent();
-  const [result, setResult] = useState({ slug: null, items: [] });
+  const page = usePageData();
+  const [result, setResult] = useState({ slug, items: page?.data?.product?.slug === slug ? page.data.relatedVariants || [] : [] });
   useEffect(() => {
     if (!slug) return undefined;
     let mounted = true;

@@ -1,25 +1,33 @@
-import React from 'react';
+import React, { lazy } from 'react';
+import ClientOnly from './components/ClientOnly.jsx';
+
+function browserPage(loader) {
+  const Component = lazy(loader);
+  return function BrowserPage(props) {
+    return <ClientOnly fallback={<p role="status">Učitavanje…</p>}><Component {...props} /></ClientOnly>;
+  };
+}
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home.jsx';
 import Catalog from './pages/Catalog.jsx';
-import SearchResults from './pages/SearchResults.jsx';
+const SearchResults = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/SearchResults.jsx'));
 import Product from './pages/Products.jsx';
-import Cart from './pages/Cart.jsx';
-import Checkout from './pages/Checkout.jsx';
-import Account from './pages/Account.jsx';
-import Orders from './pages/Orders.jsx';
+const Cart = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Cart.jsx'));
+const Checkout = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Checkout.jsx'));
+const Account = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Account.jsx'));
+const Orders = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Orders.jsx'));
 import About from './pages/About.jsx';
-import AdminDashboard from './pages/Admin/AdminDashboard.jsx';
-import VerifyEmail from './pages/VerifyEmail.jsx';
-import ResetPassword from './pages/ResetPassword.jsx';
-import Logout from './pages/Logout.jsx';
+const AdminDashboard = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Admin/AdminDashboard.jsx'));
+const VerifyEmail = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/VerifyEmail.jsx'));
+const ResetPassword = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/ResetPassword.jsx'));
+const Logout = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Logout.jsx'));
 import FAQ from './pages/FAQ.jsx';
 import Contact from './pages/Contact.jsx';
 import Usluge from './pages/Usluge.jsx';
 import Engraving from './pages/Engraving.jsx';
-import OrdersPage from './pages/Admin/OrdersPage';
-import LegalDocument from './pages/LegalDocument.jsx';
-import Unsubscribe from './pages/Unsubscribe.jsx';
+const OrdersPage = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Admin/OrdersPage'));
+const LegalDocument = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/LegalDocument.jsx'));
+const Unsubscribe = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Unsubscribe.jsx'));
 
 export default function AppRoutes() {
   return (

@@ -6,6 +6,8 @@ import AuthModal from './components/AuthModal.jsx';
 import { useLocation, useNavigationType } from 'react-router-dom';
 import NewsletterModal from './components/modals/NewsletterModal.jsx';
 import { useEffect } from 'react';
+import OrganizationJsonLd from './components/seo/OrganizationJsonLd.jsx';
+import WebSiteJsonLd from './components/seo/WebSiteJsonLd.jsx';
 
 export default function App() {
   const { pathname } = useLocation(); // Hvatamo trenutnu putanju
@@ -37,6 +39,8 @@ export default function App() {
         isFullBleedPage ? 'app-root app-root--seamless-footer' : 'app-root'
       }
     >
+      <OrganizationJsonLd />
+      <WebSiteJsonLd />
       <Header />
       <EngravingSync />
       <main

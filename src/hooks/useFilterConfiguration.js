@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
 import { filterConfigurationApi } from '../services/filterConfiguration.js';
+import { usePageData } from '../ssr/PageData.jsx';
 
 export default function useFilterConfiguration(department) {
-  const [state, setState] = useState({ department: '', configuration: null, loading: true, error: '' });
+  const page = usePageData();
+  const initial = page?.data?.filters?.[department];
+  const [state, setState] = useState(initial !== undefined
+    ? { department, configuration: initial, loading: false, error: '' }
+    : { department: '', configuration: null, loading: true, error: '' });
   useEffect(() => {
     let cancelled = false;
     const refresh = () => filterConfigurationApi.published(department).then((result) => {

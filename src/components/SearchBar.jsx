@@ -11,7 +11,7 @@ export default function SearchBar() {
   const [q, setQ] = useState('');
   const [literal, setLiteral] = useState(false);
   const [open, setOpen] = useState(false);
-  const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
+  const [mobile, setMobile] = useState(false);
   const [position, setPosition] = useState({});
   const [seed, setSeed] = useState('catalog');
   const [active, setActive] = useState(-1);
@@ -68,7 +68,7 @@ export default function SearchBar() {
   useEffect(() => {
     const media = window.matchMedia('(max-width: 768px)');
     const update = () => { setMobile(media.matches); close(); };
-    media.addEventListener('change', update); return () => media.removeEventListener('change', update);
+    update(); media.addEventListener('change', update); return () => media.removeEventListener('change', update);
   }, [close]);
   useEffect(() => {
     function shortcut(event) {

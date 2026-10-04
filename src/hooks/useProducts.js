@@ -6,11 +6,18 @@ import {
   subscribePublicCatalogRealtime,
 } from '../services/dajaPlatform';
 import { useConsent } from '../context/ConsentContext.jsx';
+import { usePageData } from '../ssr/PageData.jsx';
 
 export default function useProducts(params = {}) {
   const { hasDecision } = useConsent();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const page = usePageData();
+  const initialItems = useMemo(() => {
+    const catalog = !params.admin ? page?.data?.catalog : null;
+    if (!catalog) return null;
+    return params.all ? catalog : catalog.slice(0, Math.max(1, Number(params.limit) || 32));
+  }, [page?.data?.catalog, params.admin, params.all, params.limit]);
+  const [items, setItems] = useState(initialItems || []);
+  const [loading, setLoading] = useState(!initialItems);
   const [err, setErr] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   // A desktop create is two writes: product first, then its inventory
@@ -26,7 +33,8 @@ export default function useProducts(params = {}) {
   const usePublicRealtime = memoizedParams.publicRealtime ?? !memoizedParams.admin;
 
   useEffect(() => {
-    setLoading(true);
+    // Keep the complete server-rendered listing while revalidating it.
+    setLoading(!initialItems);
     setErr(null);
 
     const { publicRealtime: _publicRealtime, ...requestParams } = memoizedParams;

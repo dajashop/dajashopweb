@@ -101,7 +101,7 @@ export default function HamburgerMenu({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loc.pathname]);
 
-  if (typeof document === 'undefined') return null;
+  if (!open || typeof document === 'undefined') return null;
 
   return createPortal(
     isDesktop ? (
@@ -135,11 +135,7 @@ export default function HamburgerMenu({
 
 /* ----- hook: desktop detekcija ----- */
 function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(() =>
-    typeof window !== 'undefined'
-      ? window.matchMedia('(min-width:1024px)').matches
-      : false
-  );
+  const [isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
     const m = window.matchMedia('(min-width:1024px)');
     const fn = () => setIsDesktop(m.matches);

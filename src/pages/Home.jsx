@@ -9,8 +9,6 @@ import useProducts from '../hooks/useProducts.js';
 import { useAuth } from '../hooks/useAuth';
 import { useFlash } from '../hooks/useFlash.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
-import OrganizationJsonLd from '../components/seo/OrganizationJsonLd.jsx';
-import WebSiteJsonLd from '../components/seo/WebSiteJsonLd.jsx';
 import { isAdminEmail } from '../services/dajaPlatform';
 import { saveProduct } from '../services/products';
 import {
@@ -437,8 +435,6 @@ export default function Home() {
         keywords={seoConfig.siteKeywords}
         type="website"
       />
-      <OrganizationJsonLd />
-      <WebSiteJsonLd />
 
       {/* HERO */}
       <section className="hero">

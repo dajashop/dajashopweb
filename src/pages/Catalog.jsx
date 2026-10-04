@@ -78,8 +78,21 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   const [sp, setSp] = useSearchParams();
   const { configuration: savedFilterConfiguration, loading: filterConfigurationLoading, error: filterConfigurationError } = useFilterConfiguration(department);
   const spKey = sp.toString();
-  const hasFilteredCatalogUrl = spKey.length > 0;
+  const hasFilteredCatalogUrl = [...sp.keys()].some(key => !['page', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid'].includes(key));
   const navType = useNavigationType();
+  const filterIdentityParams = new URLSearchParams(sp);
+  filterIdentityParams.delete('page');
+  const filterIdentity = `${department}:${filterIdentityParams}`;
+  const previousFilters = useRef(filterIdentity);
+  useEffect(() => {
+    if (previousFilters.current === filterIdentity) return;
+    previousFilters.current = filterIdentity;
+    if (sp.has('page')) {
+      const next = new URLSearchParams(sp);
+      next.delete('page');
+      setSp(next, { replace: true });
+    }
+  }, [filterIdentity, sp, setSp]);
 
   const sortParam = sp.get('sort') || 'popular';
   const backendOrderField = useMemo(() => {
@@ -93,8 +106,8 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     const next = new URLSearchParams(sp);
     if (val) next.set('sort', val);
     else next.delete('sort');
+    next.delete('page');
     setSp(next, { replace: true });
-    setPage(1);
   };
 
   // Kluc za cuvanje pozicije skrola po odeljenju + aktivnim filterima
@@ -280,8 +293,16 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     ];
   }, [departmentItems, fixedGender, sp, isAdmin, sortParam, filterConfiguration, configuredParams, filterConfigurationError]);
 
-  const [page, setPage] = useState(1);
   const totalCount = filteredData.length;
+  const requestedPage = Number(sp.get('page'));
+  const page = Math.min(Math.max(1, Math.ceil(totalCount / PER_PAGE)),
+    Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
+  const getPageUrl = (number) => {
+    const next = new URLSearchParams(sp);
+    if (number === 1) next.delete('page');
+    else next.set('page', String(number));
+    return `${activeSeo.path}${next.size ? `?${next}` : ''}`;
+  };
 
   // Vrati skrol i paginaciju kad se vracamo (Back/Forward), bez Lenis-a
   useEffect(() => {
@@ -291,7 +312,6 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
         try {
           const saved = JSON.parse(savedRaw);
           savedScrollRef.current = saved;
-          if (saved?.page) setPage(saved.page);
 
           requestAnimationFrame(() => {
             window.scrollTo({
@@ -309,7 +329,6 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
     // Novi filteri/odeljenje -> reset na vrh i prva strana
     savedScrollRef.current = null;
-    setPage(1);
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [spKey, department, navType, preferencesAllowed, scrollKey]);
 
@@ -388,7 +407,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
               page={page}
               total={totalCount}
               perPage={PER_PAGE}
-              onChange={setPage}
+              getPageUrl={getPageUrl}
             />
           </div>
           <p className="catalog__page-count">
@@ -402,15 +421,15 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   return (
     <motion.div
       className="catalog-page w-full max-w-[95%] mx-auto px-4 sm:px-6 py-6"
-      initial={{ opacity: 0 }}
+      initial={false}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
       <SEOHead
-        title={activeSeo.title}
+        title={`${activeSeo.title}${page > 1 ? ` — strana ${page}` : ''}`}
         description={activeSeo.description}
         keywords={activeSeo.keywords}
-        url={`${siteRoot}${activeSeo.path}`}
+        url={`${siteRoot}${activeSeo.path}${page > 1 ? `?page=${page}` : ''}`}
         noIndex={hasFilteredCatalogUrl}
       />
       <BreadcrumbJsonLd
@@ -514,7 +533,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
           <motion.div
             key={department + sp.toString()}
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}

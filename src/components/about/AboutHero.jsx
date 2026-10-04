@@ -24,7 +24,7 @@ export default function AboutHero() {
       <motion.div
         className="content"
         variants={containerVariants}
-        initial="hidden"
+        initial={false}
         animate="visible"
       >
         <motion.p className="pill" variants={itemVariants}>

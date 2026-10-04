@@ -1,17 +1,21 @@
 // src/hooks/useProduct.js
 import { useCallback, useEffect, useState } from "react";
 import { fetchProductBySlug } from "../services/products";
+import { usePageData } from '../ssr/PageData.jsx';
 
 export default function useProduct(slug) {
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const page = usePageData();
+  const initialProduct = page?.data?.product?.slug === slug ? page.data.product : null;
+  const [product, setProduct] = useState(initialProduct);
+  const [loading, setLoading] = useState(Boolean(slug) && !initialProduct);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!slug) return;
 
     let mounted = true;
-    setLoading(true);
+    setError(null);
+    setLoading(!initialProduct);
 
     async function load() {
       try {

@@ -31,7 +31,7 @@ export default function AboutInfoGlass() {
         <motion.div
           className="grid-3"
           variants={containerVariants}
-          initial="hidden"
+          initial={false}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
         >

@@ -135,7 +135,7 @@ function normalizeUser(data) {
   };
 }
 
-function normalizeProduct(product) {
+export function normalizeProduct(product) {
   if (!product) return product;
   const firstVariant = Array.isArray(product.variants)
     ? product.variants[0]

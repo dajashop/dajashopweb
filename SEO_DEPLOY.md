@@ -1,19 +1,42 @@
-# Aktiviranje produkcijskog SEO worker-a
+# Serverski prikaz javnog sajta
 
-`public/_worker.js` se kopira u `dist/_worker.js` pri `npm run build`. Cloudflare Pages ga automatski pokreće u Advanced mode-u kada je deploy output direktorijum `dist`.
+`npm run build` pravi browser aplikaciju i samostalan Cloudflare Pages Worker
+`dist/_worker.js`. Build komanda ostaje `npm run build`, output direktorijum `dist`.
+Postojeći `wrangler.toml` pripada posebnom R2 image Workeru.
 
-U Cloudflare Pages projektu za produkciju postaviti sledeće varijable:
+## Konfiguracija
 
-- `SITE_URL=https://dajashop.rs`
-- `DAJA_API_BASE_URL=https://daja-platform-api.onrender.com/api/v1`
+U Pages projektu koristiti iste vrednosti za build i runtime:
 
-Zatim napraviti novi production deploy kroz postojeću Git integraciju ili Pages deploy za `dist` direktorijum.
+- `SITE_URL` i `VITE_SITE_URL`: `https://dajashop.rs`
+- `DAJA_API_BASE_URL` i `VITE_DAJA_API_BASE_URL`: `https://daja-platform-api.onrender.com/api/v1`
 
-Nakon objave proveriti:
+Podrazumevane vrednosti odgovaraju postojećoj produkciji. `SITE_URL` i
+`DAJA_API_BASE_URL` su runtime varijable; `VITE_*` ulaze u browser build.
+Worker se bundluje zajedno sa npm zavisnostima za webworker runtime.
+Statički resursi koriste Pages ASSETS binding.
 
-```powershell
-Invoke-WebRequest -UseBasicParsing https://dajashop.rs/product/<slug> -Headers @{ 'User-Agent' = 'Googlebot' }
-Invoke-WebRequest -UseBasicParsing https://dajashop.rs/product/nepostojeci-proizvod
-```
+## Ponašanje
 
-Prvi odgovor mora sadržati naziv artikla, njegov canonical i `application/ld+json`; drugi mora vratiti HTTP 404. Promenjeni slug mora vratiti HTTP 301 na novi URL.
+- Početna, katalozi, proizvodi, informacije, FAQ, kontakt, usluge i javni izbor
+  za graviranje imaju React HTML pre pokretanja JavaScripta.
+- Browser preuzima isti anonimni početni skup podataka i hidrira postojeći HTML.
+  Korpa, prijava, administracija i 3D prikaz aktiviraju se u browseru.
+- Proizvodi imaju naziv, fotografiju, cenu, opis, specifikacije i strukturirane
+  podatke u HTML-u. Specifikacije unutar taba ostaju u HTML-u kada je tab zatvoren.
+- Katalog ima linkove `?page=N` i poseban canonical za svaku stranu. Filtrirani
+  URL-ovi imaju `noindex,follow`.
+- Worker kešira samo anonimne odgovore kataloga do 60 sekundi. Rok akcije
+  dodatno skraćuje keš. Privatni podaci, tokeni i nacrti se ne serijalizuju.
+- Nedostajući proizvod vraća 404, promenjen slug 301, a nedostupan backend 503
+  sa `Retry-After`. API greška ne objavljuje prazan katalog sa statusom 200.
+- Sitemap, merchant feed i OAuth callback koriste postojeći backend.
+- `npm run dev` koristi isti renderer preko Vite middleware-a. `vite preview`
+  prikazuje statički browser build. Za lokalni Pages runtime koristiti
+  `npx wrangler pages dev dist` posle builda.
+
+## Naknadna provera
+
+Posle objave pregledati početni HTML javnih URL-ova, hidrataciju u browseru,
+404/301/503 odgovore i katalog `?page=2`. Ovo je uputstvo za buduću proveru;
+izmena koda sama po sebi ne potvrđuje stanje objavljenog sajta.

@@ -117,7 +117,7 @@ export default function AboutValues() {
       >
         <motion.h2
           className="h2"
-          initial={{ y: 20, opacity: 0 }}
+          initial={false}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -127,7 +127,7 @@ export default function AboutValues() {
         <motion.div
           className={gridClass}
           variants={containerVariants}
-          initial="hidden"
+          initial={false}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           style={{ marginTop: '40px' }}

@@ -86,10 +86,7 @@ function shippingDetails() {
 }
 
 export default function ProductJsonLd({ product, reviews = [] }) {
-  if (
-    !product ||
-    (typeof window !== 'undefined' && window.__DAJASHOP_SERVER_PRODUCT_SCHEMA__)
-  ) {
+  if (!product) {
     return null;
   }
 

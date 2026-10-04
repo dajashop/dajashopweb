@@ -6,7 +6,7 @@ export default function JsonLd({ data }) {
 
   return (
     <Helmet>
-      <script type="application/ld+json">{JSON.stringify(data)}</script>
+      <script type="application/ld+json">{JSON.stringify(data).replace(/</g, '\\u003c')}</script>
     </Helmet>
   );
 }

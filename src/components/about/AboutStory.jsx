@@ -23,7 +23,7 @@ export default function AboutStory() {
     <motion.section
       className="section"
       // whileInView animacija ulaska celog bloka
-      initial="hidden"
+      initial={false}
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={containerVariants}

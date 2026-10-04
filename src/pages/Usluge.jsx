@@ -81,7 +81,7 @@ export default function Usluge() {
       <motion.main
         className="usluge container"
         key="uslugePage"
-        initial="initial"
+        initial={false}
         animate="in"
         exit="out"
         variants={pageVariants}
@@ -115,7 +115,7 @@ export default function Usluge() {
                 key={service.id}
                 className="card shadow glass"
                 style={serviceCardStyle}
-                initial={{ opacity: 0, y: 50 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1, duration: 0.6 }}
                 whileHover={{ scale: 1.02 }}

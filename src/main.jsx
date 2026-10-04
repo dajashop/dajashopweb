@@ -1,37 +1,19 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot, hydrateRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async';
 import App from './App.jsx';
 import './styles/base.css';
-import { ThemeProvider } from './context/ThemeProvider.jsx';
-import { CartProvider } from './context/CarProvider.jsx';
-import { AuthProvider } from './context/AuthProvider.jsx';
-import { FlashProvider } from './context/FlashContext.jsx';
-import { UndoProvider } from './context/UndoProvider.jsx';
-import { WishlistProvider } from './context/WishlistProvider.jsx';
-import { ConsentProvider } from './context/ConsentProvider.jsx';
+import AppProviders from './AppProviders.jsx';
 
-createRoot(document.getElementById('root')).render(
+const root = document.getElementById('root');
+const dataElement = document.getElementById('daja-page-data');
+const pageData = dataElement ? JSON.parse(dataElement.textContent) : null;
+const app = (
   <React.StrictMode>
     <BrowserRouter>
-      <ConsentProvider>
-        <AuthProvider>
-          <ThemeProvider>
-            <CartProvider>
-              <FlashProvider>
-                <UndoProvider>
-                  <WishlistProvider>
-                    <HelmetProvider>
-                      <App />
-                    </HelmetProvider>
-                  </WishlistProvider>
-                </UndoProvider>
-              </FlashProvider>
-            </CartProvider>
-          </ThemeProvider>
-        </AuthProvider>
-      </ConsentProvider>
+      <AppProviders pageData={pageData}><App /></AppProviders>
     </BrowserRouter>
   </React.StrictMode>,
 );
+if (pageData && root.hasChildNodes()) hydrateRoot(root, app);
+else createRoot(root).render(app);

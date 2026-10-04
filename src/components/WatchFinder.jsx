@@ -368,11 +368,6 @@ function getOptionVisualKey(questionKey, optionIndex) {
   return `${questionKey}::${optionIndex}`;
 }
 
-function getViewportWidth() {
-  if (typeof window === 'undefined') return 1280;
-  return window.innerWidth;
-}
-
 function buildSearchParams(answers) {
   const sp = new URLSearchParams();
 
@@ -612,7 +607,7 @@ export default function WatchFinder({
   const isSplit = layout === 'split';
   const isDark = variant === 'dark';
   const isEditorial = variant === 'editorial';
-  const [viewportWidth, setViewportWidth] = useState(getViewportWidth);
+  const [viewportWidth, setViewportWidth] = useState(1280);
   const isPhoneViewport = viewportWidth <= 700;
   const isIntroViewport = viewportWidth <= 1024;
   const hasIntro = (showIntro && !isSplit) || isIntroViewport;
@@ -679,7 +674,7 @@ export default function WatchFinder({
   const buttonMotionTransition = shouldReduceMotion
     ? { duration: 0.12 }
     : { type: 'spring', stiffness: 300, damping: 24, mass: 0.82 };
-  const rootInitial = shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 18 };
+  const rootInitial = false;
   const rootAnimate = shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 };
   const rootTransition = shouldReduceMotion
     ? { duration: 0.22, ease: 'linear' }
@@ -842,6 +837,7 @@ export default function WatchFinder({
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const handleResize = () => setViewportWidth(window.innerWidth);
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -886,7 +882,7 @@ export default function WatchFinder({
               <Motion.div
                 key="selection-loading"
                 variants={sectionVariants}
-                initial="initial"
+                initial={false}
                 animate="animate"
                 exit="exit"
                 transition={sectionTransition}
@@ -902,7 +898,7 @@ export default function WatchFinder({
               <Motion.div
                 key="selection-results"
                 variants={sectionVariants}
-                initial="initial"
+                initial={false}
                 animate="animate"
                 exit="exit"
                 transition={sectionTransition}
@@ -926,7 +922,7 @@ export default function WatchFinder({
                   <Motion.div
                     className="wf-results__grid"
                     variants={resultsGridVariants}
-                    initial="initial"
+                    initial={false}
                     animate="animate"
                     exit="exit"
                   >
@@ -986,7 +982,7 @@ export default function WatchFinder({
         <Motion.div
           className="wf-results__grid"
           variants={resultsGridVariants}
-          initial="initial"
+          initial={false}
           animate="animate"
           exit="exit"
         >
@@ -1029,7 +1025,7 @@ export default function WatchFinder({
           <Motion.div
             key="phone-intro"
             variants={sectionVariants}
-            initial="initial"
+            initial={false}
             animate="animate"
             exit="exit"
             transition={sectionTransition}
@@ -1086,7 +1082,7 @@ export default function WatchFinder({
                   <Motion.div
                     key="intro"
                     variants={sectionVariants}
-                    initial="initial"
+                    initial={false}
                     animate="animate"
                     exit="exit"
                     transition={sectionTransition}
@@ -1113,7 +1109,7 @@ export default function WatchFinder({
                   <Motion.div
                     key={current.key}
                     variants={sectionVariants}
-                    initial="initial"
+                    initial={false}
                     animate="animate"
                     exit="exit"
                     transition={sectionTransition}
@@ -1148,7 +1144,7 @@ export default function WatchFinder({
                     <Motion.div
                       className="wf-options"
                       variants={optionsGridVariants}
-                      initial="initial"
+                      initial={false}
                       animate="animate"
                       exit="exit"
                     >
@@ -1203,7 +1199,7 @@ export default function WatchFinder({
                   <Motion.div
                     key="intro"
                     variants={sectionVariants}
-                    initial="initial"
+                    initial={false}
                     animate="animate"
                     exit="exit"
                     transition={sectionTransition}
@@ -1230,7 +1226,7 @@ export default function WatchFinder({
                   <Motion.div
                     key={current.key}
                     variants={sectionVariants}
-                    initial="initial"
+                    initial={false}
                     animate="animate"
                     exit="exit"
                     transition={sectionTransition}
@@ -1259,7 +1255,7 @@ export default function WatchFinder({
                     <Motion.div
                       className="wf-options"
                       variants={optionsGridVariants}
-                      initial="initial"
+                      initial={false}
                       animate="animate"
                       exit="exit"
                     >
@@ -1308,7 +1304,7 @@ export default function WatchFinder({
                 key={editorialNoteMotionKey}
                 className="wf-editorialNote__content"
                 variants={noteContentVariants}
-                initial="initial"
+                initial={false}
                 animate="animate"
                 exit="exit"
                 transition={noteTransition}

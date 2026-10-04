@@ -61,7 +61,7 @@ export default function AboutTimeline() {
   return (
     <motion.section
       className="section"
-      initial="hidden"
+      initial={false}
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
       variants={containerVariants}
