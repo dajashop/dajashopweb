@@ -25,6 +25,7 @@ import FAQ from './pages/FAQ.jsx';
 import Contact from './pages/Contact.jsx';
 import Usluge from './pages/Usluge.jsx';
 import Engraving from './pages/Engraving.jsx';
+import PageStatus from './pages/PageStatus.jsx';
 const OrdersPage = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Admin/OrdersPage'));
 const LegalDocument = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/LegalDocument.jsx'));
 const Unsubscribe = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Unsubscribe.jsx'));
@@ -66,6 +67,7 @@ export default function AppRoutes() {
       <Route path="/cookies" element={<LegalDocument kind="cookies" />} />
       <Route path="/terms" element={<LegalDocument kind="terms" />} />
       <Route path="/unsubscribe" element={<Unsubscribe />} />
+      <Route path="*" element={<PageStatus />} />
     </Routes>
   );
 }

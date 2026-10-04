@@ -22,7 +22,7 @@ export default function useProduct(slug) {
         const data = await fetchProductBySlug(slug);
         if (mounted) {
           if (data) setProduct(data);
-          else setError(new Error("Proizvod nije pronađen u bazi."));
+          else setError(Object.assign(new Error("Proizvod nije pronađen u bazi."), { status: 404 }));
         }
       } catch (err) {
         if (mounted) setError(err);

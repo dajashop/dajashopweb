@@ -8,10 +8,14 @@ import NewsletterModal from './components/modals/NewsletterModal.jsx';
 import { useEffect } from 'react';
 import OrganizationJsonLd from './components/seo/OrganizationJsonLd.jsx';
 import WebSiteJsonLd from './components/seo/WebSiteJsonLd.jsx';
+import PageStatus from './pages/PageStatus.jsx';
+import { usePageData } from './ssr/PageData.jsx';
 
 export default function App() {
   const { pathname } = useLocation(); // Hvatamo trenutnu putanju
   const navType = useNavigationType();
+  const pageData = usePageData()?.data;
+  const pageStatus = pageData?.errorPath === pathname ? pageData.errorStatus : null;
 
   const isWidePage =
     pathname.startsWith('/catalog') ||
@@ -23,9 +27,9 @@ export default function App() {
     pathname === '/naocare' ||
     pathname === '/logout' ||
     pathname === '/verify-email' ||
-    pathname === '/reset-password';
+    pathname === '/reset-password' || Boolean(pageStatus);
   const isFullBleedPage =
-    pathname === '/logout' || pathname === '/verify-email' || pathname === '/reset-password';
+    pathname === '/logout' || pathname === '/verify-email' || pathname === '/reset-password' || Boolean(pageStatus);
 
   // Resetovanje skrola na vrh pri promeni stranice (samo za PUSH/REPLACE)
   useEffect(() => {
@@ -49,7 +53,7 @@ export default function App() {
       >
         <AuthModal />
         <NewsletterModal />
-        <AppRoutes />
+        {pageStatus ? <PageStatus status={pageStatus} /> : <AppRoutes />}
       </main>
       <Footer />
     </div>

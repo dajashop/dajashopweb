@@ -28,6 +28,7 @@ import ProductJsonLd from '../components/seo/ProductJsonLd.jsx';
 import BreadcrumbJsonLd from '../components/seo/BreadcrumbJsonLd.jsx';
 import { seoConfig } from '../config/seo.js';
 import { visibleProductFeatures } from '../utils/catalogPresentation.js';
+import PageStatus from './PageStatus.jsx';
 
 const DEPARTMENT_LABELS = {
   satovi: 'Ručni Satovi',
@@ -72,7 +73,7 @@ export default function Product() {
   if (loading)
     return <div className="container product-loading">Učitavanje...</div>;
   if (error || !p)
-    return <div className="container product-error">Nije pronađeno.</div>;
+    return <PageStatus status={error && error.status !== 404 ? 503 : 404} />;
   if (p.redirectTo) return <div className="container product-loading">Preusmeravanje...</div>;
 
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');

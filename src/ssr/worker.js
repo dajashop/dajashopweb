@@ -5,7 +5,27 @@ import { CATALOG_DEPARTMENTS, isProductPath, loadPage, PUBLIC_PATHS, publicCache
 const PRIVATE_PATHS = new Set(['/cart', '/checkout', '/account', '/orders', '/admin',
   '/verify-email', '/reset-password', '/logout', '/unsubscribe', '/privacy', '/cookies', '/terms', '/search']);
 
-function errorPage(status) {
+async function errorPage(status, request, env) {
+  try {
+    const url = new URL(request.url);
+    const templateResponse = await env.ASSETS.fetch(new Request(new URL('/', url)));
+    if (!templateResponse.ok) throw new Error('Page template unavailable');
+    const siteUrl = (env.SITE_URL || import.meta.env.VITE_SITE_URL || 'https://dajashop.rs').replace(/\/$/, '');
+    const rendered = renderPage(`${url.pathname}${url.search}`, {
+      errorStatus: status, errorPath: url.pathname,
+    }, siteUrl);
+    const html = renderDocument(await templateResponse.text(), rendered);
+    const headers = new Headers(templateResponse.headers);
+    for (const name of ['Content-Length', 'Content-Encoding', 'ETag', 'Set-Cookie']) headers.delete(name);
+    headers.set('Content-Type', 'text/html; charset=utf-8');
+    headers.set('Cache-Control', 'no-store');
+    headers.set('X-Robots-Tag', 'noindex,follow');
+    if (status === 503) headers.set('Retry-After', '60');
+    return new Response(request.method === 'HEAD' ? null : html, { status, headers });
+  } catch (error) {
+    console.error('Error page rendering failed', { status, message: error.message });
+  }
+  // Last resort if the asset template or renderer itself is unavailable.
   const title = status === 404 ? 'Stranica nije pronađena' : 'Stranica je privremeno nedostupna';
   return new Response(`<!doctype html><html lang="sr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>${title} | DajaShop</title></head><body><h1>${title}</h1><p>${status === 404 ? 'Proverite adresu ili otvorite katalog.' : 'Pokušajte ponovo za nekoliko trenutaka.'}</p><a href="/catalog">Otvori katalog</a></body></html>`, {
     status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
@@ -59,7 +79,7 @@ export default {
       } }).transform(response);
       return request.method === 'HEAD' ? new Response(null, { status: rendered.status, headers: rendered.headers }) : rendered;
     }
-    if (!PUBLIC_PATHS.has(path) && !isProductPath(path)) return errorPage(404);
+    if (!PUBLIC_PATHS.has(path) && !isProductPath(path)) return errorPage(404, request, env);
     const siteUrl = (env.SITE_URL || import.meta.env.VITE_SITE_URL || 'https://dajashop.rs').replace(/\/$/, '');
     try {
       const snapshot = await loadPage(url, apiBase,
@@ -67,7 +87,7 @@ export default {
           product => publicCacheSeconds({ product })),
         loader => cachedData(request, 'catalog', loader, catalog => publicCacheSeconds({ catalog })),
       );
-      if (snapshot.missing) return errorPage(404);
+      if (snapshot.missing) return errorPage(404, request, env);
       if (snapshot.redirectTo) return Response.redirect(new URL(snapshot.redirectTo, siteUrl).toString(), 301);
       const templateResponse = await env.ASSETS.fetch(new Request(new URL('/', url)));
       if (!templateResponse.ok) throw new Error('Page template unavailable');
@@ -91,7 +111,7 @@ export default {
       return new Response(request.method === 'HEAD' ? null : html, { status: 200, headers });
     } catch (error) {
       console.error('Public page rendering failed', { path, message: error.message });
-      return errorPage(503);
+      return errorPage(503, request, env);
     }
   },
 };
