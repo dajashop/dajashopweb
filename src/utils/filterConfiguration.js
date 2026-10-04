@@ -179,8 +179,10 @@ export function validateFilterConfiguration(configuration) {
   checkDepth(configuration.filters);
   allFilterNodes(configuration.filters).forEach((node) => {
     if (!node.title.trim()) errors.push('Unesi naziv svakog filtera.');
+    if (node.urlSlug && (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(node.urlSlug) || node.urlSlug.length > 80)) errors.push(`${node.title}: naziv u adresi koristi mala slova, brojeve i crtice (do 80 znakova).`);
     node.options.forEach((option) => {
       if (!option.label.trim()) errors.push(`${node.title}: unesi naziv opcije.`);
+      if (option.urlSlug && (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(option.urlSlug) || option.urlSlug.length > 80)) errors.push(`${node.title}: naziv opcije u adresi koristi mala slova, brojeve i crtice (do 80 znakova).`);
       if (option.color && !/^#[0-9a-f]{6}$/i.test(option.color)) errors.push(`${node.title}: boja mora biti HEX, npr. #ffffff.`);
       if (option.image && !/^https:\/\//.test(option.image) && !/^\/(?!\/)/.test(option.image)) errors.push(`${node.title}: slika mora koristiti HTTPS ili lokalnu putanju.`);
       if (option.conditions.some((condition) => !condition.values.length)) errors.push(`${node.title}: izaberi vrednosti za svaki uslov opcije.`);

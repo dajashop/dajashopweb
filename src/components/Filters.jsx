@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './Filters.css';
-import { useSearchParams } from 'react-router-dom';
+import { useCatalogParams as useSearchParams } from '../context/CatalogParams.jsx';
 import catalog from '../services/CatalogService.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import { catalogSpecValue, diameterValue, filterCatalogProducts, isDiameterSpec, normalizedCatalogGender } from '../utils/catalogFilters.js';

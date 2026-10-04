@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './Catalog.css';
-import { useNavigationType, useSearchParams } from 'react-router-dom';
+import { useNavigationType, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
+import { CatalogParamsContext } from '../context/CatalogParams.jsx';
+import { catalogUrl, decodeCatalogParams, filterUrlEntries, urlSlug, brandDisplayName } from '../utils/catalogUrls.js';
 import { motion } from 'framer-motion';
 import { Loader2, AlertTriangle, ArrowLeft, X } from 'lucide-react';
 
@@ -72,13 +74,27 @@ const departmentSEO = {
 };
 
 export default function Catalog({ department = 'satovi', fixedGender, seo }) {
-  const activeSeo = seo || departmentSEO[department] || departmentSEO.satovi;
+  const baseSeo = seo || departmentSEO[department] || departmentSEO.satovi;
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
 
-  const [sp, setSp] = useSearchParams();
+  const [rawParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { configuration: savedFilterConfiguration, loading: filterConfigurationLoading, error: filterConfigurationError } = useFilterConfiguration(department);
+  const sp = useMemo(() => decodeCatalogParams(rawParams, savedFilterConfiguration, location.pathname), [rawParams, savedFilterConfiguration, location.pathname]);
+  const setSp = (value, options) => {
+    const next = new URLSearchParams(typeof value === 'function' ? value(new URLSearchParams(sp)) : value);
+    navigate(catalogUrl(next, filterConfiguration, location.pathname), options);
+  };
+  const brandEntry = filterUrlEntries(savedFilterConfiguration).find(entry => entry.node.sources.includes('brand'));
+  const selectedBrands = brandEntry?.options.filter(entry => sp.getAll(`cf_${brandEntry.node.id}`).includes(entry.option.id)) || [];
+  const routeBrand = location.pathname.startsWith('/brend/') ? decodeURIComponent(location.pathname.split('/')[2]) : '';
+  const brandName = selectedBrands.length === 1 ? brandDisplayName(selectedBrands[0].option.label)
+    : !savedFilterConfiguration && routeBrand ? brandDisplayName(routeBrand === 'q-q' ? 'Q&Q' : routeBrand.replace(/-/g, ' ')) : '';
+  const brandPath = brandName && department === 'satovi' && !fixedGender ? `/brend/${selectedBrands[0]?.slug || routeBrand}` : '';
+  const activeSeo = brandPath ? { ...baseSeo, path: brandPath, title: `${brandName} satovi`, description: `Pregledajte ${brandName} satove u DajaShop prodavnici. Izaberite model po mehanizmu, staklu, izgledu i ceni.` } : baseSeo;
   const spKey = sp.toString();
-  const hasFilteredCatalogUrl = [...sp.keys()].some(key => !['page', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid'].includes(key));
+  const hasFilteredCatalogUrl = [...sp.keys()].some(key => !['page', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid', ...(brandPath ? [`cf_${brandEntry?.node.id}`, 'brand'] : [])].includes(key));
   const navType = useNavigationType();
   const filterIdentityParams = new URLSearchParams(sp);
   filterIdentityParams.delete('page');
@@ -145,6 +161,8 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       // 1. Provera odeljenja
       const productDept = p.department || 'satovi';
       if (productDept !== department) return false;
+      if (routeBrand && savedFilterConfiguration && !selectedBrands.length) return false;
+      if (routeBrand && !savedFilterConfiguration && urlSlug(p.brand) !== urlSlug(routeBrand)) return false;
 
       // 2. LOGIKA VIDLJIVOSTI:
       // Ako je proizvod sakriven (isVisible === false)...
@@ -156,13 +174,15 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
       return true;
     });
-  }, [allItems, department, isAdmin]); // Dodat isAdmin u zavisnosti
+  }, [allItems, department, isAdmin, routeBrand, savedFilterConfiguration, sp.toString()]);
 
   const filterConfiguration = useMemo(() => automaticFilterConfiguration(savedFilterConfiguration, departmentItems.filter((product) => product.isVisible !== false)), [savedFilterConfiguration, departmentItems]);
   const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration, fixedGender) : sp, [sp, filterConfiguration, fixedGender]);
   useEffect(() => {
-    if (filterConfiguration && configuredParams.toString() !== sp.toString()) setSp(configuredParams, { replace: true });
-  }, [configuredParams, filterConfiguration, sp, setSp]);
+    if (filterConfigurationLoading || filterConfigurationError) return;
+    const readable = catalogUrl(configuredParams, filterConfiguration, location.pathname);
+    if (readable !== `${location.pathname}${location.search}`) navigate(readable, { replace: true });
+  }, [configuredParams, filterConfiguration, filterConfigurationLoading, filterConfigurationError, location.pathname, location.search, navigate]);
 
   // --- FILTRIRANJE ---
   const activeFilters = useMemo(() => {
@@ -218,6 +238,12 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
     return active;
   }, [fixedGender, sp, configuredParams, filterConfiguration, filterConfigurationLoading, filterConfigurationError]);
+
+  const mechanismEntry = filterUrlEntries(filterConfiguration).find(entry => entry.key === 'mehanizam');
+  const chosenMechanism = mechanismEntry?.options.filter(entry => configuredParams.getAll(`cf_${mechanismEntry.node.id}`).includes(entry.option.id)) || [];
+  const nonBrandChips = activeFilters.filter(chip => chip.key !== `cf_${brandEntry?.node.id}`);
+  const automaticOnly = brandName && nonBrandChips.length === 1 && chosenMechanism.length === 1 && urlSlug(chosenMechanism[0].option.label) === 'automatski';
+  const catalogTitle = brandName ? `${brandName}${fixedGender ? ` ${fixedGender.toLowerCase()}` : ''}${automaticOnly ? ' automatski' : ''} satovi` : TITLES[department] || activeSeo.title;
 
   const removeFilter = (key, val) => {
     const next = new URLSearchParams(configuredParams);
@@ -301,7 +327,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     const next = new URLSearchParams(sp);
     if (number === 1) next.delete('page');
     else next.set('page', String(number));
-    return `${activeSeo.path}${next.size ? `?${next}` : ''}`;
+    return catalogUrl(next, filterConfiguration, location.pathname);
   };
 
   // Vrati skrol i paginaciju kad se vracamo (Back/Forward), bez Lenis-a
@@ -419,14 +445,14 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   };
 
   return (
-    <motion.div
+    <CatalogParamsContext.Provider value={[configuredParams, setSp]}><motion.div
       className="catalog-page w-full max-w-[95%] mx-auto px-4 sm:px-6 py-6"
       initial={false}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
       <SEOHead
-        title={`${activeSeo.title}${page > 1 ? ` — strana ${page}` : ''}`}
+        title={`${brandName ? catalogTitle : activeSeo.title}${page > 1 ? ` — strana ${page}` : ''}`}
         description={activeSeo.description}
         keywords={activeSeo.keywords}
         url={`${siteRoot}${activeSeo.path}${page > 1 ? `?page=${page}` : ''}`}
@@ -435,7 +461,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       <BreadcrumbJsonLd
         items={[
           {
-            name: TITLES[department] || department,
+            name: brandName ? `${brandName} satovi` : TITLES[department] || department,
             url: `${siteRoot}${activeSeo.path}`,
           },
         ]}
@@ -455,20 +481,17 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
             <div className="flex justify-between items-center mb-4 gap-4 flex-wrap">
               <Breadcrumbs
                 trail={[
-                  { label: 'Početna', href: '/' },
                   {
-                    label: TITLES[department] || department,
+                    label: brandName ? `${brandName} satovi` : TITLES[department] || department,
                     href: activeSeo.path,
                   },
                 ]}
               />
             </div>
 
+            <h1 className="text-2xl font-bold text-text">{catalogTitle}</h1>
             <div className="catalog__toprow mt-4 pb-4 border-b border-(--color-border) relative min-h-[40px]">
               <div className="flex flex-wrap items-center gap-2 flex-1">
-                <h1 className="text-2xl font-bold text-text mr-2 whitespace-nowrap">
-                  Rezultat za:
-                </h1>
 
                 {activeFilters.length === 0 && (
                   <span className="catalog__pill catalog__pill--ghost">
@@ -542,6 +565,6 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
           </motion.div>
         </main>
       </div>
-    </motion.div>
+    </motion.div></CatalogParamsContext.Provider>
   );
 }

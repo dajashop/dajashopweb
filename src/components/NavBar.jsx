@@ -1,3 +1,4 @@
+import { brandUrl, brandChoiceUrl, urlSlug, isBrandPath } from '../utils/catalogUrls.js';
 import React, { useEffect, useState, useRef } from 'react';
 import './Navbar.css';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -52,7 +53,7 @@ export default function NavBar() {
     if (isMobile) {
       setOpenIdx((prev) => (prev === index ? null : index));
     } else {
-      navigate(`/catalog?brand=${encodeURIComponent(label)}`);
+      navigate(brandUrl(label));
     }
   };
 
@@ -75,13 +76,13 @@ export default function NavBar() {
   const selectedBrand = new URLSearchParams(location.search)
     .get('brand')
     ?.trim()
-    .toUpperCase();
+    .toUpperCase() || (isBrandPath(location.pathname) ? decodeURIComponent(location.pathname.split('/')[2]) : '');
   const isActive = (path) =>
     location.pathname === path && !selectedBrand
       ? 'navbar__all active'
       : 'navbar__all';
   const isBrandActive = (label) =>
-    location.pathname === '/catalog' && selectedBrand === label.toUpperCase();
+    (location.pathname === '/catalog' || isBrandPath(location.pathname)) && selectedBrand && urlSlug(selectedBrand) === urlSlug(label);
 
   return (
     <nav className="navbar" aria-label="Glavna navigacija">
@@ -148,7 +149,7 @@ export default function NavBar() {
               {/* Desktop Dropdown (Samo na hover) */}
               <div className="navbar__dropdown card">
                 <Link
-                  to={`/catalog?brand=${encodeURIComponent(g.label)}`}
+                  to={brandUrl(g.label)}
                   style={{ fontWeight: 'bold' }}
                 >
                   Svi {g.label}
@@ -156,9 +157,7 @@ export default function NavBar() {
                 {g.children.map((c) => (
                   <Link
                     key={c.label}
-                    to={`/catalog?brand=${encodeURIComponent(
-                      g.label
-                    )}&category=${encodeURIComponent(c.label)}`}
+                    to={brandChoiceUrl(g.label, c.label)}
                   >
                     {c.label}
                   </Link>
@@ -266,9 +265,7 @@ export default function NavBar() {
                   <>
                     <Link
                       className="navbar__pill"
-                      to={`/catalog?brand=${encodeURIComponent(
-                        navSatovi[openIdx].label
-                      )}`}
+                      to={brandUrl(navSatovi[openIdx].label)}
                       onClick={() => setOpenIdx(null)}
                       style={{
                         fontWeight: 'bold',
@@ -282,9 +279,7 @@ export default function NavBar() {
                       <Link
                         key={c.label}
                         className="navbar__pill"
-                        to={`/catalog?brand=${encodeURIComponent(
-                          navSatovi[openIdx].label
-                        )}&category=${encodeURIComponent(c.label)}`}
+                        to={brandChoiceUrl(navSatovi[openIdx].label, c.label)}
                         onClick={() => setOpenIdx(null)}
                       >
                         {c.label}

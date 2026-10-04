@@ -26,6 +26,13 @@ Statički resursi koriste Pages ASSETS binding.
   podatke u HTML-u. Specifikacije unutar taba ostaju u HTML-u kada je tab zatvoren.
 - Katalog ima linkove `?page=N` i poseban canonical za svaku stranu. Filtrirani
   URL-ovi imaju `noindex,follow`.
+- Brend ima javnu adresu `/brend/orient`. Filteri koriste čitljive parametre,
+  npr. `?mehanizam=automatski&staklo=safirno&cena-od=10000`. Stari linkovi sa
+  internim ID-jevima preusmeravaju se na novi format. Sami brendovi mogu da se
+  indeksiraju, dok dodatni filteri zadržavaju `noindex,follow`.
+- U admin podešavanjima filtera i opcija moguće je upisati „Naziv u adresi“.
+  Prazno polje bira automatski naziv. Za ručno čuvanje URL naziva backend mora
+  imati podršku za opcioni `urlSlug` u konfiguraciji filtera (bez DB migracije).
 - Worker kešira samo anonimne odgovore kataloga do 60 sekundi. Rok akcije
   dodatno skraćuje keš. Privatni podaci, tokeni i nacrti se ne serijalizuju.
 - Nedostajući proizvod vraća 404, promenjen slug 301, a nedostupan backend 503

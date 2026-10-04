@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useCatalogParams as useSearchParams } from '../context/CatalogParams.jsx';
 import ColorFilter from './ColorFilter.jsx';
 import MaterialFilter from './MaterialFilter.jsx';
 import FilterOptions from './FilterOptions.jsx';

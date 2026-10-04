@@ -1,6 +1,8 @@
 /* global HTMLRewriter */
 import { renderDocument, renderPage } from './entry-server.jsx';
-import { CATALOG_DEPARTMENTS, isProductPath, loadPage, PUBLIC_PATHS, publicCacheSeconds } from './loadPage.js';
+import { catalogDepartment, isProductPath, loadPage, PUBLIC_PATHS, publicCacheSeconds } from './loadPage.js';
+import { isBrandPath, catalogUrl, decodeCatalogParams, filterUrlEntries, urlSlug } from '../utils/catalogUrls.js';
+import { configuredFilterParams } from '../utils/filterConfiguration.js';
 
 const PRIVATE_PATHS = new Set(['/cart', '/checkout', '/account', '/orders', '/admin',
   '/verify-email', '/reset-password', '/logout', '/unsubscribe', '/privacy', '/cookies', '/terms', '/search']);
@@ -79,7 +81,7 @@ export default {
       } }).transform(response);
       return request.method === 'HEAD' ? new Response(null, { status: rendered.status, headers: rendered.headers }) : rendered;
     }
-    if (!PUBLIC_PATHS.has(path) && !isProductPath(path)) return errorPage(404, request, env);
+    if (!PUBLIC_PATHS.has(path) && !isProductPath(path) && !isBrandPath(path)) return errorPage(404, request, env);
     const siteUrl = (env.SITE_URL || import.meta.env.VITE_SITE_URL || 'https://dajashop.rs').replace(/\/$/, '');
     try {
       const snapshot = await loadPage(url, apiBase,
@@ -89,6 +91,19 @@ export default {
       );
       if (snapshot.missing) return errorPage(404, request, env);
       if (snapshot.redirectTo) return Response.redirect(new URL(snapshot.redirectTo, siteUrl).toString(), 301);
+      const department = catalogDepartment(path);
+      if (department && snapshot.filters[department]) {
+        const configuration = snapshot.filters[department];
+        if (isBrandPath(path)) {
+          const slug = decodeURIComponent(path.split('/')[2]);
+          const brand = filterUrlEntries(configuration).find(entry => entry.node.sources.includes('brand'));
+          if (!brand?.options.some(entry => entry.option.visible && (entry.slug === slug || urlSlug(entry.option.label) === urlSlug(slug)))) return errorPage(404, request, env);
+        }
+        const gender = path === '/muski-satovi' ? 'Muški' : path === '/zenski-satovi' ? 'Ženski' : undefined;
+        const params = configuredFilterParams(decodeCatalogParams(url.searchParams, configuration, path), configuration, gender);
+        const readable = catalogUrl(params, configuration, path);
+        if (readable !== `${url.pathname}${url.search}`) return Response.redirect(new URL(readable, siteUrl).toString(), 301);
+      }
       const templateResponse = await env.ASSETS.fetch(new Request(new URL('/', url)));
       if (!templateResponse.ok) throw new Error('Page template unavailable');
       const template = await templateResponse.text();
@@ -97,7 +112,7 @@ export default {
       // Query pages remain crawlable so bots can read noindex. Pagination is
       // deliberately excluded from this rule and gets a self canonical.
       const filtered = [...url.searchParams.keys()].some(key => !['page', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid'].includes(key));
-      if ((CATALOG_DEPARTMENTS[path] && filtered) || (path === '/graviranje' && url.search)) {
+      if ((catalogDepartment(path) && filtered) || (path === '/graviranje' && url.search)) {
         html = html.replace(/(<meta\b[^>]*name="robots"[^>]*content=")[^"]*/g, '$1noindex,follow,max-image-preview:large');
       }
       const headers = new Headers(templateResponse.headers);

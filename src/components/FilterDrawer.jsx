@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import './FilterDrawer.css';
-import { useSearchParams } from 'react-router-dom';
+import { useCatalogParams as useSearchParams } from '../context/CatalogParams.jsx';
 import Filters from './Filters';
 
 function useActiveCount() {
@@ -11,7 +11,9 @@ function useActiveCount() {
       sp.getAll('brand').length +
       sp.getAll('gender').length +
       sp.getAll('category').length +
-      (sp.get('min') || sp.get('max') ? 1 : 0);
+      (sp.get('min') || sp.get('max') ? 1 : 0) +
+      [...new Set(sp.keys())].filter(key => /^cf_(?!min_|max_)/.test(key)).reduce((total, key) => total + sp.getAll(key).length, 0) +
+      new Set([...sp.keys()].filter(key => /^cf_(min|max)_/.test(key)).map(key => key.replace(/^cf_(min|max)_/, ''))).size;
     setCount(sum);
   }, [sp]);
   useEffect(() => {

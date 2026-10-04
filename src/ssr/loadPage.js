@@ -1,3 +1,5 @@
+import { isBrandPath } from '../utils/catalogUrls.js';
+
 export const PUBLIC_PATHS = new Set([
   '/', '/catalog', '/muski-satovi', '/zenski-satovi', '/naocare',
   '/baterije', '/daljinski', '/about', '/contact', '/faq', '/usluge', '/graviranje',
@@ -7,6 +9,7 @@ export const CATALOG_DEPARTMENTS = {
   '/naocare': 'naocare', '/baterije': 'baterije', '/daljinski': 'daljinski',
 };
 export const isProductPath = path => /^\/product\/[^/]+\/?$/.test(path);
+export const catalogDepartment = path => CATALOG_DEPARTMENTS[path] || (isBrandPath(path) ? 'satovi' : null);
 
 export function publicCacheSeconds(data, maximum = 60) {
   const sales = [data.product, ...(data.catalog || [])].filter(item => item?.saleValidUntil);
@@ -42,8 +45,8 @@ export async function loadPage(url, apiBase, readProduct, readCatalog) {
     return items;
   };
   const data = { catalog: null, product: null, filters: {}, relatedVariants: [] };
-  const needsCatalog = path === '/' || path === '/graviranje' || CATALOG_DEPARTMENTS[path] || isProductPath(path);
-  const department = CATALOG_DEPARTMENTS[path];
+  const needsCatalog = path === '/' || path === '/graviranje' || catalogDepartment(path) || isProductPath(path);
+  const department = catalogDepartment(path);
   const productLoader = async () => {
     const slug = path.split('/')[2];
     const response = await fetch(`${apiBase}/public/catalog/products/${encodeURIComponent(decodeURIComponent(slug))}`, {

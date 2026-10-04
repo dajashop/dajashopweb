@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { loadEnv } from 'vite';
 import { isProductPath, loadPage, PUBLIC_PATHS } from '../src/ssr/loadPage.js';
+import { isBrandPath } from '../src/utils/catalogUrls.js';
 
 export default function ssrDev() {
   return {
@@ -12,7 +13,7 @@ export default function ssrDev() {
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url, 'http://localhost');
         const path = url.pathname.replace(/\/+$/, '') || '/';
-        if (!['GET', 'HEAD'].includes(req.method) || (!PUBLIC_PATHS.has(path) && !isProductPath(path))) return next();
+        if (!['GET', 'HEAD'].includes(req.method) || (!PUBLIC_PATHS.has(path) && !isProductPath(path) && !isBrandPath(path))) return next();
         try {
           const snapshot = await loadPage(url, apiBase);
           if (snapshot.missing) { res.statusCode = 404; res.end('Proizvod nije pronađen.'); return; }
