@@ -49,12 +49,17 @@ export default function HamburgerMenu({
   onUnreadOrdersChange,
 }) {
   const isDesktop = useIsDesktop();
+  const [portalReady, setPortalReady] = useState(false);
   const loc = useLocation();
   const { showAuth, logout } = useAuth();
 
   // --- STATE ZA NOTIFIKACIJE ---
   const [unreadOrders, setUnreadOrders] = useState(0);
   const isAdmin = user && isAdminEmail(user.email);
+
+  // Match the server's first render, then keep the portal mounted so
+  // AnimatePresence can finish the menu's closing animation.
+  useEffect(() => setPortalReady(true), []);
 
   // --- LISTENER ZA NEPROCITANE PORUDZBINE ---
   useEffect(() => {
@@ -101,7 +106,7 @@ export default function HamburgerMenu({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loc.pathname]);
 
-  if (!open || typeof document === 'undefined') return null;
+  if (!portalReady || typeof document === 'undefined') return null;
 
   return createPortal(
     isDesktop ? (
@@ -139,6 +144,7 @@ function useIsDesktop() {
   useEffect(() => {
     const m = window.matchMedia('(min-width:1024px)');
     const fn = () => setIsDesktop(m.matches);
+    fn();
     m.addEventListener?.('change', fn);
     return () => m.removeEventListener?.('change', fn);
   }, []);
