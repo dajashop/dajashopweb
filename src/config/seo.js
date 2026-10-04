@@ -1,11 +1,16 @@
+const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://dajashop.rs').replace(/\/$/, '');
+const configuredShareImage = import.meta.env.VITE_OG_DEFAULT_IMAGE || '';
+const defaultShareImage = `${siteUrl}/images/og-default.jpg?v=20261004`;
+
 export const seoConfig = {
   siteUrl: import.meta.env.VITE_SITE_URL || 'https://dajashop.rs',
   siteName: import.meta.env.VITE_SITE_NAME || 'DajaShop',
-  siteDescription: import.meta.env.VITE_SITE_DESCRIPTION || '',
+  siteDescription: import.meta.env.VITE_SITE_DESCRIPTION || 'DajaShop — prodavnica ručnih satova u Nišu. Otkrijte našu ponudu satova, naočara, daljinskih upravljača, baterija i dodatne opreme.',
   siteKeywords: import.meta.env.VITE_SITE_KEYWORDS || '',
   siteLocale: import.meta.env.VITE_SITE_LOCALE || 'sr_RS',
   siteLocaleAlt: import.meta.env.VITE_SITE_LOCALE_ALT || '',
-  ogDefaultImage: import.meta.env.VITE_OG_DEFAULT_IMAGE || '',
+  ogDefaultImage: !configuredShareImage || /\/og-default\.jpg(?:[?#]|$)/i.test(configuredShareImage)
+    ? defaultShareImage : configuredShareImage,
   twitterHandle: import.meta.env.VITE_TWITTER_HANDLE || '',
   facebookAppId: import.meta.env.VITE_FACEBOOK_APP_ID || '',
   siteLogoUrl: import.meta.env.VITE_SITE_LOGO_URL || '',

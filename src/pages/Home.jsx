@@ -431,7 +431,7 @@ export default function Home() {
       <SEOHead
         title="Početna"
         homeTitle="Daja Shop | Vreme je da zablistaš"
-        description="Pronađite sat koji prati vaš ritam, naočare koje ističu stil i detalje koji svaki dan čine posebnim. DajaShop, Niš."
+        description={seoConfig.siteDescription}
         keywords={seoConfig.siteKeywords}
         type="website"
       />
