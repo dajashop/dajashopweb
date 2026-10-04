@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './AccountNav.css';
+import { Link } from 'react-router-dom';
 import {
   LogOut,
   User,
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 
 // --- NAVIGATION ---
-function AccountNav({ activeTab, setActiveTab, logout }) {
+function AccountNav({ activeTab, logout }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const navItems = [
@@ -31,10 +32,6 @@ function AccountNav({ activeTab, setActiveTab, logout }) {
   const activeItem =
     navItems.find((item) => item.id === activeTab) || navItems[0];
   const ActiveIcon = activeItem.icon;
-  const handleMobileSelect = (id) => {
-    setActiveTab(id);
-    setIsMobileOpen(false);
-  };
 
   return (
     <>
@@ -48,9 +45,11 @@ function AccountNav({ activeTab, setActiveTab, logout }) {
             const isActive = activeTab === item.id;
             return (
               <li key={item.id} className="nav-item">
-                <button
+                <Link
+                  to={`/account/${item.id}`}
+                  replace
+                  aria-current={isActive ? 'page' : undefined}
                   className={`nav-btn ${isActive ? 'active' : ''}`}
-                  onClick={() => setActiveTab(item.id)}
                 >
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                   <span>{item.label}</span>
@@ -60,7 +59,7 @@ function AccountNav({ activeTab, setActiveTab, logout }) {
                       className="active-indicator"
                     />
                   )}
-                </button>
+                </Link>
               </li>
             );
           })}
@@ -101,10 +100,13 @@ function AccountNav({ activeTab, setActiveTab, logout }) {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
                 return (
-                  <button
+                  <Link
                     key={item.id}
+                    to={`/account/${item.id}`}
+                    replace
+                    aria-current={isActive ? 'page' : undefined}
                     className={`mobile-menu-item ${isActive ? 'active' : ''}`}
-                    onClick={() => handleMobileSelect(item.id)}
+                    onClick={() => setIsMobileOpen(false)}
                   >
                     <Icon size={18} />
                     <span>{item.label}</span>
@@ -115,7 +117,7 @@ function AccountNav({ activeTab, setActiveTab, logout }) {
                         style={{ color: 'var(--color-primary)' }}
                       />
                     )}
-                  </button>
+                  </Link>
                 );
               })}
               <div className="mobile-menu-divider"></div>

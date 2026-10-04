@@ -33,11 +33,6 @@ export default function Account() {
     }
   }, [section, allowedTabs, navigate]);
 
-  const handleTabChange = (id) => {
-    if (!allowedTabs.includes(id)) return;
-    navigate(`/account/${id}`, { replace: true });
-  };
-
   if (!user) {
     return (
       <div className="container account-page centered">
@@ -82,7 +77,6 @@ export default function Account() {
       <SEOHead title="Moj nalog" noIndex={true} />
       <AccountNav
         activeTab={activeTab}
-        setActiveTab={handleTabChange}
         logout={logout}
       />
       <main className="account-main">

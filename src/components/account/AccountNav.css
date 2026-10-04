@@ -37,6 +37,7 @@
 }
 
 .nav-btn {
+  text-decoration: none;
   width: 100%;
   display: flex;
   align-items: center;
@@ -54,6 +55,7 @@
 }
 
 .nav-btn:hover {
+  text-decoration: none;
   background: rgba(255, 255, 255, 0.04);
   color: var(--color-primary);
 }
@@ -152,6 +154,7 @@
     z-index: 50;
   }
   .mobile-menu-item {
+    text-decoration: none;
     width: 100%;
     display: flex;
     align-items: center;
@@ -167,6 +170,8 @@
     text-align: left;
   }
   .mobile-menu-item:hover {
+    color: var(--color-text);
+    text-decoration: none;
     background: rgba(255, 255, 255, 0.05);
   }
   .mobile-menu-item.active {

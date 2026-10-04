@@ -1,10 +1,8 @@
 import React from 'react';
 import { Layers } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import './ProductVariants.css';
 export default function ProductVariants({ product, relatedVariants }) {
-  const navigate = useNavigate();
-
   if (!relatedVariants || relatedVariants.length === 0) return null;
 
   return (
@@ -24,12 +22,11 @@ export default function ProductVariants({ product, relatedVariants }) {
         </div>
         {/* Ostale varijante */}
         {relatedVariants.map((variant) => (
-          <div
+          <Link
             key={variant.id}
+            to={`/product/${variant.slug}`}
+            replace
             className="variant-card"
-            onClick={() =>
-              navigate(`/product/${variant.slug}`, { replace: true })
-            }
             title={variant.name}
           >
             <img
@@ -37,7 +34,7 @@ export default function ProductVariants({ product, relatedVariants }) {
               alt={variant.name}
               className="variant-img"
             />
-          </div>
+          </Link>
         ))}
       </div>
     </div>

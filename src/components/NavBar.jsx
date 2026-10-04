@@ -1,7 +1,7 @@
 import { brandUrl, brandChoiceUrl, urlSlug, isBrandPath } from '../utils/catalogUrls.js';
 import React, { useEffect, useState, useRef } from 'react';
 import './Navbar.css';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 
 const navSatovi = [
@@ -34,8 +34,8 @@ export default function NavBar() {
   const [desktopOstaloOpen, setDesktopOstaloOpen] = useState(false);
 
   const rowRef = useRef(null);
-  const navigate = useNavigate();
   const location = useLocation();
+  const NavLabel = isMobile ? 'button' : Link;
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 1023px)');
@@ -49,19 +49,15 @@ export default function NavBar() {
     if (!isMobile) setOpenIdx(null);
   }, [isMobile]);
 
-  const handleGroupClick = (index, label) => {
+  const handleGroupClick = (index) => {
     if (isMobile) {
       setOpenIdx((prev) => (prev === index ? null : index));
-    } else {
-      navigate(brandUrl(label));
     }
   };
 
   const handleAllModelsClick = () => {
     if (isMobile) {
       setOpenIdx((prev) => (prev === 'all-models' ? null : 'all-models'));
-    } else {
-      navigate('/catalog');
     }
   };
 
@@ -93,7 +89,8 @@ export default function NavBar() {
             className="navbar__group"
             data-open={isMobile && openIdx === 'all-models' ? 'true' : 'false'}
           >
-            <button
+            <NavLabel
+              {...(isMobile ? { type: 'button' } : { to: '/catalog' })}
               className={`${isActive('/catalog')} navbar__label ${isMobile ? 'navbar__chip' : ''}`}
               onClick={handleAllModelsClick}
             >
@@ -109,7 +106,7 @@ export default function NavBar() {
                   }}
                 />
               )}
-            </button>
+            </NavLabel>
             <div className="navbar__dropdown card">
               <Link to="/catalog" style={{ fontWeight: 'bold' }}>Svi modeli</Link>
               <Link to="/muski-satovi">MUŠKI</Link>
@@ -124,11 +121,12 @@ export default function NavBar() {
               className="navbar__group"
               data-open={isMobile && openIdx === i ? 'true' : 'false'}
             >
-              <button
+              <NavLabel
+                {...(isMobile ? { type: 'button' } : { to: brandUrl(g.label) })}
                 className={`navbar__label ${isMobile ? 'navbar__chip' : ''} ${
                   isBrandActive(g.label) ? 'active' : ''
                 }`}
-                onClick={() => handleGroupClick(i, g.label)}
+                onClick={() => handleGroupClick(i)}
               >
                 {g.label}
                 {/* Chevron samo na mobilnom da sugeriše dropdown */}
@@ -144,7 +142,7 @@ export default function NavBar() {
                     }}
                   />
                 )}
-              </button>
+              </NavLabel>
 
               {/* Desktop Dropdown (Samo na hover) */}
               <div className="navbar__dropdown card">

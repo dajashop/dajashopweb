@@ -16,10 +16,11 @@ import {
   Gem,
   Tag,
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import ProductCard from './ProductCard.jsx';
 import useProducts from '../hooks/useProducts.js';
 import { money } from '../utils/currency.js';
+const MotionLink = Motion(Link);
 
 function normalizeText(value = '') {
   return String(value)
@@ -603,7 +604,6 @@ export default function WatchFinder({
   layout = 'stack',
   variant = 'light',
 }) {
-  const navigate = useNavigate();
   const isSplit = layout === 'split';
   const isDark = variant === 'dark';
   const isEditorial = variant === 'editorial';
@@ -828,11 +828,11 @@ export default function WatchFinder({
     );
   };
 
-  const goToCatalog = () => {
+  const catalogHref = (() => {
     const sp = buildSearchParams(Object.keys(submittedAnswers).length ? submittedAnswers : answers);
     const qs = sp.toString();
-    navigate(qs ? `/catalog?${qs}` : '/catalog');
-  };
+    return qs ? `/catalog?${qs}` : '/catalog';
+  })();
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -941,15 +941,15 @@ export default function WatchFinder({
                 )}
 
                 <div className="wf-selectionActions">
-                  <Motion.button
+                  <MotionLink
                     className="btn btn--primary"
-                    onClick={goToCatalog}
+                    to={catalogHref}
                     whileHover={buttonHoverAnimation}
                     whileTap={buttonTapAnimation}
                     transition={buttonMotionTransition}
                   >
                     Pogledaj sve <ArrowRight size={16} />
-                  </Motion.button>
+                  </MotionLink>
                   <Motion.button
                     className="btn btn--ghost wf-iconBtn wf-reset"
                     onClick={handleReset}
@@ -1064,15 +1064,15 @@ export default function WatchFinder({
                 >
                   <RotateCcw size={18} />
                 </Motion.button>
-                <Motion.button
+                <MotionLink
                   className="btn btn--primary"
-                  onClick={goToCatalog}
+                  to={catalogHref}
                   whileHover={buttonHoverAnimation}
                   whileTap={buttonTapAnimation}
                   transition={buttonMotionTransition}
                 >
                   Pogledaj sve <ArrowRight size={16} />
-                </Motion.button>
+                </MotionLink>
               </div>
             </div>
 
