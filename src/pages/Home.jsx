@@ -454,9 +454,6 @@ export default function Home() {
         type="website"
       />
 
-      <header className="home-intro container">
-        <h1>Prodavnica satova, naočara i dodatne opreme</h1>
-      </header>
 
       {/* HERO */}
       <section className="hero">
@@ -673,7 +670,7 @@ export default function Home() {
 
       {/* CATEGORIES HERO TILES */}
       <section className="section container categories">
-        <h2 className="section__title">Istražite našu ponudu</h2>
+        <h1 className="section__title">Satovi, naočare i dodatna oprema</h1>
         <div className="categories-grid">
           {CATEGORY_TILES.map((tile) => (
             <Link
