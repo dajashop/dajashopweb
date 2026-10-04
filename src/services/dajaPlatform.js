@@ -451,6 +451,11 @@ export const catalogApi = {
     if (data?.redirectTo) return { redirectTo: data.redirectTo };
     return normalizeProduct(data?.product || data);
   },
+  async relatedProducts(slug, signal) {
+    const data = await apiRequest(`/public/catalog/products/${encodeURIComponent(slug)}/related`, { auth: false, signal });
+    if (!Array.isArray(data?.items)) throw new Error('Povezani proizvodi nisu dostupni.');
+    return data.items.slice(0, 12).map(normalizeProduct);
+  },
 };
 
 export const variantGroupsApi = {

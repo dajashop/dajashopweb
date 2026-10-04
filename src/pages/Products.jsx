@@ -6,7 +6,7 @@ import { useCart } from '../hooks/useCart.js';
 import { useFlash } from '../hooks/useFlash.js';
 import { useWishlist } from '../context/WishlistProvider.jsx';
 import useProduct from '../hooks/useProduct.js';
-import useProducts from '../hooks/useProducts.js';
+import useRelatedProducts from '../hooks/useRelatedProducts.js';
 import useProductVariantGroup from '../hooks/useProductVariantGroup.js';
 
 // Import komponenti
@@ -49,7 +49,7 @@ export default function Product() {
   const navigate = useNavigate();
   const { product: p, loading, error, updateProduct } = useProduct(slug);
   const { staffReady } = useAuth();
-  const { items: allProducts } = useProducts();
+  const relatedProducts = useRelatedProducts(slug);
   const { dispatch } = useCart();
   const { flash } = useFlash();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -214,7 +214,7 @@ export default function Product() {
       </div>
 
       <div className="container">
-        <RelatedProducts currentProduct={p} allProducts={allProducts} />
+        <RelatedProducts currentProduct={p} allProducts={relatedProducts} />
       </div>
     </div>
   );

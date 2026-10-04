@@ -11,6 +11,7 @@ export function renderPage(location, snapshot, siteUrl) {
     catalog: snapshot.catalog?.map(normalizeProduct) ?? null,
     product: snapshot.product ? normalizeProduct(snapshot.product) : null,
     relatedVariants: (snapshot.relatedVariants || []).map(normalizeProduct),
+    relatedProducts: (snapshot.relatedProducts || []).map(normalizeProduct),
   };
   const context = {};
   const body = renderToString(

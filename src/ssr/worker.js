@@ -100,6 +100,8 @@ export default {
         loader => cachedData(request, `product/${encodeURIComponent(path.split('/')[2])}`, loader,
           product => publicCacheSeconds({ product })),
         loader => cachedData(request, 'catalog', loader, catalog => publicCacheSeconds({ catalog })),
+        loader => cachedData(request, `related/${encodeURIComponent(path.split('/')[2])}`, loader,
+          relatedProducts => publicCacheSeconds({ relatedProducts })),
       );
       if (snapshot.missing) return errorPage(404, request, env);
       if (snapshot.redirectTo) return Response.redirect(new URL(snapshot.redirectTo, siteUrl).toString(), 301);

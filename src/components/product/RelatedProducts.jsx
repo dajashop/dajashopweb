@@ -19,14 +19,7 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
     return allProducts
       .filter((item) => {
         if (item.id === currentProduct.id) return false;
-        if (item.brand !== currentProduct.brand) return false;
-        if ((item.gender || '') !== (currentProduct.gender || '')) return false;
-
-        const minPrice = currentProduct.price - 1000;
-        const maxPrice = currentProduct.price + 1000;
-
-        if (item.price < minPrice || item.price > maxPrice) return false;
-
+        // The API applies similarity and the 12-product limit before transfer.
         return true;
       })
       .slice(0, 12);

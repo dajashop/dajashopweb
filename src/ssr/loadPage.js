@@ -12,16 +12,16 @@ export const isProductPath = path => /^\/product\/[^/]+\/?$/.test(path);
 export const catalogDepartment = path => CATALOG_DEPARTMENTS[path] || (isBrandPath(path) ? 'satovi' : null);
 
 export function publicCacheSeconds(data, maximum = 60) {
-  const sales = [data.product, ...(data.catalog || [])].filter(item => item?.saleValidUntil);
+  const sales = [data.product, ...(data.catalog || []), ...(data.relatedProducts || [])].filter(item => item?.saleValidUntil);
   return sales.reduce((seconds, item) => Math.min(seconds,
     Math.max(0, Math.floor((new Date(item.saleValidUntil).getTime() - Date.now()) / 1000) || 0)), maximum);
 }
 
-export async function loadPage(url, apiBase, readProduct, readCatalog) {
+export async function loadPage(url, apiBase, readProduct, readCatalog, readRelated) {
   const path = url.pathname.replace(/\/+$/, '') || '/';
   const api = async (route, optional = false) => {
     try {
-      const response = await fetch(`${apiBase}${route}`, { signal: AbortSignal.timeout(8000) });
+      const response = await fetch(`${apiBase}${route}`, { signal: AbortSignal.timeout(optional ? 3000 : 8000) });
       if (!response.ok) throw new Error(`Public catalog response: ${response.status}`);
       const body = await response.json();
       return body?.data ?? body;
@@ -44,8 +44,8 @@ export async function loadPage(url, apiBase, readProduct, readCatalog) {
     } while (cursor);
     return items;
   };
-  const data = { catalog: null, product: null, filters: {}, relatedVariants: [] };
-  const needsCatalog = path === '/' || path === '/graviranje' || catalogDepartment(path) || isProductPath(path);
+  const data = { catalog: null, product: null, filters: {}, relatedVariants: [], relatedProducts: [] };
+  const needsCatalog = path === '/' || path === '/graviranje' || catalogDepartment(path);
   const department = catalogDepartment(path);
   const productLoader = async () => {
     const slug = path.split('/')[2];
@@ -57,11 +57,16 @@ export async function loadPage(url, apiBase, readProduct, readCatalog) {
     const body = await response.json();
     return body?.data ?? body;
   };
-  const [catalog, product, filters, variants] = await Promise.all([
+  const relatedLoader = async () => {
+    const related = await api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/related`, true);
+    return Array.isArray(related?.items) ? related.items.slice(0, 12) : [];
+  };
+  const [catalog, product, filters, variants, related] = await Promise.all([
     needsCatalog ? (readCatalog ? readCatalog(catalogLoader) : catalogLoader()) : null,
     isProductPath(path) ? (readProduct ? readProduct(productLoader) : productLoader()) : null,
     department ? api(`/public/catalog/filters/${department}`) : null,
     isProductPath(path) ? api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/variants`, true) : null,
+    isProductPath(path) ? (readRelated ? readRelated(relatedLoader) : relatedLoader()) : [],
   ]);
   if (product?.missing) return { missing: true };
   if (product?.redirectTo) return { redirectTo: product.redirectTo };
@@ -69,5 +74,6 @@ export async function loadPage(url, apiBase, readProduct, readCatalog) {
   data.product = product?.product || product;
   if (department) data.filters[department] = filters?.configuration ?? null;
   data.relatedVariants = variants?.items || [];
+  data.relatedProducts = related;
   return data;
 }
