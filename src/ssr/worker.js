@@ -57,6 +57,18 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, '') || '/';
+    if (path.startsWith('/assets/')) {
+      const asset = await env.ASSETS.fetch(request);
+      // Pages can serve the SPA HTML fallback for a removed build chunk.
+      // Never cache that fallback under an immutable JavaScript/CSS URL.
+      if (!asset.ok || /text\/html/i.test(asset.headers.get('Content-Type') || '')) {
+        return new Response(request.method === 'HEAD' ? null : 'Asset not found', {
+          status: 404,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+        });
+      }
+      return asset;
+    }
     const apiBase = (env.DAJA_API_BASE_URL || import.meta.env.VITE_DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
     if (path === '/api/v1/customer-auth/oauth/google/callback') {
       const callback = new URL(`${apiBase}/customer-auth/oauth/google/callback`);

@@ -4,6 +4,11 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import './styles/base.css';
 import AppProviders from './AppProviders.jsx';
+import { recoverChunkLoad } from './utils/chunkRecovery.js';
+
+window.addEventListener('vite:preloadError', event => {
+  if (recoverChunkLoad(event.payload)) event.preventDefault();
+});
 
 const root = document.getElementById('root');
 const dataElement = document.getElementById('daja-page-data');
