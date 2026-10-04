@@ -70,6 +70,7 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
   const allProps = hasQuery && data && !loading && !error ? link(seeAllHref) : null;
   return <>
     <div className="live-search__body" data-lenis-prevent>
+      <h2 className="sr-only">Pretraga proizvoda i odeljenja</h2>
       {error && <div className="live-search__error" role="alert">Pretraga trenutno nije dostupna.<button type="button" onClick={retry}><RefreshCw size={14} /> Pokušaj ponovo</button></div>}
       <div className={`live-search__layout ${hasQuery ? '' : 'is-idle'}`}>{left}{right}</div>
     </div>

@@ -28,6 +28,7 @@ export default function AboutInfoGlass() {
   return (
     <section className="section">
       <div className="container">
+        <h2 className="sr-only">Dostava, originalnost i lokacija</h2>
         <motion.div
           className="grid-3"
           variants={containerVariants}

@@ -52,6 +52,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
         {/* OPIS */}
         {activeTab === 'desc' && (
           <div className="tab-text-content">
+            <h2 className="sr-only">Opis proizvoda</h2>
             {product.description ? (
               <div className="rich-description" dangerouslySetInnerHTML={{ __html: descriptionHtml(product.description) }} />
             ) : (
@@ -63,6 +64,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
         {/* SPECIFIKACIJE */}
         {!hideSpecs && (
           <div className="specs-wrapper" hidden={activeTab !== 'specs'}>
+            <h2 className="sr-only">Specifikacije proizvoda</h2>
             {Object.keys(specs).length > 0 ? (
               <table className="specs-table">
                 <tbody>
@@ -81,17 +83,21 @@ export default function ProductTabs({ product, hideSpecs = false }) {
         )}
 
         {/* [NOVO] RECENZIJE */}
-        {activeTab === 'reviews' && <ProductReviews product={product} />}
+        {activeTab === 'reviews' && <section>
+          <h2 className="sr-only">Recenzije proizvoda</h2>
+          <ProductReviews product={product} />
+        </section>}
 
         {/* ISPORUKA */}
         {(
           <div className="delivery-info" hidden={activeTab !== 'delivery'}>
+            <h2 className="sr-only">Isporuka i garancija</h2>
             <div className="delivery-item">
               <div className="del-icon">
                 <Truck size={20} />
               </div>
               <div>
-                <h4>Besplatna Isporuka</h4>
+                <h3>Besplatna Isporuka</h3>
                 <p>Za porudžbine od {money(commerceSeoConfig.freeShippingThreshold)} nakon popusta.</p>
               </div>
             </div>
@@ -100,7 +106,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
                 <ShieldCheck size={20} />
               </div>
               <div>
-                <h4>2 Godine Garancije</h4>
+                <h3>2 Godine Garancije</h3>
                 <p>Zvanična garancija na mehanizam.</p>
               </div>
             </div>
@@ -109,7 +115,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
                 <Package size={20} />
               </div>
               <div>
-                <h4>Originalno Pakovanje</h4>
+                <h3>Originalno Pakovanje</h3>
                 <p>Sat stiže u originalnoj kutiji.</p>
               </div>
             </div>

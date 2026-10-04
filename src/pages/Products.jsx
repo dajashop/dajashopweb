@@ -172,21 +172,6 @@ export default function Product() {
       />
 
       <div className="product product-layout">
-        {/* LEVA KOLONA */}
-        <div className="product__gallery-container">
-          <ProductGallery product={p} />
-
-          <div className="desktop-trust">
-            <ProductTrust />
-          </div>
-
-          {/* TABOVI (DESKTOP) */}
-          <div className="desktop-only-tabs">
-            {/* Ako NEMA features, šaljemo hideSpecs={true} jer će specs biti desno */}
-            <ProductTabs product={p} hideSpecs={!hasFeatures} />
-          </div>
-        </div>
-
         {/* DESNA KOLONA */}
         <div className="product__info">
           <ProductHeader product={p} adminTools={staffReady ? <ClientOnly><ProductAdminTools key={p.id} product={p}
@@ -222,6 +207,18 @@ export default function Product() {
             <ProductSpecs product={p} />
           )}
           {/* ----------------------------- */}
+        </div>
+
+        {/* H1 and product information precede section headings in the document.
+            CSS keeps the gallery in its existing position on desktop and mobile. */}
+        <div className="product__gallery-container">
+          <ProductGallery product={p} />
+          <div className="desktop-trust">
+            <ProductTrust />
+          </div>
+          <div className="desktop-only-tabs">
+            <ProductTabs product={p} hideSpecs={!hasFeatures} />
+          </div>
         </div>
       </div>
 

@@ -436,6 +436,10 @@ export default function Home() {
         type="website"
       />
 
+      <header className="home-intro container">
+        <h1>Prodavnica satova, naočara i dodatne opreme</h1>
+      </header>
+
       {/* HERO */}
       <section className="hero">
         <HeroBgSlider slides={HERO_SLIDES} interval={5600} />
@@ -651,6 +655,7 @@ export default function Home() {
 
       {/* CATEGORIES HERO TILES */}
       <section className="section container categories">
+        <h2 className="section__title">Istražite našu ponudu</h2>
         <div className="categories-grid">
           {CATEGORY_TILES.map((tile) => (
             <Link
@@ -661,7 +666,7 @@ export default function Home() {
               <div className="categoryTile__img">
                 <img src={tile.image} alt={tile.title} loading="lazy" />
               </div>
-              <div className="categoryTile__label">{tile.title}</div>
+              <h3 className="categoryTile__label">{tile.title}</h3>
             </Link>
           ))}
         </div>

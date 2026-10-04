@@ -35,10 +35,10 @@ export default function GoogleShopRating() {
     <div ref={ref} className="stat-card" style={{ textAlign: 'center' }}>
       {currentRating ? (
         <>
-          <h3 className="h1" style={{ color: 'var(--color-primary)', lineHeight: 1 }}>
+          <p className="h1" style={{ color: 'var(--color-primary)', lineHeight: 1 }}>
             {currentRating.value.toLocaleString('sr-RS', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
             <span style={{ fontSize: '0.5em', marginLeft: '2px' }}>/5</span>
-          </h3>
+          </p>
           <p className="lead" style={{ marginTop: '8px', color: 'var(--color-muted)', fontWeight: 500 }}>
             Prosečna Google ocena
           </p>

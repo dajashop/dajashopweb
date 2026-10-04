@@ -617,7 +617,7 @@
   gap: 8px;
 }
 
-.wf-selectionState--resultsOnly .wf-selectionHead h3 {
+.wf-selectionState--resultsOnly .wf-selectionHead h2 {
   margin: 0;
 }
 
@@ -703,7 +703,7 @@
   justify-items: center;
 }
 
-.wf-selectionHead h3 {
+.wf-selectionHead h2 {
   margin: 0;
   font-size: clamp(1.35rem, 2.35vw, 1.95rem);
   line-height: 1.06;

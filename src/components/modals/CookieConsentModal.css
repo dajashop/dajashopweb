@@ -100,7 +100,7 @@
 
 .cookie-consent__panel { min-height: 148px; }
 .cookie-consent__panel-heading { max-width: 790px; }
-.cookie-consent h1 { margin: 0 0 8px; font-size: clamp(1.05rem, 2vw, 1.26rem); line-height: 1.25; }
+.cookie-consent h2 { margin: 0 0 8px; font-size: clamp(1.05rem, 2vw, 1.26rem); line-height: 1.25; }
 .cookie-consent p { margin: 0; color: #444a54; font-size: .9rem; line-height: 1.44; }
 .cookie-consent__panel-heading p { font-size: .84rem; }
 .cookie-consent__subcopy { margin-top: 11px !important; color: #6a707a !important; font-size: .82rem !important; }

@@ -96,7 +96,7 @@ export default function CookieConsentModal({
     if (panel === PANELS.details) {
       return (
         <div className="cookie-consent__panel cookie-consent__details-panel" id="cookie-details-panel" role="tabpanel" aria-labelledby="cookie-details-tab">
-          <h1 id="cookie-consent-title" className="cookie-consent__sr-only">Detalji kolačića</h1>
+          <h2 id="cookie-consent-title" className="cookie-consent__sr-only">Detalji kolačića</h2>
           <div className="cookie-consent__detail-list">
             <CookieCategory
               id="necessary"
@@ -152,7 +152,7 @@ export default function CookieConsentModal({
       return (
         <div className="cookie-consent__panel cookie-consent__about" id="cookie-about-panel" role="tabpanel" aria-labelledby="cookie-about-tab">
           <div className="cookie-consent__panel-heading">
-            <h1 id="cookie-consent-title">Vi kontrolišete svoj izbor</h1>
+            <h2 id="cookie-consent-title">Vi kontrolišete svoj izbor</h2>
             <p>Kolačiće koristimo da bi DajaShop radio pouzdano i, uz vaš pristanak, da bismo unapredili iskustvo kupovine.</p>
           </div>
           <div className="cookie-consent__info-list">
@@ -172,7 +172,7 @@ export default function CookieConsentModal({
     return (
       <div className="cookie-consent__panel" id="cookie-consent-panel" role="tabpanel" aria-labelledby="cookie-consent-tab">
         <div className="cookie-consent__panel-heading">
-          <h1 id="cookie-consent-title">Vaša privatnost</h1>
+          <h2 id="cookie-consent-title">Vaša privatnost</h2>
           <p>Koristimo neophodne kolačiće za pouzdan rad sajta. Uz vašu dozvolu uključujemo funkcionalne opcije i analitiku radi boljeg iskustva kupovine. Funkcionalne opcije pamte vaša podešavanja i omogućavaju Google mapu, predlog adrese i prikaz Google ocene prodavnice.</p>
         </div>
         <p className="cookie-consent__subcopy">Sve opcione kategorije možete uključiti, isključiti ili pregledati u Podešavanjima.</p>

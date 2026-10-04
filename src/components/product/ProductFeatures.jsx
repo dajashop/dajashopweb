@@ -18,7 +18,7 @@ const ProductFeatures = ({ product }) => {
 
   return (
     <div className="product-features">
-      <h3 className="features-heading">Napredne Funkcije</h3>
+      <h2 className="features-heading">Napredne Funkcije</h2>
 
       <div className="features-list">
         {validFeatures.map((feature, index) => (

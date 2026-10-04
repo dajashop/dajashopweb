@@ -58,7 +58,7 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
 
   return (
     <div className="related-products-container">
-      <h3 className="related-title">Možda će vas zanimati</h3>
+      <h2 className="related-title">Možda će vas zanimati</h2>
 
       <div
         className={`related-scroll-container ${isDown ? 'active' : ''}`}
@@ -95,7 +95,7 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
 
             <div className="related-info">
               <span className="related-brand">{item.brand}</span>
-              <h4 className="related-name">{item.name}</h4>
+              <h3 className="related-name">{item.name}</h3>
               <div className="related-price">{money(item.price)}</div>
             </div>
           </Link>

@@ -61,6 +61,7 @@ export default function AboutStats() {
   return (
     <section className="section" style={{ background: 'var(--color-surface)' }}>
       <div className="container">
+        <h2 className="sr-only">DajaShop u brojkama</h2>
         <motion.div
           className="grid-3"
           variants={containerVariants}
@@ -91,7 +92,7 @@ function StatItem({ label, value: endValue, suffix }) {
       ref={ref}
       style={{ textAlign: 'center' }}
     >
-      <h3
+      <p
         className="h1"
         style={{ color: 'var(--color-primary)', lineHeight: 1 }}
       >
@@ -106,7 +107,7 @@ function StatItem({ label, value: endValue, suffix }) {
         >
           {suffix}
         </span>
-      </h3>
+      </p>
       <p
         className="lead"
         style={{

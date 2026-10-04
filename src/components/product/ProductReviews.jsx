@@ -142,7 +142,7 @@ export default function ProductReviews({ product }) {
       {/* 3. FORMA ILI LOGIN DUGME */}
       {user ? (
         <form className="review-form" onSubmit={handleSubmit}>
-          <span className="form-title">Napišite recenziju</span>
+          <h3 className="form-title">Napišite recenziju</h3>
           <div className="rating-input">{renderStars(0, 28, true)}</div>
           <textarea
             className="comment-input"
@@ -161,7 +161,7 @@ export default function ProductReviews({ product }) {
           <div className="prompt-icon">
             <LogIn size={24} />
           </div>
-          <h4>Želite da ostavite recenziju?</h4>
+          <h3>Želite da ostavite recenziju?</h3>
           <p>Morate biti prijavljeni da biste ocenili proizvod.</p>
 
           <button

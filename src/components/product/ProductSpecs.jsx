@@ -12,7 +12,7 @@ export default function ProductSpecs({ product }) {
 
   return (
     <div className="product-specs-standalone card">
-      <h3 className="specs-heading">Specifikacije</h3>
+      <h2 className="specs-heading">Specifikacije</h2>
       <div className="specs-table-wrapper">
         <table className="specs-table">
           <tbody>

@@ -61,6 +61,7 @@ export default function FAQ() {
       </p>
 
       <section className="faq__list">
+        <h2 className="sr-only">Odgovori na česta pitanja</h2>
         {faqContent.map((item) => (
           <AccordionItem key={item.id} item={item} />
         ))}

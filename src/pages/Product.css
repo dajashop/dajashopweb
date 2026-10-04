@@ -50,6 +50,7 @@
 .product__info {
   display: flex;
   flex-direction: column;
+  order: 1;
 }
 /* ... tvoj postojeći kod ... */
 

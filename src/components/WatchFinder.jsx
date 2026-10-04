@@ -888,7 +888,7 @@ export default function WatchFinder({
                 transition={sectionTransition}
                 className="wf-selectionState wf-selectionState--loading"
               >
-                <h3 className="wf-selectionTitle">Pravimo selekciju za tebe…</h3>
+                <h2 className="wf-selectionTitle">Pravimo selekciju za tebe…</h2>
                 <p className="wf-selectionCopy">
                   Samo trenutak, proveravamo modele koji se najbolje poklapaju sa tvojim odgovorima.
                 </p>
@@ -905,7 +905,7 @@ export default function WatchFinder({
                 className="wf-selectionState wf-selectionState--resultsOnly"
               >
                 <div className="wf-selectionHead">
-                  <h3>Evo tvojih rezultata</h3>
+                  <h2>Evo tvojih rezultata</h2>
                   <p className="wf-selectionCopy wf-selectionCopy--split">
                     <span className="wf-selectionCopy__line">
                       Izdvojili smo modele koji najbolje prate tvoj stil i budžet.

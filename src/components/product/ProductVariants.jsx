@@ -7,10 +7,10 @@ export default function ProductVariants({ product, relatedVariants }) {
 
   return (
     <div className="product__variants">
-      <div className="variants-title">
+      <h2 className="variants-title">
         <Layers size={16} />
         <span>Dostupne varijante</span>
-      </div>
+      </h2>
       <div className="variants-grid">
         {/* Trenutni model */}
         <div className="variant-card active" title="Trenutni model">
