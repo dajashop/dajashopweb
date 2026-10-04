@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { loadEnv } from 'vite';
 import { isProductPath, loadPage, PUBLIC_PATHS } from '../src/ssr/loadPage.js';
 import { isBrandPath } from '../src/utils/catalogUrls.js';
+import { PUBLIC_SITE_URL } from '../src/config/publicSite.js';
 
 export default function ssrDev() {
   return {
@@ -24,7 +25,7 @@ export default function ssrDev() {
             await readFile(resolve(server.config.root, 'index.html'), 'utf8'));
           const { renderDocument, renderPage } = await server.ssrLoadModule('/src/ssr/entry-server.jsx');
           const html = renderDocument(template, renderPage(`${url.pathname}${url.search}`, snapshot,
-            env.SITE_URL || env.VITE_SITE_URL || 'https://dajashop.rs'));
+            PUBLIC_SITE_URL));
           res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
           res.end(req.method === 'HEAD' ? undefined : html);
         } catch (error) {

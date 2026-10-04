@@ -3,6 +3,7 @@ import { renderDocument, renderPage } from './entry-server.jsx';
 import { catalogDepartment, isProductPath, loadPage, PUBLIC_PATHS, publicCacheSeconds } from './loadPage.js';
 import { isBrandPath, catalogUrl, decodeCatalogParams, filterUrlEntries, urlSlug } from '../utils/catalogUrls.js';
 import { configuredFilterParams } from '../utils/filterConfiguration.js';
+import { PUBLIC_SITE_URL } from '../config/publicSite.js';
 
 const PRIVATE_PATHS = new Set(['/cart', '/checkout', '/account', '/orders', '/admin',
   '/verify-email', '/reset-password', '/logout', '/unsubscribe', '/privacy', '/cookies', '/terms', '/search']);
@@ -12,7 +13,7 @@ async function errorPage(status, request, env) {
     const url = new URL(request.url);
     const templateResponse = await env.ASSETS.fetch(new Request(new URL('/', url)));
     if (!templateResponse.ok) throw new Error('Page template unavailable');
-    const siteUrl = (env.SITE_URL || import.meta.env.VITE_SITE_URL || 'https://dajashop.rs').replace(/\/$/, '');
+    const siteUrl = PUBLIC_SITE_URL;
     const rendered = renderPage(`${url.pathname}${url.search}`, {
       errorStatus: status, errorPath: url.pathname,
     }, siteUrl);
@@ -94,7 +95,7 @@ export default {
       return request.method === 'HEAD' ? new Response(null, { status: rendered.status, headers: rendered.headers }) : rendered;
     }
     if (!PUBLIC_PATHS.has(path) && !isProductPath(path) && !isBrandPath(path)) return errorPage(404, request, env);
-    const siteUrl = (env.SITE_URL || import.meta.env.VITE_SITE_URL || 'https://dajashop.rs').replace(/\/$/, '');
+    const siteUrl = PUBLIC_SITE_URL;
     try {
       const snapshot = await loadPage(url, apiBase,
         loader => cachedData(request, `product/${encodeURIComponent(path.split('/')[2])}`, loader,
