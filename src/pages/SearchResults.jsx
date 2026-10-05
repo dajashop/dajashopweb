@@ -4,11 +4,15 @@ import { Search, RefreshCw, ArrowRight, X } from 'lucide-react';
 import useCatalogSearch from '../hooks/useCatalogSearch.js';
 import ProductCard from '../components/ProductCard.jsx';
 import SEOHead from '../components/seo/SEOHead.jsx';
+import { useAuth } from '../hooks/useAuth.js';
+import { isAdminEmail } from '../services/dajaPlatform.js';
 import '../components/ProductGrid.css';
 import './SearchResults.css';
 
 const departments = [{ id: '', label: 'Sve' }, { id: 'satovi', label: 'Satovi' }, { id: 'daljinski', label: 'Daljinski' }, { id: 'baterije', label: 'Baterije' }, { id: 'naocare', label: 'Naočare' }];
 export default function SearchResults() {
+  const { user } = useAuth();
+  const showStock = isAdminEmail(user?.email);
   const [params, setParams] = useSearchParams();
   const q = (params.get('q') || '').slice(0, 120);
   const department = departments.some((item) => item.id === params.get('department')) ? params.get('department') || undefined : undefined;
@@ -41,10 +45,10 @@ export default function SearchResults() {
     <div className="search-results__status" role="status" aria-live="polite">{loading ? 'Učitavanje rezultata…' : error ? '' : data && shown ? `${data.total} proizvoda odgovara pretrazi` : 'Unesi model, brend ili osobine proizvoda. Dovoljna su dva znaka da počnemo.'}</div>
     {error && <div className="search-results__error">Pretraga trenutno nije dostupna.<button type="button" onClick={retry}><RefreshCw size={15} /> Pokušaj ponovo</button></div>}
     {!error && data?.message && <div className="search-results__empty"><p>{data.message}</p>{data.corrections?.length > 0 && <div><span>Da li ste mislili…?</span>{data.corrections.map((item) => <button key={item.query} type="button" onClick={() => update('q', item.query)}>{item.label}</button>)}</div>}</div>}
-    {items.length > 0 && <div className="product-grid">{items.map((product) => <div className="search-results__card" key={product.id}><ProductCard p={product} /><span className={`search-results__stock ${product.inStock ? 'is-available' : ''}`}>{product.inStock ? 'Na stanju' : 'Nema na stanju'}</span></div>)}</div>}
+    {items.length > 0 && <div className="product-grid">{items.map((product) => <div className="search-results__card" key={product.id}><ProductCard p={product} />{showStock && <span className={`search-results__stock ${product.inStock ? 'is-available' : ''}`}>{product.inStock ? 'Na stanju' : 'Nema na stanju'}</span>}</div>)}</div>}
     {!loading && !error && data?.similar?.length > 0 && <section className="search-results__similar"><h2>Slični rezultati</h2><p>Ovi proizvodi odstupaju od jednog uslova. Razlika je označena uz svaki proizvod.</p><div className="product-grid">{data.similar.map(({product,reason})=><div className="search-results__card" key={product.id}><ProductCard p={product}/><span className="search-results__difference">{reason}</span></div>)}</div></section>}
     {data?.nextCursor && <button type="button" className="search-results__more" disabled={loading} onClick={loadMore}>Prikaži još proizvoda</button>}
     {loading && previousItems.length > 0 && <div className="search-results__status">Učitavanje narednih proizvoda…</div>}
-    {shown && !loading && !error && data?.total === 0 && data?.recommendations?.length > 0 && !items.length && <section className="search-results__recommendations"><h2>Možda će vam se svideti</h2><div className="product-grid">{data.recommendations.map((product) => <div className="search-results__card" key={product.id}><ProductCard p={product} /><span className={`search-results__stock ${product.inStock ? 'is-available' : ''}`}>{product.inStock ? 'Na stanju' : 'Nema na stanju'}</span></div>)}</div></section>}
+    {shown && !loading && !error && data?.total === 0 && data?.recommendations?.length > 0 && !items.length && <section className="search-results__recommendations"><h2>Možda će vam se svideti</h2><div className="product-grid">{data.recommendations.map((product) => <div className="search-results__card" key={product.id}><ProductCard p={product} />{showStock && <span className={`search-results__stock ${product.inStock ? 'is-available' : ''}`}>{product.inStock ? 'Na stanju' : 'Nema na stanju'}</span>}</div>)}</div></section>}
   </div>;
 }
