@@ -30,7 +30,7 @@ export default function About() {
       >
         <SEOHead
           title="O nama"
-          description="Saznajte više o DajaShop priči, vrednostima i našem timu."
+          description="DajaShop je prodavnica satova u Nišu, u Podzemnom prolazu, lokal C31. Upoznajte našu ponudu i kontaktirajte nas za pomoć pri izboru sata."
         />
         <AboutHero />
         <AboutStats />

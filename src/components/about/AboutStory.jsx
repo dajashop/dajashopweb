@@ -47,14 +47,13 @@ export default function AboutStory() {
             NAŠA PRIČA
           </p>
           <h2 className="h2" style={{ marginBottom: '20px' }}>
-            Od Niša do Vašeg Zgloba: Putovanje Preciznosti
+            Upoznajte DajaShop
           </h2>
           <p className="lead" style={{ maxWidth: '800px', margin: '0 auto' }}>
-            Priča Daja Shop-a počela je sa jednostavnom idejom: ponuditi
-            autentične i kvalitetne satove uz beskompromisnu podršku klijentima.
-            Svake godine, naša strast prema časovničarstvu raste, kao i naša
-            posvećenost da budemo Vaš najpouzdaniji online trgovac satovima.
-            Fokusirani smo na detalje koji čine razliku i iskustvo koje ostaje.
+            DajaShop je prodavnica satova u Nišu, na adresi Podzemni prolaz,
+            lokal C31, 18000 Niš. Na našem sajtu možete pregledati modele,
+            uporediti njihove karakteristike i poručiti sat. Ako vam je
+            potreban savet, kontaktirajte nas ili posetite prodavnicu.
           </p>
         </motion.div>
 
@@ -73,13 +72,12 @@ export default function AboutStory() {
               className="h2"
               style={{ color: 'var(--color-primary)', marginBottom: '15px' }}
             >
-              Naša Misija
+              Gde se nalazimo
             </h3>
             <p className="lead" style={{ fontSize: '18px' }}>
-              Naša misija je da osiguramo da svaki sat koji napusti Daja Shop
-              nosi pečat **originalnosti i najvišeg kvaliteta**. Težimo
-              transparentnosti, fer cenama i izgradnji dugoročnog poverenja sa
-              svakim klijentom u regionu.
+              Naša prodavnica nalazi se u Podzemnom prolazu, lokal C31, u
+              Nišu. Za informacije o dostupnosti modela i dolasku pozovite
+              nas ili pošaljite Viber poruku na +381 64 126 24 25.
             </p>
           </motion.div>
 
@@ -93,13 +91,13 @@ export default function AboutStory() {
               className="h2"
               style={{ color: 'var(--color-primary)', marginBottom: '15px' }}
             >
-              Naša Vizija
+              Kako možemo da pomognemo
             </h3>
             <p className="lead" style={{ fontSize: '18px' }}>
-              Vizija Daja Shop-a je da postane **sinonim za online kupovinu
-              satova** u Jugoistočnoj Evropi, poznat po besprekornoj usluzi i
-              ekskluzivnom izboru. Koristimo naprednu tehnologiju kako bismo
-              inspirisali i povezali ljubitelje satova sa modelima koji traju.
+              Pomažemo pri izboru sata i odgovaramo na pitanja o modelima,
+              porudžbinama i garanciji. Za servisiranje organizujemo slanje
+              sata ovlašćenom servisu. Pišite nam na info@dajashop.com ili
+              nas kontaktirajte telefonom i preko Vibera.
             </p>
           </motion.div>
         </motion.div>

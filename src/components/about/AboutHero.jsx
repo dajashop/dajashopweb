@@ -31,15 +31,15 @@ export default function AboutHero() {
           DAJA SHOP | VREME JE DA ZABLISTAŠ
         </motion.p>
         <motion.h1 className="h1" variants={itemVariants}>
-          Posvećenost Kvalitetu.
+          DajaShop — prodavnica satova u Nišu.
           <br />
-          Vaše Poverenje je Naš Vremenski Okvir.
+          Podzemni prolaz, lokal C31.
         </motion.h1>
         <motion.p className="lead" variants={itemVariants}>
-          Kao posvećeni trgovac satovima iz Niša, gradimo priču Daja Shop-a na
-          temeljima preciznosti, autentičnosti i neprevaziđenog korisničkog
-          iskustva. Svaki sat u našoj ponudi odraz je naše strasti prema
-          savršenstvu.
+          Nalazimo se u Podzemnom prolazu, lokal C31, u Nišu. Satove iz naše
+          ponude možete pogledati u prodavnici ili na dajashop.rs. Za pomoć
+          pri izboru sata i pitanja o porudžbini dostupni smo telefonom,
+          preko Vibera i emaila.
         </motion.p>
         <motion.button
           className="btn-primary"
