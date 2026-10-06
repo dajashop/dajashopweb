@@ -13,26 +13,37 @@ export function renderPage(location, snapshot, siteUrl) {
     relatedVariants: (snapshot.relatedVariants || []).map(normalizeProduct),
     relatedProducts: (snapshot.relatedProducts || []).map(normalizeProduct),
   };
-  const context = {};
-  const body = renderToString(
-    <React.StrictMode><StaticRouter location={location}>
-      <AppProviders pageData={data} helmetContext={context}><App /></AppProviders>
-    </StaticRouter></React.StrictMode>,
+  // React 19/Helmet 3 hoists metadata only when SSR renders a document.
+  // Rendering App as a fragment puts those tags in the root's body markup
+  // and no longer populates the legacy Helmet context.
+  const documentHtml = renderToString(
+    <html lang="sr">
+      <head />
+      <body>
+        <React.StrictMode><StaticRouter location={location}>
+          <AppProviders pageData={data}><App /></AppProviders>
+        </StaticRouter></React.StrictMode>
+      </body>
+    </html>,
   );
-  const helmet = context.helmet;
-  const head = ['title', 'meta', 'link', 'script'].map(key => helmet?.[key]?.toString() || '').join('');
+  const head = documentHtml.match(/<head\b[^>]*>([\s\S]*?)<\/head>/i)?.[1];
+  const body = documentHtml.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)?.[1];
+  if (head === undefined || body === undefined) {
+    throw new Error('SSR did not render a complete HTML document.');
+  }
   return { body, head, data };
 }
 
 export function renderDocument(template, rendered) {
   const serialized = JSON.stringify(rendered.data)
     .replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-  // Keep favicon, viewport, built CSS/module links and CSP; replace only SEO
-  // tags owned by Helmet. Marked elements remain owned by Helmet on navigation.
+  // Keep favicon, viewport, built CSS/module links and CSP in the template
+  // head; replace its default SEO tags with React's page-specific metadata.
   return template
-    .replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, '')
-    .replace(/<meta\b[^>]*(?:name=["'](?:description|keywords|robots|twitter:[^"']+)["']|property=["']og:[^"']+["'])[^>]*>/gi, '')
-    .replace(/<link\b[^>]*rel=["']canonical["'][^>]*>/gi, '')
-    .replace('</head>', () => `${rendered.head}</head>`)
+    .replace(/<head\b[^>]*>[\s\S]*?<\/head>/i, templateHead => templateHead
+      .replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, '')
+      .replace(/<meta\b[^>]*(?:name=["'](?:description|keywords|robots|twitter:[^"']+)["']|property=["']og:[^"']+["'])[^>]*>/gi, '')
+      .replace(/<link\b[^>]*rel=["']canonical["'][^>]*>/gi, '')
+      .replace(/<\/head>/i, () => `${rendered.head}</head>`))
     .replace('<div id="root"></div>', () => `<div id="root">${rendered.body}</div><script id="daja-page-data" type="application/json">${serialized}</script>`);
 }
