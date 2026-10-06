@@ -1,6 +1,7 @@
 // src/pages/Admin/components/AdminProductModal.jsx
 
 import { memo, useCallback, useState, useEffect, useMemo, useRef } from 'react';
+import { eyewearModel, eyewearValueError, missingEyewearFields } from '../../../utils/eyewearCatalog';
 import { SpecificationEditor, SpecificationPreview } from '../../../components/specifications/SpecificationEditor';
 import { specificationEditorApi } from '../../../services/dajaPlatform';
 import { createPortal } from 'react-dom';
@@ -1037,6 +1038,14 @@ export default function AdminProductModal({
     if (submittingRef.current || imageBusy || !mediaReady || addingSpecRef.current) return;
     if (!navigator.onLine) { setFlash({ open: true, title: 'Za čuvanje proizvoda potrebna je internet veza. Unos je zadržan.', ok: false }); return; }
     if (!form.name || !form.price) return alert('Naziv i cena su obavezni.');
+    if (isEyewearDepartment) {
+      const invalid = Object.entries(form.specs || {}).map(([key,value]) => eyewearValueError(catalogAttributeKey(key),String(value))).find(Boolean);
+      if (invalid) { setFlash({open:true,title:invalid,ok:false}); return; }
+      if (form.milanoUrl) {
+        try { const link=new URL(form.milanoUrl); if (!/^\/shop\/sunglasses\//i.test(link.pathname)) throw new Error(); }
+        catch { setFlash({open:true,title:'Milano link mora voditi na konkretne sunčane naočare (/shop/sunglasses/).',ok:false}); return; }
+      }
+    }
     const shouldReconcileQuantity = !product || quantityEditedRef.current;
     const shouldPersistPlacement = !product || placementEditedRef.current;
     const quantityInput = String(form.quantity ?? '').trim();
@@ -1082,13 +1091,15 @@ export default function AdminProductModal({
       const matches = !product && nameCheckRef.current.name === form.name.trim()
         ? nameCheckRef.current.matches : [];
       const missingBrand = !brandName;
-      if (matches.length || missingBrand) {
+      const missingEyewear = isEyewearDepartment && form.published ? missingEyewearFields(form) : [];
+      if (matches.length || missingBrand || missingEyewear.length) {
         setSaveWarning({
           name: form.name.trim(),
           brand: brandName,
           count: matches.length,
           exact: matches.some((match) => match.exact),
           missingBrand,
+          missingEyewear,
           options,
         });
         return;
@@ -1633,19 +1644,19 @@ export default function AdminProductModal({
         .filter((department) => department.slug)
         .map((department) => ({
           value: department.slug,
-          label: department.name,
+          label: department.slug === 'naocare' ? 'Sunčane naočare' : department.name,
         }));
     }
     return [
       { value: 'satovi', label: 'Satovi' },
       { value: 'daljinski', label: 'Daljinski' },
       { value: 'baterije', label: 'Baterije' },
-      { value: 'naocare', label: 'Naočare' },
+      { value: 'naocare', label: 'Sunčane naočare' },
     ];
   }, [departments]);
 
   const genderOptions = [
-    { value: '', label: 'Unisex' },
+    ...(isEyewearDepartment ? [{ value: '', label: 'Nije izabrano' }, { value: 'UNISEX', label: 'Unisex' }] : [{ value: '', label: 'Unisex' }]),
     { value: 'MUŠKI', label: 'Muški' },
     { value: 'ŽENSKI', label: 'Ženski' },
   ];
@@ -2054,7 +2065,7 @@ export default function AdminProductModal({
                   placeholder={
                     catOptions.length === 0
                       ? form.brand
-                        ? 'Nema kolekcija za ovaj brend'
+                        ? isEyewearDepartment ? 'Bez kolekcije — opciono' : 'Nema kolekcija za ovaj brend'
                         : 'Nema opštih kolekcija'
                       : 'Izaberi kolekciju (opciono)'
                   }
@@ -2275,9 +2286,11 @@ export default function AdminProductModal({
               </div>
             </div>
             <div className="lg:col-span-12 se-specification-row">
+              {isEyewearDepartment && <div className="lg:col-span-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-sm"><strong>Sunčane naočare</strong><p>Oblik izaberi u specifikacijama; kolekcija je opciona. Zaštitu, materijal sočiva i kategoriju filtera unesi samo prema potvrđenim podacima.</p>{eyewearModel(form.name) && <p>Osnovni model: <strong>{eyewearModel(form.name)}</strong> — druge oznake boja istog modela i brenda grupišu se automatski.</p>}</div>}
               <div id="web-specification-fields">
                 <MemoizedSpecificationEditor
                   showPreview={false}
+                  eyewear={isEyewearDepartment}
                   api={specificationEditorApi}
                   departmentId={departments.find(d => d.slug === form.department)?.id || ''}
                   brand={form.brand || ''}
@@ -2293,6 +2306,7 @@ export default function AdminProductModal({
               </div>
               <div className="se-specification-preview-column">
                 <SpecificationPreview
+                  eyewear={isEyewearDepartment}
                   images={(form.images || []).map(image => image.url).filter(Boolean)}
                   onPreview={setGalleryIndex}
                   onAddImage={() => document.getElementById('product-image-manager')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
@@ -2786,6 +2800,7 @@ export default function AdminProductModal({
                 ? 'Artikal sa istim nazivom već postoji.'
                 : `Pronađeno je ${saveWarning.count} sličnih artikala.`}</p>}
               {saveWarning.missingBrand && <p>Brend nije izabran. Artikal će biti sačuvan bez brenda.</p>}
+              {saveWarning.missingEyewear?.length > 0 && <p>Nedostaju podaci za sunčane naočare: {saveWarning.missingEyewear.join(', ')}. Nepotvrđene podatke ostavi praznim.</p>}
               <p>Da li ipak želite da sačuvate?</p>
             </div>
             <button type="button" onClick={() => setSaveWarning(null)} className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700">

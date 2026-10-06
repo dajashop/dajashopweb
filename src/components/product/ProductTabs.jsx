@@ -4,6 +4,7 @@ import './ProductTabs.css';
 import { descriptionHtml } from '../description.js';
 import '../rich-description.css';
 import { formatProductSpecLabel, visibleProductSpecs } from '../../utils/catalogPresentation.js';
+import { eyewearDisplayValue } from '../../utils/eyewearCatalog.js';
 // [NOVO] Importujemo recenzije
 import ProductReviews from './ProductReviews.jsx';
 import { commerceSeoConfig } from '../../config/seo.js';
@@ -70,8 +71,8 @@ export default function ProductTabs({ product, hideSpecs = false }) {
                 <tbody>
                   {Object.entries(specs).map(([k, v]) => (
                     <tr key={k} className="specs-table-row">
-                      <td className="spec-cell-key">{formatProductSpecLabel(k)}</td>
-                      <td className="spec-cell-val">{v}</td>
+                      <td className="spec-cell-key">{formatProductSpecLabel(k, product?.department)}</td>
+                      <td className="spec-cell-val">{product?.department === 'naocare' ? eyewearDisplayValue(k, v) : v}</td>
                     </tr>
                   ))}
                 </tbody>

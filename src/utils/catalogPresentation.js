@@ -1,3 +1,5 @@
+import { eyewearSpecLabels } from './eyewearCatalog.js';
+
 const INTERNAL_CATALOG_KEYS = new Set([
   'additional_barcodes',
   '_additionalbarcodes',
@@ -20,7 +22,8 @@ export function visibleProductSpecs(specs) {
   );
 }
 
-export function formatProductSpecLabel(key) {
+export function formatProductSpecLabel(key, department) {
+  if (department === 'naocare' && eyewearSpecLabels[String(key).replace(/-/g, '_')]) return eyewearSpecLabels[String(key).replace(/-/g, '_')];
   return String(key || '')
     .trim()
     .replace(/_+/g, ' ')
