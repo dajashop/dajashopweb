@@ -734,8 +734,10 @@ export default function AdminProductModal({
         next.primaryCategoryId = null;
       }
       if (field === 'category') {
+        const departmentId = departments.find((department) => department.slug === next.department)?.id;
+        const brandId = next.brandId || brands.find((brand) => brand.name === next.brand && (!departmentId || brand.departmentId === departmentId))?.id || null;
         next.primaryCategoryId = value
-          ? cats.find((category) => category.name === value)?.id || null
+          ? cats.find((category) => category.name === value && (!departmentId || category.departmentId === departmentId) && (category.brandId || null) === brandId)?.id || null
           : null;
       }
       if (field === 'locationId') {
@@ -1208,9 +1210,11 @@ export default function AdminProductModal({
       const selectedDepartment = departments.find(
         (department) => department.slug === form.department,
       );
-      const selectedBrand = brands.find((brand) => brand.name === form.brand);
+      const selectedBrand = brands.find((brand) => brand.name === form.brand && (!selectedDepartment?.id || brand.departmentId === selectedDepartment.id));
       const selectedCategory = cats.find(
-        (category) => category.name === form.category,
+        (category) => category.name === form.category
+          && (!selectedDepartment?.id || category.departmentId === selectedDepartment.id)
+          && (category.brandId || null) === (selectedBrand?.id || null),
       );
       if (payload.published && !selectedDepartment?.id) {
         throw new Error(
@@ -1620,10 +1624,10 @@ export default function AdminProductModal({
   ];
 
   const filteredCats = useMemo(() => {
-    const selectedBrand = brands.find((brand) => brand.name === form.brand);
     const departmentId = departments.find(
       (department) => department.slug === form.department,
     )?.id;
+    const selectedBrand = brands.find((brand) => brand.name === form.brand && (!departmentId || brand.departmentId === departmentId));
     return cats.filter((category) => {
       if (departmentId && category.departmentId !== departmentId) return false;
       return selectedBrand?.id
