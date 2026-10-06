@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useInView } from 'framer-motion';
 import { useConsent } from '../../context/ConsentContext.jsx';
-import { fetchGoogleShopRating, SHOP_GOOGLE_MAPS_URL } from '../../services/googleShopRating.js';
+import { fetchGoogleShopRating } from '../../services/googleShopRating.js';
 
 export default function GoogleShopRating() {
   const { googleAllowed, loading: consentLoading, openSettings } = useConsent();
@@ -41,12 +41,13 @@ export default function GoogleShopRating() {
       <p className="lead" style={{ marginTop: '8px', color: 'var(--color-muted)', fontWeight: 500 }}>
         Prosečna Google ocena
       </p>
-      <p role="status" aria-live="polite" style={{ minHeight: '1.5em' }}>
-        {currentRating ? `${currentRating.count.toLocaleString('sr-RS')} ocena korisnika`
-          : consentLoading ? 'Proveravamo podešavanja kolačića…'
+      {!currentRating && (
+        <p role="status" aria-live="polite" style={{ minHeight: '1.5em' }}>
+          {consentLoading ? 'Proveravamo podešavanja kolačića…'
             : !googleAllowed ? 'Za prikaz Google ocene odobrite funkcionalne kolačiće i Google usluge.'
             : status === 'unavailable' ? 'Google ocena trenutno nije dostupna.' : 'Učitavanje ocene…'}
-      </p>
+        </p>
+      )}
       {!googleAllowed && (
         <button type="button" className="btn" onClick={openSettings} disabled={consentLoading}>
           Odobri kolačiće
@@ -57,9 +58,6 @@ export default function GoogleShopRating() {
           Pokušaj ponovo
         </button>
       )}
-      <p style={{ marginTop: '12px' }}>
-        <a href={SHOP_GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer">Pogledaj na Google Maps</a>
-      </p>
       {currentRating && (
         <>
           <span translate="no" style={{
