@@ -480,7 +480,7 @@ export default function Home() {
         items={[
           { icon: CheckCircle2, title: 'Original proizvodi', desc: 'Direktno od brendova' },
           { icon: ShieldCheck, title: '2 godine garancije', desc: 'Na mehanizam i bateriju' },
-          { icon: Wrench, title: 'Ovlašćeni servis', desc: 'Podešavanje i zamena' },
+          { icon: Wrench, title: 'Servisna podrška', desc: 'Slanje ovlašćenom servisu' },
           { icon: Headset, title: 'Podrška', desc: 'Telefon, Viber, email' },
         ]}
       />
@@ -730,10 +730,9 @@ export default function Home() {
           />
           <div className="serviceHero__content">
             <p className="eyebrow">Servis</p>
-            <h2>Servis i tim koji zna svaki model.</h2>
+            <h2>Podrška za servisiranje sata.</h2>
             <p className="lede">
-              Zamena baterije i narukvice uz ovlašćene majstore i originalne
-              delove.
+              Za servisiranje sata organizujemo slanje ovlašćenom servisu.
             </p>
             <div className="serviceHero__cta">
               <span className="btn btn--ghost serviceHero__btn">

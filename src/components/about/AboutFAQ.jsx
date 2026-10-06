@@ -12,7 +12,7 @@ const mockFaq = [
   {
     question: 'Da li su svi satovi originalni?',
     answer:
-      'Apsolutno. Daja Shop je ovlašćeni diler za sve brendove u ponudi. Garantujemo 100% autentičnost svakog sata.',
+      'Da. Garantujemo originalnost svakog sata u našoj ponudi.',
   },
   {
     question: 'Koji je rok isporuke?',

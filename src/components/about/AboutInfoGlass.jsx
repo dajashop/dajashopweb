@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 
 const infoCards = [
   { title: 'Dostava', text: 'Isporuka širom Srbije', delay: 0.1 },
-  { title: 'Ovlašćeni Diler', text: 'Garancija originalnosti', delay: 0.2 },
+  { title: 'Originalni satovi', text: 'Garancija originalnosti', delay: 0.2 },
   {
     title: 'Niš Lokacija',
     text: 'Dostupnost za lično preuzimanje',
