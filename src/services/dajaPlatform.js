@@ -1108,7 +1108,7 @@ function readStoredProductAlertState() {
       readStoredValue(PRODUCT_ALERT_STATE_STORAGE_KEY, 'necessary') || '{}',
     );
     return value && typeof value === 'object'
-      ? { subscriptions: {}, ...value, subscriptions: value.subscriptions || {} }
+      ? { ...value, subscriptions: value.subscriptions || {} }
       : { subscriptions: {} };
   } catch {
     return { subscriptions: {} };

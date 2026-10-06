@@ -1,21 +1,25 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { loadEnv } from 'vite';
-import { isProductPath, loadPage, PUBLIC_PATHS } from '../src/ssr/loadPage.js';
 import { isBrandPath } from '../src/utils/catalogUrls.js';
 import { PUBLIC_SITE_URL } from '../src/config/publicSite.js';
 
 export default function ssrDev() {
   return {
     name: 'daja-public-ssr',
+    apply: 'serve',
     configureServer(server) {
       const env = loadEnv(server.config.mode, server.config.root, '');
       const apiBase = (env.DAJA_API_BASE_URL || env.VITE_DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url, 'http://localhost');
         const path = url.pathname.replace(/\/+$/, '') || '/';
-        if (!['GET', 'HEAD'].includes(req.method) || (!PUBLIC_PATHS.has(path) && !isProductPath(path) && !isBrandPath(path))) return next();
+        if (!['GET', 'HEAD'].includes(req.method)) return next();
         try {
+          // Load application modules through Vite so import.meta.env is
+          // transformed; importing them with the config evaluates them in Node.
+          const { isProductPath, loadPage, PUBLIC_PATHS } = await server.ssrLoadModule('/src/ssr/loadPage.js');
+          if (!PUBLIC_PATHS.has(path) && !isProductPath(path) && !isBrandPath(path)) return next();
           const snapshot = await loadPage(url, apiBase);
           if (snapshot.missing) { res.statusCode = 404; res.end('Proizvod nije pronađen.'); return; }
           if (snapshot.redirectTo) {
