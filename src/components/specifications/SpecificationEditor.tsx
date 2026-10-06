@@ -31,6 +31,7 @@ function matches(rules: Rules, data: EditorData, values: Record<string,string>, 
     return c.operator === 'equals' ? normalizeSpec(value) === normalizeSpec(c.value) : normalizeSpec(value) !== normalizeSpec(c.value);
   }));
 }
+const isSeries = (spec: Spec | undefined) => normalizeSpec(spec?.slug || '') === 'serija' || normalizeSpec(spec?.name || '') === 'serija';
 function useConnected() {
   const [connected,setConnected]=useState(navigator.onLine);
   useEffect(()=>{const update=()=>setConnected(navigator.onLine);window.addEventListener('online',update);window.addEventListener('offline',update);return()=>{window.removeEventListener('online',update);window.removeEventListener('offline',update);};},[]);
@@ -75,9 +76,9 @@ function ValueInput({eyewear=false,spec,value,options,disabled,onCommit,onSave,o
     </div>
     {open&&!disabled&&<div className="se-options" id={`se-options-${spec.id}`} role="listbox">
       {visible.map((o,i)=><button type="button" role="option" aria-selected={i===index} id={`se-option-${spec.id}-${i}`} className={i===index?'is-selected':''} key={o.value} onMouseDown={e=>e.preventDefault()} onClick={()=>{setDraft(displayValue(spec,o.value));commit(o.value);input.current?.focus();setOpen(false);}}><span>{displayValue(spec,o.value)}</span><span className="se-option-meta">{o.count!==undefined&&<small>{usageLabel(o.count,eyewear)}</small>}{o.unknown&&<small>Neklasifikovani</small>}</span></button>)}
-      {!visible.length&&<small>Nema ponuđenih vrednosti. Možeš upisati novu.</small>}
+      {!visible.length&&<small>{isSeries(spec)?"Nema odgovarajućih serija za izabrani brend. Vrednosti i njihove uslove podesi u podešavanjima specifikacija.":"Nema ponuđenih vrednosti. Možeš upisati novu."}</small>}
     </div>}
-    {isNew&&<button className="se-save-option" type="button" disabled={disabled||busy} onClick={()=>{if(commit(draft))onSave(storedValue(spec,draft.trim()));}}>{busy?'Čuvanje…':'Sačuvaj kao ponuđenu'}</button>}
+    {isNew&&!isSeries(spec)&&<button className="se-save-option" type="button" disabled={disabled||busy} onClick={()=>{if(commit(draft))onSave(storedValue(spec,draft.trim()));}}>{busy?'Čuvanje…':'Sačuvaj kao ponuđenu'}</button>}
     {!isNew&&unknown&&canLink&&<button className="se-save-option" type="button" disabled={disabled||busy} onClick={()=>{if(commit(draft))onLink(storedValue(spec,draft.trim()));}}>Poveži sa izabranim tipom</button>}
     {message&&<small className="se-message" role="status">{message}</small>}
   </div>;
@@ -92,17 +93,32 @@ export function SpecificationEditor({api,departmentId,brand='',values,onChange,o
   useEffect(()=>setImage(0),[images[0]]);
   if(!departmentId)return <p className="se-message">Izaberi odeljenje da vidiš specifikacije.</p>;
   const typeSpec=data?.specifications.find(s=>normalizeSpec(s.slug)==='tip_mehanizma');const type=read(typeSpec,values);
-  const optionAllowed=(f:Field|undefined,value:string,next:Record<string,string>)=>{const rule=f?.options.find(o=>normalizeSpec(o.value)===normalizeSpec(value));return !rule||matches(rule.rules,data!,next,brand);};
+  const optionAllowed=(f:Field|undefined,value:string,next:Record<string,string>)=>{
+    const rule=f?.options.find(o=>normalizeSpec(o.value)===normalizeSpec(value));
+    if(isSeries(data?.specifications.find(s=>s.id===f?.specId))){
+      if(!value.trim())return true;
+      return Boolean(brand.trim()&&rule?.rules.some(row=>row.some(c=>c.brand&&c.operator==='equals'&&normalizeSpec(c.value)===normalizeSpec(brand))&&matches([row],data!,next,brand,false)));
+    }
+    return !rule||matches(rule.rules,data!,next,brand);
+  };
+  const fieldApplicable=(spec:Spec,next:Record<string,string>)=>{
+    const f=data?.configuration.fields.find(f=>f.specId===spec.id);
+    return isSeries(spec)?spec.optionValues.some(value=>optionAllowed(f,value,next)):matches(f?.visibility||[],data!,next,brand);
+  };
   const change=(spec:Spec,value:string)=>{
+    if(isSeries(spec)&&value.trim()&&!optionAllowed(data?.configuration.fields.find(f=>f.specId===spec.id),value,values)){
+      setMessages(m=>({...m,[spec.id]:'Izaberi seriju koja je uslovom povezana sa izabranim brendom.'}));return false;
+    }
+    if(isSeries(spec))setMessages(m=>({...m,[spec.id]:''}));
     if(eyewear){
       const validation=eyewearValueError(spec.slug,value);
       if(validation){setMessages(m=>({...m,[spec.id]:validation}));return false;}
       setMessages(m=>({...m,[spec.id]:''}));
     }
     const next={...values};for(const k of Object.keys(next))if(normalizeSpec(k)===normalizeSpec(spec.slug)||normalizeSpec(k)===normalizeSpec(spec.name))delete next[k];if(value)next[spec.slug.replace(/-/g,'_')]=value;
-    const invalid=data!.specifications.filter(s=>s.id!==spec.id&&read(s,next)).filter(s=>{const f=data!.configuration.fields.find(f=>f.specId===s.id);return (f&&!matches(f.visibility,data!,next,brand))||!optionAllowed(f,read(s,next),next);});
+    const invalid=data!.specifications.filter(s=>s.id!==spec.id&&read(s,next)).filter(s=>{const f=data!.configuration.fields.find(f=>f.specId===s.id);return !fieldApplicable(s,next)||!optionAllowed(f,read(s,next),next);});
     // Existing inconsistent products are displayed, never silently cleaned on load.
-    const changedInvalid=invalid.filter(s=>{const f=data!.configuration.fields.find(f=>f.specId===s.id);return (matches(f?.visibility||[],data!,values,brand)&&!matches(f?.visibility||[],data!,next,brand))||(optionAllowed(f,read(s,values),values)&&!optionAllowed(f,read(s,next),next));});
+    const changedInvalid=invalid.filter(s=>{const f=data!.configuration.fields.find(f=>f.specId===s.id);return (fieldApplicable(s,values)&&!fieldApplicable(s,next))||(optionAllowed(f,read(s,values),values)&&!optionAllowed(f,read(s,next),next));});
     if(changedInvalid.length&&!window.confirm(`Promena uklanja sledeće vrednosti:\n${changedInvalid.map(s=>`${s.name}: ${read(s,next)}`).join('\n')}\n\nNastavi?`))return false;
     for(const s of changedInvalid)for(const k of Object.keys(next))if(normalizeSpec(k)===normalizeSpec(s.slug)||normalizeSpec(k)===normalizeSpec(s.name))delete next[k];
     onChange(next);return true;
@@ -124,7 +140,7 @@ export function SpecificationEditor({api,departmentId,brand='',values,onChange,o
     <div className={`se-layout${showPreview ? '' : ' se-layout-fields-only'}`}><div className="se-fields">
       {data&&groups.map(group=>{
         const specs=data.specifications.filter(s=>fields.find(f=>f.specId===s.id)?.groupId===group.id).sort((a,b)=>(fields.find(f=>f.specId===a.id)?.order||0)-(fields.find(f=>f.specId===b.id)?.order||0));
-        const applicable=specs.filter(s=>matches(fields.find(f=>f.specId===s.id)?.visibility||[],data,values,brand));
+        const applicable=specs.filter(s=>fieldApplicable(s,values));
         const shown=specs.filter(s=>(applicable.includes(s)||Boolean(read(s,values)))&&(!emptyOnly||!read(s,values)||activeSpec===s.id));
         if(!specs.length)return null;
         return <section className="se-group" key={group.id}><button type="button" className="se-group-heading" aria-expanded={!collapsed[group.id]} onClick={()=>setCollapsed(c=>({...c,[group.id]:!c[group.id]}))}><strong>{group.name}</strong><span>{applicable.filter(s=>read(s,values)).length}/{applicable.length} popunjeno <ChevronDown className={collapsed[group.id]?'se-chevron':'se-chevron is-open'} size={16} strokeWidth={1.8} aria-hidden="true"/></span></button>
@@ -197,7 +213,7 @@ export function SpecificationSettings({api,departments,online=true,disabled=fals
     <p className="se-rule-help">Vrednost je ono što porediš sa unosom proizvoda: za brend biraš stvaran brend, a za specifikaciju, na primer, „Automatski“. „Je“ traži poklapanje; „nije“ ga isključuje. Pravila polja određuju kada se polje vidi, a pravila ponuđene vrednosti kada je taj odgovor dostupan.</p>
     {config&&data&&<><div className="se-group-fields">{config.groups.map((g,i)=><div className="se-category" key={g.id}><input disabled={locked} aria-label="Naziv kategorije" value={g.name} onChange={e=>setConfig({...config,groups:config.groups.map(v=>v.id===g.id?{...v,name:e.target.value}:v)})}/><button type="button" disabled={locked||!i} onClick={()=>{const list=[...config.groups];[list[i-1],list[i]]=[list[i],list[i-1]];setConfig({...config,groups:list});}} className="se-icon-button" title="Pomeri kategoriju gore" aria-label="Pomeri kategoriju gore"><ChevronUp size={16} strokeWidth={1.8} aria-hidden="true"/></button><button type="button" disabled={locked||i===config.groups.length-1} onClick={()=>{const list=[...config.groups];[list[i+1],list[i]]=[list[i],list[i+1]];setConfig({...config,groups:list});}} className="se-icon-button" title="Pomeri kategoriju dole" aria-label="Pomeri kategoriju dole"><ChevronDown size={16} strokeWidth={1.8} aria-hidden="true"/></button><button type="button" disabled={locked} onClick={()=>setConfig({...config,groups:config.groups.filter(v=>v.id!==g.id),fields:config.fields.map(f=>f.groupId===g.id?{...f,groupId:'other'}:f)})} className="se-icon-button" title="Obriši kategoriju" aria-label="Obriši kategoriju"><X size={15} strokeWidth={1.8} aria-hidden="true"/></button></div>)}</div>
       <div className="se-category"><input disabled={locked} placeholder="Nova kategorija" value={name} onChange={e=>setName(e.target.value)}/><button type="button" disabled={locked||!name.trim()} onClick={()=>{setConfig({...config,groups:[...config.groups,{id:crypto.randomUUID(),name:name.trim()}]});setName('');}}>Dodaj kategoriju</button></div>
-      {data.specifications.map(s=>{const f=config.fields.find(f=>f.specId===s.id);if(!f)return null;return <details className="se-group" key={s.id}><summary>{s.name}</summary><div className="se-settings-field"><label>Kategorija<select disabled={locked} value={f.groupId} onChange={e=>updateField(s.id,{groupId:e.target.value})}>{config.groups.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}<option value="other">Ostalo</option></select></label><label>Redosled<input disabled={locked} type="number" min="0" value={f.order} onChange={e=>updateField(s.id,{order:Math.max(0,Number(e.target.value)||0)})}/></label></div><h4>Prikazivanje polja</h4><RuleEditor rules={f.visibility} specs={data.specifications} brands={data.brands||[]} self={s.id} disabled={locked} onChange={visibility=>updateField(s.id,{visibility})}/><details><summary>Pravila ponuđenih vrednosti</summary>{[...s.optionValues].sort((a,b)=>compareOptions(data,s.id,a,b)).map(value=>{const option=f.options.find(o=>normalizeSpec(o.value)===normalizeSpec(value));return <div className="se-option-rule" key={value}><div className="se-option-heading"><strong>{value}</strong>{usageCount(data,s.id,value)!==undefined&&<small title={eyewear?"Broj modela naočara u katalogu; ne broj komada na stanju":"Broj trenutnih satova u katalogu; ne broj komada na stanju"}>{usageLabel(usageCount(data,s.id,value)!,eyewear)}</small>}</div><RuleEditor rules={option?.rules||[]} specs={data.specifications} brands={data.brands||[]} self={s.id} disabled={locked} onChange={rules=>updateField(s.id,{options:[...f.options.filter(o=>normalizeSpec(o.value)!==normalizeSpec(value)),{value,rules}]})}/></div>;})}</details></details>;})}
+      {data.specifications.map(s=>{const f=config.fields.find(f=>f.specId===s.id);if(!f)return null;return <details className="se-group" key={s.id}><summary>{s.name}</summary><div className="se-settings-field"><label>Kategorija<select disabled={locked} value={f.groupId} onChange={e=>updateField(s.id,{groupId:e.target.value})}>{config.groups.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}<option value="other">Ostalo</option></select></label><label>Redosled<input disabled={locked} type="number" min="0" value={f.order} onChange={e=>updateField(s.id,{order:Math.max(0,Number(e.target.value)||0)})}/></label></div><h4>Prikazivanje polja</h4>{isSeries(s)?<p className="se-rule-help">Serija se prikazuje kada postoji ponuđena vrednost sa uslovom Brend je izabrani brend. Serije bez tog uslova nisu ponuđene. Veze podesi ispod za svaku vrednost.</p>:<RuleEditor rules={f.visibility} specs={data.specifications} brands={data.brands||[]} self={s.id} disabled={locked} onChange={visibility=>updateField(s.id,{visibility})}/>}<details><summary>Pravila ponuđenih vrednosti</summary>{[...s.optionValues].sort((a,b)=>compareOptions(data,s.id,a,b)).map(value=>{const option=f.options.find(o=>normalizeSpec(o.value)===normalizeSpec(value));return <div className="se-option-rule" key={value}><div className="se-option-heading"><strong>{value}</strong>{usageCount(data,s.id,value)!==undefined&&<small title={eyewear?"Broj modela naočara u katalogu; ne broj komada na stanju":"Broj trenutnih satova u katalogu; ne broj komada na stanju"}>{usageLabel(usageCount(data,s.id,value)!,eyewear)}</small>}</div><RuleEditor rules={option?.rules||[]} specs={data.specifications} brands={data.brands||[]} self={s.id} disabled={locked} onChange={rules=>updateField(s.id,{options:[...f.options.filter(o=>normalizeSpec(o.value)!==normalizeSpec(value)),{value,rules}]})}/></div>;})}</details></details>;})}
       <button className="se-primary" type="button" disabled={locked} onClick={()=>void save()}>{busy?'Čuvanje…':'Sačuvaj kategorije i pravila'}</button>
     </>}
   </section>;
