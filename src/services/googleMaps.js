@@ -1,3 +1,5 @@
+import { isGoogleAllowed } from './consentStorage.js';
+
 const SCRIPT_ID = 'dajashop-google-maps-script';
 const LEGACY_SCRIPT_ID = 'google-maps-script';
 const CALLBACK_NAME = '__dajaGoogleMapsReady';
@@ -35,13 +37,18 @@ export function loadGoogleMapsPlaces() {
   mapsLoadPromise = new Promise((resolve, reject) => {
     let timeoutId;
     let settled = false;
+    let script;
 
     const finish = (error) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timeoutId);
+      script?.removeEventListener('load', onLoad);
+      script?.removeEventListener('error', onError);
 
       if (error) {
+        // Remove our failed tag so a retry starts a new download.
+        if (script?.id === SCRIPT_ID) script.remove();
         reject(error);
       } else if (mapsPlacesIsReady()) {
         resolve(window.google.maps);
@@ -50,14 +57,23 @@ export function loadGoogleMapsPlaces() {
       }
     };
 
-    const onLoad = () => finish();
+    // The async Maps callback can run before the Places namespace is ready.
+    // Explicitly await the library rather than rejecting a successful download.
+    const onLoad = () => {
+      if (settled) return;
+      if (typeof window.google?.maps?.importLibrary === 'function') {
+        window.google.maps.importLibrary('places').then(() => finish(), finish);
+      } else {
+        finish();
+      }
+    };
     const onError = () => finish(new Error('Google Maps nije mogao da se učita.'));
 
     timeoutId = window.setTimeout(() => {
       finish(new Error('Google Maps je predugo čekao na učitavanje.'));
     }, 15000);
 
-    const script =
+    script =
       document.getElementById(SCRIPT_ID) ||
       document.getElementById(LEGACY_SCRIPT_ID);
 
@@ -67,9 +83,10 @@ export function loadGoogleMapsPlaces() {
       if (mapsPlacesIsReady()) finish();
     } else {
       const newScript = document.createElement('script');
+      script = newScript;
       newScript.id = SCRIPT_ID;
       newScript.async = true;
-      window[CALLBACK_NAME] = () => finish();
+      window[CALLBACK_NAME] = onLoad;
       newScript.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&loading=async&callback=${CALLBACK_NAME}&libraries=places&v=weekly&language=sr&region=RS`;
       newScript.addEventListener('error', onError, { once: true });
       document.head.appendChild(newScript);
@@ -92,4 +109,3 @@ export function unloadGoogleMaps() {
   document.getElementById(LEGACY_SCRIPT_ID)?.remove();
   document.querySelectorAll('.pac-container').forEach((element) => element.remove());
 }
-import { isGoogleAllowed } from './consentStorage.js';

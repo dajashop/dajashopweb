@@ -1,5 +1,5 @@
 import { isGoogleAllowed } from './consentStorage.js';
-import { loadGoogleMapsPlaces } from './googleMaps.js';
+import { getGoogleMapsApiKey, loadGoogleMapsPlaces } from './googleMaps.js';
 
 // Place ID encoded by the feature ID in the owner's Google Maps profile URL.
 export const SHOP_PLACE_ID = import.meta.env.VITE_GOOGLE_SHOP_PLACE_ID?.trim()
@@ -28,6 +28,11 @@ export function fetchGoogleShopRating() {
       count: place.userRatingCount,
       attributions: (place.attributions || []).map(({ provider, providerURI }) => ({ provider, providerURI })),
     };
-  })().finally(() => { pendingRequest = null; });
+  })().catch((error) => {
+    const key = getGoogleMapsApiKey();
+    const message = String(error?.message || 'Nepoznata greška.');
+    console.warn('Google ocena nije dostupna:', key ? message.split(key).join('[redacted]') : message);
+    throw error;
+  }).finally(() => { pendingRequest = null; });
   return pendingRequest;
 }
