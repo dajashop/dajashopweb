@@ -1,3 +1,4 @@
+import { catalogApi } from '../services/dajaPlatform.js';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './Home.css';
 import { Link } from 'react-router-dom';
@@ -5,7 +6,7 @@ import HeroBgSlider from '../components/HeroBgSlider.jsx';
 import BrandStrip from '../components/BrandStrip.jsx';
 import TrustBar from '../components/TrustBar.jsx';
 import WatchFinder from '../components/WatchFinder.jsx';
-import useProducts from '../hooks/useProducts.js';
+import usePublicListing from '../hooks/usePublicListing.js';
 import { useAuth } from '../hooks/useAuth';
 import { useFlash } from '../hooks/useFlash.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
@@ -148,7 +149,10 @@ function BestEditCard({ onClick }) {
 }
 
 export default function Home() {
-  const { items, loading } = useProducts({ order: 'name', limit: 64 });
+  const homeListing = usePublicListing('home', 'homeProducts');
+  const items = homeListing.data?.items || [];
+  const loading = homeListing.loading;
+  const [adminProducts, setAdminProducts] = useState(null);
   const { user } = useAuth();
   const { flash } = useFlash();
   const bestGridRef = useRef(null);
@@ -201,12 +205,21 @@ export default function Home() {
     return [...curated, ...extras].slice(0, BEST_COUNT);
   }, [adminRecommendedProducts, topProducts, items]);
 
+  useEffect(() => {
+    if (!isAdmin || !isRecommendedModalOpen) return;
+    let cancelled = false;
+    catalogApi.listProducts({ all: true }).then(products => {
+      if (!cancelled) setAdminProducts(products);
+    }).catch(error => flash('Greška', error.message, 'error'));
+    return () => { cancelled = true; };
+  }, [isAdmin, isRecommendedModalOpen, flash]);
+
   const watchProducts = useMemo(() => {
     const collator = new Intl.Collator('sr-RS', { sensitivity: 'base' });
-    return (items || [])
+    return (adminProducts || items || [])
       .filter((p) => (p.department || 'satovi') === 'satovi')
       .sort((a, b) => collator.compare(a.name || '', b.name || ''));
-  }, [items]);
+  }, [adminProducts, items]);
 
   const recommendedModalProducts = useMemo(() => {
     const selectedOrder = new Map(

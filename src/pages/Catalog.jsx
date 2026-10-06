@@ -17,15 +17,13 @@ import BreadcrumbJsonLd from '../components/seo/BreadcrumbJsonLd.jsx';
 import { seoConfig } from '../config/seo.js';
 
 // Hookovi
-import useProducts from '../hooks/useProducts.js';
+import usePublicListing from '../hooks/usePublicListing.js';
+import { catalogPageRequest } from '../utils/catalogPageRequest.js';
 import useFilterConfiguration from '../hooks/useFilterConfiguration.js';
-import { automaticFilterConfiguration, configuredFilterParams, configuredFilterChips, filterConfiguredProducts } from '../utils/filterConfiguration.js';
-import { diameterValue, filterCatalogProducts, isDiameterSpec } from '../utils/catalogFilters.js';
+import { configuredFilterParams, configuredFilterChips } from '../utils/filterConfiguration.js';
+import { diameterValue, isDiameterSpec } from '../utils/catalogFilters.js';
 import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 
-// --- ADMIN IMPORTI (Potrebni da bismo znali da li da prikažemo skrivene satove) ---
-import { useAuth } from '../hooks/useAuth';
-import { isAdminEmail } from '../services/dajaPlatform';
 import { useConsent } from '../context/ConsentContext.jsx';
 import { readSessionValue, writeSessionValue } from '../services/consentStorage.js';
 
@@ -122,12 +120,6 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   }, [filterIdentity, sp, setSp]);
 
   const sortParam = sp.get('sort') || 'popular';
-  const backendOrderField = useMemo(() => {
-    if (sortParam === 'price-asc' || sortParam === 'price-desc') return 'price';
-    if (sortParam === 'newest') return 'createdAt';
-    if (sortParam === 'name') return 'name';
-    return 'name'; // Popularnost sortiramo na klijentu da izbegnemo Firestore indekse
-  }, [sortParam]);
 
   const handleSortChange = (val) => {
     const next = new URLSearchParams(sp);
@@ -144,51 +136,15 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   );
   const savedScrollRef = useRef(null);
 
-  // --- PROVERA ADMINA ---
-  const { user } = useAuth();
   const { preferencesAllowed } = useConsent();
-  const isAdmin = user && isAdminEmail(user.email);
-
-  // --- FETCH DATA ---
-  const {
-    items: allItems,
-    loading,
-    err,
-  } = useProducts({
-    order: backendOrderField,
-    all: true,
-    // The public catalog must always use the same published dataset as the
-    // storefront API and RFID sync. Admin-only drafts belong in the admin
-    // dashboard, not in the customer-facing catalog.
-    admin: false,
-    publicRealtime: true,
-  });
-
-  // --- GLAVNA LOGIKA: Odeljenje + Vidljivost ---
-  const departmentItems = useMemo(() => {
-    if (!allItems) return [];
-
-    return allItems.filter((p) => {
-      // 1. Provera odeljenja
-      const productDept = p.department || 'satovi';
-      if (productDept !== department) return false;
-      if (routeBrand && savedFilterConfiguration && !selectedBrands.length) return false;
-      if (routeBrand && !savedFilterConfiguration && urlSlug(p.brand) !== urlSlug(routeBrand)) return false;
-
-      // 2. LOGIKA VIDLJIVOSTI:
-      // Ako je proizvod sakriven (isVisible === false)...
-      if (p.isVisible === false) {
-        // ...prikazujemo ga SAMO ako je korisnik ADMIN.
-        // Ako nije admin, sakrivamo ga (return false).
-        if (!isAdmin) return false;
-      }
-
-      return true;
-    });
-  }, [allItems, department, isAdmin, routeBrand, savedFilterConfiguration, sp.toString()]);
-
-  const filterConfiguration = useMemo(() => automaticFilterConfiguration(savedFilterConfiguration, departmentItems.filter((product) => product.isVisible !== false)), [savedFilterConfiguration, departmentItems]);
+  const filterConfiguration = savedFilterConfiguration;
   const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration, fixedGender) : sp, [sp, filterConfiguration, fixedGender]);
+  const requestKey = catalogPageRequest(department, configuredParams, fixedGender);
+  const listing = usePublicListing(requestKey, 'catalogPage', !filterConfigurationLoading && !filterConfigurationError);
+  const loading = listing.loading;
+  const err = listing.error;
+  const departmentItems = listing.data?.items || [];
+  const facets = listing.data?.facets;
   useEffect(() => {
     if (filterConfigurationLoading || filterConfigurationError) return;
     const readable = catalogUrl(configuredParams, filterConfiguration, location.pathname);
@@ -286,58 +242,8 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     setSp(next, { replace: true });
   };
 
-  // Glavna logika filtriranja (Pretraga, Brendovi...)
-  const filteredData = useMemo(() => {
-    const out = filterConfiguration ? filterConfiguredProducts(departmentItems, configuredParams, filterConfiguration, { fixedGender }) : filterCatalogProducts(departmentItems, filterConfigurationError ? new URLSearchParams({ q: sp.get('q') || '' }) : sp, { fixedGender });
-
-    const collator = new Intl.Collator('sr-RS', { sensitivity: 'base' });
-    const getDate = (val) => {
-      if (!val) return 0;
-      if (typeof val.toDate === 'function') return val.toDate().getTime();
-      const d = new Date(val);
-      return Number.isNaN(d.getTime()) ? 0 : d.getTime();
-    };
-    const getPopularity = (p) =>
-      Number(
-        p.popularity ??
-          p.popularityScore ??
-          p.ordersCount ??
-          p.sold ??
-          p.views ??
-          p.viewsCount ??
-          p.rating ??
-          0,
-      );
-
-    const sorted = [...out].sort((a, b) => {
-      switch (sortParam) {
-        case 'price-asc':
-          return (Number(a.price) || 0) - (Number(b.price) || 0);
-        case 'price-desc':
-          return (Number(b.price) || 0) - (Number(a.price) || 0);
-        case 'newest':
-          return getDate(b.createdAt) - getDate(a.createdAt);
-        case 'popular':
-          return getPopularity(b) - getPopularity(a);
-        case 'name':
-        default:
-          return collator.compare(a.name || '', b.name || '');
-      }
-    });
-
-    if (!isAdmin) return sorted;
-    // Admin can still inspect hidden products; after a fresh load they are
-    // deliberately placed below every product visible to customers.
-    return [
-      ...sorted.filter((product) => product.isVisible !== false),
-      ...sorted.filter((product) => product.isVisible === false),
-    ];
-  }, [departmentItems, fixedGender, sp, isAdmin, sortParam, filterConfiguration, configuredParams, filterConfigurationError]);
-
-  const totalCount = filteredData.length;
-  const requestedPage = Number(sp.get('page'));
-  const page = Math.min(Math.max(1, Math.ceil(totalCount / PER_PAGE)),
-    Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
+  const totalCount = listing.data?.total || 0;
+  const page = listing.data?.page || 1;
   const getPageUrl = (number) => {
     const next = new URLSearchParams(sp);
     if (number === 1) next.delete('page');
@@ -397,7 +303,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
   }, [scrollKey, page, preferencesAllowed]);
 
   const start = (page - 1) * PER_PAGE;
-  const itemsToShow = filteredData.slice(start, start + PER_PAGE);
+  const itemsToShow = departmentItems;
 
   const renderContent = () => {
     if (loading || filterConfigurationLoading) {
@@ -414,7 +320,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       );
     }
 
-    if (err) {
+    if (err && !listing.data) {
       return (
         <div className="flex flex-col items-center justify-center h-64 p-6 text-red-500">
           <AlertTriangle size={32} />
@@ -441,6 +347,7 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
     return (
       <>
+        {err && <p role="status">Nova stranica trenutno nije dostupna. <button type="button" onClick={listing.retry}>Pokušaj ponovo</button></p>}
         <ProductGrid items={itemsToShow} />
         <div className="catalog__footer">
           <div className="catalog__pagination">
@@ -483,12 +390,12 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       />
 
       <div className="catalog-mobile-trigger lg:hidden mb-4">
-        <FilterDrawer products={departmentItems} fixedGender={fixedGender} configuration={filterConfiguration} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
+        <FilterDrawer products={departmentItems} fixedGender={fixedGender} configuration={filterConfiguration} serverFacets={facets} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
       </div>
 
       <div className="catalog-layout lg:grid lg:grid-cols-[260px_1fr] lg:gap-8 items-start">
         <aside className="sidebar-filters hidden lg:block sticky top-24">
-          <Filters products={departmentItems} fixedGender={fixedGender} configuration={filterConfiguration} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
+          <Filters products={departmentItems} fixedGender={fixedGender} configuration={filterConfiguration} serverFacets={facets} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
         </aside>
 
         <main className="catalog-main min-w-0">
@@ -572,7 +479,6 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
           </div>
 
           <motion.div
-            key={department + sp.toString()}
             initial={false}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

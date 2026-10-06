@@ -10,6 +10,7 @@ import { usePageData } from '../ssr/PageData.jsx';
 
 export default function useProducts(params = {}) {
   const { hasDecision } = useConsent();
+  const enabled = params.enabled !== false;
   const page = usePageData();
   const initialItems = useMemo(() => {
     const catalog = !params.admin ? page?.data?.catalog : null;
@@ -33,11 +34,12 @@ export default function useProducts(params = {}) {
   const usePublicRealtime = memoizedParams.publicRealtime ?? !memoizedParams.admin;
 
   useEffect(() => {
+    if (!enabled) return undefined;
     // Keep the complete server-rendered listing while revalidating it.
     setLoading(!initialItems);
     setErr(null);
 
-    const { publicRealtime: _publicRealtime, ...requestParams } = memoizedParams;
+    const { publicRealtime: _publicRealtime, enabled: _enabled, ...requestParams } = memoizedParams;
     const unsub = subscribeProducts({
       onData: (arr) => {
         setItems(arr);
@@ -55,9 +57,10 @@ export default function useProducts(params = {}) {
     });
 
     return () => unsub?.();
-  }, [memoizedParams, refreshKey]);
+  }, [memoizedParams, refreshKey, enabled]);
 
   useEffect(() => {
+    if (!enabled) return undefined;
     const applyProductChange = (event) => {
       const change = event.detail;
       // Compatibility with events from an older bundle. Only those events
@@ -96,10 +99,10 @@ export default function useProducts(params = {}) {
     };
     window.addEventListener('daja:products-changed', applyProductChange);
     return () => window.removeEventListener('daja:products-changed', applyProductChange);
-  }, [memoizedParams.admin, usePublicRealtime]);
+  }, [memoizedParams.admin, usePublicRealtime, enabled]);
 
   useEffect(() => {
-    if (!hasDecision || !usePublicRealtime) return undefined;
+    if (!enabled || !hasDecision || !usePublicRealtime) return undefined;
     // Administrators must receive the organization-scoped signal.  The
     // public room is intentionally optional and can be configured for a
     // different storefront organization, which left the Artikli screen stale
@@ -155,12 +158,12 @@ export default function useProducts(params = {}) {
       },
       () => {},
     );
-  }, [hasDecision, memoizedParams.admin, usePublicRealtime]);
+  }, [hasDecision, memoizedParams.admin, usePublicRealtime, enabled]);
 
   // A timed sale can end without an admin request. Refresh only the affected
   // product at that exact time; never reload the whole catalog.
   useEffect(() => {
-    if (!usePublicRealtime) return undefined;
+    if (!enabled || !usePublicRealtime) return undefined;
     const timers = items
       .filter((item) => item.salePrice && item.saleValidUntil && item.slug)
       .map((item) => {
@@ -172,7 +175,7 @@ export default function useProducts(params = {}) {
       })
       .filter(Boolean);
     return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [items, usePublicRealtime]);
+  }, [items, usePublicRealtime, enabled]);
 
   const supplierItems = useRef(items);
   supplierItems.current = items;

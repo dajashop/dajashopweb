@@ -6,21 +6,21 @@ import useProducts from '../hooks/useProducts';
 import { motion } from 'framer-motion';
 import './ProductGrid.css';
 
-export default function ProductGrid({ items: propItems }) {
-  // Podaci
-  const { items: hookItems, loading, err } = useProducts();
-  const displayItems = propItems || hookItems;
-  const [isModalOpen, setModalOpen] = useState(false);
+export default function ProductGrid({ items }) {
+  return items ? <ProductGridContent items={items} /> : <FetchedProductGrid />;
+}
 
+function FetchedProductGrid() {
+  const { items, loading, err } = useProducts();
   // Loading / Error stanja
-  if (loading && !propItems) {
+  if (loading) {
     return (
       <div className="py-12 text-center font-medium text-neutral-500 animate-pulse">
         Učitavanje kataloga...
       </div>
     );
   }
-  if (err && !propItems) {
+  if (err) {
     return (
       <div className="py-12 text-center font-bold text-red-500">
         Greška: {String(err)}
@@ -28,10 +28,15 @@ export default function ProductGrid({ items: propItems }) {
     );
   }
 
+  return <ProductGridContent items={items} />;
+}
+
+function ProductGridContent({ items }) {
+  const [isModalOpen, setModalOpen] = useState(false);
   return (
     <>
       <div className="product-grid">
-        {displayItems.map((p) => (
+        {items.map((p) => (
           <ProductCard key={p.id} p={p} />
         ))}
       </div>

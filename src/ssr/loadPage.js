@@ -1,3 +1,7 @@
+import { legacyListing } from '../utils/legacyListing.js';
+import { decodeCatalogParams } from '../utils/catalogUrls.js';
+import { configuredFilterParams } from '../utils/filterConfiguration.js';
+import { catalogPageRequest } from '../utils/catalogPageRequest.js';
 import { isBrandPath } from '../utils/catalogUrls.js';
 
 export const PUBLIC_PATHS = new Set([
@@ -12,7 +16,7 @@ export const isProductPath = path => /^\/product\/[^/]+\/?$/.test(path);
 export const catalogDepartment = path => CATALOG_DEPARTMENTS[path] || (isBrandPath(path) ? 'satovi' : null);
 
 export function publicCacheSeconds(data, maximum = 60) {
-  const sales = [data.product, ...(data.catalog || []), ...(data.relatedProducts || [])].filter(item => item?.saleValidUntil);
+  const sales = [data.product, ...(data.catalog || []), ...(data.catalogPage?.items || []), ...(data.homeProducts?.items || []), ...(data.relatedVariants || []), ...(data.relatedProducts || [])].filter(item => item?.saleValidUntil);
   return sales.reduce((seconds, item) => Math.min(seconds,
     Math.max(0, Math.floor((new Date(item.saleValidUntil).getTime() - Date.now()) / 1000) || 0)), maximum);
 }
@@ -22,7 +26,7 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
   const api = async (route, optional = false) => {
     try {
       const response = await fetch(`${apiBase}${route}`, { signal: AbortSignal.timeout(optional ? 3000 : 8000) });
-      if (!response.ok) throw new Error(`Public catalog response: ${response.status}`);
+      if (!response.ok) { const error = new Error(`Public catalog response: ${response.status}`); error.status = response.status; throw error; }
       const body = await response.json();
       return body?.data ?? body;
     } catch (error) {
@@ -45,7 +49,7 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
     return items;
   };
   const data = { catalog: null, product: null, filters: {}, relatedVariants: [], relatedProducts: [] };
-  const needsCatalog = path === '/' || path === '/graviranje' || catalogDepartment(path);
+  const needsCatalog = path === '/graviranje';
   const department = catalogDepartment(path);
   const productLoader = async () => {
     const slug = path.split('/')[2];
@@ -61,10 +65,22 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
     const related = await api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/related`, true);
     return Array.isArray(related?.items) ? related.items.slice(0, 12) : null;
   };
-  const [catalog, product, filters, variants, related] = await Promise.all([
+  const filters = department ? await api(`/public/catalog/filters/${department}`) : null;
+  const configuration = filters?.configuration ?? null;
+  const fixedGender = path === '/muski-satovi' ? 'Muški' : path === '/zenski-satovi' ? 'Ženski' : undefined;
+  const listingParams = configuredFilterParams(decodeCatalogParams(url.searchParams, configuration, path), configuration, fixedGender);
+  const requestKey = department ? catalogPageRequest(department, listingParams, fixedGender) : null;
+  const listingLoader = async (route) => {
+    try { return await api(`/public/catalog/${route}`); }
+    catch (error) {
+      if (error.status !== 404) throw error;
+      return legacyListing(await catalogLoader(),route,configuration);
+    }
+  };
+  const [catalog, product, listing, variants, related] = await Promise.all([
     needsCatalog ? (readCatalog ? readCatalog(catalogLoader) : catalogLoader()) : null,
     isProductPath(path) ? (readProduct ? readProduct(productLoader) : productLoader()) : null,
-    department ? api(`/public/catalog/filters/${department}`) : null,
+    requestKey ? listingLoader(requestKey) : path === '/' ? listingLoader('home') : null,
     isProductPath(path) ? api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/variants`, true) : null,
     isProductPath(path) ? (readRelated ? readRelated(relatedLoader) : relatedLoader()) : [],
   ]);
@@ -72,7 +88,12 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
   if (product?.redirectTo) return { redirectTo: product.redirectTo };
   data.catalog = catalog;
   data.product = product?.product || product;
-  if (department) data.filters[department] = filters?.configuration ?? null;
+  if (department) {
+    data.filters[department] = listing?.configuration ?? configuration;
+    const { configuration: _configuration, ...listingData } = listing;
+    data.catalogPage = { ...listingData, requestKey };
+  }
+  if (path === '/') data.homeProducts = { ...listing, requestKey: 'home' };
   data.relatedVariants = variants?.items || [];
   data.relatedProducts = related || [];
   // Empty successful results are seeds too; failed optional requests can retry in the browser.

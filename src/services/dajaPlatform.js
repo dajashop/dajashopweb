@@ -417,6 +417,37 @@ export const catalogApi = {
     }
     return { ...data, items: data.items.map(normalizeProduct), recommendations: (data.recommendations || []).map(normalizeProduct), similar: (data.similar || []).map(item => ({ ...item, product: normalizeProduct(item.product) })) };
   },
+  async listing(route, signal) {
+    let data;
+    try {
+      data = await apiRequest(`/public/catalog/${route}`, { auth: false, signal });
+    } catch (error) {
+      if (error.status !== 404) throw error;
+      const { legacyListing } = await import('../utils/legacyListing.js');
+      const request = new URLSearchParams(route.slice(5));
+      const [items, filters] = await Promise.all([
+        this.listRawProducts(signal),
+        route === 'home' ? null : apiRequest(`/public/catalog/filters/${request.get('department')}`, { auth: false, signal }),
+      ]);
+      data = legacyListing(items, route, filters?.configuration);
+    }
+    if (!data || !Array.isArray(data.items)) throw new Error('Neispravan odgovor kataloga.');
+    return { ...data, items: data.items.map(normalizeProduct) };
+  },
+  async listRawProducts(signal) {
+    const items = [];
+    const seen = new Set();
+    let cursor;
+    do {
+      const data = await apiRequest('/public/catalog/products', { auth: false, signal, query: { limit: 50, cursor } });
+      if (!Array.isArray(data?.items)) throw new Error('Neispravan odgovor kataloga.');
+      items.push(...data.items);
+      cursor = data.nextCursor;
+      if (cursor && seen.has(cursor)) throw new Error('Neispravna paginacija kataloga.');
+      if (cursor) seen.add(cursor);
+    } while (cursor);
+    return items;
+  },
   async listProducts(params = {}) {
     const fetchAll = params.all === true;
     const requestedLimit = fetchAll ? Infinity : Math.max(1, Number(params.limit) || 20);

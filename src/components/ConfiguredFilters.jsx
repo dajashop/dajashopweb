@@ -11,7 +11,7 @@ import { configuredFilterParams, configuredFilterChips, filterConfiguredProducts
 import './Filters.css';
 import useFilterAnchor from '../hooks/useFilterAnchor.js';
 
-export default function ConfiguredFilters({ products, configuration, fixedGender, onClose, params: previewParams, onParams, expandIds = [], showUnavailableOptions = false, focusId = '' }) {
+export default function ConfiguredFilters({ products, configuration, serverFacets, fixedGender, onClose, params: previewParams, onParams, expandIds = [], showUnavailableOptions = false, focusId = '' }) {
   const [urlParams, setUrlParams] = useSearchParams();
   const params = configuredFilterParams(previewParams || urlParams, configuration, fixedGender);
   const [open, setOpen] = useState({});
@@ -37,6 +37,7 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
   const paramsKey = params.toString();
   const filterAnchor = useFilterAnchor(paramsKey, container);
   const facets = useMemo(() => {
+    if (serverFacets) return new Map(Object.entries(serverFacets));
     const selections = new URLSearchParams(paramsKey);
     return new Map(filterLeaves(configuration).map((node) => {
       // Ignore only this leaf. Other leaves, including siblings in a group,
@@ -54,14 +55,14 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
         .filter((value) => node.sources[0] === 'price' || approvedNumbers.some((approved) => approved.number === value.number && approved.unit === value.unit))).map((value) => value.number))].sort((a, b) => a - b) : [];
       return [node.id, { values, selected, numbers }];
     }));
-  }, [products, configuration, fixedGender, paramsKey, showUnavailableOptions]);
+  }, [products, configuration, fixedGender, paramsKey, showUnavailableOptions, serverFacets]);
   const movementTypes = filterLeaves(configuration).filter((node) => movementFilterRole(node) === 'type');
   const movementTypeSelected = movementTypes.some((node) => params.has(selectionKey(node)));
   const available = (node) => {
     if (!node.visible || (fixedGender && node.sources.includes('gender'))) return false;
     if (node.mode === 'group') return node.children.some(available);
     if (!showUnavailableOptions && movementTypes.length && movementFilterRole(node) === 'model' && !movementTypeSelected) return false;
-    const facet = facets.get(node.id);
+    const facet = facets.get(node.id) || { values: [], numbers: [] };
     return node.style === 'range' ? facet.numbers.length > 0 || params.has(rangeKey(node, 'min')) || params.has(rangeKey(node, 'max')) : facet.values.length > 0;
   };
   const setParams = (mutate) => {
@@ -85,7 +86,8 @@ export default function ConfiguredFilters({ products, configuration, fixedGender
     if (node.mode === 'group') return orderedNodes(node.children).filter(available).map((child) => (
       <div className="filter-subsection" data-filter-id={child.id} key={child.id}><h4 className="filter-subsection-title">{child.title}</h4>{child.description && <p className="configured-filter-description">{child.description}</p>}{content(child)}</div>
     ));
-    const { values, selected, numbers } = facets.get(node.id);
+    const { values, numbers } = facets.get(node.id) || { values: [], numbers: [] };
+    const selected = params.getAll(selectionKey(node));
     if (node.style === 'color') return <FilterOptions values={values} selected={selected} limit={(node.columns || 5) * 3}>{(visible) => <ColorFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} columns={node.columns || 5} showCounts={node.showCounts} />}</FilterOptions>;
     if (node.style === 'material') return <FilterOptions values={values} selected={selected}>{(visible) => <MaterialFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} showCounts={node.showCounts} />}</FilterOptions>;
     if (node.style === 'range') {

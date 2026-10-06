@@ -620,7 +620,8 @@ export default function WatchFinder({
   const [optionLogoFallbacks, setOptionLogoFallbacks] = useState({});
   const resultsDelayRef = useRef(null);
 
-  const { items: products, loading } = useProducts({ order: 'name', limit: 200 });
+  const [engaged, setEngaged] = useState(false);
+  const { items: products, loading } = useProducts({ order: 'name', limit: 200, enabled: engaged });
 
   const totalSteps = QUESTIONS.length;
   const current = QUESTIONS[step];
@@ -715,6 +716,7 @@ export default function WatchFinder({
   const showSelectionScreen = mode === 'loading' || mode === 'results';
 
   const handleStart = () => {
+    setEngaged(true);
     setMode('quiz');
     setStep(0);
   };
@@ -747,7 +749,14 @@ export default function WatchFinder({
     }, RESULTS_PREP_DELAY_MS);
   };
 
+  useEffect(() => {
+    if (mode === 'results' && !loading && Object.keys(submittedAnswers).length) {
+      setResults(filterProducts(submittedAnswers, products));
+    }
+  }, [mode, loading, submittedAnswers, products]);
+
   const handleSelect = (key, value) => {
+    setEngaged(true);
     const nextAnswers = { ...answers, [key]: value };
     setAnswers(nextAnswers);
     const isLast = step >= totalSteps - 1;
