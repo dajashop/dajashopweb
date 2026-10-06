@@ -333,7 +333,9 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       return (
         <div className="flex flex-col items-center justify-center h-64 p-8 rounded-2xl border border-(--color-border) bg-surface text-center">
           <p className="text-xl font-semibold text-text">
-            Nema rezultata za izabrane filtere.
+            {brandName && !hasFilteredCatalogUrl
+              ? `Trenutno nema dostupnih ${brandName} satova.`
+              : 'Nema rezultata za izabrane filtere.'}
           </p>
           <button
             onClick={clearAllFilters}
