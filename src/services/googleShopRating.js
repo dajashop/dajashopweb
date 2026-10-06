@@ -18,7 +18,9 @@ export function fetchGoogleShopRating() {
     if (!isGoogleAllowed()) throw new Error('Google usluge nisu dozvoljene.');
     const { Place } = await window.google.maps.importLibrary('places');
     const place = new Place({ id: SHOP_PLACE_ID });
+    if (!isGoogleAllowed()) throw new Error('Google usluge nisu dozvoljene.');
     await place.fetchFields({ fields: ['rating', 'userRatingCount'] });
+    if (!isGoogleAllowed()) throw new Error('Google usluge nisu dozvoljene.');
     if (!Number.isFinite(place.rating) || place.rating < 1 || place.rating > 5
       || !Number.isInteger(place.userRatingCount) || place.userRatingCount < 1) {
       throw new Error('Google ocena nije dostupna.');

@@ -4,7 +4,7 @@ import { useConsent } from '../../context/ConsentContext.jsx';
 import { fetchGoogleShopRating, SHOP_GOOGLE_MAPS_URL } from '../../services/googleShopRating.js';
 
 export default function GoogleShopRating() {
-  const { googleAllowed, requestGooglePermission } = useConsent();
+  const { googleAllowed, loading: consentLoading, openSettings } = useConsent();
   const ref = useRef(null);
   const visible = useInView(ref, { once: true, margin: '200px' });
   const [rating, setRating] = useState(null);
@@ -12,7 +12,7 @@ export default function GoogleShopRating() {
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (!googleAllowed || !visible) {
+    if (consentLoading || !googleAllowed || !visible) {
       setRating(null);
       setStatus('idle');
       return;
@@ -29,7 +29,7 @@ export default function GoogleShopRating() {
       setStatus('unavailable');
     });
     return () => { cancelled = true; };
-  }, [googleAllowed, visible, attempt]);
+  }, [consentLoading, googleAllowed, visible, attempt]);
 
   const currentRating = googleAllowed ? rating : null;
   return (
@@ -43,12 +43,13 @@ export default function GoogleShopRating() {
       </p>
       <p role="status" aria-live="polite" style={{ minHeight: '1.5em' }}>
         {currentRating ? `${currentRating.count.toLocaleString('sr-RS')} ocena korisnika`
-          : !googleAllowed ? 'Dozvolite Google usluge za prikaz ocene.'
+          : consentLoading ? 'Proveravamo podešavanja kolačića…'
+            : !googleAllowed ? 'Za prikaz Google ocene odobrite funkcionalne kolačiće i Google usluge.'
             : status === 'unavailable' ? 'Google ocena trenutno nije dostupna.' : 'Učitavanje ocene…'}
       </p>
       {!googleAllowed && (
-        <button type="button" className="btn" onClick={() => void requestGooglePermission({ force: true })}>
-          Prikaži Google ocenu
+        <button type="button" className="btn" onClick={openSettings} disabled={consentLoading}>
+          Odobri kolačiće
         </button>
       )}
       {googleAllowed && status === 'unavailable' && (
