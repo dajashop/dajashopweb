@@ -20,6 +20,7 @@ const PALETTE = [
   [/zlat|gold/, '#ae8e34', '#c4a348', '#fff'],
   [/bordo|burgundy|maroon/, '#650f24', '#841b35', '#fff'],
   [/siv|grey|gray|antracit/, '#777b80', '#a2a6ab', '#fff'],
+  [/breskv|peach/, '#f5b894', '#ffdbc3', '#111'],
   [/roz|pink/, '#e8a0b4', '#f7c5d4', '#111'],
   [/ljubic|purple|violet/, '#713990', '#9756b7', '#fff'],
   [/narandz|orange/, '#ed731c', '#ff9b45', '#111'],
