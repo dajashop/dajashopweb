@@ -546,7 +546,10 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
                     />
                   </div>
                   <p className="mt-2 text-neutral-500">
-                    Interval {p.intervalSeconds / 60} min · ciklus 10 dana
+                    Interval {(p.regularIntervalSeconds || p.intervalSeconds) / 60} min · ciklus {p.cycleDays || 10} dana
+                  </p>
+                  <p className="text-neutral-500">
+                    Početak prvog ciklusa: {date(p.cycleEpoch)}
                   </p>
                   <p className="text-neutral-500">
                     Sledeći ciklus: {date(p.nextCycleAt)}
@@ -1059,6 +1062,12 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
                 {tasks.length ? (
                   tasks.map((t) => (
                     <p key={t.id} className="mt-1 text-[10px] text-emerald-800">
+                      {new Date(t.nextCheckAt).toLocaleTimeString('sr-RS', {
+                        timeZone: 'Europe/Belgrade',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })}{' '}
                       {NAMES[t.providerCode]}{' '}
                       {t.queuePosition ? `#${t.queuePosition}` : '· provera'}
                     </p>
