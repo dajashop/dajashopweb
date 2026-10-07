@@ -1045,7 +1045,7 @@ export default function AdminProductModal({
       if (invalid) { setFlash({open:true,title:invalid,ok:false}); return; }
       if (form.milanoUrl) {
         try { const link=new URL(form.milanoUrl); if (!/^\/shop\/sunglasses\//i.test(link.pathname)) throw new Error(); }
-        catch { setFlash({open:true,title:'Milano link mora voditi na konkretne sunčane naočare (/shop/sunglasses/).',ok:false}); return; }
+        catch { setFlash({open:true,title:'Milano link mora voditi na konkretne naočare za sunce (/shop/sunglasses/).',ok:false}); return; }
       }
     }
     const shouldReconcileQuantity = !product || quantityEditedRef.current;
@@ -1648,14 +1648,14 @@ export default function AdminProductModal({
         .filter((department) => department.slug)
         .map((department) => ({
           value: department.slug,
-          label: department.slug === 'naocare' ? 'Sunčane naočare' : department.name,
+          label: department.slug === 'naocare' ? 'Naočare za sunce' : department.name,
         }));
     }
     return [
       { value: 'satovi', label: 'Satovi' },
       { value: 'daljinski', label: 'Daljinski' },
       { value: 'baterije', label: 'Baterije' },
-      { value: 'naocare', label: 'Sunčane naočare' },
+      { value: 'naocare', label: 'Naočare za sunce' },
     ];
   }, [departments]);
 
@@ -2290,7 +2290,7 @@ export default function AdminProductModal({
               </div>
             </div>
             <div className="lg:col-span-12 se-specification-row">
-              {isEyewearDepartment && <div className="lg:col-span-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-sm"><strong>Sunčane naočare</strong><p>Oblik izaberi u specifikacijama; kolekcija je opciona. Zaštitu, materijal sočiva i kategoriju filtera unesi samo prema potvrđenim podacima.</p>{eyewearModel(form.name) && <p>Osnovni model: <strong>{eyewearModel(form.name)}</strong> — druge oznake boja istog modela i brenda grupišu se automatski.</p>}</div>}
+              {isEyewearDepartment && <div className="lg:col-span-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-sm"><strong>Naočare za sunce</strong><p>Oblik izaberi u specifikacijama; kolekcija je opciona. Zaštitu, materijal sočiva i kategoriju filtera unesi samo prema potvrđenim podacima.</p>{eyewearModel(form.name) && <p>Osnovni model: <strong>{eyewearModel(form.name)}</strong> — druge oznake boja istog modela i brenda grupišu se automatski.</p>}</div>}
               <div id="web-specification-fields">
                 <MemoizedSpecificationEditor
                   showPreview={false}
@@ -2804,7 +2804,7 @@ export default function AdminProductModal({
                 ? 'Artikal sa istim nazivom već postoji.'
                 : `Pronađeno je ${saveWarning.count} sličnih artikala.`}</p>}
               {saveWarning.missingBrand && <p>Brend nije izabran. Artikal će biti sačuvan bez brenda.</p>}
-              {saveWarning.missingEyewear?.length > 0 && <p>Nedostaju podaci za sunčane naočare: {saveWarning.missingEyewear.join(', ')}. Nepotvrđene podatke ostavi praznim.</p>}
+              {saveWarning.missingEyewear?.length > 0 && <p>Nedostaju podaci za naočare za sunce: {saveWarning.missingEyewear.join(', ')}. Nepotvrđene podatke ostavi praznim.</p>}
               <p>Da li ipak želite da sačuvate?</p>
             </div>
             <button type="button" onClick={() => setSaveWarning(null)} className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700">

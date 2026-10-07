@@ -41,7 +41,7 @@ const TITLES = {
   satovi: 'Ručni satovi',
   daljinski: 'Daljinski upravljači',
   baterije: 'Baterije i oprema',
-  naocare: 'Sunčane naočare',
+  naocare: 'Naočare za sunce',
 };
 
 const departmentSEO = {
@@ -64,9 +64,9 @@ const departmentSEO = {
     path: '/baterije',
   },
   naocare: {
-    title: 'Sunčane naočare - Katalog',
-    description: 'Otkrijte sunčane naočare u DajaShop prodavnici. Uporedite oblike, boje, dimenzije i potvrđene karakteristike sočiva i pronađite model koji vam odgovara.',
-    keywords: 'suncane naocare,DajaShop,suncane naocare Nis',
+    title: 'Naočare za sunce - Katalog',
+    description: 'Otkrijte naočare za sunce u DajaShop prodavnici. Uporedite oblike, boje, dimenzije i potvrđene karakteristike sočiva i pronađite model koji vam odgovara.',
+    keywords: 'naocare za sunce,DajaShop,naocare za sunce Nis',
     path: '/naocare',
   },
 };

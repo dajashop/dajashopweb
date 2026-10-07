@@ -34,7 +34,7 @@ const DEPARTMENT_LABELS = {
   satovi: 'Ručni Satovi',
   daljinski: 'Daljinski Upravljači',
   baterije: 'Baterije & Oprema',
-  naocare: 'Sunčane Naočare',
+  naocare: 'Naočare za sunce',
 };
 
 const DEPARTMENT_PATHS = {
