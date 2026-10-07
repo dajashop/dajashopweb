@@ -10,6 +10,7 @@ export function urlSlug(value) {
 export const brandUrl = brand => `/brend/${urlSlug(brand)}`;
 export const brandChoiceUrl = (brand, choice) => `${brandUrl(brand)}?${['muski', 'zenski'].includes(urlSlug(choice)) ? 'pol' : 'kolekcija'}=${urlSlug(choice)}`;
 export const isBrandPath = path => /^\/brend\/[^/]+\/?$/.test(path);
+const genderRoutes = { '/muski-satovi': 'Muški', '/zenski-satovi': 'Ženski' };
 const leaves = nodes => (nodes || []).flatMap(node => node.mode === 'group' ? leaves(node.children) : [node]);
 const selectedKey = node => `cf_${node.id}`;
 const boundKey = (node, edge) => `cf_${edge}_${node.id}`;
@@ -36,6 +37,7 @@ export function filterUrlEntries(configuration) {
 export function decodeCatalogParams(raw, configuration, pathname = '/catalog') {
   const next = new URLSearchParams(raw);
   const routeBrand = isBrandPath(pathname) ? decodeURIComponent(pathname.split('/')[2]) : null;
+  const routeGender = genderRoutes[pathname];
   const entries = filterUrlEntries(configuration);
   for (const { node, key, options } of entries) {
     if (node.style === 'range') {
@@ -46,6 +48,8 @@ export function decodeCatalogParams(raw, configuration, pathname = '/catalog') {
       }
     } else {
       const values = [...raw.getAll(key), ...(node.sources?.includes('brand') && routeBrand ? [routeBrand] : [])];
+      // Dedicated gender pages select a normal, removable filter.
+      if (node.sources?.includes('gender') && routeGender && !values.length && !next.has(selectedKey(node)) && !raw.has('gender')) values.push(routeGender);
       const ids = new Set(next.getAll(selectedKey(node)));
       for (const value of values) {
         const entry = options.find(item => item.slug === value || urlSlug(item.option.label) === urlSlug(value));
@@ -62,13 +66,15 @@ export function decodeCatalogParams(raw, configuration, pathname = '/catalog') {
       if (raw.has(key)) { next.delete(legacy); raw.getAll(key).forEach(value => next.append(legacy, value)); next.delete(key); }
     }
     if (routeBrand) next.set('brand', routeBrand === 'q-q' ? 'Q&Q' : routeBrand.replace(/-/g, ' ').toUpperCase());
+    if (routeGender && !next.has('gender')) next.set('gender', routeGender);
   }
   return next;
 }
 
 export function catalogUrl(params, configuration, pathname = '/catalog') {
   const next = new URLSearchParams(params);
-  let path = isBrandPath(pathname) ? '/catalog' : pathname;
+  let path = isBrandPath(pathname) || genderRoutes[pathname] ? '/catalog' : pathname;
+  let genderSelection;
   for (const { node, key, options } of filterUrlEntries(configuration)) {
     if (node.style === 'range') {
       for (const [suffix, edge] of [['od', 'min'], ['do', 'max']]) {
@@ -81,11 +87,18 @@ export function catalogUrl(params, configuration, pathname = '/catalog') {
       next.delete(selectedKey(node)); next.delete(key);
       if (node.sources?.includes('brand') && selected.length === 1 && path === '/catalog') path = `/brend/${selected[0].slug}`;
       else selected.forEach(item => next.append(key, item.slug));
+      if (node.sources?.includes('gender') && selected.length === 1) genderSelection = { key, value: selected[0].option.label };
     }
   }
   if (!configuration) {
     const brands = next.getAll('brand');
     if (brands.length === 1 && path === '/catalog') { path = brandUrl(brands[0]); next.delete('brand'); }
+  }
+  const genders = !configuration ? next.getAll('gender') : [];
+  if (!configuration && genders.length === 1) genderSelection = { key: 'gender', value: genders[0] };
+  if (path === '/catalog' && genderSelection) {
+    const slug = urlSlug(genderSelection.value);
+    if (['muski', 'zenski'].includes(slug)) { path = `/${slug}-satovi`; next.delete(genderSelection.key); }
   }
   return `${path}${next.size ? `?${next}` : ''}`;
 }

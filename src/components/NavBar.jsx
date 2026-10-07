@@ -22,6 +22,7 @@ const navSatovi = [
     label: 'ORIENT',
     children: [{ label: '200m DIVERS' }, { label: 'ŽENSKI' }],
   },
+  { label: 'ORIENT STAR', children: [{ label: 'MUŠKI' }, { label: 'ŽENSKI' }] },
   { label: 'Q&Q', children: [{ label: 'MUŠKI' }, { label: 'ŽENSKI' }] },
 ];
 
@@ -202,7 +203,7 @@ export default function NavBar() {
             >
               <Link to="/daljinski">Daljinski</Link>
               <Link to="/baterije">Baterije</Link>
-              <Link to="/naocare">Naočare</Link>
+              <Link to="/naocare">Naočare za sunce</Link>
             </div>
           </div>
         </div>
@@ -254,7 +255,7 @@ export default function NavBar() {
                     to="/naocare"
                     onClick={() => setOpenIdx(null)}
                   >
-                    Naočare
+                    Naočare za sunce
                   </Link>
                 </>
               ) : (

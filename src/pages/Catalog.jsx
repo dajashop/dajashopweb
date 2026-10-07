@@ -82,7 +82,7 @@ function brandDescription(name) {
   return brandDescriptions[name.toLowerCase()] || `Pregledajte ${name} satove u DajaShop prodavnici. Uporedite mehanizam, dimenzije, vrstu stakla i cenu u detaljima svakog modela.`;
 }
 
-export default function Catalog({ department = 'satovi', fixedGender, seo }) {
+export default function Catalog({ department = 'satovi', seo }) {
   const baseSeo = seo || departmentSEO[department] || departmentSEO.satovi;
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
 
@@ -96,14 +96,19 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     navigate(catalogUrl(next, filterConfiguration, location.pathname), options);
   };
   const brandEntry = filterUrlEntries(savedFilterConfiguration).find(entry => entry.node.sources.includes('brand'));
+  const genderEntry = filterUrlEntries(savedFilterConfiguration).find(entry => entry.node.sources.includes('gender'));
+  const genderOptions = genderEntry?.options.filter(entry => sp.getAll(`cf_${genderEntry.node.id}`).includes(entry.option.id)) || [];
+  const genders = savedFilterConfiguration ? genderOptions.map(entry => entry.option.label) : sp.getAll('gender');
+  const selectedGender = genders.length === 1 ? genders[0] : '';
+  const isGenderPage = ['/muski-satovi', '/zenski-satovi'].includes(location.pathname);
   const selectedBrands = brandEntry?.options.filter(entry => sp.getAll(`cf_${brandEntry.node.id}`).includes(entry.option.id)) || [];
   const routeBrand = location.pathname.startsWith('/brend/') ? decodeURIComponent(location.pathname.split('/')[2]) : '';
   const brandName = selectedBrands.length === 1 ? brandDisplayName(selectedBrands[0].option.label)
     : !savedFilterConfiguration && routeBrand ? brandDisplayName(routeBrand === 'q-q' ? 'Q&Q' : routeBrand.replace(/-/g, ' ')) : '';
-  const brandPath = brandName && department === 'satovi' && !fixedGender ? `/brend/${selectedBrands[0]?.slug || routeBrand}` : '';
+  const brandPath = brandName && department === 'satovi' ? `/brend/${selectedBrands[0]?.slug || routeBrand}` : '';
   const activeSeo = brandPath ? { ...baseSeo, path: brandPath, title: `${brandName} satovi`, description: brandDescription(brandName) } : baseSeo;
   const spKey = sp.toString();
-  const hasFilteredCatalogUrl = [...sp.keys()].some(key => !['page', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid', ...(brandPath ? [`cf_${brandEntry?.node.id}`, 'brand'] : [])].includes(key));
+  const hasFilteredCatalogUrl = [...sp.keys()].some(key => !['page', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid', ...(brandPath ? [`cf_${brandEntry?.node.id}`, 'brand'] : []), ...(isGenderPage ? [`cf_${genderEntry?.node.id}`, 'gender'] : [])].includes(key));
   const navType = useNavigationType();
   const filterIdentityParams = new URLSearchParams(sp);
   filterIdentityParams.delete('page');
@@ -138,8 +143,8 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
 
   const { preferencesAllowed } = useConsent();
   const filterConfiguration = savedFilterConfiguration;
-  const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration, fixedGender) : sp, [sp, filterConfiguration, fixedGender]);
-  const requestKey = catalogPageRequest(department, configuredParams, fixedGender);
+  const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration) : sp, [sp, filterConfiguration]);
+  const requestKey = catalogPageRequest(department, configuredParams);
   const listing = usePublicListing(requestKey, 'catalogPage', !filterConfigurationLoading && !filterConfigurationError);
   const loading = listing.loading;
   const err = listing.error;
@@ -158,12 +163,11 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       const chips = configuredFilterChips(configuredParams, filterConfiguration);
       const q = configuredParams.get('q');
       if (q) chips.unshift({ key: 'q', val: q, label: `Traži: "${q}"` });
-      if (fixedGender) chips.unshift({ key: 'gender', val: fixedGender, label: fixedGender });
       return chips;
     }
     const active = [];
     const brands = sp.getAll('brand');
-    const genders = fixedGender ? [fixedGender] : sp.getAll('gender');
+    const genders = sp.getAll('gender');
     const categories = sp.getAll('category');
     const min = sp.get('min');
     const max = sp.get('max');
@@ -204,14 +208,14 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
     });
 
     return active;
-  }, [fixedGender, sp, configuredParams, filterConfiguration, filterConfigurationLoading, filterConfigurationError]);
+  }, [sp, configuredParams, filterConfiguration, filterConfigurationLoading, filterConfigurationError]);
 
   const mechanismEntry = filterUrlEntries(filterConfiguration).find(entry => entry.key === 'mehanizam');
   const chosenMechanism = mechanismEntry?.options.filter(entry => configuredParams.getAll(`cf_${mechanismEntry.node.id}`).includes(entry.option.id)) || [];
   const nonBrandChips = activeFilters.filter(chip => chip.key !== `cf_${brandEntry?.node.id}`);
   const automaticOnly = brandName && nonBrandChips.length === 1 && chosenMechanism.length === 1 && urlSlug(chosenMechanism[0].option.label) === 'automatski';
-  const catalogTitle = brandName ? `${brandName}${fixedGender ? ` ${fixedGender.toLowerCase()}` : ''}${automaticOnly ? ' automatski' : ''} satovi`
-    : fixedGender && department === 'satovi' ? `${fixedGender} satovi` : TITLES[department] || activeSeo.title;
+  const catalogTitle = brandName ? `${brandName}${selectedGender ? ` ${selectedGender.toLowerCase()}` : ''}${automaticOnly ? ' automatski' : ''} satovi`
+    : selectedGender && department === 'satovi' ? `${selectedGender} satovi` : TITLES[department] || activeSeo.title;
   const catalogDescription = automaticOnly
     ? `Pregledajte automatske ${brandName} satove. Uporedite dimenzije kućišta, vrstu stakla, funkcije i cenu u detaljima svakog modela.`
     : brandName ? brandDescription(brandName) : activeSeo.description;
@@ -392,12 +396,12 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
       />
 
       <div className="catalog-mobile-trigger lg:hidden mb-4">
-        <FilterDrawer products={departmentItems} fixedGender={fixedGender} configuration={filterConfiguration} serverFacets={facets} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
+        <FilterDrawer products={departmentItems} configuration={filterConfiguration} serverFacets={facets} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
       </div>
 
       <div className="catalog-layout lg:grid lg:grid-cols-[260px_1fr] lg:gap-8 items-start">
         <aside className="sidebar-filters hidden lg:block sticky top-24">
-          <Filters products={departmentItems} fixedGender={fixedGender} configuration={filterConfiguration} serverFacets={facets} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
+          <Filters products={departmentItems} configuration={filterConfiguration} serverFacets={facets} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
         </aside>
 
         <main className="catalog-main min-w-0">
@@ -423,23 +427,17 @@ export default function Catalog({ department = 'satovi', fixedGender, seo }) {
                   </span>
                 )}
 
-                {activeFilters.map((f, idx) =>
-                  f.key === 'gender' && f.val === fixedGender ? (
-                    <span key={`${f.key}-${f.val}-${idx}`} className="catalog__pill catalog__pill--ghost">
-                      {f.label}
-                    </span>
-                  ) : (
-                    <button
-                      key={`${f.key}-${f.val}-${idx}`}
-                      onClick={() => removeFilter(f.key, f.val)}
-                      className="catalog__pill"
-                      title="Ukloni filter"
-                    >
-                      {f.label}
-                      <X size={13} className="catalog__pill-x" />
-                    </button>
-                  ),
-                )}
+                {activeFilters.map((f, idx) => (
+                  <button
+                    key={`${f.key}-${f.val}-${idx}`}
+                    onClick={() => removeFilter(f.key, f.val)}
+                    className="catalog__pill"
+                    title="Ukloni filter"
+                  >
+                    {f.label}
+                    <X size={13} className="catalog__pill-x" />
+                  </button>
+                ))}
 
                 {activeFilters.length > 0 && (
                   <button
