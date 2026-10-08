@@ -52,20 +52,25 @@ function calculateTargetSize(width, height, maxSize) {
   };
 }
 
-export async function resizeToWebP(file, maxSize, quality) {
+export async function resizeToWebP(file, maxSize, quality, { square = false } = {}) {
   const source = await loadImageSource(file);
   const sourceWidth = source.width;
   const sourceHeight = source.height;
   const target = calculateTargetSize(sourceWidth, sourceHeight, maxSize);
 
   const canvas = document.createElement('canvas');
-  canvas.width = target.width;
-  canvas.height = target.height;
+  const side = Math.max(target.width, target.height);
+  canvas.width = square ? side : target.width;
+  canvas.height = square ? side : target.height;
 
   const ctx = canvas.getContext('2d', { alpha: false });
   if (!ctx) throw new Error('Canvas 2D context nije dostupan.');
 
-  ctx.drawImage(source, 0, 0, target.width, target.height);
+  if (square) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  ctx.drawImage(source, (canvas.width - target.width) / 2, (canvas.height - target.height) / 2, target.width, target.height);
 
   const blob = await new Promise((resolve, reject) => {
     canvas.toBlob(

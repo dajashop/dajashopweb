@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 
-export default function ImageGalleryModal({ images, initialIndex, onClose }) {
+export default function ImageGalleryModal({ images, initialIndex, onClose, containThumbnails = false }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isImgLoaded, setIsImgLoaded] = useState(false);
@@ -224,7 +224,7 @@ export default function ImageGalleryModal({ images, initialIndex, onClose }) {
               >
                 <img
                   src={img.thumb || img.url || '/placeholder.png'}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full ${containThumbnails ? 'object-contain bg-white p-1' : 'object-cover'}`}
                   alt={`thumbnail-${idx}`}
                 />
               </button>

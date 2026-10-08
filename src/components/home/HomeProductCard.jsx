@@ -55,7 +55,7 @@ export default function HomeProductCard({ product }) {
   };
 
   return (
-    <article className="homeCard">
+    <article className={`homeCard${product.department === 'naocare' ? ' homeCard--eyewear' : ''}`}>
       <Link to={`/product/${slug}`} className="homeCard__img">
         <img src={primaryImg} alt={name} loading="lazy" />
       </Link>

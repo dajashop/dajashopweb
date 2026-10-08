@@ -74,6 +74,21 @@
   display: block;
 }
 
+.product__gallery--eyewear .product__main-view,
+.product__gallery--eyewear .thumb-btn {
+  background: #fff;
+}
+.product__gallery--eyewear .product__img-full {
+  padding: 12px;
+}
+.product__gallery--eyewear .product__img-full:hover {
+  transform: none;
+}
+.product__gallery--eyewear .thumb-img {
+  object-fit: contain;
+  padding: 4px;
+}
+
 /* Specijalni stil za 3D thumb */
 .thumb-icon {
   width: 100%;

@@ -29,6 +29,15 @@
   display: block;
 }
 
+.homeCard--eyewear .homeCard__img {
+  aspect-ratio: 1 / 1;
+  background: #fff;
+}
+.homeCard--eyewear .homeCard__img img {
+  object-fit: contain;
+  padding: 12px;
+}
+
 .homeCard__body {
   display: grid;
   gap: 8px;

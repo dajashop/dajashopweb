@@ -31,6 +31,7 @@ const swipeConfidenceThreshold = 10000;
 const swipePower = (offset, velocity) => Math.abs(offset) * velocity;
 
 export default function ProductCard({ p }) {
+  const isEyewear = p.department === 'naocare';
   const { dispatch } = useCart();
   const { flash } = useFlash();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -269,7 +270,7 @@ export default function ProductCard({ p }) {
         )}
 
         {/* Slider */}
-        <div className="relative aspect-4/5 w-full overflow-hidden bg-white ">
+        <div className={`relative ${isEyewear ? 'aspect-square' : 'aspect-4/5'} w-full overflow-hidden bg-white`}>
           <AnimatePresence initial={false} custom={direction}>
             <motion.div
               key={page}
@@ -306,7 +307,7 @@ export default function ProductCard({ p }) {
                   }
                   alt={imageAlt}
                   draggable={false}
-                  className="w-full h-full object-cover pointer-events-none"
+                  className={`w-full h-full pointer-events-none ${isEyewear ? 'object-contain p-3' : 'object-cover'}`}
                 />
               </Link>
             </motion.div>

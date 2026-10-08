@@ -91,10 +91,11 @@ export default function ProductGallery({ product }) {
   if (!product) return null;
 
   return (
-    <div className="product__gallery">
+    <div className={`product__gallery${product.department === 'naocare' ? ' product__gallery--eyewear' : ''}`}>
       {isGalleryOpen && (
         <ImageGalleryModal
           images={galleryImages}
+          containThumbnails={product.department === 'naocare'}
           initialIndex={Math.max(0, currentGalleryIndex)}
           onClose={() => setIsGalleryOpen(false)}
         />

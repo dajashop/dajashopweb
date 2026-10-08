@@ -15,6 +15,7 @@ import {
 import { generateSlug } from '../utils/generators';
 import UploadProgressBar from '../../../components/UploadProgressBar';
 import { uploadProductImages } from '../../../services/r2ImageService';
+import { resizeToWebP, generateSeoFilename } from '../../../utils/imageProcessing';
 
 import { mediaApi } from '../../../services/dajaPlatform';
 
@@ -38,6 +39,7 @@ function ImageManager({
   onImageClick,
   productSlug,
   productName,
+  department,
   onRemoteUploadSuccess,
   disabled = false,
   onBusyChange,
@@ -73,9 +75,15 @@ function ImageManager({
     onBusyChange?.(true);
     setUploading(true);
     try {
+      const uploadFiles = department === 'naocare'
+        ? await Promise.all(Array.from(files, async (file, index) => {
+            const blob = await resizeToWebP(file, 2400, 0.85, { square: true });
+            return new File([blob], generateSeoFilename(storageFolderName, images.length + index, 'original'), { type: 'image/webp' });
+          }))
+        : files;
       const uploaded = await uploadProductImages(
         storageFolderName,
-        files,
+        uploadFiles,
         ({ progress }) => setProgress(progress),
         images.length,
       );
@@ -312,7 +320,7 @@ function ImageManager({
                 <img
                   src={img.thumb || img.url || '/placeholder.png'}
                   alt=""
-                  className="h-full w-full object-cover hover:scale-110 transition-transform duration-300"
+                  className={`h-full w-full ${department === 'naocare' ? 'object-contain bg-white p-1' : 'object-cover hover:scale-110'} transition-transform duration-300`}
                 />
               </div>
 

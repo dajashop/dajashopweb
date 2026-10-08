@@ -1765,6 +1765,7 @@ export default function AdminProductModal({
       {galleryIndex !== null && (
         <ImageGalleryModal
           images={form.images}
+          containThumbnails={isEyewearDepartment}
           initialIndex={galleryIndex}
           onClose={() => setGalleryIndex(null)}
         />
@@ -2243,6 +2244,7 @@ export default function AdminProductModal({
               <div id="product-image-manager" className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-100">
                 {/* PROSLEĐUJEMO onImageClick */}
                 <ImageManager
+                  department={form.department}
                   disabled={loading || !mediaReady}
                   onBusyChange={setImageBusy}
                   images={form.images}
