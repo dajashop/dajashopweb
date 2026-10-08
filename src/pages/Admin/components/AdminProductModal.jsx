@@ -31,6 +31,7 @@ import { findSimilarProducts } from '../utils/productNameSimilarity.js';
 import CustomSelect from './CustomSelect.jsx';
 import { RichDescription } from '../../../components/RichDescription.jsx';
 import { descriptionText } from '../../../components/description.js';
+import { productSeoDescription } from '../../../utils/productSeoDescription.js';
 import ProductOperationsPanel from './ProductOperationsPanel.jsx';
 import WorkforceReviewNotes from './WorkforceReviewNotes.jsx';
 import useWorkTiming from '../../../hooks/useWorkTiming';
@@ -1673,26 +1674,9 @@ export default function AdminProductModal({
   ];
 
   const fallbackSeoTitle = `${form.brand || ''} ${form.name || ''}`.trim();
-  const fallbackSeoDescription = (
-    descriptionText(form.description) ||
-    [
-      fallbackSeoTitle,
-      form.category ? `iz kolekcije ${form.category}` : '',
-      form.mpn ? `model ${form.mpn}` : '',
-      ...Object.entries(form.specs || {})
-        .slice(0, 2)
-        .map(([key, value]) => `${key}: ${value}`),
-      'Dostupno u DajaShop prodavnici.',
-    ]
-      .filter(Boolean)
-      .join('. ')
-  )
-    .trim()
-    .slice(0, 160);
   const effectiveSeoTitle =
     (form.seo?.metaTitle || '').trim() || fallbackSeoTitle;
-  const effectiveSeoDescription =
-    (form.seo?.metaDescription || '').trim() || fallbackSeoDescription;
+  const effectiveSeoDescription = productSeoDescription(form);
   const googlePreviewUrl = `dajashop.rs/product/${form.slug || generateSlug(form.name) || 'proizvod'}`;
   const renderedSeoTitle = effectiveSeoTitle
     ? `${effectiveSeoTitle} | DajaShop`

@@ -1,4 +1,4 @@
-import { descriptionText, metaDescription } from '../components/description.js';
+import { productSeoDescription } from '../utils/productSeoDescription.js';
 import React, { lazy, useEffect, useMemo } from 'react';
 import './Product.css';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -88,20 +88,6 @@ export default function Product() {
 
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
   const productTitle = `${p.brand || ''} ${p.name || ''}`.trim();
-  const productDescription =
-    descriptionText(p.description) ||
-    [
-      productTitle,
-      p.category ? `iz kolekcije ${p.category}` : '',
-      p.mpn ? `model ${p.mpn}` : '',
-      ...Object.entries(p.specs || {})
-        .slice(0, 2)
-        .map(([key, value]) => `${key}: ${value}`),
-      `Kupite u DajaShop prodavnici po ceni od ${p.price} RSD.`,
-    ]
-      .filter(Boolean)
-      .join('. ')
-      .slice(0, 160);
   const productImage =
     p.mainImageUrl ||
     p.images?.[0]?.url ||
@@ -109,7 +95,7 @@ export default function Product() {
     p.images?.[0]?.thumb ||
     p.image;
   const seoTitle = p.seo?.metaTitle || productTitle;
-  const seoDescription = metaDescription(p.seo?.metaDescription) || metaDescription(p.description, true) || metaDescription(productDescription);
+  const seoDescription = productSeoDescription(p);
   const seoKeywords = p.seo?.metaKeywords || undefined;
   const seoImage = p.seo?.ogImage || productImage;
   const department = p.department || 'satovi';

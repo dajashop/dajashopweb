@@ -1,4 +1,4 @@
-import { descriptionText } from '../description.js';
+import { productSeoDescription } from '../../utils/productSeoDescription.js';
 import React from 'react';
 import JsonLd from './JsonLd.jsx';
 import { commerceSeoConfig, seoConfig } from '../../config/seo.js';
@@ -93,21 +93,7 @@ export default function ProductJsonLd({ product, reviews = [] }) {
   const imageUrls = collectProductImages(product);
   const seoImageAlt = (product.seo?.imageAltText || '').trim();
   const productName = `${product.brand || ''} ${product.name || ''}`.trim();
-  const description =
-    descriptionText(product.seo?.metaDescription) ||
-    descriptionText(product.description) ||
-    [
-      productName,
-      product.category ? `iz kolekcije ${product.category}` : '',
-      product.mpn ? `model ${product.mpn}` : '',
-      ...Object.entries(product.specs || {})
-        .slice(0, 2)
-        .map(([key, value]) => `${key}: ${value}`),
-      `Kupite u DajaShop prodavnici po ceni od ${product.price} RSD.`,
-    ]
-      .filter(Boolean)
-      .join('. ')
-      .slice(0, 160);
+  const description = productSeoDescription(product);
   const image = imageUrls.map((imageItem) => ({
         '@type': 'ImageObject',
         url: imageItem.url,
