@@ -18,6 +18,11 @@ const compareOptions = (data: EditorData, specId: string, a: string, b: string) 
 export const normalizeSpec = (value: string) => String(value ?? '').trim().toLocaleLowerCase('sr-RS').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-\s]+/g, '_');
 const keyFor = (spec: Spec, values: Record<string,string>) => Object.keys(values).find(k => normalizeSpec(k) === normalizeSpec(spec.slug) || normalizeSpec(k) === normalizeSpec(spec.name)) || spec.slug.replace(/-/g, '_');
 const read = (spec: Spec | undefined, values: Record<string,string>) => spec ? String(values[keyFor(spec,values)] ?? '') : '';
+const isFunctionFlag = (spec: Spec, data: EditorData) => data.configuration.fields.some(f=>f.specId===spec.id&&f.groupId==='functions') && spec.optionValues.length===2 && ['da','ne'].every(value=>spec.optionValues.some(option=>option.trim().toLowerCase()===value));
+function FunctionToggle({spec,value,disabled,onCommit}: {spec:Spec;value:string;disabled:boolean;onCommit:(value:string)=>boolean}) {
+  const checked=value.trim().toLowerCase()==='da';
+  return <label className={`se-function-toggle${checked?' is-checked':''}`}><input type="checkbox" checked={checked} disabled={disabled} onChange={e=>onCommit(e.target.checked?'Da':'Ne')}/><span>{spec.name}</span><small>{checked?'Da':'Ne'}</small></label>;
+}
 const displayValue = (spec: Spec, value: string) => spec.unit && value.trim().toLowerCase().endsWith(spec.unit.toLowerCase()) ? value.trim().slice(0,-spec.unit.length).trim() : value;
 const storedValue = (spec: Spec, value: string) => {
   const existing = spec.optionValues.find(v=>normalizeSpec(displayValue(spec,v))===normalizeSpec(displayValue(spec,value)));
@@ -53,7 +58,7 @@ function useEditor(api: EditorApi, departmentId: string, brand: string, values: 
     },150);
     return () => {current=false;window.clearTimeout(timer);};
   },[api,departmentId,brand,type,reload]);
-  return {data,setData,error,setError,loading,reload:()=>setReload(n=>n+1)};
+  return {data:activeDepartment.current===departmentId?data:undefined,setData,error,setError,loading,reload:()=>setReload(n=>n+1)};
 }
 
 function ValueInput({eyewear=false,spec,value,options,disabled,onCommit,onSave,onLink,onEditing,canLink,busy,message}: {eyewear?:boolean;spec:Spec;value:string;options:{value:string;unknown:boolean;count?:number}[];disabled:boolean;onCommit:(value:string)=>boolean;onSave:(value:string)=>void;onLink:(value:string)=>void;onEditing:(editing:boolean)=>void;canLink:boolean;busy:boolean;message:string}) {
@@ -91,7 +96,6 @@ export function SpecificationEditor({api,departmentId,brand='',values,onChange,o
   const [activeSpec,setActiveSpec]=useState('');
   const [busy,setBusy]=useState('');const busyRef=useRef(false);const [messages,setMessages]=useState<Record<string,string>>({});
   useEffect(()=>setImage(0),[images[0]]);
-  if(!departmentId)return <p className="se-message">Izaberi odeljenje da vidiš specifikacije.</p>;
   const typeSpec=data?.specifications.find(s=>normalizeSpec(s.slug)==='tip_mehanizma');const type=read(typeSpec,values);
   const optionAllowed=(f:Field|undefined,value:string,next:Record<string,string>)=>{
     const rule=f?.options.find(o=>normalizeSpec(o.value)===normalizeSpec(value));
@@ -105,6 +109,18 @@ export function SpecificationEditor({api,departmentId,brand='',values,onChange,o
     const f=data?.configuration.fields.find(f=>f.specId===spec.id);
     return isSeries(spec)?spec.optionValues.some(value=>optionAllowed(f,value,next)):matches(f?.visibility||[],data!,next,brand);
   };
+  useEffect(()=>{
+    if(!data||loading||disabled||!online||error||!departmentId)return;
+    const next={...values};let changed=false;
+    for(const spec of data.specifications){
+      const f=data.configuration.fields.find(f=>f.specId===spec.id);
+      if(isFunctionFlag(spec,data)&&!read(spec,values).trim()&&fieldApplicable(spec,values)&&optionAllowed(f,'Ne',values)){
+        next[keyFor(spec,values)]='Ne';changed=true;
+      }
+    }
+    if(changed)onChange(next);
+  },[data,loading,disabled,online,error,departmentId,brand,values,onChange]);
+  if(!departmentId)return <p className="se-message">Izaberi odeljenje da vidiš specifikacije.</p>;
   const change=(spec:Spec,value:string)=>{
     if(isSeries(spec)&&value.trim()&&!optionAllowed(data?.configuration.fields.find(f=>f.specId===spec.id),value,values)){
       setMessages(m=>({...m,[spec.id]:'Izaberi seriju koja je uslovom povezana sa izabranim brendom.'}));return false;
@@ -147,7 +163,7 @@ export function SpecificationEditor({api,departmentId,brand='',values,onChange,o
           {!collapsed[group.id]&&<div className="se-group-fields">{shown.map(spec=>{
             const f=fields.find(f=>f.specId===spec.id);const ranked=spec.optionValues.filter(v=>optionAllowed(f,v,values)).map(value=>({value,count:usageCount(data,spec.id,value),unknown:normalizeSpec(spec.slug)==='mehanizam'&&!f?.options.some(o=>normalizeSpec(o.value)===normalizeSpec(value)&&o.rules.length)})).sort((a,b)=>compareOptions(data,spec.id,a.value,b.value));
             const inconsistent=!applicable.includes(spec)||(Boolean(read(spec,values))&&!optionAllowed(f,read(spec,values),values));
-            return <div key={spec.id}><ValueInput eyewear={eyewear} spec={spec} value={read(spec,values)} options={ranked} disabled={disabled||!online||!!error} busy={Boolean(busy)} canLink={Boolean(type)} message={messages[spec.id]||''} onEditing={editing=>setActiveSpec(editing?spec.id:'')} onCommit={v=>change(spec,v)} onSave={v=>void save(spec,v)} onLink={v=>void save(spec,v)}/>{inconsistent&&<small className="se-error">Vrednost ne odgovara izabranim podešavanjima. Obriši je ili ispravi izbor.</small>}</div>;
+            return <div key={spec.id}>{isFunctionFlag(spec,data)?<FunctionToggle spec={spec} value={read(spec,values)} disabled={disabled||!online||!!error||Boolean(busy)||!optionAllowed(f,read(spec,values).trim().toLowerCase()==='da'?'Ne':'Da',values)} onCommit={v=>change(spec,v)}/>:<ValueInput eyewear={eyewear} spec={spec} value={read(spec,values)} options={ranked} disabled={disabled||!online||!!error} busy={Boolean(busy)} canLink={Boolean(type)} message={messages[spec.id]||''} onEditing={editing=>setActiveSpec(editing?spec.id:'')} onCommit={v=>change(spec,v)} onSave={v=>void save(spec,v)} onLink={v=>void save(spec,v)}/>} {inconsistent&&<small className="se-error">Vrednost ne odgovara izabranim podešavanjima. Obriši je ili ispravi izbor.</small>}</div>;
           })}{!shown.length&&<small>Nema praznih primenljivih polja.</small>}</div>}
         </section>;
       })}
