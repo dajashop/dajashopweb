@@ -712,6 +712,13 @@ export default function AdminProductModal({
         next.slug = generateSlug(value);
       }
       if (field === 'department') {
+        if (!product && value === 'naocare') {
+          next.specs = {
+            uzrasna_grupa_naocara: 'Odrasli',
+            pakovanje_naocara: 'Vrećica i krpica',
+            ...prev.specs,
+          };
+        }
         // A department change must never keep relations from the previous one.
         next.brand = '';
         next.brandId = null;
