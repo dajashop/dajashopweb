@@ -1940,7 +1940,7 @@ export default function AdminProductModal({
                       if (amount !== null && amount !== undefined) {
                         const numeric = Number(amount);
                         const code = String(currency || 'RSD').toUpperCase();
-                        if (provider === 'bultime' && Number.isFinite(numeric) && numeric >= 0) {
+                        if (['bultime', 'timezone', 'qandq'].includes(provider) && Number.isFinite(numeric) && numeric >= 0) {
                           const rsdAmount = code === 'RSD' ? numeric : code === 'EUR' && eurRsdRate > 0 ? numeric * eurRsdRate : null;
                           if (rsdAmount !== null) discountedRsd = rsdAmount * 0.9;
                         }
@@ -1954,7 +1954,7 @@ export default function AdminProductModal({
                       }
                       return <span key={provider} className={index ? 'mt-1 block' : 'mt-1 block'}>
                         {label}: {display}
-                        {discountedRsd !== null && <span className="mt-0.5 block font-semibold text-emerald-700">Bultime −10%: {discountedRsd.toLocaleString('sr-RS', { maximumFractionDigits: 2 })} RSD</span>}
+                        {discountedRsd !== null && <span className="mt-0.5 block font-semibold text-emerald-700">{label} −10%: {discountedRsd.toLocaleString('sr-RS', { maximumFractionDigits: 2 })} RSD</span>}
                       </span>;
                     })}
                     <span className="mt-1 block text-neutral-400">Prikaz: RSD i EUR po trenutnom srednjem kursu NBS. Ne menja prodajnu cenu.</span>
