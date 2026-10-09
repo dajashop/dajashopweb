@@ -1915,7 +1915,10 @@ export default function AdminProductModal({
                     <input
                       type="number"
                       value={form.price}
-                      onChange={(e) => handleChange('price', e.target.value)}
+                      onChange={(e) => {
+                        regularPriceEditedRef.current = true;
+                        handleChange('price', e.target.value);
+                      }}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 font-mono outline-none focus:ring-2 focus:ring-neutral-200 transition-all"
                       placeholder="0"
                     />
