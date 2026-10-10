@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import './specification-editor.css';
-import { eyewearValueError } from '../../utils/eyewearCatalog';
+import { eyewearValueError, isEyewearSpecKey } from '../../utils/eyewearCatalog';
 
 export type Condition = { specId?: string; brand?: boolean; value: string; operator: 'equals' | 'notEquals' };
 export type Rules = Condition[][];
@@ -147,7 +147,7 @@ export function SpecificationEditor({api,departmentId,brand='',values,onChange,o
   };
   const groups=[...(data?.configuration.groups||[]),{id:'other',name:'Ostalo'}];
   const fields=data?.configuration.fields||[];
-  const extra=Object.keys(values).filter(k=>!k.startsWith('_')&&!normalizeSpec(k).startsWith('rfid')&&!data?.specifications.some(s=>normalizeSpec(k)===normalizeSpec(s.slug)||normalizeSpec(k)===normalizeSpec(s.name)));
+  const extra=Object.keys(values).filter(k=>!k.startsWith('_')&&!normalizeSpec(k).startsWith('rfid')&&(!eyewear||isEyewearSpecKey(k))&&!data?.specifications.some(s=>normalizeSpec(k)===normalizeSpec(s.slug)||normalizeSpec(k)===normalizeSpec(s.name)));
   return <section className="specification-editor">
     <header className="se-toolbar"><h3>Tehničke specifikacije</h3><label><input autoComplete="off" autoCorrect="off" spellCheck={false} type="checkbox" checked={emptyOnly} onChange={e=>setEmptyOnly(e.target.checked)}/> Samo prazna</label></header>
     {!online&&<p role="alert">Za uređivanje specifikacija potrebna je internet veza. Unos je zadržan.</p>}

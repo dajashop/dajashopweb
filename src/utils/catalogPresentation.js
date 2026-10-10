@@ -1,4 +1,4 @@
-import { eyewearSpecLabels } from './eyewearCatalog.js';
+import { eyewearSpecLabels, isEyewearDepartment, isEyewearSpecKey } from './eyewearCatalog.js';
 
 const INTERNAL_CATALOG_KEYS = new Set([
   'additional_barcodes',
@@ -14,16 +14,19 @@ export function isInternalCatalogKey(key) {
   return normalizedKey.startsWith('_') || INTERNAL_CATALOG_KEYS.has(normalizedKey);
 }
 
-export function visibleProductSpecs(specs) {
+export function visibleProductSpecs(specs, department) {
   if (!specs || typeof specs !== 'object' || Array.isArray(specs)) return {};
 
   return Object.fromEntries(
-    Object.entries(specs).filter(([key]) => !isInternalCatalogKey(key)),
+    Object.entries(specs).filter(([key]) =>
+      !isInternalCatalogKey(key) && (!isEyewearDepartment(department) || isEyewearSpecKey(key)),
+    ),
   );
 }
 
 export function formatProductSpecLabel(key, department) {
-  if (department === 'naocare' && eyewearSpecLabels[String(key).replace(/-/g, '_')]) return eyewearSpecLabels[String(key).replace(/-/g, '_')];
+  const normalizedKey = String(key).replace(/-/g, '_');
+  if (isEyewearDepartment(department) && eyewearSpecLabels[normalizedKey]) return eyewearSpecLabels[normalizedKey];
   return String(key || '')
     .trim()
     .replace(/_+/g, ' ')

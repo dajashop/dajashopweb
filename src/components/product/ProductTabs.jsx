@@ -4,7 +4,7 @@ import './ProductTabs.css';
 import { descriptionHtml } from '../description.js';
 import '../rich-description.css';
 import { formatProductSpecLabel, visibleProductSpecs } from '../../utils/catalogPresentation.js';
-import { eyewearDisplayValue } from '../../utils/eyewearCatalog.js';
+import { eyewearDisplayValue, isEyewearDepartment } from '../../utils/eyewearCatalog.js';
 // [NOVO] Importujemo recenzije
 import ProductReviews from './ProductReviews.jsx';
 import { commerceSeoConfig } from '../../config/seo.js';
@@ -12,7 +12,8 @@ import { money } from '../../utils/currency.js';
 
 export default function ProductTabs({ product, hideSpecs = false }) {
   const [activeTab, setActiveTab] = useState('desc');
-  const specs = visibleProductSpecs(product?.specs);
+  const specs = visibleProductSpecs(product?.specs, product?.department);
+  const eyewear = isEyewearDepartment(product?.department);
 
   return (
     <div className="product-tabs-container">
@@ -72,7 +73,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
                   {Object.entries(specs).map(([k, v]) => (
                     <tr key={k} className="specs-table-row">
                       <td className="spec-cell-key">{formatProductSpecLabel(k, product?.department)}</td>
-                      <td className="spec-cell-val">{product?.department === 'naocare' ? eyewearDisplayValue(k, v) : v}</td>
+                      <td className="spec-cell-val">{eyewear ? eyewearDisplayValue(k, v) : v}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -14,6 +14,14 @@ export const eyewearSpecLabels = {
   uzrasna_grupa_naocara: 'Uzrasna grupa', pakovanje_naocara: 'Pakovanje', milano_sifra: 'Milano šifra',
 };
 
+export const isEyewearSpecKey = (key) => Object.hasOwn(
+  eyewearSpecLabels,
+  String(key || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s-]+/g, '_'),
+);
+
+export const isEyewearDepartment = (department) =>
+  (typeof department === 'object' ? department?.slug : department) === 'naocare';
+
 export function eyewearDisplayValue(key, value) {
   return eyewearDimensions.includes(key.replace(/-/g, '_')) && /^\d+(?:[.,]\d+)?$/.test(String(value).trim()) ? `${value} mm` : value;
 }
