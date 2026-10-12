@@ -913,7 +913,7 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
                       className={`mt-1 text-xs font-semibold ${
                         link.productActive && link.productPublished
                           ? 'text-emerald-700'
-                          : 'text-neutral-500'
+                          : 'text-red-600'
                       }`}
                     >
                       {link.productActive && link.productPublished
