@@ -23,6 +23,8 @@ import useFilterConfiguration from '../hooks/useFilterConfiguration.js';
 import { configuredFilterParams, configuredFilterChips } from '../utils/filterConfiguration.js';
 import { diameterValue, isDiameterSpec } from '../utils/catalogFilters.js';
 import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
+import { useAuth } from '../hooks/useAuth.js';
+import { isAdminEmail } from '../services/dajaPlatform.js';
 
 import { useConsent } from '../context/ConsentContext.jsx';
 import { readSessionValue, writeSessionValue } from '../services/consentStorage.js';
@@ -83,6 +85,8 @@ function brandDescription(name) {
 }
 
 export default function Catalog({ department = 'satovi', seo }) {
+  const { user, staffReady } = useAuth();
+  const includeHiddenForAdmin = Boolean(staffReady && isAdminEmail(user?.email));
   const baseSeo = seo || departmentSEO[department] || departmentSEO.satovi;
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
 
@@ -145,7 +149,7 @@ export default function Catalog({ department = 'satovi', seo }) {
   const filterConfiguration = savedFilterConfiguration;
   const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration) : sp, [sp, filterConfiguration]);
   const requestKey = catalogPageRequest(department, configuredParams);
-  const listing = usePublicListing(requestKey, 'catalogPage', !filterConfigurationLoading && !filterConfigurationError);
+  const listing = usePublicListing(requestKey, 'catalogPage', !filterConfigurationLoading && !filterConfigurationError, includeHiddenForAdmin);
   const loading = listing.loading;
   const err = listing.error;
   const departmentItems = listing.data?.items || [];

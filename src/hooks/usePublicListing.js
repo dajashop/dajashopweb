@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { catalogApi, subscribePublicCatalogRealtime } from '../services/dajaPlatform.js';
+import { catalogApi, subscribePublicCatalogRealtime, subscribeStaffCatalogRealtime } from '../services/dajaPlatform.js';
 import { usePageData } from '../ssr/PageData.jsx';
 import { useConsent } from '../context/ConsentContext.jsx';
 
@@ -24,29 +24,32 @@ async function prefetch(route, signal) {
     data.items.forEach(item => { const image = new Image(); image.src = item.thumbnailUrl || item.image; });
   }
 }
-export default function usePublicListing(route, seedField, enabled = true) {
+export default function usePublicListing(route, seedField, enabled = true, includeHiddenForAdmin = false) {
   const page = usePageData();
   const { hasDecision } = useConsent();
   const seed = page?.data?.[seedField];
-  const initial = seed?.requestKey === route ? seed : null;
-  const [state, setState] = useState(() => ({ route, data: initial, error: null }));
+  const cacheKey = includeHiddenForAdmin ? `admin:${route}` : route;
+  const initial = !includeHiddenForAdmin && seed?.requestKey === route ? seed : null;
+  const [state, setState] = useState(() => ({ route: cacheKey, data: initial, error: null }));
   const [revision, setRevision] = useState(0);
   const first = useRef(true);
-  const data = state.route === route ? state.data : cached(route) || state.data;
+  const data = state.route === cacheKey ? state.data : cached(cacheKey);
   useEffect(() => {
     if (!enabled) return undefined;
     const controller = new AbortController();
-    const stored = cached(route) || (first.current && initial);
+    const stored = cached(cacheKey) || (first.current && initial);
     first.current = false;
-    if (stored) { remember(route, stored); setState({ route, data: stored, error: null }); }
+    if (stored) { remember(cacheKey, stored); setState({ route: cacheKey, data: stored, error: null }); }
     let sequence = 0;
     const load = async () => {
       const requestSequence = ++sequence;
       try {
-        const result = await catalogApi.listing(route, controller.signal);
+        const result = includeHiddenForAdmin
+          ? await catalogApi.adminListing(route, controller.signal)
+          : await catalogApi.listing(route, controller.signal);
         if (controller.signal.aborted || requestSequence !== sequence) return;
-        remember(route, result);
-        setState({ route, data: result, error: null });
+        remember(cacheKey, result);
+        setState({ route: cacheKey, data: result, error: null });
       } catch (error) {
         if (!controller.signal.aborted && requestSequence === sequence) setState(current => ({ ...current, error }));
       }
@@ -65,17 +68,18 @@ export default function usePublicListing(route, seedField, enabled = true) {
       window.removeEventListener('daja:products-changed', refresh);
       window.removeEventListener('daja:variant-groups-changed', refresh);
     };
-  }, [route, enabled, revision]);
+  }, [route, cacheKey, enabled, revision, includeHiddenForAdmin]);
   useEffect(() => {
     if (!enabled || !hasDecision) return undefined;
-    return subscribePublicCatalogRealtime(event => {
+    const subscribe = includeHiddenForAdmin ? subscribeStaffCatalogRealtime : subscribePublicCatalogRealtime;
+    return subscribe(event => {
       if (['product.updated', 'catalog.variant-groups.updated'].includes(event.event)) {
         cache.clear(); setRevision(value => value + 1);
       }
     });
-  }, [enabled, hasDecision]);
+  }, [enabled, hasDecision, includeHiddenForAdmin]);
   useEffect(() => {
-    if (!enabled || !data || state.route !== route || !route.startsWith('page?')) return undefined;
+    if (!enabled || includeHiddenForAdmin || !data || state.route !== cacheKey || !route.startsWith('page?')) return undefined;
     const controller = new AbortController();
     const pages = Math.max(1, Math.ceil(data.total / data.perPage));
     const timer = window.setTimeout(() => {
@@ -86,7 +90,7 @@ export default function usePublicListing(route, seedField, enabled = true) {
       });
     }, 150);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [route, data, state.route, enabled]);
+  }, [route, cacheKey, data, state.route, enabled, includeHiddenForAdmin]);
   useEffect(() => {
     if (!enabled || !data) return undefined;
     const expiries = data.items.filter(item => item.salePrice && item.saleValidUntil)
@@ -98,5 +102,5 @@ export default function usePublicListing(route, seedField, enabled = true) {
     return () => window.clearTimeout(timer);
   }, [enabled, data]);
   const retry = () => { cache.clear(); setRevision(value => value + 1); };
-  return { data, retry, loading: enabled && !data && !state.error, updating: enabled && state.route !== route, error: state.error };
+  return { data, retry, loading: enabled && !data && !state.error, updating: enabled && state.route !== cacheKey, error: state.error };
 }

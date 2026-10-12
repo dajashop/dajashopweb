@@ -81,17 +81,21 @@ export async function removeImagesByPaths() {
   return undefined;
 }
 
-export async function fetchProductBySlug(slug) {
+export async function fetchProductBySlug(slug, { includeHiddenForAdmin = false } = {}) {
+  let publicProduct = null;
   try {
-    return await catalogApi.getProductBySlug(slug);
+    publicProduct = await catalogApi.getProductBySlug(slug);
   } catch (error) {
-    if (allowMockFallback) {
-      return mockProducts.find((product) => product.slug === slug) || null;
+    if (error.status !== 404 && !allowMockFallback) {
+      console.error('Error fetching product:', error);
+      throw error;
     }
-    if (error.status === 404) return null;
-    console.error('Error fetching product:', error);
-    throw error;
+    if (error.status !== 404 && allowMockFallback)
+      return mockProducts.find((product) => product.slug === slug) || null;
   }
+  if (publicProduct?.id || publicProduct?.redirectTo) return publicProduct;
+  if (includeHiddenForAdmin) return adminCatalogApi.getProductBySlug(slug);
+  return publicProduct;
 }
 
 export async function applyPublicProductRealtimeEvent(event) {

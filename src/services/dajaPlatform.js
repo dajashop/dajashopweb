@@ -434,6 +434,16 @@ export const catalogApi = {
     if (!data || !Array.isArray(data.items)) throw new Error('Neispravan odgovor kataloga.');
     return { ...data, items: data.items.map(normalizeProduct) };
   },
+  async adminListing(route, signal) {
+    const query = new URLSearchParams(route.slice(route.indexOf('?') + 1));
+    const data = await apiRequest('/admin/catalog/page', {
+      staff: true,
+      query: Object.fromEntries(query),
+      signal,
+    });
+    if (!data || !Array.isArray(data.items)) throw new Error('Neispravan odgovor kataloga.');
+    return { ...data, items: data.items.map(normalizeProduct) };
+  },
   async listRawProducts(signal) {
     const items = [];
     const seen = new Set();
@@ -511,6 +521,13 @@ export const adminCatalogApi = {
     const data = await apiRequest(`/products/${encodeURIComponent(id)}`, {
       staff: true,
     });
+    return normalizeProduct(data);
+  },
+  async getProductBySlug(slug) {
+    const data = await apiRequest(
+      `/admin/catalog/products/by-slug/${encodeURIComponent(slug)}`,
+      { staff: true },
+    );
     return normalizeProduct(data);
   },
   async supplierStates(afterRevision = 0, limit = 500) {

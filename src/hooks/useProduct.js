@@ -2,8 +2,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchProductBySlug } from "../services/products";
 import { usePageData } from '../ssr/PageData.jsx';
+import { useAuth } from './useAuth.js';
+import { isAdminEmail } from '../services/dajaPlatform.js';
 
 export default function useProduct(slug) {
+  const { user, staffReady } = useAuth();
+  const includeHiddenForAdmin = Boolean(staffReady && isAdminEmail(user?.email));
   const page = usePageData();
   const initialProduct = page?.hydrating && page?.data?.product?.slug === slug ? page.data.product : null;
   const [result, setResult] = useState({
@@ -23,7 +27,7 @@ export default function useProduct(slug) {
 
     async function load() {
       try {
-        const data = await fetchProductBySlug(slug);
+        const data = await fetchProductBySlug(slug, { includeHiddenForAdmin });
         if (mounted) {
           setResult({
             slug, product: data || null, loading: false,
@@ -40,7 +44,7 @@ export default function useProduct(slug) {
     return () => {
       mounted = false;
     };
-  }, [slug]);
+  }, [slug, includeHiddenForAdmin]);
 
   useEffect(() => {
     const updateCurrentProduct = (event) => {
@@ -51,7 +55,15 @@ export default function useProduct(slug) {
         ) ? { ...current, product: { ...current.product, ...change.product }, loading: false, error: null } : current);
       }
       if (change?.type === 'deleteBySlug' && change.slug === slug) {
-        setResult((current) => current.slug === slug ? { ...current, product: null, loading: false } : current);
+        if (includeHiddenForAdmin) {
+          void fetchProductBySlug(slug, { includeHiddenForAdmin: true }).then((product) => {
+            setResult((current) => current.slug === slug
+              ? { ...current, product, loading: false, error: product ? null : Object.assign(new Error('Proizvod nije pronađen u bazi.'), { status: 404 }) }
+              : current);
+          }).catch((error) => setResult((current) => current.slug === slug ? { ...current, error, loading: false } : current));
+        } else {
+          setResult((current) => current.slug === slug ? { ...current, product: null, loading: false } : current);
+        }
       }
       if (change?.type === 'delete') {
         setResult((current) => current.slug === slug && current.product?.id === change.id
@@ -60,7 +72,7 @@ export default function useProduct(slug) {
     };
     window.addEventListener('daja:products-changed', updateCurrentProduct);
     return () => window.removeEventListener('daja:products-changed', updateCurrentProduct);
-  }, [slug]);
+  }, [slug, includeHiddenForAdmin]);
 
   useEffect(() => {
     if (!product?.salePrice || !product.saleValidUntil || !slug) return undefined;
@@ -69,7 +81,7 @@ export default function useProduct(slug) {
     let mounted = true;
     const timer = window.setTimeout(async () => {
       try {
-        const fresh = await fetchProductBySlug(slug);
+        const fresh = await fetchProductBySlug(slug, { includeHiddenForAdmin });
         if (mounted) setResult((current) => current.slug === slug
           ? { ...current, product: fresh } : current);
       } catch (err) {
@@ -77,7 +89,7 @@ export default function useProduct(slug) {
       }
     }, Math.min(delay + 50, 2_147_483_647));
     return () => { mounted = false; window.clearTimeout(timer); };
-  }, [product?.salePrice, product?.saleValidUntil, slug]);
+  }, [product?.salePrice, product?.saleValidUntil, slug, includeHiddenForAdmin]);
 
   const updateProduct = useCallback((patch) => setResult((current) => current.slug === slug && current.product
     ? { ...current, product: { ...current.product, ...patch } } : current), [slug]);
