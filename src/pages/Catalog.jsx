@@ -251,6 +251,7 @@ export default function Catalog({ department = 'satovi', seo }) {
   };
 
   const totalCount = listing.data?.total || 0;
+  const hiddenCount = includeHiddenForAdmin ? listing.data?.hiddenCount || 0 : null;
   const page = listing.data?.page || 1;
   const getPageUrl = (number) => {
     const next = new URLSearchParams(sp);
@@ -460,6 +461,11 @@ export default function Catalog({ department = 'satovi', seo }) {
             <div className="catalog__subrow">
               <div className="catalog__showing">
                 Ukupno {totalCount} proizvoda
+                {includeHiddenForAdmin && listing.data && (
+                  <span className="ml-2 text-neutral-500">
+                    · Sakriveno {hiddenCount}
+                  </span>
+                )}
               </div>
               <div className="catalog__sort-block">
                 <span className="catalog__sort-label">Sortiraj</span>
