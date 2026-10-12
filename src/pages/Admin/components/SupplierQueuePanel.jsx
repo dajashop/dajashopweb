@@ -329,6 +329,43 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
       );
       setSelected([]);
     });
+  const setSelectedProductVisibility = (active) =>
+    run(active ? 'show-products' : 'hide-products', async () => {
+      const selectedLinks = links.items.filter((link) =>
+        selected.includes(link.id),
+      );
+      if (selectedLinks.length !== selected.length)
+        throw new Error(
+          'Promeni stranu/filter pa izaberi proizvode koje želiš da izmeniš.',
+        );
+      const productIds = [
+        ...new Set(selectedLinks.map((link) => link.productId)),
+      ];
+      const results = await Promise.allSettled(
+        productIds.map((id) => adminCatalogApi.setProductVisibility(id, active)),
+      );
+      const succeeded = results.filter(
+        (result) => result.status === 'fulfilled',
+      ).length;
+      const failed = results.length - succeeded;
+      setSelected([]);
+      setMessage(
+        `${active ? 'Prikazano' : 'Sakriveno'} ${succeeded} proizvoda${
+          failed ? `; neuspešno: ${failed}` : ''
+        }.${
+          selectedLinks.length > productIds.length
+          ? ` ${selectedLinks.length - productIds.length} dupliranih linkova je spojeno po proizvodu.`
+          : ''}`,
+      );
+      if (failed) {
+        const firstFailure = results.find(
+          (result) => result.status === 'rejected',
+        );
+        setError(
+          firstFailure.reason?.message || 'Neki proizvodi nisu izmenjeni.',
+        );
+      }
+    });
   const openPause = (codes) => {
     setPause(codes);
     setPauseMode('schedule');
@@ -794,6 +831,20 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
               onClick={() => void act('reactivate', selected)}
             >
               Vrati izabrane
+            </button>
+            <button
+              className={button}
+              disabled={!!busy || !selected.length}
+              onClick={() => void setSelectedProductVisibility(false)}
+            >
+              Sakrij sa sajta
+            </button>
+            <button
+              className={button}
+              disabled={!!busy || !selected.length}
+              onClick={() => void setSelectedProductVisibility(true)}
+            >
+              Prikaži na sajtu
             </button>
           </div>
         )}
