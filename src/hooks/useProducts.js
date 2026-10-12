@@ -74,11 +74,12 @@ export default function useProducts(params = {}) {
         return;
       }
       if (change.type === 'deleteBySlug' && change.slug) {
-        // This event comes from the public endpoint returning null for a
-        // hidden product. A staff-only list may keep hidden products, but an
-        // admin view that explicitly opted into public realtime must mirror
-        // the published catalog deletion as well.
-        if (memoizedParams.admin && !usePublicRealtime) return;
+        // Public catalog disappearance can mean an unpublished product, not
+        // a deleted one. Refresh the staff list so admins retain access to it.
+        if (memoizedParams.admin) {
+          setRefreshKey((key) => key + 1);
+          return;
+        }
         setItems((current) => current.filter((item) => item.slug !== change.slug));
         return;
       }
@@ -120,19 +121,10 @@ export default function useProducts(params = {}) {
         // its product payload intentionally excludes stock placement. Use its
         // product ID to load just the changed full admin record instead.
         const productId = event?.data?.productId || event?.productId;
-        const slug = event?.data?.slug || event?.slug;
         if (event?.data?.deleted === true || event?.deleted === true) {
-          if (!productId && !slug) {
-            setRefreshKey((key) => key + 1);
-            return;
-          }
-          setItems((current) =>
-            current.filter(
-              (item) =>
-                (productId ? item.id !== productId : true) &&
-                (slug ? item.slug !== slug : true),
-            ),
-          );
+          // A catalog deletion signal can also mean unpublished. Resolve it
+          // against the staff list, which includes unpublished products.
+          setRefreshKey((key) => key + 1);
           return;
         }
         if (!productId) {
