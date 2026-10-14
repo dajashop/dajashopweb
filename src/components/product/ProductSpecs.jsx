@@ -21,7 +21,7 @@ export default function ProductSpecs({ product, embedded = false }) {
           const badges = group.id === 'functions' ? group.entries.filter((entry) => entry.value === 'Da') : [];
           const rows = group.entries.filter((entry) => !badges.includes(entry));
           return (
-            <section key={group.id} className={`product-specifications__group${group.id === 'functions' ? ' product-specifications__group--functions' : ''}`}>
+            <section key={group.id} className="product-specifications__group">
               <h3 className="product-specifications__title"><Icon size={18} strokeWidth={1.6} aria-hidden="true" />{group.title}</h3>
               {rows.length > 0 && <dl className="product-specifications__list">
                 {rows.map(({ key, label, value }) => <div className="product-specifications__row" key={key}>

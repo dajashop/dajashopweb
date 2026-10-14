@@ -64,7 +64,6 @@
 .product-specifications__row:last-child { padding-bottom: 0; }
 .product-specifications__row dt { color: #6b7280; font-weight: 400; }
 .product-specifications__row dd { margin: 0; text-align: right; font-weight: 600; }
-.product-specifications__group--functions { grid-column: 1 / -1; }
 
 .product-specifications__features {
   display: flex;
