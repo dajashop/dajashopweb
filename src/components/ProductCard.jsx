@@ -1,4 +1,4 @@
-import { lazy, useMemo, useState } from 'react';
+import { lazy, memo, useMemo, useState } from 'react';
 import './ProductCard.css';
 import { Link } from 'react-router-dom';
 import { money } from '../utils/currency.js';
@@ -30,7 +30,7 @@ const slideVariants = {
 const swipeConfidenceThreshold = 10000;
 const swipePower = (offset, velocity) => Math.abs(offset) * velocity;
 
-export default function ProductCard({ p }) {
+function ProductCard({ p }) {
   const isEyewear = p.department === 'naocare';
   const { dispatch } = useCart();
   const { flash } = useFlash();
@@ -529,3 +529,5 @@ export default function ProductCard({ p }) {
     </>
   );
 }
+
+export default memo(ProductCard);

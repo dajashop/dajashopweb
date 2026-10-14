@@ -103,13 +103,15 @@ async function serveRequest(request, env) {
     if (!PUBLIC_PATHS.has(path) && !isProductPath(path) && !isBrandPath(path)) return errorPage(404, request, env);
     const siteUrl = PUBLIC_SITE_URL;
     try {
-      const snapshot = await loadPage(url, apiBase,
+      const [snapshot, pageTemplate] = await Promise.all([loadPage(url, apiBase,
         loader => cachedData(request, `product/${encodeURIComponent(path.split('/')[2])}`, loader,
           product => publicCacheSeconds({ product })),
         loader => cachedData(request, 'catalog', loader, catalog => publicCacheSeconds({ catalog })),
         loader => cachedData(request, `related/${encodeURIComponent(path.split('/')[2])}`, loader,
           relatedProducts => publicCacheSeconds({ relatedProducts })),
-      );
+      ), env.ASSETS.fetch(new Request(new URL('/', url)))
+        .then(async response => ({ response, text: await response.text() }))
+        .catch(() => null)]);
       if (snapshot.missing) return errorPage(404, request, env);
       if (snapshot.redirectTo) return Response.redirect(new URL(snapshot.redirectTo, siteUrl).toString(), 301);
       const department = catalogDepartment(path);
@@ -124,9 +126,8 @@ async function serveRequest(request, env) {
         const readable = catalogUrl(params, configuration, path);
         if (readable !== `${url.pathname}${url.search}`) return Response.redirect(new URL(readable, siteUrl).toString(), 301);
       }
-      const templateResponse = await env.ASSETS.fetch(new Request(new URL('/', url)));
-      if (!templateResponse.ok) throw new Error('Page template unavailable');
-      const template = await templateResponse.text();
+      if (!pageTemplate?.response.ok) throw new Error('Page template unavailable');
+      const { response: templateResponse, text: template } = pageTemplate;
       const rendered = renderPage(`${url.pathname}${url.search}`, snapshot, siteUrl);
       let html = renderDocument(template, rendered);
       // Query pages remain crawlable so bots can read noindex. Pagination is
