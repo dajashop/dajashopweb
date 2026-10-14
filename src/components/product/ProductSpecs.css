@@ -2,10 +2,10 @@
   container-type: inline-size;
   margin-bottom: 24px;
   padding: 24px;
-  background: #f7f8fa;
-  border: 1px solid #e8eaed;
+  background: #f5f3ef;
+  border: 1px solid #e5e0d8;
   border-radius: 20px;
-  color: #20252b;
+  color: #252525;
   min-width: 0;
 }
 
@@ -40,22 +40,23 @@
 .product-specifications__group {
   min-width: 0;
   padding: 18px;
-  border: 1px solid #e8eaed;
+  border: 1px solid #e5e0d8;
   border-radius: 14px;
   background: #fff;
+  box-shadow: 0 2px 8px rgba(70, 55, 35, 0.035);
 }
 
 .product-specifications__title {
   display: flex;
   align-items: center;
   gap: 9px;
-  margin: 0 0 12px;
+  margin: 0 0 16px;
   font-size: 0.9rem;
   line-height: 1.4;
   font-weight: 700;
 }
 
-.product-specifications__title svg { flex-shrink: 0; color: #6b7280; }
+.product-specifications__title svg { flex-shrink: 0; color: #8a7250; }
 .product-specifications__list { margin: 0; }
 
 .product-specifications__row {
@@ -63,14 +64,14 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
   padding: 10px 0;
-  border-top: 1px solid #f0f1f3;
+  border-top: 1px solid #f1eee9;
   font-size: 0.84rem;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .product-specifications__row:last-child { padding-bottom: 0; }
-.product-specifications__row dt { color: #6b7280; font-weight: 400; }
+.product-specifications__row dt { color: #68645f; font-weight: 400; }
 .product-specifications__row dd { margin: 0; text-align: right; font-weight: 600; }
 
 @container (max-width: 493px) {
