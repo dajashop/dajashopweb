@@ -2030,7 +2030,7 @@ export default function AdminProductModal({
                         className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
                         placeholder={placeholder} />
                       {result?.status === 'checking' && <span className="mt-1 block text-xs text-neutral-500">Proveravam link…</span>}
-                      {result?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">{result.stockStatus === 'in_stock' ? 'Na stanju kod dobavljača' : result.stockStatus === 'out_of_stock' ? 'Nema na stanju kod dobavljača' : 'Stranica dostupna'}{result.priceAmount != null ? ` · ${result.priceAmount} ${result.priceCurrency || ''}` : ''}</span>}
+                      {result?.status === 'available' && <span className={`mt-1 block text-xs font-semibold ${result.stockStatus === 'out_of_stock' ? 'text-amber-700' : 'text-emerald-700'}`}>{result.stockStatus === 'in_stock' ? 'Na stanju kod dobavljača' : result.stockStatus === 'out_of_stock' ? 'Nema na stanju kod dobavljača' : 'Stranica dostupna'}{result.priceAmount != null ? ` · ${result.priceAmount} ${result.priceCurrency || ''}` : ''}</span>}
                       {result?.status === 'unverified' && <span className="mt-1 block text-xs text-amber-700">{result.message || 'Link je sačuvan; provera trenutno nije dostupna.'}</span>}
                       {(result?.status === 'missing' || result?.status === 'error') && <span className="mt-1 block text-xs text-red-700">{result.message || 'Stranica nije potvrđena.'}</span>}
                     </label>
