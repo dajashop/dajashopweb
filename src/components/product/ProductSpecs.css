@@ -1,76 +1,103 @@
-/* src/components/product/ProductSpecs.css */
-
-.product-specs-standalone {
+.product-specifications {
   margin-bottom: 24px;
-  background: #fff;
-  border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: #f7f8fa;
+  border: 1px solid #e8eaed;
+  border-radius: 20px;
+  color: #20252b;
+  min-width: 0;
 }
 
-.specs-heading {
-  font-size: 0.9rem;
+.product-specifications--embedded {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+}
+
+.product-specifications__heading {
+  margin: 0 0 20px;
+  font-size: 1.15rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-muted, #666);
-  margin: 0 0 20px 0;
-  padding-bottom: 15px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  letter-spacing: -0.025em;
 }
 
-/* Tabela Specifikacija (Isti stil kao u tabovima) */
-.specs-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95rem;
-}
-.specs-table-row {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-.specs-table-row:last-child {
-  border-bottom: none;
-}
-.specs-table-row:nth-child(even) {
-  background-color: #fcfcfc;
+.product-specifications__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  align-items: start;
+  gap: 14px;
 }
 
-.spec-cell-key {
-  width: 35%;
-  padding: 12px 16px;
-  font-weight: 600;
-  color: var(--color-text);
-  background: rgba(0, 0, 0, 0.015);
-  border-right: 1px solid rgba(0, 0, 0, 0.04);
+.product-specifications__group {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e8eaed;
+  border-radius: 14px;
+  background: #fff;
 }
 
-.spec-cell-val {
-  padding: 12px 16px;
-  color: #333;
+.product-specifications__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.product-specifications__title svg { flex-shrink: 0; color: #6b7280; }
+.product-specifications__list { margin: 0; }
+
+.product-specifications__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #f0f1f3;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.product-specifications__row:last-child { padding-bottom: 0; }
+.product-specifications__row dt { color: #6b7280; font-weight: 400; }
+.product-specifications__row dd { margin: 0; text-align: right; font-weight: 600; }
+.product-specifications__group--functions { grid-column: 1 / -1; }
+
+.product-specifications__features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.product-specifications__list + .product-specifications__features { margin-top: 14px; }
+
+.product-specifications__features li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 7px 10px;
+  background: #f0f7f4;
+  border: 1px solid #dcece3;
+  border-radius: 8px;
+  color: #276046;
+  font-size: 0.8rem;
   font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
-/* Mobilni */
+.product-specifications__features svg { flex-shrink: 0; }
+
 @media (max-width: 600px) {
-  .product-specs-standalone {
-    padding: 16px;
-  }
-  .spec-cell-key,
-  .spec-cell-val {
-    display: block;
-    width: 100%;
-    padding: 8px 12px;
-    border-right: none;
-  }
-  .spec-cell-key {
-    font-size: 0.85rem;
-    color: #888;
-    padding-bottom: 0;
-    background: transparent;
-  }
-  .spec-cell-val {
-    padding-top: 4px;
-    font-size: 1rem;
-  }
+  .product-specifications { padding: 16px; border-radius: 16px; }
+  .product-specifications--embedded { padding: 0; }
+  .product-specifications__grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .product-specifications__group { padding: 16px; }
 }

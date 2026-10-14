@@ -3,8 +3,7 @@ import { Truck, ShieldCheck, Package } from 'lucide-react';
 import './ProductTabs.css';
 import { descriptionHtml } from '../description.js';
 import '../rich-description.css';
-import { formatProductSpecLabel, visibleProductSpecs } from '../../utils/catalogPresentation.js';
-import { eyewearDisplayValue, isEyewearDepartment } from '../../utils/eyewearCatalog.js';
+import ProductSpecs from './ProductSpecs.jsx';
 // [NOVO] Importujemo recenzije
 import ProductReviews from './ProductReviews.jsx';
 import { commerceSeoConfig } from '../../config/seo.js';
@@ -12,8 +11,6 @@ import { money } from '../../utils/currency.js';
 
 export default function ProductTabs({ product, hideSpecs = false }) {
   const [activeTab, setActiveTab] = useState('desc');
-  const specs = visibleProductSpecs(product?.specs, product?.department);
-  const eyewear = isEyewearDepartment(product?.department);
 
   return (
     <div className="product-tabs-container">
@@ -66,21 +63,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
         {/* SPECIFIKACIJE */}
         {!hideSpecs && (
           <div className="specs-wrapper" hidden={activeTab !== 'specs'}>
-            <h2 className="sr-only">Specifikacije proizvoda</h2>
-            {Object.keys(specs).length > 0 ? (
-              <table className="specs-table">
-                <tbody>
-                  {Object.entries(specs).map(([k, v]) => (
-                    <tr key={k} className="specs-table-row">
-                      <td className="spec-cell-key">{formatProductSpecLabel(k, product?.department)}</td>
-                      <td className="spec-cell-val">{eyewear ? eyewearDisplayValue(k, v) : v}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p className="empty-text">Nema specifikacija.</p>
-            )}
+            <ProductSpecs product={product} embedded />
           </div>
         )}
 
