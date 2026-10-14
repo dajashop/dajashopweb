@@ -48,7 +48,7 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
     } while (cursor);
     return items;
   };
-  const data = { catalog: null, product: null, filters: {}, relatedVariants: [], relatedProducts: [] };
+  const data = { catalog: null, product: null, filters: {}, filterVersions: {}, relatedVariants: [], relatedProducts: [] };
   const needsCatalog = path === '/graviranje';
   const department = catalogDepartment(path);
   const productLoader = async () => {
@@ -67,11 +67,11 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
   };
   const filters = department ? await api(`/public/catalog/filters/${department}`) : null;
   const configuration = filters?.configuration ?? null;
-  const fixedGender = path === '/muski-satovi' ? 'Muški' : path === '/zenski-satovi' ? 'Ženski' : undefined;
-  const listingParams = configuredFilterParams(decodeCatalogParams(url.searchParams, configuration, path), configuration, fixedGender);
-  const requestKey = department ? catalogPageRequest(department, listingParams, fixedGender) : null;
+  // Match the browser request exactly, including removable gender selections.
+  const listingParams = configuredFilterParams(decodeCatalogParams(url.searchParams, configuration, path), configuration);
+  const requestKey = department ? catalogPageRequest(department, listingParams) : null;
   const listingLoader = async (route) => {
-    try { return await api(`/public/catalog/${route}`); }
+    try { return await api(`/public/catalog/${route}${route.startsWith('page?') && filters?.version ? `&configurationVersion=${encodeURIComponent(filters.version)}` : ''}`); }
     catch (error) {
       if (error.status !== 404) throw error;
       return legacyListing(await catalogLoader(),route,configuration);
@@ -90,6 +90,7 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
   data.product = product?.product || product;
   if (department) {
     data.filters[department] = listing?.configuration ?? configuration;
+    data.filterVersions[department] = listing?.configurationVersion ?? filters?.version;
     const { configuration: _configuration, ...listingData } = listing;
     data.catalogPage = { ...listingData, requestKey };
   }

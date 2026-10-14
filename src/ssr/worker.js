@@ -120,8 +120,7 @@ async function serveRequest(request, env) {
           const brand = filterUrlEntries(configuration).find(entry => entry.node.sources.includes('brand'));
           if (!brand?.options.some(entry => entry.option.visible && (entry.slug === slug || urlSlug(entry.option.label) === urlSlug(slug)))) return errorPage(404, request, env);
         }
-        const gender = path === '/muski-satovi' ? 'Muški' : path === '/zenski-satovi' ? 'Ženski' : undefined;
-        const params = configuredFilterParams(decodeCatalogParams(url.searchParams, configuration, path), configuration, gender);
+        const params = configuredFilterParams(decodeCatalogParams(url.searchParams, configuration, path), configuration);
         const readable = catalogUrl(params, configuration, path);
         if (readable !== `${url.pathname}${url.search}`) return Response.redirect(new URL(readable, siteUrl).toString(), 301);
       }

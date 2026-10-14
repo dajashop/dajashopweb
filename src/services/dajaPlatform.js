@@ -11,11 +11,13 @@ import { createRealtimeSocket } from './realtimeSocket.js';
 import { getAccessToken, getStaffAccessToken } from './apiClient';
 import { readStoredValue, writeStoredValue } from './consentStorage.js';
 import { visibleProductSpecs } from '../utils/catalogPresentation.js';
+import { cachedFilterConfiguration, filterConfigurationGeneration, rememberFilterConfiguration } from './filterConfiguration.js';
 
 let publicCatalogSocket = null;
 const publicCatalogListeners = new Set();
 let staffCatalogSocket = null;
 const staffCatalogListeners = new Set();
+const adminConfigurationVersions = new Map();
 
 const OAUTH_WAKEUP_TIMEOUT_MS = 90_000;
 const OAUTH_WAKEUP_RETRY_MS = 2_000;
@@ -419,8 +421,14 @@ export const catalogApi = {
   },
   async listing(route, signal) {
     let data;
+    const request = new URLSearchParams(route.slice(5));
+    const department = route.startsWith('page?') ? request.get('department') : null;
+    const configuration = department ? cachedFilterConfiguration(department, true) : null;
+    const generation = filterConfigurationGeneration();
+    const requestedAt = Date.now();
+    const apiRoute = configuration?.version ? `${route}&configurationVersion=${encodeURIComponent(configuration.version)}` : route;
     try {
-      data = await apiRequest(`/public/catalog/${route}`, { auth: false, signal });
+      data = await apiRequest(`/public/catalog/${apiRoute}`, { auth: false, signal });
     } catch (error) {
       if (error.status !== 404) throw error;
       const { legacyListing } = await import('../utils/legacyListing.js');
@@ -432,16 +440,24 @@ export const catalogApi = {
       data = legacyListing(items, route, filters?.configuration);
     }
     if (!data || !Array.isArray(data.items)) throw new Error('Neispravan odgovor kataloga.');
+    if (department && !signal?.aborted && generation === filterConfigurationGeneration()) {
+      const nextConfiguration = data.configuration || (data.configurationVersion === configuration?.version ? configuration?.configuration : null);
+      rememberFilterConfiguration(department, nextConfiguration, data.configurationVersion, requestedAt);
+    }
     return { ...data, items: data.items.map(normalizeProduct) };
   },
   async adminListing(route, signal) {
     const query = new URLSearchParams(route.slice(route.indexOf('?') + 1));
+    const department = query.get('department');
+    const version = adminConfigurationVersions.get(department);
+    if (version) query.set('configurationVersion', version);
     const data = await apiRequest('/admin/catalog/page', {
       staff: true,
       query: Object.fromEntries(query),
       signal,
     });
     if (!data || !Array.isArray(data.items)) throw new Error('Neispravan odgovor kataloga.');
+    if (data.configurationVersion) adminConfigurationVersions.set(department, data.configurationVersion);
     return { ...data, items: data.items.map(normalizeProduct) };
   },
   async listRawProducts(signal) {

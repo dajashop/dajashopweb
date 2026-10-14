@@ -292,7 +292,7 @@ export default function Catalog({ department = 'satovi', seo }) {
   useEffect(() => {
     if (navType !== 'POP') return;
     if (!savedScrollRef.current) return;
-    if (loading) return;
+    if (loading || listing.updating) return;
 
     requestAnimationFrame(() => {
       window.scrollTo({
@@ -301,7 +301,7 @@ export default function Catalog({ department = 'satovi', seo }) {
         behavior: 'auto',
       });
     });
-  }, [loading, navType]);
+  }, [loading, listing.updating, navType]);
 
   // Cuvamo poziciju skrola i trenutnu stranicu pri izlasku sa kataloga
   useEffect(() => {
@@ -461,6 +461,7 @@ export default function Catalog({ department = 'satovi', seo }) {
             <div className="catalog__subrow">
               <div className="catalog__showing">
                 Ukupno {totalCount} proizvoda
+                {listing.updating && <span className="ml-2 inline-flex items-center gap-1 text-neutral-500" role="status"><Loader2 size={14} className="animate-spin" /> Osvežavanje…</span>}
                 {includeHiddenForAdmin && listing.data && (
                   <span className="ml-2 text-neutral-500">
                     · Sakriveno {hiddenCount}
@@ -489,6 +490,7 @@ export default function Catalog({ department = 'satovi', seo }) {
           </div>
 
           <motion.div
+            aria-busy={listing.updating || loading}
             initial={false}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
