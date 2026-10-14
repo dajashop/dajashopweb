@@ -75,6 +75,7 @@
   .mobile-only-tabs {
     display: block;
     margin-top: 30px; /* Malo razmaka od gornjeg sadržaja */
+    margin-bottom: 24px;
   }
 }
 /* src/pages/Product.css */
