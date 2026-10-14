@@ -74,9 +74,12 @@
 
   .mobile-only-tabs {
     display: block;
-    margin-top: 30px; /* Malo razmaka od gornjeg sadržaja */
+    margin-top: 24px;
     margin-bottom: 24px;
   }
+
+  .mobile-only-tabs .product-tabs-container { margin-top: 0; }
+  .mobile-trust .product-trust { margin-bottom: 0; }
 }
 /* src/pages/Product.css */
 
@@ -106,6 +109,6 @@
   /* Prikaži mobilnu verziju (desnu/donju) */
   .mobile-trust {
     display: block;
-    margin-top: 20px;
+    margin-top: 8px;
   }
 }

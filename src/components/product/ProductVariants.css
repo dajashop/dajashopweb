@@ -44,3 +44,10 @@
   height: 100%;
   object-fit: contain;
 }
+
+@media (max-width: 600px) {
+  .variants-container { margin: 12px 0; }
+  .variants-title { font-size: 0.75rem; margin-bottom: 10px; }
+  .variants-grid { gap: 10px; }
+  .variant-card { width: 76px; height: 76px; border-radius: 10px; }
+}

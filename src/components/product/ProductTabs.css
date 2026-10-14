@@ -47,6 +47,13 @@
 .tab-content {
   animation: fadeIn 0.3s ease;
 }
+
+@media (max-width: 600px) {
+  .product-tabs-container { padding: 16px; box-shadow: none; }
+  .product-tabs-container .tabs-header { margin: -16px -16px 16px; overflow-x: auto; }
+  .product-tabs-container .tab-btn { min-width: max-content; min-height: 48px; padding: 14px 10px; font-size: 0.82rem; }
+  .product-tabs-container .tab-text-content { font-size: 0.9rem; line-height: 1.65; overflow-wrap: anywhere; }
+}
 .empty-text {
   font-style: italic;
   color: #999;
