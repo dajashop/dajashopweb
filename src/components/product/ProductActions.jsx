@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, BellRing, Heart, Tag } from 'lucide-react';
+import { Bell, BellRing, Heart } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFlash } from '../../hooks/useFlash.js';
 import {
@@ -126,21 +126,19 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
             className={isLiked ? 'heart-icon active' : 'heart-icon'}
           />
         </button>
-      </div>
-
-      {showPriceAlerts && (
+        {showPriceAlerts && (
         <button
           type="button"
           className={`price-alert-button${subscribedTypes.includes('price_change') ? ' is-subscribed' : ''}`}
           onClick={() => requestAlert('price_change')}
           disabled={subscribedTypes.includes('price_change')}
+          title={subscribedTypes.includes('price_change') ? 'Pratite promenu cene' : 'Obavesti me kada se cena promeni'}
+          aria-label={subscribedTypes.includes('price_change') ? 'Pratite promenu cene' : 'Obavesti me kada se cena promeni'}
         >
-          {subscribedTypes.includes('price_change') ? <BellRing size={16} /> : <Tag size={16} />}
-          {subscribedTypes.includes('price_change')
-            ? 'Pratite promenu cene'
-            : 'Obavesti me kada se cena promeni'}
+          {subscribedTypes.includes('price_change') ? <BellRing size={22} aria-hidden="true" /> : <Bell size={22} aria-hidden="true" />}
         </button>
-      )}
+        )}
+      </div>
 
       <ProductAlertModal
         isOpen={Boolean(guestAlertType)}
