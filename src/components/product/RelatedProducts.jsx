@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from '../ProductLink.jsx';
 import { money } from '../../utils/currency';
 import './RelatedProducts.css';
 

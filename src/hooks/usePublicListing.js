@@ -11,16 +11,17 @@ let foregroundRequests = 0;
 function remember(key, data) {
   cache.delete(key);
   const saleExpiry = Math.min(...data.items.map(item => Date.parse(item.saleValidUntil)).filter(Number.isFinite));
-  cache.set(key, { data, expires: Math.min(Date.now() + TTL, saleExpiry) });
+  cache.set(key, { data, expires: Math.min(Date.now() + TTL, saleExpiry), retainUntil: Math.min(Date.now() + 5 * TTL, saleExpiry) });
   while (cache.size > 24) cache.delete(cache.keys().next().value);
 }
-function cached(key) {
+function cached(key, fresh = false) {
   const entry = cache.get(key);
-  return entry?.expires > Date.now() ? entry.data : null;
+  return entry && (fresh ? entry.expires : entry.retainUntil) > Date.now() ? entry.data : null;
 }
 function invalidate() {
   generation++;
   cache.clear();
+  for (const entry of requests.values()) entry.controller.abort();
   requests.clear();
 }
 function requestListing(route, admin, signal) {
@@ -58,6 +59,10 @@ function requestListing(route, admin, signal) {
     if (signal.aborted) abort(); else signal.addEventListener('abort', abort, { once: true });
   });
 }
+if (typeof window !== 'undefined') {
+  ['daja:products-changed', 'daja:variant-groups-changed', 'daja:filters-changed']
+    .forEach(event => window.addEventListener(event, invalidate));
+}
 export default function usePublicListing(route, seedField, enabled = true, includeHiddenForAdmin = false) {
   const page = usePageData();
   const { hasDecision } = useConsent();
@@ -67,11 +72,11 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
   // Never carry hidden/admin cards into a public view or another department.
   const scope = `${includeHiddenForAdmin ? 'admin' : 'public'}:${department}`;
   const initial = page?.hydrating && !includeHiddenForAdmin && seed?.requestKey === route ? seed : null;
-  const [state, setState] = useState(() => ({ route: cacheKey, request: cacheKey, scope, data: initial, error: null, pending: !initial }));
+  const [state, setState] = useState(() => ({ route: cacheKey, request: cacheKey, scope, data: initial || cached(cacheKey), error: null, pending: !(initial || cached(cacheKey)) }));
   const [revision, setRevision] = useState(0);
   const first = useRef(true);
   const current = state.route === cacheKey ? state.data : cached(cacheKey);
-  const data = current || (state.scope === scope ? state.data : null);
+  const data = current;
   const error = state.request === cacheKey ? state.error : null;
   const busy = enabled && !error && (state.request !== cacheKey || state.pending || !current);
   useEffect(() => {
@@ -80,7 +85,7 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
     const stored = cached(cacheKey) || (first.current && initial);
     first.current = false;
     if (stored) {
-      if (!cached(cacheKey)) remember(cacheKey, stored);
+      if (stored === initial && !cached(cacheKey)) remember(cacheKey, stored);
       setState({ route: cacheKey, request: cacheKey, scope, data: stored, error: null, pending: false });
     }
     let sequence = 0;
@@ -98,9 +103,9 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
         }
       } finally { foregroundRequests--; }
     };
-    if (!stored) void load();
-    const refresh = () => { invalidate(); void load(); };
-    const onFocus = () => { if (document.visibilityState === 'visible' && !cached(cacheKey)) void load(); };
+    if (!cached(cacheKey, true)) void load();
+    const refresh = () => { void load(); };
+    const onFocus = () => { if (document.visibilityState === 'visible' && !cached(cacheKey, true)) void load(); };
     window.addEventListener('focus', onFocus);
     const events = ['daja:products-changed', 'daja:variant-groups-changed', 'daja:filters-changed'];
     events.forEach(event => window.addEventListener(event, refresh));
@@ -109,7 +114,7 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
       window.removeEventListener('focus', onFocus);
       events.forEach(event => window.removeEventListener(event, refresh));
     };
-  }, [route, cacheKey, scope, enabled, revision, includeHiddenForAdmin, initial]);
+  }, [route, cacheKey, scope, enabled, revision, includeHiddenForAdmin]);
   useEffect(() => {
     if (!enabled || !hasDecision) return undefined;
     const subscribe = includeHiddenForAdmin ? subscribeStaffCatalogRealtime : subscribePublicCatalogRealtime;
@@ -126,19 +131,20 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
     const pages = Math.max(1, Math.ceil(current.total / current.perPage));
     if (current.page >= pages) return undefined;
     let idle;
+    const controller = new AbortController();
     const prefetch = () => {
       if (foregroundRequests || document.visibilityState !== 'visible') return;
       const params = new URLSearchParams(route.slice(5));
       params.set('page', String(current.page + 1));
       const next = `page?${params}`;
       // Reuse an ongoing prefetch if the visitor navigates to this page.
-      if (!cached(next)) void requestListing(next, false, new AbortController().signal).catch(() => {});
+      if (!cached(next)) void requestListing(next, false, controller.signal).catch(() => {});
     };
     const timer = window.setTimeout(() => {
       if (window.requestIdleCallback) idle = window.requestIdleCallback(prefetch, { timeout: 2000 });
       else prefetch();
     }, 1000);
-    return () => { window.clearTimeout(timer); if (idle !== undefined) window.cancelIdleCallback(idle); };
+    return () => { controller.abort(); window.clearTimeout(timer); if (idle !== undefined) window.cancelIdleCallback(idle); };
   }, [route, cacheKey, current, state.route, enabled, includeHiddenForAdmin]);
   useEffect(() => {
     if (!enabled || !current) return undefined;

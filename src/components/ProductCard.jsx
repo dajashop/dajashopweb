@@ -1,6 +1,6 @@
 import { lazy, memo, useMemo, useState } from 'react';
 import './ProductCard.css';
-import { Link } from 'react-router-dom';
+import Link from './ProductLink.jsx';
 import { money } from '../utils/currency.js';
 import { useCart } from '../hooks/useCart.js';
 import { useFlash } from '../hooks/useFlash.js';
@@ -30,7 +30,7 @@ const slideVariants = {
 const swipeConfidenceThreshold = 10000;
 const swipePower = (offset, velocity) => Math.abs(offset) * velocity;
 
-function ProductCard({ p }) {
+function ProductCard({ p, priority = false }) {
   const isEyewear = p.department === 'naocare';
   const { dispatch } = useCart();
   const { flash } = useFlash();
@@ -300,6 +300,8 @@ function ProductCard({ p }) {
               >
                 <ProgressiveImage
                   src={activeImageSrc}
+                  loading={priority ? 'eager' : 'lazy'}
+                  fetchPriority={priority ? 'high' : 'auto'}
                   thumbSrc={
                     imageIndex === 0
                       ? p.thumbnailUrl || imgs[imageIndex]?.thumb

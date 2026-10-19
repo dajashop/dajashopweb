@@ -14,6 +14,7 @@ import { visibleProductSpecs } from '../utils/catalogPresentation.js';
 import { cachedFilterConfiguration, filterConfigurationGeneration, rememberFilterConfiguration } from './filterConfiguration.js';
 
 let publicCatalogSocket = null;
+let publicCatalogCloseTimer;
 const publicCatalogListeners = new Set();
 let staffCatalogSocket = null;
 const staffCatalogListeners = new Set();
@@ -497,12 +498,13 @@ export const catalogApi = {
 
     return fetchAll ? products : products.slice(0, requestedLimit);
   },
-  async getProductBySlug(slug, { realtime = false } = {}) {
+  async getProductBySlug(slug, { realtime = false, signal } = {}) {
     const data = await apiRequest(
       `/public/catalog/products/${encodeURIComponent(slug)}`,
       {
         auth: false,
         ...(realtime ? { query: { realtime: '1' } } : {}),
+        signal,
       },
     );
     if (data?.redirectTo) return { redirectTo: data.redirectTo };
@@ -539,10 +541,10 @@ export const adminCatalogApi = {
     });
     return normalizeProduct(data);
   },
-  async getProductBySlug(slug) {
+  async getProductBySlug(slug, signal) {
     const data = await apiRequest(
       `/admin/catalog/products/by-slug/${encodeURIComponent(slug)}`,
-      { staff: true },
+      { staff: true, signal },
     );
     return normalizeProduct(data);
   },
@@ -1560,6 +1562,7 @@ export function subscribeStaffCatalogRealtime(onEvent, onError) {
 
 export function subscribePublicCatalogRealtime(onEvent, onError) {
   if (!REALTIME_ENABLED) return () => {};
+  window.clearTimeout(publicCatalogCloseTimer);
   publicCatalogListeners.add(onEvent);
   if (!publicCatalogSocket) {
     publicCatalogSocket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ publicCatalog: true }));
@@ -1578,8 +1581,11 @@ export function subscribePublicCatalogRealtime(onEvent, onError) {
   return () => {
     publicCatalogListeners.delete(onEvent);
     if (publicCatalogListeners.size === 0 && publicCatalogSocket) {
-      publicCatalogSocket.close();
-      publicCatalogSocket = null;
+      publicCatalogCloseTimer = window.setTimeout(() => {
+        if (!publicCatalogListeners.size && publicCatalogSocket) {
+          publicCatalogSocket.close(); publicCatalogSocket = null;
+        }
+      }, 1500);
     }
   };
 }

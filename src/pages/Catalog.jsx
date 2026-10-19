@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import './Catalog.css';
 import { useNavigationType, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { CatalogParamsContext } from '../context/CatalogParams.jsx';
@@ -9,6 +9,7 @@ import { Loader2, AlertTriangle, ArrowLeft, X } from 'lucide-react';
 // Komponente
 import Breadcrumbs from '../components/Breadcrumbs.jsx';
 import ProductGrid from '../components/ProductGrid.jsx';
+import { CatalogSkeleton } from '../components/LoadingSkeletons.jsx';
 import Filters from '../components/Filters.jsx';
 import Pagination from '../components/Pagination.jsx';
 import FilterDrawer from '../components/FilterDrawer.jsx';
@@ -26,10 +27,11 @@ import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { isAdminEmail } from '../services/dajaPlatform.js';
 
-import { useConsent } from '../context/ConsentContext.jsx';
 import { readSessionValue, writeSessionValue } from '../services/consentStorage.js';
 
 const PER_PAGE = 32;
+const scrollPositions = new Map();
+const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 const SORT_OPTIONS = [
   { value: 'popular', label: 'Popularnost' },
@@ -93,10 +95,20 @@ export default function Catalog({ department = 'satovi', seo }) {
   const [rawParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { configuration: savedFilterConfiguration, loading: filterConfigurationLoading, error: filterConfigurationError } = useFilterConfiguration(department);
+  const bootstrapListing = !includeHiddenForAdmin && ['/catalog', '/naocare', '/baterije', '/daljinski'].includes(location.pathname)
+    && [...rawParams.keys()].every(key => ['page', 'sort', 'q', 'gclid', 'fbclid'].includes(key) || key.startsWith('utm_'));
+  const { configuration: savedFilterConfiguration, loading: filterConfigurationLoading, error: filterConfigurationError } = useFilterConfiguration(department, bootstrapListing);
   const sp = useMemo(() => decodeCatalogParams(rawParams, savedFilterConfiguration, location.pathname), [rawParams, savedFilterConfiguration, location.pathname]);
   const setSp = (value, options) => {
     const next = new URLSearchParams(typeof value === 'function' ? value(new URLSearchParams(sp)) : value);
+    const identity = params => {
+      const filters = new URLSearchParams(params);
+      filters.delete('page'); filters.sort();
+      return filters.toString();
+    };
+    // Reset pagination only for an explicit filter action, never for Back or
+    // the arrival of configuration that decodes an existing page URL.
+    if (identity(next) !== identity(sp)) next.delete('page');
     navigate(catalogUrl(next, filterConfiguration, location.pathname), options);
   };
   const brandEntry = filterUrlEntries(savedFilterConfiguration).find(entry => entry.node.sources.includes('brand'));
@@ -111,23 +123,8 @@ export default function Catalog({ department = 'satovi', seo }) {
     : !savedFilterConfiguration && routeBrand ? brandDisplayName(routeBrand === 'q-q' ? 'Q&Q' : routeBrand.replace(/-/g, ' ')) : '';
   const brandPath = brandName && department === 'satovi' ? `/brend/${selectedBrands[0]?.slug || routeBrand}` : '';
   const activeSeo = brandPath ? { ...baseSeo, path: brandPath, title: `${brandName} satovi`, description: brandDescription(brandName) } : baseSeo;
-  const spKey = sp.toString();
   const hasFilteredCatalogUrl = [...sp.keys()].some(key => !['page', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid', ...(brandPath ? [`cf_${brandEntry?.node.id}`, 'brand'] : []), ...(isGenderPage ? [`cf_${genderEntry?.node.id}`, 'gender'] : [])].includes(key));
   const navType = useNavigationType();
-  const filterIdentityParams = new URLSearchParams(sp);
-  filterIdentityParams.delete('page');
-  const filterIdentity = `${department}:${filterIdentityParams}`;
-  const previousFilters = useRef(filterIdentity);
-  useEffect(() => {
-    if (previousFilters.current === filterIdentity) return;
-    previousFilters.current = filterIdentity;
-    if (sp.has('page')) {
-      const next = new URLSearchParams(sp);
-      next.delete('page');
-      setSp(next, { replace: true });
-    }
-  }, [filterIdentity, sp, setSp]);
-
   const sortParam = sp.get('sort') || 'popular';
 
   const handleSortChange = (val) => {
@@ -140,16 +137,15 @@ export default function Catalog({ department = 'satovi', seo }) {
 
   // Kluc za cuvanje pozicije skrola po odeljenju + aktivnim filterima
   const scrollKey = useMemo(
-    () => `catalog-scroll:${department}:${spKey}`,
-    [department, spKey],
+    () => `catalog-scroll:${location.key}:${location.pathname}${location.search}`,
+    [location.key, location.pathname, location.search],
   );
   const savedScrollRef = useRef(null);
 
-  const { preferencesAllowed } = useConsent();
   const filterConfiguration = savedFilterConfiguration;
   const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration) : sp, [sp, filterConfiguration]);
   const requestKey = catalogPageRequest(department, configuredParams);
-  const listing = usePublicListing(requestKey, 'catalogPage', !filterConfigurationLoading && !filterConfigurationError, includeHiddenForAdmin);
+  const listing = usePublicListing(requestKey, 'catalogPage', (bootstrapListing || !filterConfigurationLoading) && !filterConfigurationError, includeHiddenForAdmin);
   const loading = listing.loading;
   const err = listing.error;
   const departmentItems = listing.data?.items || [];
@@ -260,74 +256,43 @@ export default function Catalog({ department = 'satovi', seo }) {
     return catalogUrl(next, filterConfiguration, location.pathname);
   };
 
-  // Vrati skrol i paginaciju kad se vracamo (Back/Forward), bez Lenis-a
-  useEffect(() => {
-    if (navType === 'POP') {
-      const savedRaw = readSessionValue(scrollKey, 'preferences');
-      if (savedRaw) {
-        try {
-          const saved = JSON.parse(savedRaw);
-          savedScrollRef.current = saved;
-
-          requestAnimationFrame(() => {
-            window.scrollTo({
-              top: saved?.y ?? 0,
-              left: 0,
-              behavior: 'auto',
-            });
-          });
-          return;
-        } catch (e) {
-          console.warn('Ne mogu da parsiram sacuvanu poziciju', e);
-        }
-      }
-    }
-
-    // Novi filteri/odeljenje -> reset na vrh i prva strana
-    savedScrollRef.current = null;
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [spKey, department, navType, preferencesAllowed, scrollKey]);
-
-  // Kada se data ucita, ponovi skrol (u slucaju da je layout naknadno narastao)
-  useEffect(() => {
-    if (navType !== 'POP') return;
-    if (!savedScrollRef.current) return;
-    if (loading || listing.updating) return;
-
-    requestAnimationFrame(() => {
-      window.scrollTo({
-        top: savedScrollRef.current?.y ?? 0,
-        left: 0,
-        behavior: 'auto',
-      });
-    });
-  }, [loading, listing.updating, navType]);
-
-  // Cuvamo poziciju skrola i trenutnu stranicu pri izlasku sa kataloga
-  useEffect(() => {
-    return () => {
-      const payload = JSON.stringify({ y: window.scrollY, page });
-      writeSessionValue(scrollKey, payload, 'preferences');
+  // Track each history entry before product-page effects reset the scroll.
+  useBrowserLayoutEffect(() => {
+    const stored = scrollPositions.get(scrollKey);
+    const persisted = !stored && readSessionValue(scrollKey, 'preferences');
+    let saved = stored;
+    if (persisted) { try { saved = JSON.parse(persisted); } catch { /* Ignore unavailable storage. */ } }
+    savedScrollRef.current = navType === 'POP' ? saved : null;
+    window.scrollTo({ top: savedScrollRef.current?.y || 0, behavior: 'instant' });
+    const capture = () => {
+      const position = { y: window.scrollY };
+      scrollPositions.delete(scrollKey);
+      scrollPositions.set(scrollKey, position);
+      while (scrollPositions.size > 60) scrollPositions.delete(scrollPositions.keys().next().value);
     };
-  }, [scrollKey, page, preferencesAllowed]);
+    window.addEventListener('scroll', capture, { passive: true });
+    const persist = () => {
+      const position = scrollPositions.get(scrollKey);
+      if (position) writeSessionValue(scrollKey, JSON.stringify(position), 'preferences');
+    };
+    window.addEventListener('pagehide', persist);
+    return () => {
+      window.removeEventListener('scroll', capture);
+      window.removeEventListener('pagehide', persist);
+      persist();
+    };
+  }, [scrollKey, navType]);
+  useBrowserLayoutEffect(() => {
+    if (loading || filterConfigurationLoading || !savedScrollRef.current) return;
+    const saved = savedScrollRef.current;
+    savedScrollRef.current = null;
+    window.scrollTo({ top: saved.y, behavior: 'instant' });
+  }, [loading, filterConfigurationLoading, scrollKey]);
 
-  const start = (page - 1) * PER_PAGE;
   const itemsToShow = departmentItems;
 
   const renderContent = () => {
-    if (loading || filterConfigurationLoading) {
-      return (
-        <div className="flex justify-center items-center h-64 text-muted">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          >
-            <Loader2 size={32} className="text-primary" />
-          </motion.div>
-          <span className="ml-3 text-lg font-medium">Učitavanje...</span>
-        </div>
-      );
-    }
+    if (!err && (loading || filterConfigurationLoading)) return <CatalogSkeleton square={department === 'naocare'} />;
 
     if (err && !listing.data) {
       return (
@@ -460,7 +425,7 @@ export default function Catalog({ department = 'satovi', seo }) {
 
             <div className="catalog__subrow">
               <div className="catalog__showing">
-                Ukupno {totalCount} proizvoda
+                {listing.data ? `Ukupno ${totalCount} proizvoda` : 'Učitavanje proizvoda…'}
                 {listing.updating && <span className="ml-2 inline-flex items-center gap-1 text-neutral-500" role="status"><Loader2 size={14} className="animate-spin" /> Osvežavanje…</span>}
                 {includeHiddenForAdmin && listing.data && (
                   <span className="ml-2 text-neutral-500">

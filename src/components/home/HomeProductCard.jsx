@@ -1,6 +1,6 @@
 import React from 'react';
 import './HomeProductCard.css';
-import { Link } from 'react-router-dom';
+import Link from '../ProductLink.jsx';
 import { useCart } from '../../hooks/useCart.js';
 import { useFlash } from '../../hooks/useFlash.js';
 import { money } from '../../utils/currency.js';

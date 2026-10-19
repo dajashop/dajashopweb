@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layers } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import Link from '../ProductLink.jsx';
 import './ProductVariants.css';
 export default function ProductVariants({ product, relatedVariants }) {
   if (!relatedVariants || relatedVariants.length === 0) return null;
@@ -15,9 +15,9 @@ export default function ProductVariants({ product, relatedVariants }) {
         {/* Trenutni model */}
         <div className="variant-card active" title="Trenutni model">
           <img
-            src={product.images?.[0]?.url || product.image}
+            src={product.thumbnailUrl || product.images?.[0]?.thumb || product.images?.[0]?.url || product.image}
             alt={product.name}
-            className="variant-img"
+            className="variant-img" loading="lazy" decoding="async"
           />
         </div>
         {/* Ostale varijante */}
@@ -30,9 +30,9 @@ export default function ProductVariants({ product, relatedVariants }) {
             title={variant.name}
           >
             <img
-              src={variant.images?.[0]?.url || variant.image}
+              src={variant.thumbnailUrl || variant.images?.[0]?.thumb || variant.images?.[0]?.url || variant.image}
               alt={variant.name}
-              className="variant-img"
+              className="variant-img" loading="lazy" decoding="async"
             />
           </Link>
         ))}

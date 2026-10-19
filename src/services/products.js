@@ -1,3 +1,4 @@
+import { cachedResource, requestResource } from './catalogResourceCache.js';
 import { adminCatalogApi, catalogApi } from './dajaPlatform';
 import mockProducts from '../data/mock/products';
 
@@ -81,11 +82,30 @@ export async function removeImagesByPaths() {
   return undefined;
 }
 
-export async function fetchProductBySlug(slug, { includeHiddenForAdmin = false } = {}) {
+export const productResourceKey = (slug, admin = false) => `product:${admin ? 'admin' : 'public'}:${slug}`;
+export const cachedProductBySlug = (slug, admin = false) => cachedResource(productResourceKey(slug, admin));
+export function fetchProductBySlug(slug, { includeHiddenForAdmin = false, signal, force = false } = {}) {
+  return requestResource(productResourceKey(slug, includeHiddenForAdmin),
+    requestSignal => loadProductBySlug(slug, includeHiddenForAdmin, requestSignal), { signal, force });
+}
+const prefetches = new Map();
+export function prefetchProduct(slug) {
+  if (!slug || typeof window === 'undefined' || cachedResource(productResourceKey(slug), true) || prefetches.has(slug) || prefetches.size >= 2) return;
+  const connection = navigator.connection;
+  if (connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType)) return;
+  const controller = new AbortController();
+  prefetches.set(slug, controller);
+  const timeout = window.setTimeout(() => controller.abort(), 10_000);
+  void fetchProductBySlug(slug, { signal: controller.signal }).catch(() => {}).finally(() => {
+    window.clearTimeout(timeout); prefetches.delete(slug);
+  });
+}
+async function loadProductBySlug(slug, includeHiddenForAdmin, signal) {
   let publicProduct = null;
   try {
-    publicProduct = await catalogApi.getProductBySlug(slug);
+    publicProduct = await catalogApi.getProductBySlug(slug, { signal });
   } catch (error) {
+    if (error.name === 'AbortError') throw error;
     if (error.status !== 404 && !allowMockFallback) {
       console.error('Error fetching product:', error);
       throw error;
@@ -94,7 +114,7 @@ export async function fetchProductBySlug(slug, { includeHiddenForAdmin = false }
       return mockProducts.find((product) => product.slug === slug) || null;
   }
   if (publicProduct?.id || publicProduct?.redirectTo) return publicProduct;
-  if (includeHiddenForAdmin) return adminCatalogApi.getProductBySlug(slug);
+  if (includeHiddenForAdmin) return adminCatalogApi.getProductBySlug(slug, signal);
   return publicProduct;
 }
 

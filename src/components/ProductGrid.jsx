@@ -36,8 +36,8 @@ function ProductGridContent({ items }) {
   return (
     <>
       <div className="product-grid">
-        {items.map((p) => (
-          <ProductCard key={p.id} p={p} />
+        {items.map((p, index) => (
+          <ProductCard key={p.id} p={p} priority={index < 4} />
         ))}
       </div>
 

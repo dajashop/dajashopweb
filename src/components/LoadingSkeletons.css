@@ -1,0 +1,12 @@
+.loading-block { background: var(--color-border, #e9ecef); border-radius: 8px; }
+.loading-card { border: 1px solid var(--color-border, #e9ecef); border-radius: 16px; overflow: hidden; }
+.loading-card__image { aspect-ratio: 1 / 1; border-radius: 0; }
+.loading-card__body { padding: 16px; display: grid; gap: 12px; }
+.loading-line { height: 18px; margin-bottom: 12px; width: 80%; }
+.loading-line--short { width: 40%; }
+.loading-button { height: 40px; margin-top: 16px; }
+.loading-catalog { min-height: 80vh; }
+.loading-product { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: min(1200px, 94%); margin: 32px auto; min-height: 85vh; }
+.loading-product__image { aspect-ratio: 1 / 1; }
+.loading-product__specs { height: 420px; margin-top: 32px; }
+@media(max-width: 768px) { .loading-product { grid-template-columns: 1fr; gap: 24px; } }

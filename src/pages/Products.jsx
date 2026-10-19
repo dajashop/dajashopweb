@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useCart } from '../hooks/useCart.js';
 import { useFlash } from '../hooks/useFlash.js';
 import { useWishlist } from '../context/WishlistProvider.jsx';
+import { ProductSkeleton } from '../components/LoadingSkeletons.jsx';
 import useProduct from '../hooks/useProduct.js';
 import useRelatedProducts from '../hooks/useRelatedProducts.js';
 import useProductVariantGroup from '../hooks/useProductVariantGroup.js';
@@ -49,7 +50,7 @@ export default function Product() {
   const navigate = useNavigate();
   const { product: p, loading, error, updateProduct } = useProduct(slug);
   const { staffReady } = useAuth();
-  const relatedProducts = useRelatedProducts(slug);
+  const relatedProducts = useRelatedProducts(slug, Boolean(p?.id));
   const { dispatch } = useCart();
   const { flash } = useFlash();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -63,20 +64,14 @@ export default function Product() {
     if (p?.redirectTo) navigate(p.redirectTo, { replace: true });
   }, [navigate, p?.redirectTo]);
 
-  const relatedVariants = useProductVariantGroup(slug);
+  const relatedVariants = useProductVariantGroup(slug, Boolean(p?.id));
 
   // --- [LOGIKA] Da li proizvod ima unete funkcionalnosti? ---
   const hasFeatures = useMemo(() => {
     return visibleProductFeatures(p?.features).length > 0;
   }, [p]);
 
-  if (loading)
-    return (
-      <div className="container product-loading">
-        <SEOHead title="Proizvod" keywords="" defer={false} />
-        <p role="status">Učitavanje...</p>
-      </div>
-    );
+  if (loading) return <><SEOHead title="Proizvod" keywords="" defer={false} /><ProductSkeleton /></>;
   if (error || !p)
     return <PageStatus status={error && error.status !== 404 ? 503 : 404} />;
   if (p.redirectTo) return (

@@ -150,7 +150,7 @@ export default function ProductGallery({ product }) {
                       item.altText ||
                       `${defaultAlt || product.name} - slika ${(item.imageIndex || 0) + 1}`
                     }
-                    className="thumb-img"
+                    className="thumb-img" loading="lazy" decoding="async"
                   />
                 )}
               </button>
