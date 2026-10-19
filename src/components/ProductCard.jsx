@@ -17,6 +17,14 @@ import ClientOnly from './ClientOnly.jsx';
 const AdminProductModal = import.meta.env.SSR ? () => null : lazy(() => import('../pages/Admin/components/AdminProductModal.jsx'));
 import ConfirmModal from '../components/modals/ConfirmModal.jsx';
 
+const slideVariants = {
+  enter: direction => ({ x: direction > 0 ? '100%' : direction < 0 ? '-100%' : 0, opacity: 1 }),
+  center: { x: 0, opacity: 1, zIndex: 1 },
+  exit: direction => direction
+    ? { x: direction > 0 ? '-100%' : '100%', opacity: 1, zIndex: 0 }
+    : { x: 0, opacity: 0, transition: { duration: 0 } },
+};
+
 const swipeConfidenceThreshold = 10000;
 const swipePower = (offset, velocity) => Math.abs(offset) * velocity;
 
@@ -38,6 +46,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
 
   // Slider
   const [page, setPage] = useState(0);
+  const [swipeDirection, setSwipeDirection] = useState(0);
   const unlockTimer = useRef();
   const lockTimer = useRef();
   const hover = useRef({ inside: false, unlocked: false, x: 0, leftAt: 0 });
@@ -71,7 +80,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
       .filter((img) => img?.url);
   }, [p.images, p.image, p.thumbnailUrl]);
 
-  const imageIndex = imgs.length ? Math.abs(page % imgs.length) : 0;
+  const imageIndex = imgs.length ? ((page % imgs.length) + imgs.length) % imgs.length : 0;
 
   const openAdminEditor = async () => {
     if (isLoadingEditor) return;
@@ -93,11 +102,13 @@ function ProductCard({ p, priority = false, blankImage = false }) {
 
   const paginate = (newDirection) => {
     if (imgs.length <= 1) return;
-    setPage(page + newDirection);
+    setSwipeDirection(newDirection);
+    setPage(previous => previous + newDirection);
   };
 
   const setIndex = (index) => {
     if (index === imageIndex) return;
+    setSwipeDirection(0);
     setPage(index);
   };
 
@@ -108,6 +119,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
     if (!width) return;
     const progress = Math.max(0, Math.min(1, (state.x - left) / width));
     const index = Math.min(imgs.length - 1, Math.floor(progress * imgs.length));
+    if (index !== imageIndex) setSwipeDirection(0);
     setPage(previous => previous === index ? previous : index);
   };
   const enterGallery = (event) => {
@@ -303,10 +315,16 @@ function ProductCard({ p, priority = false, blankImage = false }) {
 
         {/* Slider */}
         <div className={`relative ${isEyewear ? 'aspect-square' : 'aspect-4/5'} w-full overflow-hidden bg-white`}>
+          <AnimatePresence initial={false} custom={swipeDirection}>
           <motion.div
-            initial={false}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0 }}
+            key={swipeDirection ? `swipe:${page}` : 'hover'}
+            custom={swipeDirection}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={swipeDirection ? { type: 'spring', stiffness: 320, damping: 32, mass: 0.7 } : { duration: 0 }}
+            style={{ touchAction: 'pan-y' }}
             drag={showSliderControls ? 'x' : false}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={1}
@@ -336,6 +354,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
               />}
             </Link>
           </motion.div>
+          </AnimatePresence>
 
           <LayoutGroup>
             <div className="slider-dots absolute inset-x-0 bottom-0 px-3 pb-3 pt-2 pointer-events-none">
