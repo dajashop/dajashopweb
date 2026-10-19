@@ -880,3 +880,11 @@
   .cart .cart__saved-actions { grid-column: 2; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; }
   .cart .cart__saved-heading h2 { font-size: 19px; }
 }
+
+@media (min-width: 1024px) {
+  .cart .cart__summary-panel {
+    position: sticky;
+    top: calc(var(--header-sticky-offset, 112px) + 16px);
+    align-self: start;
+  }
+}
