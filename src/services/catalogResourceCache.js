@@ -24,9 +24,9 @@ export function invalidateCatalogResources() {
   for (const entry of requests.values()) entry.controller.abort();
   requests.clear();
 }
-export function requestResource(key, loader, { signal, force = false } = {}) {
+export function requestResource(key, loader, { signal, force = false, cacheResult = true } = {}) {
   if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
-  const stored = !force && cachedResource(key, true);
+  const stored = cacheResult && !force && cachedResource(key, true);
   if (stored) return Promise.resolve(stored);
   let entry = requests.get(key);
   if (!entry) {
@@ -34,7 +34,7 @@ export function requestResource(key, loader, { signal, force = false } = {}) {
     const started = generation;
     entry = { controller, consumers: 0, settled: false };
     entry.promise = Promise.resolve().then(() => loader(controller.signal)).then(value => {
-      if (!controller.signal.aborted && generation === started) rememberResource(key, value);
+      if (cacheResult && !controller.signal.aborted && generation === started) rememberResource(key, value);
       return value;
     }).finally(() => {
       entry.settled = true;

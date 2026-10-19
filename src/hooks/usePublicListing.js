@@ -1,3 +1,4 @@
+import { backgroundCatalogAllowed, prepareCatalogRoutes, preloadCatalogImages, waitForVisibleCatalogImages } from '../services/catalogPreparation.js';
 import { useEffect, useRef, useState } from 'react';
 import { catalogApi, subscribePublicCatalogRealtime, subscribeStaffCatalogRealtime } from '../services/dajaPlatform.js';
 import { usePageData } from '../ssr/PageData.jsx';
@@ -41,6 +42,7 @@ function requestListing(route, admin, signal) {
       });
     requests.set(key, entry);
   }
+  window.clearTimeout(entry.releaseTimer);
   entry.consumers++;
   return new Promise((resolve, reject) => {
     let released = false;
@@ -50,8 +52,12 @@ function requestListing(route, admin, signal) {
       signal.removeEventListener('abort', abort);
       entry.consumers--;
       if (!entry.consumers && !entry.settled) {
-        entry.controller.abort();
-        if (requests.get(key) === entry) requests.delete(key);
+        entry.releaseTimer = window.setTimeout(() => {
+          if (!entry.consumers && !entry.settled) {
+            entry.controller.abort();
+            if (requests.get(key) === entry) requests.delete(key);
+          }
+        }, 150);
       }
     };
     const abort = () => { release(); reject(new DOMException('Aborted', 'AbortError')); };
@@ -76,7 +82,8 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
   const [revision, setRevision] = useState(0);
   const first = useRef(true);
   const current = state.route === cacheKey ? state.data : cached(cacheKey);
-  const data = current;
+  const data = current || (state.scope === scope ? state.data : null);
+  const displayingPrevious = !current && Boolean(data);
   const error = state.request === cacheKey ? state.error : null;
   const busy = enabled && !error && (state.request !== cacheKey || state.pending || !current);
   useEffect(() => {
@@ -125,27 +132,46 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
     });
   }, [enabled, hasDecision, includeHiddenForAdmin]);
   useEffect(() => {
-    if (!enabled || includeHiddenForAdmin || !current || state.route !== cacheKey || !route.startsWith('page?')) return undefined;
-    const connection = navigator.connection;
-    if (connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType)) return undefined;
+    if (!enabled || !current || state.route !== cacheKey || state.pending || !route.startsWith('page?') || !backgroundCatalogAllowed()) return undefined;
     const pages = Math.max(1, Math.ceil(current.total / current.perPage));
     if (current.page >= pages) return undefined;
-    let idle;
     const controller = new AbortController();
-    const prefetch = () => {
-      if (foregroundRequests || document.visibilityState !== 'visible') return;
-      const params = new URLSearchParams(route.slice(5));
-      params.set('page', String(current.page + 1));
-      const next = `page?${params}`;
-      // Reuse an ongoing prefetch if the visitor navigates to this page.
-      if (!cached(next)) void requestListing(next, false, controller.signal).catch(() => {});
+    const { signal } = controller;
+    let timer;
+    let started = false;
+    const start = async () => {
+      if (signal.aborted || started) return;
+      if (foregroundRequests || document.visibilityState !== 'visible') {
+        timer = window.setTimeout(start, 500); return;
+      }
+      started = true;
+      try {
+        // Finish this page's images before warming exactly one full page.
+        await waitForVisibleCatalogImages(cacheKey, signal);
+        if (signal.aborted) return;
+        await preloadCatalogImages(current.items, signal);
+        if (signal.aborted) return;
+        const params = new URLSearchParams(route.slice(5));
+        params.set('page', String(current.page + 1));
+        const next = `page?${params}`;
+        const nextKey = includeHiddenForAdmin ? `admin:${next}` : next;
+        let preparation = Promise.resolve();
+        if (current.page + 2 <= pages) {
+          const later = new URLSearchParams(params);
+          later.set('page', String(current.page + 2));
+          // Only IDs and order for the page after next, in parallel with the
+          // full next page. A missing preparation endpoint cannot block it.
+          preparation = prepareCatalogRoutes([`page?${later}`], includeHiddenForAdmin, signal).catch(() => {});
+        }
+        const nextPage = cached(nextKey, true) || await requestListing(next, includeHiddenForAdmin, signal);
+        if (signal.aborted) return;
+        await preloadCatalogImages(nextPage.items, signal);
+        await preparation;
+      } catch { /* Speculation must never interrupt foreground navigation. */ }
     };
-    const timer = window.setTimeout(() => {
-      if (window.requestIdleCallback) idle = window.requestIdleCallback(prefetch, { timeout: 2000 });
-      else prefetch();
-    }, 1000);
-    return () => { controller.abort(); window.clearTimeout(timer); if (idle !== undefined) window.cancelIdleCallback(idle); };
-  }, [route, cacheKey, current, state.route, enabled, includeHiddenForAdmin]);
+    timer = window.setTimeout(start, 150);
+    return () => { controller.abort(); window.clearTimeout(timer); };
+  }, [route, cacheKey, current, state.route, state.pending, enabled, includeHiddenForAdmin]);
   useEffect(() => {
     if (!enabled || !current) return undefined;
     const expiries = current.items.filter(item => item.salePrice && item.saleValidUntil)
@@ -156,5 +182,5 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
     return () => window.clearTimeout(timer);
   }, [enabled, current]);
   const retry = () => { invalidate(); setRevision(value => value + 1); };
-  return { data, retry, loading: enabled && !data && !error, updating: Boolean(data) && busy, error };
+  return { data, retry, displayingPrevious, loading: enabled && !data && !error, updating: Boolean(data) && busy, error };
 }

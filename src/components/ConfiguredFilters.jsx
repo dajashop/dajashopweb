@@ -1,3 +1,4 @@
+import { useCatalogPreparation } from '../context/CatalogPreparation.jsx';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useCatalogParams as useSearchParams } from '../context/CatalogParams.jsx';
 import ColorFilter from './ColorFilter.jsx';
@@ -15,6 +16,7 @@ export default function ConfiguredFilters({ products, configuration, serverFacet
   const [urlParams, setUrlParams] = useSearchParams();
   const params = configuredFilterParams(previewParams || urlParams, configuration, fixedGender);
   const [open, setOpen] = useState({});
+  const prepareFilter = useCatalogPreparation();
   const container = useRef(null);
   const contains = (node) => node.id === focusId || node.children.some(contains);
   const focusSectionId = focusId ? configuration.filters.find(contains)?.id : '';
@@ -35,6 +37,18 @@ export default function ConfiguredFilters({ products, configuration, serverFacet
     return () => window.clearTimeout(timer);
   }, [focusId, focusSectionId, orderKey]);
   const paramsKey = params.toString();
+  useEffect(() => {
+    if (!prepareFilter || previewParams || onParams) return undefined;
+    const controller = new AbortController();
+    const prepare = async () => {
+      for (const node of configuration.filters) {
+        if (controller.signal.aborted) return;
+        if (open[node.id] === true) await prepareFilter(node, new URLSearchParams(paramsKey), controller.signal);
+      }
+    };
+    void prepare().catch(() => {});
+    return () => controller.abort();
+  }, [open, paramsKey, configuration, prepareFilter, previewParams, onParams]);
   const filterAnchor = useFilterAnchor(paramsKey, container);
   const facets = useMemo(() => {
     if (serverFacets) return new Map(Object.entries(serverFacets));

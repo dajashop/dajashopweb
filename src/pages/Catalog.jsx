@@ -1,6 +1,8 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import './Catalog.css';
 import { useNavigationType, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
+import { CatalogPreparationContext } from '../context/CatalogPreparation.jsx';
+import { backgroundCatalogAllowed, prepareCatalogRoutes } from '../services/catalogPreparation.js';
 import { CatalogParamsContext } from '../context/CatalogParams.jsx';
 import { catalogUrl, decodeCatalogParams, filterUrlEntries, urlSlug, brandDisplayName } from '../utils/catalogUrls.js';
 import { motion } from 'framer-motion';
@@ -21,7 +23,7 @@ import { seoConfig } from '../config/seo.js';
 import usePublicListing from '../hooks/usePublicListing.js';
 import { catalogPageRequest } from '../utils/catalogPageRequest.js';
 import useFilterConfiguration from '../hooks/useFilterConfiguration.js';
-import { configuredFilterParams, configuredFilterChips } from '../utils/filterConfiguration.js';
+import { configuredFilterParams, configuredFilterChips, filterLeaves, selectionKey } from '../utils/filterConfiguration.js';
 import { diameterValue, isDiameterSpec } from '../utils/catalogFilters.js';
 import { formatProductSpecLabel } from '../utils/catalogPresentation.js';
 import { useAuth } from '../hooks/useAuth.js';
@@ -146,6 +148,25 @@ export default function Catalog({ department = 'satovi', seo }) {
   const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration) : sp, [sp, filterConfiguration]);
   const requestKey = catalogPageRequest(department, configuredParams);
   const listing = usePublicListing(requestKey, 'catalogPage', (bootstrapListing || !filterConfigurationLoading) && !filterConfigurationError, includeHiddenForAdmin);
+  const prepareFilter = useCallback(async (node, params, signal) => {
+    if (!filterConfiguration || !backgroundCatalogAllowed()) return;
+    const routes = [];
+    for (const leaf of filterLeaves({ filters: [node] })) {
+      if (!leaf.visible || leaf.style === 'range') continue;
+      const available = listing.data?.facets?.[leaf.id]?.values;
+      for (const option of leaf.options) {
+        if (!option.visible || (available && !available.some(value => value.value === option.id))) continue;
+        const next = new URLSearchParams(params);
+        const key = selectionKey(leaf);
+        const ids = new Set(next.getAll(key));
+        if (ids.has(option.id)) ids.delete(option.id); else ids.add(option.id);
+        next.delete(key); ids.forEach(id => next.append(key, id));
+        next.delete('page');
+        routes.push(catalogPageRequest(department, configuredFilterParams(next, filterConfiguration)));
+      }
+    }
+    await prepareCatalogRoutes(routes, includeHiddenForAdmin, signal);
+  }, [department, filterConfiguration, includeHiddenForAdmin, listing.data?.facets]);
   const loading = listing.loading;
   const err = listing.error;
   const departmentItems = listing.data?.items || [];
@@ -326,7 +347,7 @@ export default function Catalog({ department = 'satovi', seo }) {
         {err && <p role="status">Nova stranica trenutno nije dostupna. <button type="button" onClick={listing.retry}>Pokušaj ponovo</button></p>}
         <ProductGrid items={itemsToShow} />
         <div className="catalog__footer">
-          <div className="catalog__pagination">
+          <div className="catalog__pagination" inert={listing.displayingPrevious || undefined}>
             <Pagination
               page={page}
               total={totalCount}
@@ -343,7 +364,7 @@ export default function Catalog({ department = 'satovi', seo }) {
   };
 
   return (
-    <CatalogParamsContext.Provider value={[configuredParams, setSp]}><motion.div
+    <CatalogPreparationContext.Provider value={prepareFilter}><CatalogParamsContext.Provider value={[configuredParams, setSp]}><motion.div
       className="catalog-page w-full max-w-[95%] mx-auto px-4 sm:px-6 py-6"
       initial={false}
       animate={{ opacity: 1 }}
@@ -425,7 +446,7 @@ export default function Catalog({ department = 'satovi', seo }) {
 
             <div className="catalog__subrow">
               <div className="catalog__showing">
-                {listing.data ? `Ukupno ${totalCount} proizvoda` : 'Učitavanje proizvoda…'}
+                {listing.displayingPrevious ? (err ? 'Novi rezultati trenutno nisu dostupni' : 'Učitavanje novih rezultata…') : listing.data ? `Ukupno ${totalCount} proizvoda` : 'Učitavanje proizvoda…'}
                 {listing.updating && <span className="ml-2 inline-flex items-center gap-1 text-neutral-500" role="status"><Loader2 size={14} className="animate-spin" /> Osvežavanje…</span>}
                 {includeHiddenForAdmin && listing.data && (
                   <span className="ml-2 text-neutral-500">
@@ -455,6 +476,8 @@ export default function Catalog({ department = 'satovi', seo }) {
           </div>
 
           <motion.div
+            data-catalog-listing
+            data-listing-key={includeHiddenForAdmin ? `admin:${requestKey}` : requestKey}
             aria-busy={listing.updating || loading}
             initial={false}
             animate={{ opacity: 1 }}
@@ -465,6 +488,6 @@ export default function Catalog({ department = 'satovi', seo }) {
           </motion.div>
         </main>
       </div>
-    </motion.div></CatalogParamsContext.Provider>
+    </motion.div></CatalogParamsContext.Provider></CatalogPreparationContext.Provider>
   );
 }
