@@ -7,17 +7,37 @@ import FilterOptions from './FilterOptions.jsx';
 import DiameterFilter from './DiameterFilter.jsx';
 import RangeFilterSlider from './RangeFilterSlider.jsx';
 import SectionHeader from './FilterSectionHeader.jsx';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { configuredFilterParams, configuredFilterChips, filterConfiguredProducts, filterLeaves, movementFilterRole, numericFilterValue, optionMatches, orderedNodes, rangeKey, selectionKey, sourceValues } from '../utils/filterConfiguration.js';
 import './Filters.css';
 import useFilterAnchor from '../hooks/useFilterAnchor.js';
 
-export default function ConfiguredFilters({ products, configuration, serverFacets, fixedGender, onClose, params: previewParams, onParams, expandIds = [], showUnavailableOptions = false, focusId = '' }) {
+export default function ConfiguredFilters({ products, configuration, serverFacets, facetsPending = false, fixedGender, onClose, params: previewParams, onParams, expandIds = [], showUnavailableOptions = false, focusId = '' }) {
   const [urlParams, setUrlParams] = useSearchParams();
   const params = configuredFilterParams(previewParams || urlParams, configuration, fixedGender);
   const [open, setOpen] = useState({});
   const prepareFilter = useCatalogPreparation();
   const container = useRef(null);
+  const reduceMotion = useReducedMotion();
+  const brandSelection = JSON.stringify(filterLeaves(configuration)
+    .filter(node => node.sources.includes('brand'))
+    .map(node => [node.id, params.getAll(selectionKey(node)).sort()])
+    .filter(([, ids]) => ids.length));
+  const collectionSections = useMemo(() => configuration.filters
+    .filter(node => filterLeaves({ filters: [node] }).some(leaf => leaf.sources.includes('category')))
+    .map(node => node.id), [configuration]);
+  const previousBrand = useRef(null);
+  useEffect(() => {
+    if (facetsPending || previousBrand.current === brandSelection) return;
+    previousBrand.current = brandSelection;
+    if (brandSelection === '[]') return;
+    // Open once per brand choice, after its collection facets arrive. The
+    // visitor may still close it manually without subsequent renders reopening it.
+    setOpen(previous => {
+      if (collectionSections.every(id => previous[id] === true)) return previous;
+      return { ...previous, ...Object.fromEntries(collectionSections.map(id => [id, true])) };
+    });
+  }, [brandSelection, collectionSections, facetsPending]);
   const contains = (node) => node.id === focusId || node.children.some(contains);
   const focusSectionId = focusId ? configuration.filters.find(contains)?.id : '';
   const orderKey = configuration.filters.map((node) => `${node.id}:${node.priority}`).join('|');
@@ -102,8 +122,9 @@ export default function ConfiguredFilters({ products, configuration, serverFacet
     ));
     const { values, numbers } = facets.get(node.id) || { values: [], numbers: [] };
     const selected = params.getAll(selectionKey(node));
-    if (node.style === 'color') return <FilterOptions values={values} selected={selected} limit={(node.columns || 5) * 3}>{(visible) => <ColorFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} columns={node.columns || 5} showCounts={node.showCounts} />}</FilterOptions>;
-    if (node.style === 'material') return <FilterOptions values={values} selected={selected}>{(visible) => <MaterialFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} showCounts={node.showCounts} />}</FilterOptions>;
+    const optionLimit = node.sources.includes('brand') ? Infinity : 3;
+    if (node.style === 'color') return <FilterOptions values={values} selected={selected} limit={node.sources.includes('brand') ? Infinity : (node.columns || 5) * 3}>{(visible) => <ColorFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} columns={node.columns || 5} showCounts={node.showCounts} />}</FilterOptions>;
+    if (node.style === 'material') return <FilterOptions values={values} selected={selected} limit={optionLimit}>{(visible) => <MaterialFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} showCounts={node.showCounts} />}</FilterOptions>;
     if (node.style === 'range') {
       if (!numbers.length) return <p className="configured-filter-description">Nema dostupnih vrednosti.</p>;
       const minKey = rangeKey(node, 'min'); const maxKey = rangeKey(node, 'max');
@@ -123,13 +144,13 @@ export default function ConfiguredFilters({ products, configuration, serverFacet
       const from = params.has(minKey) ? min : lower;
       return <RangeFilterSlider node={node} lower={lower} upper={upper} from={from} to={max} onChange={setRange} />;
     }
-    return <FilterOptions values={values} selected={selected}>{(visible) => <div className="filter-list" role="group" aria-label={node.title} style={node.columns > 1 ? { display: 'grid', gridTemplateColumns: `repeat(${node.columns}, minmax(0, 1fr))` } : undefined}>{visible.map((value) => <label key={value.value} className={`filter-row ${selected.includes(value.value) ? 'is-active' : ''}`}>
+    return <FilterOptions values={values} selected={selected} limit={optionLimit}>{(visible) => <div className="filter-list" role="group" aria-label={node.title} style={node.columns > 1 ? { display: 'grid', gridTemplateColumns: `repeat(${node.columns}, minmax(0, 1fr))` } : undefined}>{visible.map((value) => <label key={value.value} className={`filter-row ${selected.includes(value.value) ? 'is-active' : ''}`}>
       <input className="filter-input-hidden" type="checkbox" checked={selected.includes(value.value)} onChange={() => toggle(node, value.value)} />
       <span className="filter-text">{value.label}</span>{node.showCounts && <span className="filter-count">{value.count}</span>}
       {selected.includes(value.value) && <div className="filter-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg></div>}
     </label>)}</div>}</FilterOptions>;
   };
-  return <aside ref={container} {...filterAnchor.events} className="filters card glass configured-filters" aria-label="Filteri kataloga" data-lenis-prevent>
+  return <aside ref={container} {...filterAnchor.events} className="filters card glass configured-filters" aria-label="Filteri kataloga" aria-busy={facetsPending} data-lenis-prevent>
     <div className="f-top"><h3 className="f-top-title">Filteri</h3><div className="f-top-actions">{chips.length > 0 && <><span className="f-badge">{chips.length}</span><button type="button" className="f-clear" onClick={clearAll}>Očisti sve</button></>}</div></div>
     <div className="f-scroll-container">
     {orderedNodes(configuration.filters).filter(available).map((node) => {
@@ -138,7 +159,7 @@ export default function ConfiguredFilters({ products, configuration, serverFacet
       return <div className={`f-section ${expanded ? 'is-open' : ''}`} data-filter-id={node.id} key={node.id}>
         <SectionHeader title={node.title} count={active} onClear={() => clearNode(node)} isOpen={expanded} onToggle={() => setOpen((previous) => ({ ...previous, [node.id]: !expanded }))} />
         <AnimatePresence initial={false}>
-          {expanded && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="f-content-wrapper"><div className="f-content-inner">{node.description && <p className="configured-filter-description">{node.description}</p>}{content(node)}</div></motion.div>}
+          {expanded && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }} className="f-content-wrapper"><div className="f-content-inner">{node.description && <p className="configured-filter-description">{node.description}</p>}{content(node)}</div></motion.div>}
         </AnimatePresence>
       </div>;
     })}

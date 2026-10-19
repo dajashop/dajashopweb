@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './Filters.css';
 import { useCatalogParams as useSearchParams } from '../context/CatalogParams.jsx';
 import catalog from '../services/CatalogService.js';
@@ -139,6 +139,14 @@ function LegacyFilters({ products, fixedGender, onClose }) {
     category: false,
     price: true,
   });
+
+  const brandSelection = JSON.stringify(sp.getAll('brand').sort());
+  const previousBrand = useRef(null);
+  useEffect(() => {
+    if (previousBrand.current === brandSelection) return;
+    previousBrand.current = brandSelection;
+    if (brandSelection !== '[]') setOpenSections(previous => ({ ...previous, category: true }));
+  }, [brandSelection]);
 
   const toggleSection = (sec) => {
     setOpenSections((prev) => ({ ...prev, [sec]: !prev[sec] }));
