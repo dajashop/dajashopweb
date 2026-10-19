@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
 import { fetchProductBySlug } from '../services/products';
 import './CartImagePreview.css';
@@ -20,10 +20,16 @@ export default function CartImagePreview({ item, onClose }) {
   const [galleryError, setGalleryError] = useState(false);
   const move = delta => setIndex(current => (current + delta + images.length) % images.length);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = dialog.current;
     const previousFocus = document.activeElement;
     const overflow = document.body.style.overflow;
+    const root = document.documentElement;
+    const scrollbarGutter = root.style.scrollbarGutter;
+    // Reserve the existing scrollbar space before locking the page.
+    if (window.innerWidth > root.clientWidth && getComputedStyle(root).scrollbarGutter === 'auto') {
+      root.style.scrollbarGutter = 'stable';
+    }
     const lenis = window.lenis;
     const wasStopped = lenis?.isStopped;
     document.body.style.overflow = 'hidden';
@@ -33,6 +39,7 @@ export default function CartImagePreview({ item, onClose }) {
       element.close();
       document.body.style.overflow = overflow;
       if (!wasStopped) lenis?.start();
+      root.style.scrollbarGutter = scrollbarGutter;
       if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
     };
   }, []);
