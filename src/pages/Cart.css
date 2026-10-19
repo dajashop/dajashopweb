@@ -16,7 +16,7 @@
 
 /* Glavni kontejner */
 .cart.container {
-  width: min(1100px, 92vw);
+  width: min(1600px, 92vw);
   margin-inline: auto;
   padding: clamp(16px, 2.6vw, 32px);
 }
@@ -70,15 +70,12 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .cart .glass {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.06),
-    rgba(255, 255, 255, 0.02)
-  );
-  backdrop-filter: saturate(140%) blur(14px);
-  -webkit-backdrop-filter: saturate(140%) blur(14px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--surface) 70%, transparent), color-mix(in oklab, var(--surface) 88%, transparent));
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid color-mix(in oklab, var(--color-accent, #d2d2d7) 45%, transparent);
+  border-radius: 16px;
 }
 
 /* Empty State */
@@ -497,9 +494,10 @@
   font-weight: 700;
 }
 .cart .btn-primary {
-  background: var(--primary);
-  color: var(--on-primary, #111);
-  border: 1px solid var(--primary);
+  background: var(--text);
+  color: #fff;
+  border: 1px solid transparent;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
 }
 .cart .btn-ghost {
   background: rgba(255, 255, 255, 0.08);
@@ -729,8 +727,8 @@
     justify-content: center;
     padding: 14px;
     font-size: 1rem;
-    background: var(--primary);
-    color: var(--on-primary);
+    background: var(--text);
+    color: #fff;
     border-radius: 12px;
   }
   .cart .promo-box {
