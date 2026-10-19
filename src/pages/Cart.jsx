@@ -245,7 +245,6 @@ export default function Cart() {
     const id = item.lineId || item.id;
     const nextItems = items.filter(active => (active.lineId || active.id) !== id);
     dispatch({ type: 'REMOVE', id });
-    flash('Sačuvano za kasnije', item.name, 'success');
     await refreshPromo(nextItems);
   };
 
@@ -266,7 +265,6 @@ export default function Cart() {
       dispatch({ type: 'ADD', item: restored, qty });
       const nextItems = active ? currentItems.map(entry => (entry.lineId || entry.id) === id ? { ...entry, qty: entry.qty + qty } : entry) : [...currentItems, { ...restored, qty }];
       await refreshPromo(nextItems);
-      flash('Vraćeno u korpu', item.name, 'success');
     } catch (error) {
       flash('Proizvod nije vraćen', error.message || 'Pokušajte ponovo.', 'error');
     } finally { setRestoring(null); }
@@ -564,7 +562,7 @@ export default function Cart() {
       )}
       {saved.items.length > 0 && <section className="cart__saved" aria-labelledby="saved-cart-title">
         <div className="cart__saved-heading"><h2 id="saved-cart-title"><Bookmark size={20} aria-hidden="true" /> Sačuvano za kasnije <span>{saved.items.length}</span></h2>
-          <p>Ovi proizvodi nisu uključeni u zbir ni porudžbinu.</p>
+          <p>Proizvodi sačuvani za kasnije nisu deo trenutne porudžbine. Vratite ih u korpu kada budete želeli da ih kupite.</p>
         </div>
         <div className="cart__saved-list">
           {saved.items.map(item => <article key={item.lineId || item.id} className="cart__saved-item">
