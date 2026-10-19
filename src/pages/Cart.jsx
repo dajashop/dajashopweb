@@ -351,7 +351,7 @@ export default function Cart() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="cart__rows" data-lenis-prevent-wheel tabIndex={0} role="region" aria-label="Proizvodi u korpi">
+            <div className="cart__rows" role="region" aria-label="Proizvodi u korpi">
               <AnimatePresence initial={false} mode="popLayout">
                 {items.map((it) => (
                   <motion.div
@@ -562,7 +562,7 @@ export default function Cart() {
         <div className="cart__saved-heading"><h2 id="saved-cart-title"><Bookmark size={20} aria-hidden="true" /> Sačuvano za kasnije <span>{saved.items.length}</span></h2>
           <p>Proizvodi sačuvani za kasnije nisu deo trenutne porudžbine. Vratite ih u korpu kada budete želeli da ih kupite.</p>
         </div>
-        <div className="cart__saved-list" data-lenis-prevent-wheel tabIndex={0} role="region" aria-label="Proizvodi sačuvani za kasnije">
+        <div className="cart__saved-list" role="region" aria-label="Proizvodi sačuvani za kasnije">
           {saved.items.map(item => <article key={item.lineId || item.id} className="cart__saved-item">
             <button type="button" className="cart__image-button" onClick={() => setPreviewItem(item)} aria-label={`Uvećaj slike: ${item.name}`}>
               <ShoppingBag className="cart__image-fallback" size={24} aria-hidden="true" />
