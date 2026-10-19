@@ -880,3 +880,24 @@
   .cart .cart__saved-actions { grid-column: 2; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; }
   .cart .cart__saved-heading h2 { font-size: 19px; }
 }
+
+@media (min-width: 1024px) {
+  .cart .cart__rows,
+  .cart .cart__saved-list {
+    max-height: min(540px, 65dvh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: #b9bec7 transparent;
+    padding: 4px 8px 4px 4px;
+    scroll-padding-block: 8px;
+  }
+  .cart .cart__saved-list { max-height: min(420px, 55dvh); }
+  .cart .cart__rows::-webkit-scrollbar,
+  .cart .cart__saved-list::-webkit-scrollbar { width: 8px; }
+  .cart .cart__rows::-webkit-scrollbar-thumb,
+  .cart .cart__saved-list::-webkit-scrollbar-thumb { background: #b9bec7; border: 2px solid #fafafa; border-radius: 8px; }
+}
+.cart .cart__rows:focus-visible,
+.cart .cart__saved-list:focus-visible { outline: 2px solid #737b87; outline-offset: 3px; border-radius: 10px; }
