@@ -38,12 +38,15 @@ function ProductCard({ p, priority = false, blankImage = false }) {
 
   // Slider
   const [page, setPage] = useState(0);
-  const hoverTimer = useRef();
-  const cancelHover = () => window.clearTimeout(hoverTimer.current);
-  useEffect(() => {
-    if (blankImage) window.clearTimeout(hoverTimer.current);
-    return () => window.clearTimeout(hoverTimer.current);
-  }, [blankImage, p.id]);
+  const unlockTimer = useRef();
+  const lockTimer = useRef();
+  const hover = useRef({ inside: false, unlocked: false, x: 0, leftAt: 0 });
+  const resetHover = () => {
+    window.clearTimeout(unlockTimer.current);
+    window.clearTimeout(lockTimer.current);
+    hover.current = { inside: false, unlocked: false, x: 0, leftAt: 0 };
+  };
+  useEffect(() => () => resetHover(), [blankImage, p.id, p.images]);
 
   const imgs = useMemo(() => {
     const arr = Array.isArray(p.images) && p.images.length
@@ -94,15 +97,49 @@ function ProductCard({ p, priority = false, blankImage = false }) {
   };
 
   const setIndex = (index) => {
-    cancelHover();
     if (index === imageIndex) return;
     setPage(index);
   };
 
-  const scheduleHover = (event, index) => {
-    if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
-    cancelHover();
-    if (index !== imageIndex) hoverTimer.current = window.setTimeout(() => setIndex(index), 200);
+  const selectFromHover = (element) => {
+    const state = hover.current;
+    if (!state.inside || !state.unlocked || !imgs.length) return;
+    const { left, width } = element.getBoundingClientRect();
+    if (!width) return;
+    const progress = Math.max(0, Math.min(1, (state.x - left) / width));
+    const index = Math.min(imgs.length - 1, Math.floor(progress * imgs.length));
+    setPage(previous => previous === index ? previous : index);
+  };
+  const enterGallery = (event) => {
+    if (!['mouse', 'pen'].includes(event.pointerType)) return;
+    const state = hover.current;
+    // Check elapsed time too, so a throttled background timer cannot extend
+    // the half-second grace period beyond the requested duration.
+    if (state.leftAt && Date.now() - state.leftAt >= 500) state.unlocked = false;
+    window.clearTimeout(lockTimer.current);
+    window.clearTimeout(unlockTimer.current);
+    state.inside = true; state.x = event.clientX; state.leftAt = 0;
+    const element = event.currentTarget;
+    if (state.unlocked) { selectFromHover(element); return; }
+    unlockTimer.current = window.setTimeout(() => {
+      if (!hover.current.inside) return;
+      hover.current.unlocked = true;
+      selectFromHover(element);
+    }, 200);
+  };
+  const moveGallery = (event) => {
+    if (!['mouse', 'pen'].includes(event.pointerType)) return;
+    hover.current.x = event.clientX;
+    selectFromHover(event.currentTarget);
+  };
+  const leaveGallery = () => {
+    window.clearTimeout(unlockTimer.current);
+    window.clearTimeout(lockTimer.current);
+    hover.current.inside = false;
+    hover.current.leftAt = Date.now();
+    lockTimer.current = window.setTimeout(() => {
+      if (!hover.current.inside) hover.current.unlocked = false;
+    }, 500);
   };
 
   const showSliderControls = imgs.length > 1;
@@ -309,6 +346,10 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                 {imgs.length > 1 && (
                   <div
                     className="catalog-image-dots"
+                    onPointerEnter={enterGallery}
+                    onPointerMove={moveGallery}
+                    onPointerLeave={leaveGallery}
+                    onPointerCancel={resetHover}
                     role="tablist"
                     aria-label={`Galerija slika proizvoda ${p.name}`}
                   >
@@ -318,9 +359,6 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                         <motion.button
                           key={idx}
                           type="button"
-                          onPointerEnter={event => scheduleHover(event, idx)}
-                          onPointerLeave={cancelHover}
-                          onBlur={cancelHover}
                           onFocus={() => setIndex(idx)}
                           tabIndex={active ? 0 : -1}
                           onKeyDown={event => {
