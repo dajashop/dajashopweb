@@ -901,3 +901,13 @@
 }
 .cart .cart__rows:focus-visible,
 .cart .cart__saved-list:focus-visible { outline: 2px solid #737b87; outline-offset: 3px; border-radius: 10px; }
+
+@media (min-width: 1024px) {
+  .cart .cart__summary-panel {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+  }
+  .cart .cart__summary-panel .cart__total { margin-top: auto; }
+  .cart .cart__summary-panel > * { flex-shrink: 0; }
+}
