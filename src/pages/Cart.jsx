@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './Cart.css';
 import { Link } from 'react-router-dom';
 import { useCart } from '../hooks/useCart.js';
+import CartImagePreview from '../components/CartImagePreview.jsx';
 import EngravingSummary from '../components/engraving/EngravingSummary';
 import { useUndo } from '../hooks/useUndo.js';
 import { usePromo } from '../hooks/usePromo.js';
@@ -9,10 +10,12 @@ import { useAuth } from '../hooks/useAuth.js'; // NOVO: Importujemo Auth
 import { money } from '../utils/currency.js';
 import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 // eslint-disable-next-line no-unused-vars
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import ConfirmModal from '../components/modals/ConfirmModal.jsx';
 import {
   ShoppingBag,
+  ZoomIn,
+  Pencil,
   ShieldCheck,
   Trash2,
   ArrowRight,
@@ -156,6 +159,8 @@ function PromoCodeSection({
 }
 
 export default function Cart() {
+  const [previewItem, setPreviewItem] = useState(null);
+  const reduceMotion = useReducedMotion();
   const { items, total, dispatch } = useCart();
   const { showUndo } = useUndo();
   const { user } = useAuth(); // NOVO: Uzimamo ulogovanog korisnika
@@ -249,13 +254,14 @@ export default function Cart() {
   return (
     <div className="cart container">
       <SEOHead title="Korpa" noIndex={true} />
+      {previewItem && <CartImagePreview key={previewItem.lineId || previewItem.id} item={previewItem} onClose={() => setPreviewItem(null)} />}
 
       <ConfirmModal
         isOpen={showClearModal}
         onClose={() => setShowClearModal(false)}
         onConfirm={performClear}
         title="Isprazni korpu?"
-        description="Da li ste sigurni da želite da uklonite sve proizvode? Ovu akciju nije moguće opozvati."
+        description="Da li ste sigurni da želite da uklonite sve proizvode? Sve stavke biće uklonjene iz korpe."
         isDanger={true}
       />
 
@@ -304,35 +310,34 @@ export default function Cart() {
                   <motion.div
                     key={it.lineId || it.id}
                     className="cart__row"
-                    layout
-                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                    animate={{ opacity: 1, height: 'auto', marginBottom: 12 }}
-                    exit={{
-                      opacity: 0,
-                      height: 0,
-                      marginBottom: 0,
-                      scale: 0.95,
-                    }}
-                    transition={{ duration: 0.25 }}
+                    layout="position"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.18 }}
                   >
-                    <img
-                      className="cart__thumb"
-                      src={it.thumb || it.image}
-                      alt={it.name}
-                      loading="lazy"
-                    />
+                    <button type="button" className="cart__image-button" onClick={() => setPreviewItem(it)} aria-label={`Uvećaj slike: ${it.name}`}>
+                      <ShoppingBag className="cart__image-fallback" size={28} aria-hidden="true" />
+                      {(it.image || it.thumb) && <img key={it.image || it.thumb} className="cart__thumb" src={it.image || it.thumb} alt={it.name} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
+                      <span className="cart__zoom"><ZoomIn size={16} aria-hidden="true" /></span>
+                    </button>
 
                     <div className="cart__meta">
                       <Link to={`/product/${it.slug}`} className="cart__name">
                         {it.name}
                       </Link>
                       <div className="cart__brand">{it.brand}</div>
-                      <EngravingSummary item={it} editable={Boolean(it.engraving) || (it.department?.slug || it.department || 'satovi') === 'satovi'} />
+                      {(Boolean(it.engraving) || (it.department?.slug || it.department || 'satovi') === 'satovi') && <div className="cart__engraving">
+                        {!it.engraving && <Pencil size={13} aria-hidden="true" />}
+                        <EngravingSummary item={it} editable />
+                      </div>}
                     </div>
 
                     <div className="cart__qtyWrap">
                       <button
                         className="qty__btn"
+                        type="button"
+                        aria-label={it.qty === 1 ? `Ukloni ${it.name}` : `Smanji količinu: ${it.name}`}
                         onClick={() => handleDecrease(it)}
                       >
                         <Minus size={14} />
@@ -342,6 +347,9 @@ export default function Cart() {
 
                       <button
                         className="qty__btn"
+                        type="button"
+                        aria-label={`Povećaj količinu: ${it.name}`}
+                        disabled={it.qty >= 99}
                         onClick={() =>
                           dispatch({
                             type: 'SET_QTY',
@@ -360,6 +368,8 @@ export default function Cart() {
 
                     <button
                       className="cart__remove"
+                      type="button"
+                      aria-label={`Ukloni iz korpe: ${it.name}`}
                       onClick={() => performRemove(it)}
                       title="Ukloni"
                     >
