@@ -288,14 +288,14 @@
 
 .catalog__footer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 16px;
   margin-top: 32px;
 }
 
 .catalog__pagination {
-  grid-column: 2;
+  grid-column: 1;
   min-width: 0;
   width: 100%;
 }

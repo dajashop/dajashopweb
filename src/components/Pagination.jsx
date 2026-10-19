@@ -12,18 +12,22 @@ export default function Pagination({ page, total, perPage, onChange, getPageUrl 
     if (!nav) return undefined;
     const update = () => {
       const width = nav.clientWidth;
-      const arrowCount = width <= 480 ? 2 : 4;
-      const arrowWidth = 40;
-      const gap = 6;
-      const pageButtonWidth = 36;
-      const availableForPages = width - arrowCount * arrowWidth - Math.max(0, arrowCount - 1) * gap;
+      // Hidden/transitional layouts must not collapse the page window to one.
+      if (!width) return;
+      const buttons = [...nav.querySelectorAll('.pagination__btn')];
+      const arrows = buttons.filter(button => button.querySelector('svg') && window.getComputedStyle(button).display !== 'none');
+      const arrowWidth = arrows.reduce((sum, button) => sum + button.getBoundingClientRect().width, 0);
+      const gap = parseFloat(window.getComputedStyle(nav).columnGap) || 6;
+      const pageButtonWidth = Math.max(36, ...buttons.filter(button => !button.querySelector('svg')).map(button => button.getBoundingClientRect().width));
+      const availableForPages = width - arrowWidth - Math.max(0, arrows.length - 1) * gap;
       setPageSlots(Math.max(1, Math.min(10, Math.floor(availableForPages / (pageButtonWidth + gap)))));
     };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(nav);
-    return () => observer.disconnect();
-  }, []);
+    window.addEventListener('resize', update);
+    return () => { observer.disconnect(); window.removeEventListener('resize', update); };
+  }, [page, pages]);
   if (pages <= 1) return null;
   const visiblePageCount = Math.min(pages, pageSlots);
   const firstVisiblePage = Math.max(1, Math.min(page - Math.floor((visiblePageCount - 1) / 2), pages - visiblePageCount + 1));
