@@ -1,6 +1,6 @@
 import React from 'react';
 // eslint-disable-next-line no-unused-vars
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Truck, MapPin, CheckCircle2, MessageSquare } from 'lucide-react'; // Dodata MessageSquare
 import GoogleMapEmbed from '../privacy/GoogleMapEmbed.jsx';
 
@@ -20,46 +20,38 @@ export default function ShippingSection({
   orderNote,
   setOrderNote,
 }) {
+  const reduceMotion = useReducedMotion();
+  const detailTransition = {
+    height: { duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] },
+    opacity: { duration: reduceMotion ? 0 : 0.14 },
+    marginTop: { duration: reduceMotion ? 0 : 0.24 },
+    marginBottom: { duration: reduceMotion ? 0 : 0.24 },
+  };
   return (
     <>
-           {' '}
       <section className="checkout-section card glass">
-               {' '}
         <div className="section-header">
-                    <div className="step-badge">2</div>         {' '}
-          <h2>Način isporuke</h2>       {' '}
+          <div className="step-badge">2</div>
+          <h2>Način isporuke</h2>
         </div>
-               {' '}
         <div className="shipping-options">
-                   {' '}
           <label
             className={`radio-card ${
               shippingMethod === 'courier' ? 'selected' : ''
             }`}
-            onClick={() => setShippingMethod('courier')}
           >
-                       {' '}
             <div className="radio-info">
-                            <Truck size={20} className="text-primary" />       
-                   {' '}
+              <Truck size={20} className="text-primary" />
               <div>
-                               {' '}
-                <span className="radio-title">Isporuka kurirskom službom</span> 
-                             {' '}
+                <span className="radio-title">Isporuka kurirskom službom</span>
                 <span className="radio-desc">
-                                   {' '}
                   {isFreeShipping
                     ? 'Besplatna dostava'
                     : `Cena: ${money(COURIER_COST)}`}
-                                 {' '}
                 </span>
-                             {' '}
               </div>
-                         {' '}
             </div>
-                       {' '}
             <div className="radio-price">
-                           {' '}
               {isFreeShipping ? (
                 <span
                   className="text-success"
@@ -74,80 +66,62 @@ export default function ShippingSection({
               ) : (
                 <span>{money(COURIER_COST)}</span>
               )}
-                         {' '}
             </div>
-                       {' '}
             <input
               type="radio"
               name="shipping"
               value="courier"
               checked={shippingMethod === 'courier'}
-              hidden
-              readOnly
+              className="checkout-choice-input"
+              onChange={() => setShippingMethod('courier')}
             />
-                       {' '}
             <div className="radio-check">
-                            <CheckCircle2 size={16} />           {' '}
+              <CheckCircle2 size={16} />
             </div>
-                     {' '}
           </label>
-                   {' '}
           <label
             className={`radio-card ${
               shippingMethod === 'pickup' ? 'selected' : ''
             }`}
-            onClick={() => setShippingMethod('pickup')}
           >
-                       {' '}
             <div className="radio-info">
-                            <MapPin size={20} className="text-primary" />       
-                   {' '}
+              <MapPin size={20} className="text-primary" />
               <div>
-                               {' '}
-                <span className="radio-title">Preuzimanje u prodavnici</span>   
-                           {' '}
+                <span className="radio-title">Preuzimanje u prodavnici</span>
                 <span className="radio-desc">
-                                    Niš, Podzemni prolaz lokal C31 (Uvek
-                  besplatno)                {' '}
+                                    Niš, Podzemni prolaz lokal C31 (Uvek
+                  besplatno)
                 </span>
-                             {' '}
               </div>
-                         {' '}
             </div>
-                       {' '}
             <div
               className="radio-price"
               style={{ textAlign: 'right', minWidth: '100px' }}
             >
-                            <span className="text-success">Besplatna</span>     
-                   {' '}
+              <span className="text-success">Besplatna</span>
             </div>
-                       {' '}
             <input
               type="radio"
               name="shipping"
               value="pickup"
               checked={shippingMethod === 'pickup'}
-              hidden
-              readOnly
+              className="checkout-choice-input"
+              onChange={() => setShippingMethod('pickup')}
             />
-                       {' '}
             <div className="radio-check">
-                            <CheckCircle2 size={16} />           {' '}
+              <CheckCircle2 size={16} />
             </div>
-                     {' '}
           </label>
-                 {' '}
         </div>
         {/* --- [NOVO] PROFESIONALNA NAPOMENA ZA KURIRA (samo za kurirsku službu) --- */}
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {shippingMethod === 'courier' && (
             <motion.div
-              className="mt-6 full-width"
-              initial={{ opacity: 0, y: 10, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: 'auto' }}
-              exit={{ opacity: 0, y: 10, height: 0 }}
-              transition={{ duration: 0.3 }}
+              className="checkout-shipping-note full-width"
+              initial={{ opacity: 0, height: 0, marginTop: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginTop: 24 }}
+              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+              transition={detailTransition}
               style={{ overflow: 'hidden' }}
             >
               <label
@@ -164,7 +138,7 @@ export default function ShippingSection({
 
               <div
                 // Imitacija input-group stila korišćenjem tematskih varijabli
-                className="w-full bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] focus-within:border-[var(--color-primary)] transition-colors duration-200"
+                className="checkout-note-field w-full bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] focus-within:border-[var(--color-primary)] transition-colors duration-200"
               >
                 <textarea
                   id="order-note-textarea"
@@ -189,25 +163,20 @@ export default function ShippingSection({
           )}
         </AnimatePresence>
         {/* -------------------------------------------------------------------------- */}
-             {' '}
       </section>
-           {' '}
-      <AnimatePresence>
-               {' '}
+      <AnimatePresence initial={false}>
         {shippingMethod === 'pickup' && (
           <motion.section
             className="checkout-section card glass pickup-details"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 20 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={detailTransition}
             style={{ overflow: 'hidden', padding: 0 }}
           >
-                       {' '}
             <div style={{ padding: '24px' }}>
-                            <h3>Lokacija prodavnice:</h3>             {' '}
+              <h3>Lokacija prodavnice:</h3>
               <div className="location-box" style={{ marginTop: '12px' }}>
-                               {' '}
                 <p
                   style={{
                     marginBottom: '4px',
@@ -215,20 +184,15 @@ export default function ShippingSection({
                     color: 'var(--text)',
                   }}
                 >
-                                    Daja Shop Niš                {' '}
+                  Daja Shop Niš
                 </p>
-                               {' '}
                 <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-                                    Podzemni prolaz lokal C31, Obrenovićeva bb,
-                  Niš                {' '}
+                                    Podzemni prolaz lokal C31, Obrenovićeva bb,
+                  Niš
                 </p>
-                             {' '}
               </div>
-                         {' '}
             </div>
-                       {' '}
             <div className="map-container">
-                           {' '}
               <GoogleMapEmbed
                 className="map-iframe"
                 title="Daja Shop Lokacija"
@@ -239,14 +203,10 @@ export default function ShippingSection({
                 referrerPolicy="no-referrer-when-downgrade"
                 src={MAP_EMBED_URL}
               />
-                         {' '}
             </div>
-                     {' '}
           </motion.section>
         )}
-             {' '}
       </AnimatePresence>
-         {' '}
     </>
   );
 }

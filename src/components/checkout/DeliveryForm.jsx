@@ -5,7 +5,7 @@
   useMemo,
   useCallback,
 } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   User,
   Mail,
@@ -81,6 +81,7 @@ export default function DeliveryForm({
   flash,
   // NOVO: Props za napomenu
 }) {
+  const reduceMotion = useReducedMotion();
   const emailInputRef = useRef(null);
   const addressSelectorRef = useRef(null);
   const { googleAllowed, requestGooglePermission } = useConsent();
@@ -779,14 +780,14 @@ export default function DeliveryForm({
         </div>
 
         {/* ADRESA (Pojavljuje se samo za kurira) */}
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {requiredForCourier && (
             <motion.div
               className="full-width form-grid"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25 }}
+              transition={{ height: { duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }, opacity: { duration: reduceMotion ? 0 : 0.12 } }}
               // Senka fokusiranog polja i lista predloga moraju ostati vidljive.
               // checkout-section već kontroliše slojeve iznad narednih sekcija.
               style={{ gridColumn: '1 / -1', overflow: 'visible' }}
