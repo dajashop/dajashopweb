@@ -71,7 +71,7 @@ export default function CartImagePreview({ item, onClose }) {
       }}>
       <div className="cart-preview__panel" data-lenis-prevent>
         <header className="cart-preview__header">
-          <div><h2 id={titleId}>{item.name}</h2><p>{item.brand}</p></div>
+          <div className="cart-preview__title"><p>{item.brand}</p><h2 id={titleId}>{item.name}</h2></div>
           <button type="button" className="cart-preview__button" aria-label="Zatvori pregled slike" onClick={onClose}><X size={22} /></button>
         </header>
         <div className="cart-preview__stage"
@@ -99,7 +99,7 @@ export default function CartImagePreview({ item, onClose }) {
               <img src={url} alt="" loading="lazy" />
             </button>)}
           </div>}
-          <p role="status">{fetching ? 'Učitavanje galerije…' : galleryError ? 'Ostale slike trenutno nisu dostupne.' : `${index + 1} / ${images.length || 1}`}</p>
+          <p role="status">{fetching ? 'Učitavanje galerije…' : galleryError ? 'Ostale slike trenutno nisu dostupne.' : `Slika ${index + 1} od ${images.length || 1}`}</p>
         </footer>
       </div>
     </dialog>
