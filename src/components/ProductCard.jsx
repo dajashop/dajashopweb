@@ -1,4 +1,4 @@
-import { lazy, memo, useMemo, useState } from 'react';
+import { lazy, memo, useEffect, useMemo, useRef, useState } from 'react';
 import './ProductCard.css';
 import Link from './ProductLink.jsx';
 import { money } from '../utils/currency.js';
@@ -9,7 +9,7 @@ import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { Edit3, Heart, Trash2, Star, Eye, EyeOff } from 'lucide-react'; // Dodate ikonice
 import { adminCatalogApi, isAdminEmail } from '../services/dajaPlatform';
 import { deleteProduct, saveProduct } from '../services/products';
-import ProgressiveImage from './ui/ProgressiveImage.jsx';
+import CatalogCardImage from './CatalogCardImage.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 
 // Uvozimo Modal
@@ -38,6 +38,12 @@ function ProductCard({ p, priority = false, blankImage = false }) {
 
   // Slider
   const [page, setPage] = useState(0);
+  const hoverTimer = useRef();
+  const cancelHover = () => window.clearTimeout(hoverTimer.current);
+  useEffect(() => {
+    if (blankImage) window.clearTimeout(hoverTimer.current);
+    return () => window.clearTimeout(hoverTimer.current);
+  }, [blankImage, p.id]);
 
   const imgs = useMemo(() => {
     const arr = Array.isArray(p.images) && p.images.length
@@ -88,8 +94,15 @@ function ProductCard({ p, priority = false, blankImage = false }) {
   };
 
   const setIndex = (index) => {
+    cancelHover();
     if (index === imageIndex) return;
     setPage(index);
+  };
+
+  const scheduleHover = (event, index) => {
+    if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+    cancelHover();
+    if (index !== imageIndex) hoverTimer.current = window.setTimeout(() => setIndex(index), 200);
   };
 
   const showSliderControls = imgs.length > 1;
@@ -254,7 +267,6 @@ function ProductCard({ p, priority = false, blankImage = false }) {
         {/* Slider */}
         <div className={`relative ${isEyewear ? 'aspect-square' : 'aspect-4/5'} w-full overflow-hidden bg-white`}>
           <motion.div
-            key={page}
             initial={false}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0 }}
@@ -273,10 +285,9 @@ function ProductCard({ p, priority = false, blankImage = false }) {
               className="block w-full h-full"
               draggable={false}
             >
-              {!blankImage && <ProgressiveImage
+              {!blankImage && <CatalogCardImage
                 src={activeImageSrc}
-                loading={priority ? 'eager' : 'lazy'}
-                fetchPriority={priority ? 'high' : 'auto'}
+                priority={priority}
                 thumbSrc={
                   imageIndex === 0
                     ? p.thumbnailUrl || imgs[imageIndex]?.thumb
@@ -307,7 +318,19 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                         <motion.button
                           key={idx}
                           type="button"
+                          onPointerEnter={event => scheduleHover(event, idx)}
+                          onPointerLeave={cancelHover}
+                          onBlur={cancelHover}
                           onFocus={() => setIndex(idx)}
+                          tabIndex={active ? 0 : -1}
+                          onKeyDown={event => {
+                            const target = event.key === 'ArrowRight' ? (idx + 1) % imgs.length
+                              : event.key === 'ArrowLeft' ? (idx - 1 + imgs.length) % imgs.length
+                                : event.key === 'Home' ? 0 : event.key === 'End' ? imgs.length - 1 : null;
+                            if (target === null) return;
+                            event.preventDefault();
+                            event.currentTarget.parentElement.querySelectorAll('[role="tab"]')[target]?.focus();
+                          }}
                           onClick={(e) => {
                             e.preventDefault();
                             setIndex(idx);

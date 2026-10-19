@@ -29,10 +29,23 @@ export async function prepareCatalogRoutes(routes, admin, signal) {
   }
 }
 // Native images paint independently in the UI. These low-priority requests
-// only warm the next page and never gate rendering of any current card.
-export async function preloadCatalogImages(items, signal) {
-  const urls = [...new Set(items.map(item => item.thumbnailUrl || item.images?.[0]?.thumb
-    || item.images?.[0]?.url || item.primaryImageUrl || item.mainImageUrl || item.image).filter(url => url && (warmedImages.get(url) || 0) < Date.now()))];
+// warm page covers and extra gallery photos without gating any current card.
+export async function preloadCatalogImages(items, signal, { gallery = false, concurrency = 3 } = {}) {
+  const candidates = [];
+  if (gallery) {
+    // Round-robin: load each card's second photo before anyone's third photo.
+    const depth = Math.max(0, ...items.map(item => item.images?.length || 0));
+    for (let index = 1; index < depth; index++) {
+      for (const item of items) {
+        const image = item.images?.[index];
+        candidates.push(typeof image === 'string' ? image : image?.url);
+      }
+    }
+  } else {
+    candidates.push(...items.map(item => item.thumbnailUrl || item.images?.[0]?.thumb
+      || item.images?.[0]?.url || item.primaryImageUrl || item.mainImageUrl || item.image));
+  }
+  const urls = [...new Set(candidates.filter(url => url && (warmedImages.get(url) || 0) < Date.now()))];
   let cursor = 0;
   const worker = async () => {
     while (!signal.aborted && cursor < urls.length) {
@@ -54,7 +67,7 @@ export async function preloadCatalogImages(items, signal) {
       });
     }
   };
-  await Promise.all(Array.from({ length: Math.min(3, urls.length) }, worker));
+  await Promise.all(Array.from({ length: Math.min(concurrency, urls.length) }, worker));
 }
 export async function waitForVisibleCatalogImages(route, signal) {
   const root = document.querySelector('[data-catalog-listing]');

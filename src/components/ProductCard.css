@@ -156,3 +156,27 @@
     min-height: 1.25em;
   }
 }
+
+/* Stable hit targets keep an expanding active dot from triggering its neighbor. */
+.catalog-image-dots { gap: 4px; }
+.catalog-image-dot, .catalog-image-dot.is-active {
+  width: 20px; height: 20px; border: 0; background: transparent; transition: none;
+}
+.catalog-image-dot::before {
+  content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 8px; height: 8px; border: 1px solid var(--color-border, #e5e7eb); border-radius: 999px;
+  background: color-mix(in oklab, var(--color-surface, #fff) 40%, transparent);
+  transition: width 140ms ease, background-color 140ms ease;
+}
+.catalog-image-dot.is-active::before { width: 18px; background: var(--color-text, #111); }
+.catalog-card-gallery { display: block; width: 100%; height: 100%; position: relative; overflow: hidden; }
+.catalog-card-gallery__layer { position: absolute; inset: 0; display: block; }
+.catalog-card-gallery__layer.is-pending { opacity: 0; pointer-events: none; }
+.catalog-card-gallery__layer.is-previous { z-index: 0; }
+.catalog-card-gallery__layer.is-shown, .catalog-card-gallery__layer.is-revealing { z-index: 1; }
+.catalog-card-gallery__layer.is-revealing { animation: catalog-photo-reveal 160ms ease-out both; }
+@keyframes catalog-photo-reveal { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .catalog-image-dot::before { transition: none; }
+  .catalog-card-gallery__layer.is-revealing { animation: none; }
+}

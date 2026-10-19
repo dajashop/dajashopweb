@@ -140,7 +140,6 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
   useEffect(() => {
     if (!enabled || !current || state.route !== cacheKey || state.pending || !route.startsWith('page?') || !backgroundCatalogAllowed()) return undefined;
     const pages = Math.max(1, Math.ceil(current.total / current.perPage));
-    if (current.page >= pages) return undefined;
     const controller = new AbortController();
     const { signal } = controller;
     let timer;
@@ -157,6 +156,8 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
         if (signal.aborted) return;
         await preloadCatalogImages(current.items, signal);
         if (signal.aborted) return;
+        const gallery = preloadCatalogImages(current.items, signal, { gallery: true, concurrency: 2 }).catch(() => {});
+        if (current.page >= pages) { await gallery; return; }
         const params = new URLSearchParams(route.slice(5));
         params.set('page', String(current.page + 1));
         const next = `page?${params}`;
@@ -172,7 +173,7 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
         const nextPage = cached(nextKey, true) || await requestListing(next, includeHiddenForAdmin, signal);
         if (signal.aborted) return;
         await preloadCatalogImages(nextPage.items, signal);
-        await preparation;
+        await Promise.all([preparation, gallery]);
       } catch { /* Speculation must never interrupt foreground navigation. */ }
     };
     timer = window.setTimeout(start, 150);
