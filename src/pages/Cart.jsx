@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Cart.css';
 import { Link } from 'react-router-dom';
+import useSavedCartItems from '../hooks/useSavedCartItems.js';
+import { fetchProductBySlug } from '../services/products';
+import { useFlash } from '../hooks/useFlash';
 import { useCart } from '../hooks/useCart.js';
 import CartImagePreview from '../components/CartImagePreview.jsx';
 import EngravingSummary from '../components/engraving/EngravingSummary';
@@ -16,6 +19,8 @@ import {
   ShoppingBag,
   ZoomIn,
   Pencil,
+  Bookmark,
+  RotateCcw,
   ShieldCheck,
   Trash2,
   ArrowRight,
@@ -164,6 +169,11 @@ export default function Cart() {
   const { items, total, dispatch } = useCart();
   const { showUndo } = useUndo();
   const { user } = useAuth(); // NOVO: Uzimamo ulogovanog korisnika
+  const saved = useSavedCartItems(user);
+  const { flash } = useFlash();
+  const activeItemsRef = useRef(items);
+  activeItemsRef.current = items;
+  const [restoring, setRestoring] = useState(null);
   const [showClearModal, setShowClearModal] = useState(false);
   const pokusajKodaDobrodoslice = useRef('');
 
@@ -221,6 +231,46 @@ export default function Cart() {
       },
     );
   }, [appliedPromo, items, loading, total, user, validateAndApply]);
+
+  const refreshPromo = async (nextItems) => {
+    if (!appliedPromo?.code) return;
+    if (!nextItems.length) { removePromo(); return; }
+    const nextTotal = nextItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const result = await validateAndApply(appliedPromo.code, nextTotal, nextItems, user, true);
+    if (!result) removePromo();
+  };
+
+  const saveForLater = async (item) => {
+    if (!saved.save(item)) { flash('Čuvanje nije uspelo', 'Proizvod je ostao u korpi. Proverite da li browser dozvoljava lokalno čuvanje.', 'error'); return; }
+    const id = item.lineId || item.id;
+    const nextItems = items.filter(active => (active.lineId || active.id) !== id);
+    dispatch({ type: 'REMOVE', id });
+    flash('Sačuvano za kasnije', item.name, 'success');
+    await refreshPromo(nextItems);
+  };
+
+  const restoreSaved = async (item) => {
+    const id = item.lineId || item.id;
+    setRestoring(id);
+    try {
+      const product = item.slug ? await fetchProductBySlug(item.slug, { force: true }) : item;
+      if (!product?.id || product.redirectTo) throw new Error('Proizvod trenutno nije dostupan.');
+      const currentItems = activeItemsRef.current;
+      const active = currentItems.find(entry => (entry.lineId || entry.id) === id);
+      const qty = Math.min(item.qty, Math.max(0, 99 - (active?.qty || 0)));
+      if (!qty) { flash('Korpa', 'Za ovaj proizvod je već izabrana maksimalna količina.', 'info'); return; }
+      const restored = { ...item, price: product.price ?? item.price, name: product.name || item.name,
+        image: product.images?.[0]?.url || product.mainImageUrl || product.image || item.image,
+        thumb: product.thumbnailUrl || item.thumb };
+      if (!saved.take(item, qty)) throw new Error('Sačuvana lista je promenjena ili nije dostupna. Pokušajte ponovo.');
+      dispatch({ type: 'ADD', item: restored, qty });
+      const nextItems = active ? currentItems.map(entry => (entry.lineId || entry.id) === id ? { ...entry, qty: entry.qty + qty } : entry) : [...currentItems, { ...restored, qty }];
+      await refreshPromo(nextItems);
+      flash('Vraćeno u korpu', item.name, 'success');
+    } catch (error) {
+      flash('Proizvod nije vraćen', error.message || 'Pokušajte ponovo.', 'error');
+    } finally { setRestoring(null); }
+  };
 
   const performRemove = (item) => {
     dispatch({ type: 'REMOVE', id: item.lineId || item.id });
@@ -331,6 +381,9 @@ export default function Cart() {
                         {!it.engraving && <Pencil size={13} aria-hidden="true" />}
                         <EngravingSummary item={it} editable />
                       </div>}
+                      <button type="button" className="cart__save-later" onClick={() => void saveForLater(it)} disabled={!saved.ready || loading || restoring !== null}>
+                        <Bookmark size={13} aria-hidden="true" /> Sačuvaj za kasnije
+                      </button>
                     </div>
 
                     <div className="cart__qtyWrap">
@@ -499,7 +552,7 @@ export default function Cart() {
               <span className="cart__totalPrice">{money(finalTotal)}</span>
             </div>
 
-            <Link to="/checkout" className="btn btn-primary checkout-btn">
+            <Link to="/checkout" className="btn btn-primary checkout-btn" aria-disabled={loading || restoring !== null} onClick={event => { if (loading || restoring !== null) event.preventDefault(); }}>
               Nastavi na plaćanje <ArrowRight size={18} aria-hidden />
             </Link>
 
@@ -509,6 +562,27 @@ export default function Cart() {
           </motion.div>
         </div>
       )}
+      {saved.items.length > 0 && <section className="cart__saved" aria-labelledby="saved-cart-title">
+        <div className="cart__saved-heading"><h2 id="saved-cart-title"><Bookmark size={20} aria-hidden="true" /> Sačuvano za kasnije <span>{saved.items.length}</span></h2>
+          <p>Ovi proizvodi nisu uključeni u zbir ni porudžbinu.</p>
+        </div>
+        <div className="cart__saved-list">
+          {saved.items.map(item => <article key={item.lineId || item.id} className="cart__saved-item">
+            <button type="button" className="cart__image-button" onClick={() => setPreviewItem(item)} aria-label={`Uvećaj slike: ${item.name}`}>
+              <ShoppingBag className="cart__image-fallback" size={24} aria-hidden="true" />
+              {(item.image || item.thumb) && <img src={item.image || item.thumb} className="cart__thumb" alt={item.name} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
+              <span className="cart__zoom"><ZoomIn size={14} aria-hidden="true" /></span>
+            </button>
+            <div className="cart__saved-meta"><Link to={`/product/${item.slug}`} className="cart__name">{item.name}</Link><div className="cart__brand">{item.brand}</div>
+              <p>{money(item.price)}{item.qty > 1 && <span> · {item.qty} kom.</span>}</p>
+              {item.engraving && <span className="cart__saved-engraving">Sa sačuvanom gravurom</span>}
+            </div>
+            <div className="cart__saved-actions"><button type="button" className="cart__restore" disabled={restoring !== null || loading || !saved.ready} onClick={() => void restoreSaved(item)}><RotateCcw size={15} aria-hidden="true" />{restoring === (item.lineId || item.id) ? 'Vraćanje…' : 'Vrati u korpu'}</button>
+              <button type="button" className="cart__saved-remove" disabled={restoring !== null} onClick={() => saved.remove(item)} aria-label={`Ukloni sačuvani proizvod: ${item.name}`}>Ukloni</button>
+            </div>
+          </article>)}
+        </div>
+      </section>}
     </div>
   );
 }
