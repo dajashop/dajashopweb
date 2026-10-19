@@ -269,7 +269,7 @@ export default function Catalog({ department = 'satovi', seo }) {
 
   const totalCount = listing.data?.total || 0;
   const hiddenCount = includeHiddenForAdmin ? listing.data?.hiddenCount || 0 : null;
-  const page = listing.data?.page || 1;
+  const page = listing.changingPage ? Number(configuredParams.get('page')) || 1 : listing.data?.page || 1;
   const getPageUrl = (number) => {
     const next = new URLSearchParams(sp);
     if (number === 1) next.delete('page');
@@ -313,7 +313,7 @@ export default function Catalog({ department = 'satovi', seo }) {
   const itemsToShow = departmentItems;
 
   const renderContent = () => {
-    if (!err && (loading || filterConfigurationLoading)) return <CatalogSkeleton square={department === 'naocare'} />;
+    if (!err && !listing.data && (loading || filterConfigurationLoading)) return <CatalogSkeleton square={department === 'naocare'} />;
 
     if (err && !listing.data) {
       return (
@@ -345,7 +345,7 @@ export default function Catalog({ department = 'satovi', seo }) {
     return (
       <>
         {err && <p role="status">Nova stranica trenutno nije dostupna. <button type="button" onClick={listing.retry}>Pokušaj ponovo</button></p>}
-        <ProductGrid items={itemsToShow} />
+        <div inert={listing.changingPage || undefined}><ProductGrid items={itemsToShow} blankImages={listing.changingPage} /></div>
         <div className="catalog__footer">
           <div className="catalog__pagination" inert={listing.displayingPrevious || undefined}>
             <Pagination

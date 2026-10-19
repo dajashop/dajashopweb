@@ -15,9 +15,12 @@ export default function useProduct(slug) {
   const [result, setResult] = useState({
     slug, resourceKey, product: initialProduct, loading: Boolean(slug) && !initialProduct, error: null,
   });
+  const promotedProduct = includeHiddenForAdmin && result.slug === slug
+    && result.resourceKey === productResourceKey(slug, false) ? result.product : null;
   // Route changes must hide the previous result in the render itself, before effects run.
   const current = result.slug === slug && result.resourceKey === resourceKey ? result : {
-    slug, resourceKey, product: initialProduct, loading: Boolean(slug) && !initialProduct, error: null,
+    slug, resourceKey, product: initialProduct || promotedProduct,
+    loading: Boolean(slug) && !(initialProduct || promotedProduct), error: null,
   };
   const { product, loading, error } = current;
 
@@ -27,7 +30,7 @@ export default function useProduct(slug) {
     let mounted = true;
     let controller;
     let sequence = 0;
-    const stored = initialProduct || cachedProductBySlug(slug, includeHiddenForAdmin);
+    const stored = initialProduct || promotedProduct || cachedProductBySlug(slug, includeHiddenForAdmin);
     if (page?.hydrating && initialProduct) rememberResource(resourceKey, initialProduct);
     setResult({ slug, resourceKey, product: stored, loading: !stored, error: null });
     const load = (force = false) => {

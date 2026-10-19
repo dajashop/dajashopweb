@@ -17,20 +17,10 @@ import ClientOnly from './ClientOnly.jsx';
 const AdminProductModal = import.meta.env.SSR ? () => null : lazy(() => import('../pages/Admin/components/AdminProductModal.jsx'));
 import ConfirmModal from '../components/modals/ConfirmModal.jsx';
 
-const slideVariants = {
-  enter: (direction) => ({ x: direction > 0 ? 1000 : -1000, opacity: 0 }),
-  center: { zIndex: 1, x: 0, opacity: 1 },
-  exit: (direction) => ({
-    zIndex: 0,
-    x: direction < 0 ? 1000 : -1000,
-    opacity: 0,
-  }),
-};
-
 const swipeConfidenceThreshold = 10000;
 const swipePower = (offset, velocity) => Math.abs(offset) * velocity;
 
-function ProductCard({ p, priority = false }) {
+function ProductCard({ p, priority = false, blankImage = false }) {
   const isEyewear = p.department === 'naocare';
   const { dispatch } = useCart();
   const { flash } = useFlash();
@@ -47,7 +37,7 @@ function ProductCard({ p, priority = false }) {
   const [isFlagMenuOpen, setIsFlagMenuOpen] = useState(false);
 
   // Slider
-  const [[page, direction], setPage] = useState([0, 0]);
+  const [page, setPage] = useState(0);
 
   const imgs = useMemo(() => {
     const arr = Array.isArray(p.images) && p.images.length
@@ -94,20 +84,12 @@ function ProductCard({ p, priority = false }) {
 
   const paginate = (newDirection) => {
     if (imgs.length <= 1) return;
-    setPage([page + newDirection, newDirection]);
+    setPage(page + newDirection);
   };
 
   const setIndex = (index) => {
     if (index === imageIndex) return;
-    const newDirection = index > imageIndex ? 1 : -1;
-    setPage([index, newDirection]);
-  };
-
-  const selectImageFromPointer = (event) => {
-    const { left, width } = event.currentTarget.getBoundingClientRect();
-    if (!width || imgs.length < 2) return;
-    const progress = Math.max(0, Math.min(1, (event.clientX - left) / width));
-    setIndex(Math.round(progress * (imgs.length - 1)));
+    setPage(index);
   };
 
   const showSliderControls = imgs.length > 1;
@@ -271,49 +253,41 @@ function ProductCard({ p, priority = false }) {
 
         {/* Slider */}
         <div className={`relative ${isEyewear ? 'aspect-square' : 'aspect-4/5'} w-full overflow-hidden bg-white`}>
-          <AnimatePresence initial={false} custom={direction}>
-            <motion.div
-              key={page}
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                x: { type: 'spring', stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 },
-              }}
-              drag={showSliderControls ? 'x' : false}
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={1}
-              onDragEnd={(e, { offset, velocity }) => {
-                const swipe = swipePower(offset.x, velocity.x);
-                if (swipe < -swipeConfidenceThreshold) paginate(1);
-                else if (swipe > swipeConfidenceThreshold) paginate(-1);
-              }}
-              className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+          <motion.div
+            key={page}
+            initial={false}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0 }}
+            drag={showSliderControls ? 'x' : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={1}
+            onDragEnd={(e, { offset, velocity }) => {
+              const swipe = swipePower(offset.x, velocity.x);
+              if (swipe < -swipeConfidenceThreshold) paginate(1);
+              else if (swipe > swipeConfidenceThreshold) paginate(-1);
+            }}
+            className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+          >
+            <Link
+              to={`/product/${p.slug}`}
+              className="block w-full h-full"
+              draggable={false}
             >
-              <Link
-                to={`/product/${p.slug}`}
-                className="block w-full h-full"
+              {!blankImage && <ProgressiveImage
+                src={activeImageSrc}
+                loading={priority ? 'eager' : 'lazy'}
+                fetchPriority={priority ? 'high' : 'auto'}
+                thumbSrc={
+                  imageIndex === 0
+                    ? p.thumbnailUrl || imgs[imageIndex]?.thumb
+                    : imgs[imageIndex]?.thumb
+                }
+                alt={imageAlt}
                 draggable={false}
-              >
-                <ProgressiveImage
-                  src={activeImageSrc}
-                  loading={priority ? 'eager' : 'lazy'}
-                  fetchPriority={priority ? 'high' : 'auto'}
-                  thumbSrc={
-                    imageIndex === 0
-                      ? p.thumbnailUrl || imgs[imageIndex]?.thumb
-                      : imgs[imageIndex]?.thumb
-                  }
-                  alt={imageAlt}
-                  draggable={false}
-                  className={`w-full h-full pointer-events-none ${isEyewear ? 'object-contain p-3' : 'object-cover'}`}
-                />
-              </Link>
-            </motion.div>
-          </AnimatePresence>
+                className={`w-full h-full pointer-events-none ${isEyewear ? 'object-contain p-3' : 'object-cover'}`}
+              />}
+            </Link>
+          </motion.div>
 
           <LayoutGroup>
             <div className="slider-dots absolute inset-x-0 bottom-0 px-3 pb-3 pt-2 pointer-events-none">
@@ -324,7 +298,6 @@ function ProductCard({ p, priority = false }) {
                 {imgs.length > 1 && (
                   <div
                     className="catalog-image-dots"
-                    onMouseMove={selectImageFromPointer}
                     role="tablist"
                     aria-label={`Galerija slika proizvoda ${p.name}`}
                   >
@@ -334,7 +307,6 @@ function ProductCard({ p, priority = false }) {
                         <motion.button
                           key={idx}
                           type="button"
-                          onMouseEnter={() => setIndex(idx)}
                           onFocus={() => setIndex(idx)}
                           onClick={(e) => {
                             e.preventDefault();

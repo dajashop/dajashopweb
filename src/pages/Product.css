@@ -12,7 +12,7 @@
 /* DESKTOP (Dve kolone) */
 @media (min-width: 1024px) {
   .product-layout {
-    grid-template-columns: 1.3fr 1fr; /* Leva kolona 1.3x šira */
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); /* Leva kolona 1.3x šira */
   }
 
   /* Sticky desna kolona - prati te dok skroluješ */
@@ -43,12 +43,14 @@
 
 /* Kontejneri (samo za strukturu, bez stila) */
 .product__gallery-container {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   /* gap: 32px; -> Razmak rešavaju margine u komponentama */
 }
 
 .product__info {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   order: 1;

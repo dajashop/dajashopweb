@@ -6,8 +6,8 @@ import useProducts from '../hooks/useProducts';
 import { motion } from 'framer-motion';
 import './ProductGrid.css';
 
-export default function ProductGrid({ items }) {
-  return items ? <ProductGridContent items={items} /> : <FetchedProductGrid />;
+export default function ProductGrid({ items, blankImages = false }) {
+  return items ? <ProductGridContent items={items} blankImages={blankImages} /> : <FetchedProductGrid />;
 }
 
 function FetchedProductGrid() {
@@ -31,13 +31,13 @@ function FetchedProductGrid() {
   return <ProductGridContent items={items} />;
 }
 
-function ProductGridContent({ items }) {
+function ProductGridContent({ items, blankImages = false }) {
   const [isModalOpen, setModalOpen] = useState(false);
   return (
     <>
       <div className="product-grid">
         {items.map((p, index) => (
-          <ProductCard key={p.id} p={p} priority={index < 4} />
+          <ProductCard key={p.id} p={p} priority={index < 4} blankImage={blankImages} />
         ))}
       </div>
 

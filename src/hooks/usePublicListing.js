@@ -82,8 +82,14 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
   const [revision, setRevision] = useState(0);
   const first = useRef(true);
   const current = state.route === cacheKey ? state.data : cached(cacheKey);
-  const data = current || (state.scope === scope ? state.data : null);
-  const displayingPrevious = !current && Boolean(data);
+  // Public cards may remain while the same route gains staff access. Never
+  // carry hidden cards back into a public scope or another department.
+  const promotingPublic = includeHiddenForAdmin && state.scope === `public:${department}` && state.route === route;
+  const data = current || (state.scope === scope || promotingPublic ? state.data : null);
+  const displayingPrevious = !current && Boolean(data) && !promotingPublic;
+  const previousRoute = state.route.replace(/^admin:/, '');
+  const changingPage = displayingPrevious && route.startsWith('page?') && previousRoute.startsWith('page?')
+    && new URLSearchParams(route.slice(5)).get('page') !== new URLSearchParams(previousRoute.slice(5)).get('page');
   const error = state.request === cacheKey ? state.error : null;
   const busy = enabled && !error && (state.request !== cacheKey || state.pending || !current);
   useEffect(() => {
@@ -182,5 +188,5 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
     return () => window.clearTimeout(timer);
   }, [enabled, current]);
   const retry = () => { invalidate(); setRevision(value => value + 1); };
-  return { data, retry, displayingPrevious, loading: enabled && !data && !error, updating: Boolean(data) && busy, error };
+  return { data, retry, displayingPrevious, changingPage, loading: enabled && !data && !error, updating: Boolean(data) && busy, error };
 }

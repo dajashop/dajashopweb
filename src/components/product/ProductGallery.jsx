@@ -118,7 +118,7 @@ export default function ProductGallery({ product }) {
               fetchPriority="high"
               thumbSrc={activeItem?.thumb}
               alt={mainImageAlt}
-              className="product__img-full transition-transform duration-700 hover:scale-105"
+              className="product__img-full"
             />
             <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm text-white p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none transform translate-y-2 group-hover:translate-y-0">
               <Maximize2 size={20} />
