@@ -809,7 +809,7 @@
 .cart :is(button, a, input):focus-visible { outline: 2px solid #737b87; outline-offset: 3px; }
 .cart .empty { background: #fafafa; border-color: #e5e7eb; }
 .cart .empty .muted { margin-bottom: 20px; }
-@media (min-width: 1024px) { .cart .cart-content-grid { grid-template-columns: minmax(0, 1.3fr) minmax(360px, 1fr); gap: 24px; } }
+@media (min-width: 1024px) { .cart .cart-content-grid { grid-template-columns: minmax(0, 1.65fr) minmax(330px, 1fr); gap: 24px; } }
 @media (min-width: 769px) and (max-width: 1279px) {
   .cart .cart__row { grid-template-columns: 120px minmax(0, 1fr) auto; grid-template-areas: "image meta remove" "image quantity price"; gap: 12px; }
   .cart .cart__image-button { grid-area: image; }
@@ -901,15 +901,3 @@
 }
 .cart .cart__rows:focus-visible,
 .cart .cart__saved-list:focus-visible { outline: 2px solid #737b87; outline-offset: 3px; border-radius: 10px; }
-
-@media (min-width: 1024px) {
-  .cart .cart__rows { max-height: min(480px, 60dvh); }
-  .cart .cart__summary-panel {
-    align-self: start;
-    display: grid;
-    align-content: start;
-    padding: 28px;
-    gap: 20px;
-  }
-  .cart .cart__summary-panel .cart__total { margin-top: 0; }
-}
