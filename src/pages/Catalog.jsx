@@ -345,9 +345,11 @@ export default function Catalog({ department = 'satovi', seo }) {
     return (
       <>
         {err && <p role="status">Nova stranica trenutno nije dostupna. <button type="button" onClick={listing.retry}>Pokušaj ponovo</button></p>}
-        <div inert={listing.changingPage || undefined}><ProductGrid items={itemsToShow} blankImages={listing.changingPage} /></div>
+        <div aria-busy={listing.changingPage} onClickCapture={event => {
+          if (listing.changingPage) { event.preventDefault(); event.stopPropagation(); }
+        }}><ProductGrid items={itemsToShow} blankImages={listing.changingPage} /></div>
         <div className="catalog__footer">
-          <div className="catalog__pagination" inert={listing.displayingPrevious || undefined}>
+          <div className="catalog__pagination">
             <Pagination
               page={page}
               total={totalCount}

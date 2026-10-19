@@ -66,6 +66,16 @@ export default function useFilterAnchor(paramsKey, suppliedContainer) {
       window.scrollTo({ top: Math.max(0, pageTop), left: window.scrollX, behavior: 'instant' });
     };
 
+    // User input anywhere on the page must immediately win over anchoring,
+    // including a wheel gesture over the product grid rather than the sidebar.
+    const onKeyDown = event => {
+      if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) release();
+    };
+    const passiveCapture = { passive: true, capture: true };
+    window.addEventListener('wheel', release, passiveCapture);
+    window.addEventListener('touchmove', release, passiveCapture);
+    window.addEventListener('pointerdown', release, passiveCapture);
+    window.addEventListener('keydown', onKeyDown, true);
     restore();
     // Follow accordion animations and the parent catalog's scroll reset before
     // each paint. A new gesture immediately releases the previous anchor.
@@ -77,7 +87,13 @@ export default function useFilterAnchor(paramsKey, suppliedContainer) {
       }
     };
     frame.current = requestAnimationFrame(settle);
-    return () => cancelAnimationFrame(frame.current);
+    return () => {
+      cancelAnimationFrame(frame.current);
+      window.removeEventListener('wheel', release, true);
+      window.removeEventListener('touchmove', release, true);
+      window.removeEventListener('pointerdown', release, true);
+      window.removeEventListener('keydown', onKeyDown, true);
+    };
   }, [paramsKey, container]);
 
   return {
