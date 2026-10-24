@@ -14,7 +14,7 @@ import {
 } from '../../../utils/excelHelpers';
 import './ExcelManager.css';
 
-const ExcelManager = ({ products, brands, categories, onImport }) => {
+const ExcelManager = ({ products, brands, categories, onImport, catalogLoading = false }) => {
   const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
@@ -133,6 +133,7 @@ const ExcelManager = ({ products, brands, categories, onImport }) => {
           whileTap={{ scale: 0.98 }}
           className="excel-btn export"
           onClick={handleExport}
+          disabled={catalogLoading || loading}
         >
           <Download size={18} /> <span>Izvezi Listu</span>
         </motion.button>
@@ -141,7 +142,7 @@ const ExcelManager = ({ products, brands, categories, onImport }) => {
           whileTap={{ scale: 0.98 }}
           className="excel-btn import"
           onClick={() => fileInputRef.current?.click()}
-          disabled={loading}
+          disabled={loading || catalogLoading}
         >
           {loading ? <span className="spinner"></span> : <Upload size={18} />}
           <span>{loading ? 'Učitavam...' : 'Uvezi tabelu'}</span>

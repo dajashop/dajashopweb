@@ -25,6 +25,7 @@ export default function useProducts(params = {}) {
   // placement. Keep only the response for the newest live event so a slower
   // first request without a shelf can never overwrite the newer placement.
   const adminRealtimeSequence = useRef(new Map());
+  const loadingAdminChanges = useRef(null);
 
   // Stabilizujemo parametre da ne bi izazivali re-render petlju
   // Mentor napomena: Ovo je odlično rešeno sa JSON.stringify
@@ -38,15 +39,27 @@ export default function useProducts(params = {}) {
     // Keep the complete server-rendered listing while revalidating it.
     setLoading(!initialItems);
     setErr(null);
+    const changes = new Map();
+    if (memoizedParams.admin) loadingAdminChanges.current = changes;
 
     const { publicRealtime: _publicRealtime, enabled: _enabled, ...requestParams } = memoizedParams;
     const unsub = subscribeProducts({
-      onData: (arr) => {
-        setItems(arr);
-        if (memoizedParams.admin) window.dispatchEvent(new Event('daja:supplier-refresh'));
-        setLoading(false);
+      onData: (arr, { partial = false } = {}) => {
+        const snapshot = new Map(changes);
+        setItems(current => {
+          const merged = new Map((partial ? [...current, ...arr] : arr).map(item => [item.id, item]));
+          for (const [id, patch] of snapshot) {
+            if (patch === null) merged.delete(id);
+            else merged.set(id, { ...merged.get(id), ...patch });
+          }
+          return [...merged.values()];
+        });
+        if (!partial && loadingAdminChanges.current === changes) loadingAdminChanges.current = null;
+        if (memoizedParams.admin && !partial) window.dispatchEvent(new Event('daja:supplier-refresh'));
+        setLoading(partial);
       },
       onError: (e) => {
+        if (loadingAdminChanges.current === changes) loadingAdminChanges.current = null;
         setErr(e);
         setLoading(false);
       },
@@ -56,7 +69,10 @@ export default function useProducts(params = {}) {
       ...requestParams,
     });
 
-    return () => unsub?.();
+    return () => {
+      if (loadingAdminChanges.current === changes) loadingAdminChanges.current = null;
+      unsub?.();
+    };
   }, [memoizedParams, refreshKey, enabled]);
 
   useEffect(() => {
@@ -70,6 +86,7 @@ export default function useProducts(params = {}) {
         return;
       }
       if (change.type === 'delete' && change.id) {
+        loadingAdminChanges.current?.set(change.id, null);
         setItems((current) => current.filter((item) => item.id !== change.id));
         return;
       }
@@ -84,6 +101,8 @@ export default function useProducts(params = {}) {
         return;
       }
       if (change.type === 'upsert' && change.product?.id) {
+        if (loadingAdminChanges.current) loadingAdminChanges.current.set(change.product.id,
+          { ...loadingAdminChanges.current.get(change.product.id), ...change.product });
         if (memoizedParams.admin) window.dispatchEvent(new Event('daja:supplier-refresh'));
         setItems((current) => {
           const index = current.findIndex((item) => item.id === change.product.id);
@@ -138,6 +157,7 @@ export default function useProducts(params = {}) {
           .then((product) => {
             if (adminRealtimeSequence.current.get(productId) !== sequence) return;
             if (!product?.id) return;
+            loadingAdminChanges.current?.set(product.id, product);
             setItems((current) => {
               const index = current.findIndex((item) => item.id === product.id);
               if (index === -1) return [product, ...current];

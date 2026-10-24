@@ -531,8 +531,32 @@ export const variantGroupsApi = {
 };
 
 export const adminCatalogApi = {
-  async listProducts() {
-    const data = await apiRequest('/products', { staff: true });
+  async listProducts({ onPage, signal } = {}) {
+    if (onPage) {
+      const items = [];
+      const seen = new Set();
+      let after;
+      do {
+        let batch;
+        try {
+          batch = await apiRequest('/admin/catalog/batches', { staff: true, signal, query: { limit: 100, ...(after ? { after } : {}) } });
+        } catch (error) {
+          // The web bundle can arrive before the additive API endpoint.
+          if (!after && error.status === 404) break;
+          throw error;
+        }
+        if (!Array.isArray(batch?.items)) throw new Error('Proizvodi nisu dostupni.');
+        items.push(...batch.items.map(normalizeProduct));
+        items.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0) || String(a.id).localeCompare(String(b.id)));
+        onPage([...items], true);
+        after = batch.nextCursor;
+        if (!after) return items;
+        if (seen.has(after)) throw new Error('Učitavanje proizvoda nije završeno. Pokušajte ponovo.');
+        seen.add(after);
+      } while (!signal?.aborted);
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+    }
+    const data = await apiRequest('/products', { staff: true, signal });
     return toArrayPayload(data).map(normalizeProduct);
   },
   async getProduct(id) {

@@ -1,3 +1,4 @@
+import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
 // src/pages/Admin/components/AdminOrders.jsx
 import React, { useState, useEffect } from 'react';
 import EngravingSummary from '../../../components/engraving/EngravingSummary';
@@ -30,6 +31,8 @@ const STATUS_OPTIONS = [
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [revision, setRevision] = useState(0);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
   // NOVO: State za Modal
@@ -38,15 +41,16 @@ export default function AdminOrders() {
 
   // 1. Učitavanje podataka u realnom vremenu
   useEffect(() => {
+    setLoading(true); setLoadError('');
     const unsub = ordersService.subscribe(
       (data) => {
         setOrders(data);
         setLoading(false);
       },
-      (err) => console.error(err)
+      (err) => { setLoadError(err.message || 'Porudžbine nisu učitane.'); setLoading(false); }
     );
     return () => unsub();
-  }, []);
+  }, [revision]);
 
   // NOVO: 2a. Iniciranje promene (Samo otvara modal)
   const initiateStatusChange = (
@@ -129,12 +133,10 @@ export default function AdminOrders() {
     }
   };
 
-  if (loading)
+  if (loadError && !orders.length) return <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-700">{loadError} <button onClick={() => setRevision(value => value + 1)}>Pokušaj ponovo</button></p>;
+  if (loading && !orders.length)
     return (
-      <div className="p-12 text-center text-neutral-500 flex flex-col items-center">
-        <span className="loading loading-spinner loading-lg mb-2"></span>
-        Učitavanje porudžbina...
-      </div>
+      <AdminSkeleton rows={6} label="Učitavanje porudžbina" />
     );
 
   return (

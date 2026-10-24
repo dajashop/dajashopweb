@@ -660,31 +660,17 @@ export default function AdminProductModal({
 
   useEffect(() => {
     let active = true;
-    Promise.all([inventoryApi.locations(), inventoryApi.layout()])
-      .then(([locationItems, layout]) => {
-        if (!active) return;
-        const nextLocations = Array.isArray(locationItems)
-          ? locationItems
-          : locationItems?.items || locationItems?.data || [];
-        setLocations(nextLocations);
-        setWarehouseLayout({
-          warehouses: Array.isArray(layout?.warehouses)
-            ? layout.warehouses
-            : [],
-          zones: Array.isArray(layout?.zones) ? layout.zones : [],
-          bins: Array.isArray(layout?.bins) ? layout.bins : [],
-        });
-        if (nextLocations.length === 1) {
-          setForm((previous) =>
-            previous.locationId
-              ? previous
-              : { ...previous, locationId: nextLocations[0].id },
-          );
-        }
-      })
-      .catch((error) =>
-        console.error('Učitavanje rasporeda skladišta nije uspelo:', error),
-      );
+    inventoryApi.locations().then(locationItems => {
+      if (!active) return;
+      const nextLocations = Array.isArray(locationItems) ? locationItems : locationItems?.items || locationItems?.data || [];
+      setLocations(nextLocations);
+      if (nextLocations.length === 1) setForm(previous => previous.locationId ? previous : { ...previous, locationId: nextLocations[0].id });
+    }).catch(error => console.error('Učitavanje lokacija nije uspelo:', error));
+    inventoryApi.layout().then(layout => {
+      if (!active) return;
+      setWarehouseLayout({ warehouses: Array.isArray(layout?.warehouses) ? layout.warehouses : [],
+        zones: Array.isArray(layout?.zones) ? layout.zones : [], bins: Array.isArray(layout?.bins) ? layout.bins : [] });
+    }).catch(error => console.error('Učitavanje rasporeda skladišta nije uspelo:', error));
     return () => {
       active = false;
     };

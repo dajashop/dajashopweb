@@ -1,10 +1,11 @@
 import React, { lazy } from 'react';
 import ClientOnly from './components/ClientOnly.jsx';
+import { AdminDashboardSkeleton } from './components/AdminSkeleton.jsx';
 
-function browserPage(loader) {
+function browserPage(loader, fallback = <p role="status">Učitavanje…</p>) {
   const Component = lazy(loader);
   return function BrowserPage(props) {
-    return <ClientOnly fallback={<p role="status">Učitavanje…</p>}><Component {...props} /></ClientOnly>;
+    return <ClientOnly fallback={fallback}><Component {...props} /></ClientOnly>;
   };
 }
 import { Routes, Route } from 'react-router-dom';
@@ -17,7 +18,7 @@ const Checkout = import.meta.env.SSR ? () => null : browserPage(() => import('./
 const Account = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Account.jsx'));
 const Orders = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Orders.jsx'));
 import About from './pages/About.jsx';
-const AdminDashboard = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Admin/AdminDashboard.jsx'));
+const AdminDashboard = import.meta.env.SSR ? AdminDashboardSkeleton : browserPage(() => import('./pages/Admin/AdminDashboard.jsx'), <AdminDashboardSkeleton />);
 const VerifyEmail = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/VerifyEmail.jsx'));
 const ResetPassword = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/ResetPassword.jsx'));
 const Logout = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Logout.jsx'));
@@ -26,7 +27,7 @@ import Contact from './pages/Contact.jsx';
 import Usluge from './pages/Usluge.jsx';
 import Engraving from './pages/Engraving.jsx';
 import PageStatus from './pages/PageStatus.jsx';
-const OrdersPage = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Admin/OrdersPage'));
+const OrdersPage = import.meta.env.SSR ? AdminDashboardSkeleton : browserPage(() => import('./pages/Admin/OrdersPage'), <AdminDashboardSkeleton />);
 const LegalDocument = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/LegalDocument.jsx'));
 const Unsubscribe = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Unsubscribe.jsx'));
 

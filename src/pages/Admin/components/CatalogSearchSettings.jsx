@@ -1,3 +1,4 @@
+import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
 import { useEffect, useState } from 'react';
 import { Plus, X, RefreshCw, Save, Search } from 'lucide-react';
 import { catalogSearchSettingsApi } from '../../../services/dajaPlatform.js';
@@ -12,6 +13,7 @@ export default function CatalogSearchSettings({ canWrite = false }) {
     <section><header><h2><Search size={20}/> Podešavanja pretrage</h2><button type="button" disabled={busy} onClick={()=>{if(!data||JSON.stringify(rows)===JSON.stringify(data.synonyms)||window.confirm('Ponovo učitaj i odbaci nesačuvane sinonime?'))void load();}}><RefreshCw size={16}/> Ponovo učitaj</button></header>
       <p>Osnovni srpski i engleski izrazi već su uključeni. Ovde dodaj svoje: levo upit korisnika, desno postojeći brend, kolekciju ili osobinu. Na primer: „daniel klajn“ → „Daniel Klein“. Sinonimi služe za reči i izraze; brojevi modela, dimenzije i cene se ne preusmeravaju.</p>
       {error&&<p role="alert" className="catalog-search-settings__error">{error}</p>}{notice&&<p role="status">{notice}</p>}
+      {!data && !error && <AdminSkeleton rows={4} label="Učitavanje pretrage" />}
       {rows.map((row,i)=><div className="catalog-search-settings__row" key={i}><input disabled={busy||!canWrite} aria-label="Izraz korisnika" placeholder="Izraz korisnika" value={row.alias} maxLength={80} onChange={e=>change(i,'alias',e.target.value)}/><span>→</span><input disabled={busy||!canWrite} aria-label="Traži kao" placeholder="Traži kao…" value={row.target} maxLength={80} onChange={e=>change(i,'target',e.target.value)}/><button type="button" disabled={busy||!canWrite} aria-label="Ukloni sinonim" onClick={()=>setRows(rows.filter((_,j)=>i!==j))}><X size={16}/></button></div>)}
       <footer><button type="button" disabled={busy||!canWrite||rows.length>=400} onClick={()=>setRows([...rows,{alias:'',target:''}])}><Plus size={16}/> Dodaj sinonim</button><button type="button" disabled={!data||busy||!canWrite||rows.some(r=>r.alias.trim().length<2||r.target.trim().length<2)} onClick={()=>void save()}><Save size={16}/> {busy?'Čuvanje…':'Sačuvaj sinonime'}</button></footer>
     </section>

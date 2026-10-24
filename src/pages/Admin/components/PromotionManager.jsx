@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Copy,
   Edit3,
@@ -322,17 +323,30 @@ export default function PromotionManager({ products = [], brands = [], categorie
   const [promotions, setPromotions] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const audienceRequest = useRef(0);
+  const [audienceLoading, setAudienceLoading] = useState(true);
+  const [audienceError, setAudienceError] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(null);
   const load = async () => {
     setLoading(true); setError('');
-    try { const [promotionRows, customerRows] = await Promise.all([promotionsAdminApi.list(), promotionsAdminApi.audience()]); setPromotions(Array.isArray(promotionRows) ? promotionRows : []); setCustomers(Array.isArray(customerRows) ? customerRows : []); }
+    try { const promotionRows = await promotionsAdminApi.list(); setPromotions(Array.isArray(promotionRows) ? promotionRows : []); }
     catch (requestError) { setError(requestError.message || 'Promo kodovi nisu dostupni.'); }
     finally { setLoading(false); }
   };
-  useEffect(() => { void load(); }, []);
+  const loadAudience = async () => {
+    const request = ++audienceRequest.current;
+    setAudienceLoading(true); setAudienceError('');
+    try {
+      const rows = await promotionsAdminApi.audience();
+      if (request === audienceRequest.current) setCustomers(Array.isArray(rows) ? rows : []);
+    } catch (error) {
+      if (request === audienceRequest.current) setAudienceError(error.message || 'Kupci nisu učitani.');
+    } finally { if (request === audienceRequest.current) setAudienceLoading(false); }
+  };
+  useEffect(() => { void load(); void loadAudience(); return () => { audienceRequest.current++; }; }, []);
   const closeEditor = () => { setEditingId(null); setForm(null); };
   const save = async (event) => {
     event.preventDefault(); if (!form) return;
@@ -363,10 +377,10 @@ export default function PromotionManager({ products = [], brands = [], categorie
         <section className="rounded-2xl border border-neutral-200 p-4"><h3 className="font-bold text-neutral-900">Uslovi za korisnika</h3><div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4"><label><span className="text-sm font-semibold text-neutral-700">Stanje prijave</span><select value={form.loginRequirement} onChange={(event) => setForm({ ...form, loginRequirement: event.target.value })} className={fieldClass()}><option value="any">Svejedno</option><option value="authenticated">Mora biti prijavljen</option><option value="guest">Samo gost</option></select></label><label><span className="text-sm font-semibold text-neutral-700">Min. ranijih porudžbina</span><input type="number" min="0" value={form.minCustomerOrderCount} onChange={(event) => setForm({ ...form, minCustomerOrderCount: event.target.value })} className={fieldClass()} /></label><label><span className="text-sm font-semibold text-neutral-700">Maks. ranijih porudžbina</span><input type="number" min="0" value={form.maxCustomerOrderCount} onChange={(event) => setForm({ ...form, maxCustomerOrderCount: event.target.value })} className={fieldClass()} /></label><label><span className="text-sm font-semibold text-neutral-700">Min. prethodni promet (RSD)</span><input type="number" min="0" value={form.minCustomerLifetimeSpend} onChange={(event) => setForm({ ...form, minCustomerLifetimeSpend: event.target.value })} className={fieldClass()} /></label></div><div className="mt-4 flex flex-wrap gap-2">{[['requiresVerifiedEmail', 'Potvrđen email'], ['requiresNewsletter', 'Aktivan newsletter'], ['firstOrderOnly', 'Samo prva porudžbina'], ['active', 'Kod je aktivan']].map(([key, label]) => <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm"><input type="checkbox" checked={Boolean(form[key])} onChange={(event) => setForm({ ...form, [key]: event.target.checked, ...(key !== 'active' && event.target.checked ? { loginRequirement: 'authenticated' } : {}) })} />{label}</label>)}</div></section>
         <ProductRulesEditor form={form} setForm={setForm} products={products} categories={categories} brands={brands} departments={departments} specs={specs} />
         <section className="grid gap-4 rounded-2xl border border-neutral-200 p-4 md:grid-cols-2"><CheckOptions label="Ograniči način dostave" values={form.allowedShippingMethods} onChange={(allowedShippingMethods) => setForm({ ...form, allowedShippingMethods })} options={[{ value: 'courier', label: 'Kurirska dostava' }, { value: 'pickup', label: 'Preuzimanje' }]} /><CheckOptions label="Ograniči način plaćanja" values={form.allowedPaymentMethods} onChange={(allowedPaymentMethods) => setForm({ ...form, allowedPaymentMethods })} options={[{ value: 'cod', label: 'Pouzeće' }, { value: 'pickup', label: 'Pri preuzimanju' }]} /></section>
-        <CustomerTargets form={form} setForm={setForm} customers={customers} />
+        {audienceLoading ? <AdminSkeleton rows={2} label="Učitavanje kupaca" /> : audienceError ? <p role="alert">{audienceError} <button type="button" onClick={() => void loadAudience()}>Pokušaj ponovo</button></p> : <CustomerTargets form={form} setForm={setForm} customers={customers} />}
         <div className="flex justify-end gap-2 border-t border-neutral-100 pt-4"><button type="button" onClick={closeEditor} className="rounded-xl border border-neutral-200 px-4 py-2.5 font-bold text-neutral-700">Otkaži</button><button type="submit" disabled={saving} className="flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2.5 font-bold text-white disabled:opacity-60"><Save size={18} />{saving ? 'Čuvanje...' : 'Sačuvaj promo kod'}</button></div>
       </form>}
-      <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm"><div className="border-b border-neutral-100 px-5 py-4"><h3 className="font-bold text-neutral-900">Postojeći promo kodovi</h3></div>{loading ? <p className="p-5 text-sm text-neutral-500">Učitavam promo kodove...</p> : promotions.length === 0 ? <div className="p-10 text-center text-sm text-neutral-500">Još nema promo kodova. Napravi prvi kod iznad.</div> : <div className="divide-y divide-neutral-100">{promotions.map((promotion) => <div key={promotion.id} className="flex flex-wrap items-center justify-between gap-4 p-5"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><code className="rounded bg-neutral-100 px-2 py-1 font-bold text-neutral-900">{promotion.code}</code><span className={`rounded-full px-2 py-1 text-xs font-bold ${promotion.active ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>{promotion.active ? 'Aktivan' : 'Neaktivan'}</span><span className="text-sm font-semibold text-neutral-700">{discountLabel(promotion)}</span></div><p className="mt-2 text-sm font-semibold text-neutral-900">{promotion.name}</p><p className="mt-1 text-xs text-neutral-500">Iskorišćeno: {promotion.usesCount}{promotion.totalUsageLimit ? ` / ${promotion.totalUsageLimit}` : ''}</p></div><div className="flex flex-wrap gap-2"><button onClick={() => { setEditingId(promotion.id); setForm(formFromPromotion(promotion)); setError(''); }} className="flex items-center gap-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-700"><Edit3 size={15} /> Izmeni</button><button onClick={() => duplicate(promotion.id)} className="flex items-center gap-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-700"><Copy size={15} /> Kopiraj</button><button onClick={() => remove(promotion.id)} className="rounded-lg border border-red-100 px-3 py-2 text-red-600"><Trash2 size={16} /></button></div></div>)}</div>}</section>
+      <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm"><div className="border-b border-neutral-100 px-5 py-4"><h3 className="font-bold text-neutral-900">Postojeći promo kodovi</h3></div>{loading ? <AdminSkeleton rows={4} label="Učitavanje promo kodova" /> : promotions.length === 0 ? <div className="p-10 text-center text-sm text-neutral-500">Još nema promo kodova. Napravi prvi kod iznad.</div> : <div className="divide-y divide-neutral-100">{promotions.map((promotion) => <div key={promotion.id} className="flex flex-wrap items-center justify-between gap-4 p-5"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><code className="rounded bg-neutral-100 px-2 py-1 font-bold text-neutral-900">{promotion.code}</code><span className={`rounded-full px-2 py-1 text-xs font-bold ${promotion.active ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>{promotion.active ? 'Aktivan' : 'Neaktivan'}</span><span className="text-sm font-semibold text-neutral-700">{discountLabel(promotion)}</span></div><p className="mt-2 text-sm font-semibold text-neutral-900">{promotion.name}</p><p className="mt-1 text-xs text-neutral-500">Iskorišćeno: {promotion.usesCount}{promotion.totalUsageLimit ? ` / ${promotion.totalUsageLimit}` : ''}</p></div><div className="flex flex-wrap gap-2"><button onClick={() => { setEditingId(promotion.id); setForm(formFromPromotion(promotion)); setError(''); }} className="flex items-center gap-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-700"><Edit3 size={15} /> Izmeni</button><button onClick={() => duplicate(promotion.id)} className="flex items-center gap-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-700"><Copy size={15} /> Kopiraj</button><button onClick={() => remove(promotion.id)} className="rounded-lg border border-red-100 px-3 py-2 text-red-600"><Trash2 size={16} /></button></div></div>)}</div>}</section>
     </div>
   );
 }

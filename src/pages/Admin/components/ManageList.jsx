@@ -1,7 +1,8 @@
+import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
 // src/pages/Admin/components/ManageList.jsx
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X } from 'lucide-react';
 import FlashModal from '../../../components/modals/FlashModal.jsx';
 
 // dependencyOptions = niz objekata (npr. brendovi) za dropdown
@@ -145,9 +146,7 @@ export default function ManageList({
       {/* List */}
       <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
         {loading ? (
-          <div className="flex justify-center py-4">
-            <Loader2 className="animate-spin text-muted" />
-          </div>
+<AdminSkeleton rows={4} />
         ) : (
           <AnimatePresence initial={false}>
             {items.map((item) => (

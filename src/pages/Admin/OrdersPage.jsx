@@ -1,3 +1,4 @@
+import { AdminDashboardSkeleton } from '../../components/AdminSkeleton.jsx';
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { isAdminEmail } from '../../services/dajaPlatform';
@@ -10,7 +11,7 @@ export default function OrdersPage() {
   const nav = useNavigate();
   const isAuthorized = isAdminEmail(user?.email) && staffReady;
 
-  if (!authReady) return <div className="p-8 text-center text-slate-500">Provera pristupa…</div>;
+  if (!authReady) return <AdminDashboardSkeleton />;
   if (!isAuthorized) {
     return (
       <div className="p-8 text-center text-slate-500">

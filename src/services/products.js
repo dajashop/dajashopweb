@@ -34,9 +34,12 @@ export function subscribeProducts({
   ...params
 } = {}) {
   let cancelled = false;
+  const controller = new AbortController();
 
   (admin
-    ? adminCatalogApi.listProducts()
+    ? adminCatalogApi.listProducts({ signal: controller.signal, onPage: (items, partial) => {
+      if (!cancelled) onData?.(items, { partial });
+    } })
     : catalogApi.listProducts({ order, ...params })
   )
     .then((items) => {
@@ -48,6 +51,7 @@ export function subscribeProducts({
       if (!cancelled) onData?.(items);
     })
     .catch((error) => {
+      if (cancelled || error.name === 'AbortError') return;
       console.error('DAJA catalog error:', error);
       if (allowMockFallback && !admin) {
         if (!cancelled) onData?.(getMockProducts({ order, ...params }));
@@ -58,6 +62,7 @@ export function subscribeProducts({
 
   return () => {
     cancelled = true;
+    controller.abort();
   };
 }
 

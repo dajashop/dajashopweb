@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import AdminSkeleton, { AdminModalSkeleton } from '../../../components/AdminSkeleton.jsx';
+import LoadErrorBoundary from '../../../components/LoadErrorBoundary.jsx';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -11,7 +13,7 @@ import {
   Users,
 } from 'lucide-react';
 import { adminCatalogApi, workforceApi } from '../../../services/dajaPlatform';
-import AdminProductModal from './AdminProductModal';
+const AdminProductModal = lazy(() => import('./AdminProductModal'));
 import WorkforcePricing from './WorkforcePricing';
 import WorkforceTimeline from './WorkforceTimeline';
 import { rsd } from '../utils/workforce';
@@ -190,6 +192,8 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
           {error}
         </p>
       )}
+      {selected && <WorkforceTimeline key={selected.id} userId={selected.id} revision={revision} products={detail?.products || []} productsLoading={!detail && !error} productsError={!detail && Boolean(error)} />}
+      {selected && <WorkforcePricing key={selected.id} userId={selected.id} departments={departments} brands={brands} onSaved={refresh} />}
       {!selected ? (
         <>
           <WorkforcePricing
@@ -197,10 +201,8 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
             brands={brands}
             onSaved={refresh}
           />
-          {loading ? (
-            <p role="status" className="p-8 text-center text-neutral-500">
-              Učitavanje zaposlenih…
-            </p>
+          {loading && !members.length ? (
+            <AdminSkeleton cards rows={6} label="Učitavanje zaposlenih" />
           ) : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {members.map((member) => (
@@ -270,14 +272,10 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
           )}
         </>
       ) : !detail ? (
-        <p role="status" className="p-8 text-center text-neutral-500">
-          {error
-            ? 'Detalji nisu učitani. Pokušajte ponovo.'
-            : 'Učitavanje statistike i artikala…'}
-        </p>
+        error ? <p role="alert" className="p-8 text-red-600">Detalji nisu učitani. <button onClick={refresh}>Pokušaj ponovo</button></p> : <AdminSkeleton label="Učitavanje artikala i obračuna" />
       ) : (
         <>
-          <WorkforceTimeline key={selected.id} userId={selected.id} revision={revision} products={detail.products} />
+
           <details className="rounded-2xl border border-neutral-200 bg-white p-5">
             <summary className="mb-3 cursor-pointer text-sm font-bold">Ukupni podaci zaposlenog i obračun</summary>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
@@ -310,13 +308,7 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
             artikle.
           </p>
           </details>
-          <WorkforcePricing
-            key={selected.id}
-            userId={selected.id}
-            departments={departments}
-            brands={brands}
-            onSaved={refresh}
-          />
+
           <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 p-5">
               <h3 className="font-bold">
@@ -550,13 +542,13 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
         </>
       )}
       {editing && (
-        <AdminProductModal
+        <LoadErrorBoundary><Suspense fallback={<AdminModalSkeleton />}><AdminProductModal
           key={editing.full.id}
           product={editing.full}
           onClose={() => setEditing(null)}
           onSuccess={refresh}
           reviewContext={{ product: editing.review, onReviewed: refresh }}
-        />
+        /></Suspense></LoadErrorBoundary>
       )}
     </div>
   );

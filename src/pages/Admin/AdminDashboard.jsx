@@ -1,7 +1,9 @@
-import CatalogSearchSettings from './components/CatalogSearchSettings.jsx';
-import { SpecificationSettings } from '../../components/specifications/SpecificationEditor';
+import AdminSkeleton, { AdminDashboardSkeleton, AdminTableSkeleton, AdminModalSkeleton } from '../../components/AdminSkeleton.jsx';
+import LoadErrorBoundary from '../../components/LoadErrorBoundary.jsx';
 import { specificationEditorApi } from '../../services/dajaPlatform';
 import React, {
+  lazy,
+  Suspense,
   useState,
   useEffect,
   useMemo,
@@ -46,10 +48,7 @@ import {
 } from '../../services/products';
 
 // ... (Ostali importi ostaju isti: AdminProductModal, ExcelManager, itd.)
-import AdminProductModal from './components/AdminProductModal.jsx';
-import WorkforcePanel from './components/WorkforcePanel.jsx';
 import ConfirmModal from '../../components/modals/ConfirmModal.jsx';
-import ExcelManager from './components/ExcelManager';
 import {
   brandService,
   departmentService,
@@ -59,13 +58,27 @@ import {
 } from '../../services/admin';
 import { money } from '../../utils/currency';
 import SEOHead from '../../components/seo/SEOHead.jsx';
-import PolicyPublicationPanel from './components/PolicyPublicationPanel.jsx';
-import SupplierQueuePanel from './components/SupplierQueuePanel.jsx';
-import PromotionManager from './components/PromotionManager.jsx';
-import FilterManager from './components/FilterManager.jsx';
-import VariantGroupsPanel from '../../components/VariantGroupsPanel.jsx';
 import './TaxonomyMobile.css';
 import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
+
+
+function adminPanel(loader, modal = false) {
+  const Panel = lazy(loader);
+  return function AdminPanel(props) {
+    return <LoadErrorBoundary><Suspense fallback={modal ? <AdminModalSkeleton /> : <AdminSkeleton />}><Panel {...props} /></Suspense></LoadErrorBoundary>;
+  };
+}
+
+const CatalogSearchSettings = adminPanel(() => import('./components/CatalogSearchSettings.jsx'));
+const AdminProductModal = adminPanel(() => import('./components/AdminProductModal.jsx'), true);
+const WorkforcePanel = adminPanel(() => import('./components/WorkforcePanel.jsx'));
+const ExcelManager = adminPanel(() => import('./components/ExcelManager'));
+const PolicyPublicationPanel = adminPanel(() => import('./components/PolicyPublicationPanel.jsx'));
+const SupplierQueuePanel = adminPanel(() => import('./components/SupplierQueuePanel.jsx'));
+const PromotionManager = adminPanel(() => import('./components/PromotionManager.jsx'));
+const FilterManager = adminPanel(() => import('./components/FilterManager.jsx'));
+const VariantGroupsPanel = adminPanel(() => import('../../components/VariantGroupsPanel.jsx'));
+const SpecificationSettings = adminPanel(() => import('../../components/specifications/SpecificationEditor').then(module => ({ default: module.SpecificationSettings })));
 
 // ... (sanitizeItem i generateSlug funkcije ostaju iste)
 
@@ -620,18 +633,19 @@ function AdminDashboardContent() {
   const [draftSessionActive, setDraftSessionActive] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [auditEvents, setAuditEvents] = useState([]);
-  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditLoading, setAuditLoading] = useState(true);
   const [auditError, setAuditError] = useState('');
   const [expandedAuditId, setExpandedAuditId] = useState(null);
   const [activeAuditDetailTab, setActiveAuditDetailTab] = useState('basic');
   const [myWorkforceStats, setMyWorkforceStats] = useState(null);
-  const [myWorkforceLoading, setMyWorkforceLoading] = useState(false);
+  const [myWorkforceLoading, setMyWorkforceLoading] = useState(true);
   const [myWorkforceError, setMyWorkforceError] = useState('');
   const [accessUsers, setAccessUsers] = useState([]);
   const [accessRoles, setAccessRoles] = useState([]);
   const [newEmployeeName, setNewEmployeeName] = useState('');
   const [newEmployeeEmail, setNewEmployeeEmail] = useState('');
-  const [accessLoading, setAccessLoading] = useState(false);
+  const [accessLoading, setAccessLoading] = useState(true);
+  const [accessRolesLoading, setAccessRolesLoading] = useState(true);
   const [accessError, setAccessError] = useState('');
   const displayedAuditEvents = useMemo(
     () => collapseInitialCatalogEvents(auditEvents),
@@ -654,6 +668,8 @@ function AdminDashboardContent() {
   }, [activeTab, isCatalogContributor, canManageVariantGroups, setActiveTab]);
 
   // ... (Ostali state-ovi za brendove, kategorije...)
+  const [taxonomyLoading, setTaxonomyLoading] = useState({ brands: true, categories: true, specs: true });
+  const [taxonomyErrors, setTaxonomyErrors] = useState({});
   const [brands, setBrands] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [brandFilters, setBrandFilters] = useState([]);
@@ -740,9 +756,9 @@ function AdminDashboardContent() {
   // Fetch Data useEffects (Ostaju isti...)
   useEffect(() => {
     const unsub0 = departmentService.subscribe(setDepartments, console.error);
-    const unsub1 = brandService.subscribe(setBrands, console.error);
-    const unsub2 = categoryService.subscribe(setCategories, console.error);
-    const unsub3 = specKeyService.subscribe(setSpecs, console.error);
+    const unsub1 = brandService.subscribe(items => { setBrands(items); setTaxonomyLoading(current => ({ ...current, brands: false })); }, error => { setTaxonomyLoading(current => ({ ...current, brands: false })); setTaxonomyErrors(current => ({ ...current, brands: error.message || 'Podaci nisu učitani.' })); });
+    const unsub2 = categoryService.subscribe(items => { setCategories(items); setTaxonomyLoading(current => ({ ...current, categories: false })); }, error => { setTaxonomyLoading(current => ({ ...current, categories: false })); setTaxonomyErrors(current => ({ ...current, categories: error.message || 'Podaci nisu učitani.' })); });
+    const unsub3 = specKeyService.subscribe(items => { setSpecs(items); setTaxonomyLoading(current => ({ ...current, specs: false })); }, error => { setTaxonomyLoading(current => ({ ...current, specs: false })); setTaxonomyErrors(current => ({ ...current, specs: error.message || 'Podaci nisu učitani.' })); });
     return () => {
       unsub0();
       unsub1();
@@ -812,10 +828,12 @@ function AdminDashboardContent() {
     if (activeTab !== 'access') return undefined;
     let cancelled = false;
     setAccessLoading(true); setAccessError('');
-    Promise.all([accessControlApi.users(), accessControlApi.roles()])
-      .then(([users, roles]) => { if (!cancelled) { setAccessUsers(Array.isArray(users) ? users : []); setAccessRoles(Array.isArray(roles) ? roles : []); } })
-      .catch((error) => { if (!cancelled) setAccessError(error?.message || 'Korisnici i dozvole nisu dostupni.'); })
-      .finally(() => { if (!cancelled) setAccessLoading(false); });
+    setAccessRolesLoading(true);
+    const fail = error => { if (!cancelled) setAccessError(current => [current, error?.message || 'Korisnici i dozvole nisu dostupni.'].filter(Boolean).join(' ')); };
+    accessControlApi.users().then(users => { if (!cancelled) setAccessUsers(Array.isArray(users) ? users : []); })
+      .catch(fail).finally(() => { if (!cancelled) setAccessLoading(false); });
+    accessControlApi.roles().then(roles => { if (!cancelled) setAccessRoles(Array.isArray(roles) ? roles : []); })
+      .catch(fail).finally(() => { if (!cancelled) setAccessRolesLoading(false); });
     return () => { cancelled = true; };
   }, [activeTab]);
 
@@ -1290,6 +1308,7 @@ function AdminDashboardContent() {
           >
             <ExcelManager
               products={products}
+              catalogLoading={productsLoading}
               brands={brands}
               categories={categories}
               onImport={handleBulkImport}
@@ -1371,6 +1390,8 @@ function AdminDashboardContent() {
               </div>
             </div>
 
+            {productsError && <p role="alert" className="mb-3 rounded-xl bg-red-50 p-4 text-red-700">{productsError.message || 'Proizvodi nisu učitani.'} <button type="button" onClick={refreshProducts}>Pokušaj ponovo</button></p>}
+            {productsLoading && products.length > 0 && <p role="status" className="mb-3 text-sm text-neutral-500">Učitavanje proizvoda… ({products.length} učitano)</p>}
             {/* TABELA PROIZVODA */}
             <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
@@ -1387,7 +1408,8 @@ function AdminDashboardContent() {
                       <th className="p-4 text-right">Akcije</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-neutral-100" aria-busy={productsLoading}>
+                    {productsLoading && !products.length && <AdminTableSkeleton columns={8} />}
                     {filteredProducts.map((p) => {
                       // Provera da li je sakriven
                       const isHidden = p.isVisible === false;
@@ -1546,7 +1568,7 @@ function AdminDashboardContent() {
             </div>
 
             {myWorkforceLoading ? (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center text-neutral-500">Učitavanje statistike…</div>
+              <AdminSkeleton cards rows={4} label="Učitavanje statistike" />
             ) : myWorkforceError ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700">{myWorkforceError}</div>
             ) : (
@@ -1652,10 +1674,8 @@ function AdminDashboardContent() {
               </p>
             </div>
 
-            {auditLoading ? (
-              <div className="p-8 text-center text-neutral-500">
-                Učitavanje dnevnika…
-              </div>
+            {auditLoading && !auditEvents.length ? (
+              <AdminSkeleton label="Učitavanje dnevnika" />
             ) : auditError ? (
               <div className="p-8 text-center text-red-600">{auditError}</div>
             ) : auditEvents.length === 0 ? (
@@ -1851,12 +1871,12 @@ function AdminDashboardContent() {
                 <input required type="email" value={newEmployeeEmail} onChange={(event) => setNewEmployeeEmail(event.target.value)} placeholder="E-mail" className="rounded-xl border border-neutral-200 px-3 py-2.5 text-sm" />
                 <button disabled={!contributorRole} type="submit" className="rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Dodaj zaposlenog</button>
               </form>
-              {!contributorRole && !accessLoading && <p className="mt-3 text-sm text-amber-700">Rola „Unosilac kataloga” još nije kreirana. Sačekaj da se migracija 046 izvrši na backendu.</p>}
+              {!contributorRole && !accessRolesLoading && <p className="mt-3 text-sm text-amber-700">Rola „Unosilac kataloga” još nije kreirana. Sačekaj da se migracija 046 izvrši na backendu.</p>}
             </div>
             {accessError && <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{accessError}</div>}
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
               <div className="border-b border-neutral-100 p-4 text-sm font-bold">Zaposleni sa pristupom</div>
-              {accessLoading ? <p className="p-8 text-center text-neutral-500">Učitavanje korisnika…</p> : <div className="divide-y divide-neutral-100">{accessUsers.map((employee) => { const assignment = employee.assignments?.find((item) => item.roleId === contributorRole?.id); return <div key={employee.id} className="flex flex-wrap items-center justify-between gap-3 p-4"><div><div className="font-semibold text-neutral-900">{employee.displayName}</div><div className="text-sm text-neutral-500">{employee.email}</div></div><div className="flex items-center gap-3 flex-wrap">{variantGroupsRole && <label className="flex items-center gap-2 text-xs text-neutral-600"><input type="checkbox" checked={Boolean(employee.assignments?.some(item => item.roleId === variantGroupsRole.id))} disabled={accessLoading} onChange={event => void toggleEmployeeVariantGroups(employee, event.target.checked)} />Grupe varijanti</label>}<span className={`rounded-full px-3 py-1 text-xs font-bold ${assignment ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>{assignment ? 'Unosilac kataloga' : 'Druga rola'}</span>{assignment && <button type="button" onClick={() => void removeEmployeeAccess(employee)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600">Ukloni pristup</button>}</div></div>; })}{!accessUsers.length && !accessLoading && <p className="p-8 text-center text-neutral-500">Nema korisnika.</p>}</div>}
+              {accessLoading && !accessUsers.length ? <AdminSkeleton label="Učitavanje korisnika" /> : <div className="divide-y divide-neutral-100">{accessUsers.map((employee) => { const assignment = employee.assignments?.find((item) => item.roleId === contributorRole?.id); return <div key={employee.id} className="flex flex-wrap items-center justify-between gap-3 p-4"><div><div className="font-semibold text-neutral-900">{employee.displayName}</div><div className="text-sm text-neutral-500">{employee.email}</div></div><div className="flex items-center gap-3 flex-wrap">{variantGroupsRole && <label className="flex items-center gap-2 text-xs text-neutral-600"><input type="checkbox" checked={Boolean(employee.assignments?.some(item => item.roleId === variantGroupsRole.id))} disabled={accessLoading} onChange={event => void toggleEmployeeVariantGroups(employee, event.target.checked)} />Grupe varijanti</label>}<span className={`rounded-full px-3 py-1 text-xs font-bold ${assignment ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>{accessRolesLoading ? 'Učitavanje dozvola…' : assignment ? 'Unosilac kataloga' : 'Druga rola'}</span>{assignment && <button type="button" onClick={() => void removeEmployeeAccess(employee)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600">Ukloni pristup</button>}</div></div>; })}{!accessUsers.length && !accessLoading && <p className="p-8 text-center text-neutral-500">Nema korisnika.</p>}</div>}
             </div>
           </motion.div>
         )}
@@ -1946,6 +1966,8 @@ function AdminDashboardContent() {
               </form>{' '}
               <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar max-h-[500px] taxonomy-list">
                 {' '}
+                {taxonomyLoading.brands && <AdminSkeleton rows={4} />}
+                {taxonomyErrors.brands && <p role="alert" className="text-red-600">{taxonomyErrors.brands}</p>}
                 <AnimatePresence initial={false}>
                   {' '}
                   {visibleBrands.map((item) => (
@@ -2194,6 +2216,8 @@ function AdminDashboardContent() {
               </form>{' '}
               <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar max-h-[500px] taxonomy-list">
                 {' '}
+                {taxonomyLoading.categories && <AdminSkeleton rows={4} />}
+                {taxonomyErrors.categories && <p role="alert" className="text-red-600">{taxonomyErrors.categories}</p>}
                 <AnimatePresence initial={false}>
                   {' '}
                   {visibleCategories.map((item) => (
@@ -2434,6 +2458,8 @@ function AdminDashboardContent() {
               </form>{' '}
               <div data-spec-scroll data-lenis-prevent className="min-h-0 min-w-0 overflow-y-scroll overflow-x-hidden pr-1 space-y-2 custom-scrollbar max-h-[500px]" style={{ scrollbarGutter: 'stable', overscrollBehavior: 'contain' }}>
                 {' '}
+                {taxonomyLoading.specs && <AdminSkeleton rows={4} />}
+                {taxonomyErrors.specs && <p role="alert" className="text-red-600">{taxonomyErrors.specs}</p>}
                 <AnimatePresence initial={false}>
                   {' '}
                   {visibleSpecs.map((item) => (
@@ -2623,7 +2649,7 @@ export default function AdminDashboard() {
   const isAuthorized = Boolean(user && staffReady);
 
   if (!authReady) {
-    return <div className="p-8 text-center text-slate-500">Provera pristupa…</div>;
+    return <AdminDashboardSkeleton />;
   }
   if (!isAuthorized) {
     return (

@@ -1,3 +1,4 @@
+import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
 import { urlSlug } from '../../../utils/catalogUrls.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { filterConfigurationApi } from '../../../services/filterConfiguration.js';
@@ -154,7 +155,7 @@ export default function FilterManager({ products, productsLoading, definitions, 
     </div>
     <p className="fm-help">{dirty ? 'Ima nesačuvanih promena. ' : ''}Nacrt ne menja sajt do objavljivanja. Skrivanje, preimenovanje i spajanje ne menjaju podatke proizvoda.</p>
     {error && <div role="alert" className="fm-error">{error}</div>}{notice && <div role="status" className="fm-notice">{notice}</div>}
-    {!draft ? <p>{error ? 'Podešavanja nisu učitana.' : 'Učitavanje filtera…'}</p> : <>
+    {!draft ? error ? <p>Podešavanja nisu učitana.</p> : <AdminSkeleton label="Učitavanje filtera" /> : <>
       <div className={`fm-layout ${preview ? "has-preview" : ""}`}><div className="fm-sidebar"><h3 title="Lista svih filtera u nacrtu. Klikni naziv za uređivanje, prevuci ručicu za redosled ili označi checkboxove za spajanje.">Redosled i grupe</h3><p className="fm-help fm-order-help">Prevuci ručicu na željeno mesto ili koristi strelice. Podfilteri se pomeraju unutar svoje grupe.</p><FilterOrderTree nodes={draft.filters} activeId={activeId} selectedIds={selectedIds} onSelect={setActiveId} onSelection={setSelectedIds} onMove={move} onReorder={(filters) => setDraft((current) => ({ ...current, filters }))} disabled={!canWrite || busy} />
         <div className="fm-toolbar"><button type="button" disabled={selectedIds.length < 2 || !canWrite || busy} title="Označi najmanje dva filtera levo. Spaja ih pod jedan naslov, npr. Narukvica → Materijal + Boja. Svaki podfilter zadržava svoje opcije i izbore." onClick={() => merge('group')}>Spoji u sekciju</button><button type="button" disabled={selectedIds.length < 2 || !canWrite || busy} title="Označi najmanje dva filtera levo. Njihove opcije spaja u jednu listu, npr. Funkcije. Podrazumevano proizvod mora imati sve označene funkcije. Uslovi ostaju vezani za svoje izvore." onClick={() => merge('options')}>Spoji checkboxove</button></div>
         <button type="button" disabled={!canWrite || busy} title="Dodaje prazan filter Funkcije u nacrt. Za svaku funkciju dodaj naziv, izvor i tačne vrednosti koje potvrđuju njeno prisustvo." onClick={() => append({ id: 'feature:', label: 'Funkcije', values: [] })}>+ Prazan filter funkcija</button>

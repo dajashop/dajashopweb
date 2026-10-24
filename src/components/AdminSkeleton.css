@@ -1,0 +1,12 @@
+.admin-skeleton { display: grid; gap: 12px; width: 100%; padding: 16px 0; }
+.admin-skeleton--cards { grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); }
+.admin-skeleton__item { padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.admin-skeleton__block { background: #e5e7eb; border-radius: 6px; animation: admin-skeleton-pulse 1.5s ease-in-out infinite; }
+.admin-skeleton__title { height: 20px; width: 42%; margin-bottom: 16px; }
+.admin-skeleton__line { height: 14px; width: 85%; min-width: 28px; margin-bottom: 10px; }
+.admin-skeleton__short { height: 14px; width: 58%; }
+.admin-skeleton__heading { height: 32px; width: 190px; margin-bottom: 24px; }
+.admin-skeleton__tabs { display: flex; gap: 12px; overflow: hidden; margin-bottom: 24px; }
+.admin-skeleton__tabs > div { height: 40px; min-width: 110px; }
+@keyframes admin-skeleton-pulse { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .admin-skeleton__block { animation: none; } }

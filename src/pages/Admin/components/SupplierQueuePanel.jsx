@@ -1,3 +1,4 @@
+import AdminSkeleton, { AdminTableSkeleton } from '../../../components/AdminSkeleton.jsx';
 import React, {
   useCallback,
   useEffect,
@@ -235,6 +236,8 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
     [reason, setReason] = useState(''),
     [disableIds, setDisableIds] = useState(null);
   const serial = useRef(0);
+  const [ready, setReady] = useState({ providers: false, links: false, statistics: false, timeline: false });
+  const [loadErrors, setLoadErrors] = useState({});
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchValue), 300);
     return () => clearTimeout(timer);
@@ -257,24 +260,23 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
   }, [provider, status, search, attention, sort, direction]);
   const load = useCallback(async () => {
     const request = ++serial.current;
-    try {
-      const [p, l, s, t] = await Promise.all([
-        adminCatalogApi.supplierProviders(),
-        adminCatalogApi.supplierLinks(filters),
-        adminCatalogApi.supplierStatistics(provider, period),
-        adminCatalogApi.supplierTimeline(),
-      ]);
-      if (request !== serial.current) return;
-      setProviders(p.items);
-      setLinks(l);
-      setStatistics(s);
-      setTimeline(t);
-      setLoaded(true);
-      setError('');
-    } catch (e) {
-      if (request === serial.current)
-        setError(e.message || 'Pregled dobavljača nije dostupan.');
-    }
+    const receive = async (key, promise, apply) => {
+      try {
+        const value = await promise;
+        if (request !== serial.current) return;
+        apply(value);
+        setReady(current => ({ ...current, [key]: true }));
+        setLoadErrors(current => ({ ...current, [key]: '' }));
+      } catch (error) {
+        if (request === serial.current) setLoadErrors(current => ({ ...current, [key]: error.message || 'Podaci nisu dostupni.' }));
+      }
+    };
+    await Promise.allSettled([
+      receive('providers', adminCatalogApi.supplierProviders(), value => setProviders(value.items)),
+      receive('links', adminCatalogApi.supplierLinks(filters), value => { setLinks(value); setLoaded(true); }),
+      receive('statistics', adminCatalogApi.supplierStatistics(provider, period), setStatistics),
+      receive('timeline', adminCatalogApi.supplierTimeline(), setTimeline),
+    ]);
   }, [filters, provider, period]);
   const pending =
     providers.some((p) => p.probeRequestedAt) ||
@@ -505,9 +507,8 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
           {message}
         </p>
       )}
-      {!loaded && !error && (
-        <p className="text-sm text-neutral-500">Učitavanje dobavljača…</p>
-      )}
+      {Object.entries(loadErrors).filter(([, message]) => message).map(([key, message]) => <p key={key} role="alert" className="rounded-xl bg-red-50 p-3 text-red-700">{{ providers: 'Dobavljači', links: 'Linkovi', statistics: 'Statistika', timeline: 'Raspored' }[key]}: {message} <button onClick={() => void load()}>Pokušaj ponovo</button></p>)}
+      {!ready.providers ? (!loadErrors.providers && <AdminSkeleton rows={5} cards />) : <>
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
         <Stat label="Aktivni linkovi firme" value={number(totals.active)} />
         <Stat label="Isključeni linkovi" value={number(totals.disabled)} />
@@ -525,7 +526,9 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
           value={`${providers[0]?.systemActive || 0} / 20`}
         />
       </div>
+      </>}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {!ready.providers && !loadErrors.providers && <AdminSkeleton rows={3} cards />}
         {providers.map((p) => {
           const automatic =
               !!p.pausedUntil &&
@@ -703,6 +706,7 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
             </select>
           </div>
         </div>
+        {!ready.statistics ? (!loadErrors.statistics && <AdminSkeleton rows={3} />) : <>
         <p className="mt-2 text-xs text-neutral-500">
           Prikupljanje od {date(statistics.startedAt)} · čuvanje 30 dana ·
           rezultati artikala tvoje firme
@@ -741,6 +745,7 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
             stanje. Ove provere ne menjaju lokalne zalihe ili cenu firme.
           </p>
         </details>
+        </>}
       </section>
       <section className={panel}>
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -877,6 +882,7 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
               </tr>
             </thead>
             <tbody>
+              {!ready.links && !loadErrors.links && <AdminTableSkeleton columns={10} />}
               {links.items.map((link) => (
                 <tr
                   key={link.id}
@@ -1095,6 +1101,7 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
           Zakazani poslovi firme; prazni minuti ne pokreću zahteve.
           Termini tokom blokirajuće pauze nisu prikazani. Zauzetost sistema može odložiti početak.
         </p>
+        {!ready.timeline ? (!loadErrors.timeline && <AdminSkeleton cards rows={6} />) : <>
         <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-10">
           {Array.from({ length: 60 }, (_, i) => {
             const base =
@@ -1141,6 +1148,7 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
             );
           })}
         </div>
+        </>}
       </section>
       {pause && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">

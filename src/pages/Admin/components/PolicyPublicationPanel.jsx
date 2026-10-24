@@ -1,3 +1,4 @@
+import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Loader2, Send } from 'lucide-react';
 import { privacyAdminApi } from '../../../services/dajaPlatform.js';
@@ -86,7 +87,7 @@ export default function PolicyPublicationPanel() {
       </form>
       <div>
         <h3 className="font-semibold text-neutral-900">Prethodne objave</h3>
-        {loading ? <p className="mt-3 text-sm text-neutral-500">Učitavanje…</p> : publications.length === 0 ? <p className="mt-3 text-sm text-neutral-500">Još nema objavljenih verzija.</p> : (
+        {loading ? <AdminSkeleton rows={3} label="Učitavanje objava" /> : publications.length === 0 ? <p className="mt-3 text-sm text-neutral-500">Još nema objavljenih verzija.</p> : (
           <ul className="mt-3 divide-y divide-neutral-100 rounded-xl border border-neutral-200">
             {publications.map((publication) => (
               <li key={publication.id} className="p-3 text-sm">

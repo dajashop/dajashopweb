@@ -1,3 +1,4 @@
+import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
 import { useEffect, useState } from 'react';
 import { workforceApi } from '../../../services/dajaPlatform';
 import { rsd } from '../utils/workforce';
@@ -83,7 +84,7 @@ export default function WorkforcePricing({
         </p>
       )}
       {!data ? (
-        <p className="mt-3 text-sm">Učitavanje cenovnika…</p>
+        <AdminSkeleton rows={2} label="Učitavanje cenovnika" />
       ) : (
         <>
           <p className="mt-3 text-sm">

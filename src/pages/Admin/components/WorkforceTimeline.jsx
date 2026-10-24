@@ -1,3 +1,4 @@
+import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import { workforceApi } from '../../../services/dajaPlatform';
 import { useAuth } from '../../../hooks/useAuth';
@@ -31,7 +32,7 @@ function Table({ headings, children }) {
   return <div className="wa-table-scroll"><table><thead><tr>{headings.map((heading) => <th key={heading}>{heading}</th>)}</tr></thead><tbody>{children}</tbody></table></div>;
 }
 
-export default function WorkforceTimeline({ userId, revision, products = [] }) {
+export default function WorkforceTimeline({ userId, revision, products = [], productsLoading = false, productsError = false }) {
   const { user } = useAuth();
   const { preferencesAllowed } = useConsent();
   const storageKey = `daja_workforce_layout:${user?.id || user?.email || 'staff'}`;
@@ -46,7 +47,9 @@ export default function WorkforceTimeline({ userId, revision, products = [] }) {
   const [group, setGroup] = useState('brands');
   const [data, setData] = useState(null);
   const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [timelineLoading, setTimelineLoading] = useState(true);
+  const [reportLoading, setReportLoading] = useState(true);
+  const loading = timelineLoading || reportLoading;
   const [errors, setErrors] = useState([]);
   const [retry, setRetry] = useState(0);
   const firstHour = windowSize === 24 ? 0 : startHour;
@@ -59,14 +62,12 @@ export default function WorkforceTimeline({ userId, revision, products = [] }) {
   const updateCard = (id, changes) => saveLayout({ ...layout, [id]: { ...layout[id], ...changes } });
   useEffect(() => {
     let cancelled = false;
-    setLoading(true); setErrors([]); setData(null); setReport(null); setSelectedHour(null);
-    Promise.allSettled([workforceApi.timeline(userId, date), workforceApi.dashboard(userId, { date, startHour: firstHour, hours: windowSize })]).then(([timeline, dashboard]) => {
-      if (cancelled) return;
-      if (timeline.status === 'fulfilled') setData(timeline.value);
-      if (dashboard.status === 'fulfilled') setReport(dashboard.value);
-      setErrors([timeline.status === 'rejected' ? `Aktivnosti: ${timeline.reason.message}` : '', dashboard.status === 'rejected' ? `Statistika i merenja: ${dashboard.reason.message}` : ''].filter(Boolean));
-      setLoading(false);
-    });
+    setTimelineLoading(true); setReportLoading(true); setErrors([]); setData(null); setReport(null); setSelectedHour(null);
+    const failed = (label, error) => { if (!cancelled) setErrors(current => [...current, `${label}: ${error.message}`]); };
+    workforceApi.timeline(userId, date).then(value => { if (!cancelled) setData(value); })
+      .catch(error => failed('Aktivnosti', error)).finally(() => { if (!cancelled) setTimelineLoading(false); });
+    workforceApi.dashboard(userId, { date, startHour: firstHour, hours: windowSize }).then(value => { if (!cancelled) setReport(value); })
+      .catch(error => failed('Statistika i merenja', error)).finally(() => { if (!cancelled) setReportLoading(false); });
     return () => { cancelled = true; };
   }, [userId, date, firstHour, windowSize, revision, retry]);
   const model = useMemo(() => workforceModel({ entries: data?.entries, report, products, date, firstHour, hours: windowSize, pause }), [data, report, products, date, firstHour, windowSize, pause]);
@@ -86,7 +87,11 @@ export default function WorkforceTimeline({ userId, revision, products = [] }) {
     trend: 'Poslednjih 30 dana do izabranog datuma · celi dani'
   };
   const renderCard = (id) => {
-    const reportCard = ['comparison', 'calendar', 'trend', 'team', 'timing'].includes(id);
+    const productCard = ['quality', 'missing', 'waiting'].includes(id);
+    const reportCard = ['comparison', 'calendar', 'trend', 'team', 'timing'].includes(id) || (id === 'timeline' && tab === 'items');
+    const pending = productCard ? productsLoading : reportCard ? reportLoading : id === 'metrics' ? loading : timelineLoading;
+    if (pending) return <AdminSkeleton rows={2} />;
+    if (productCard && productsError) return <div className="wa-empty">Artikli nisu učitani. Pokušaj ponovo.</div>;
     if ((reportCard && !report) || (!reportCard && !data && !['quality', 'missing', 'waiting'].includes(id))) return <div className="wa-empty">Podaci nisu učitani. Pokušaj ponovo.</div>;
     switch (id) {
       case 'metrics': return <div className="wa-metrics">
@@ -138,7 +143,7 @@ export default function WorkforceTimeline({ userId, revision, products = [] }) {
     {editing && <div className="wa-layout-editor"><div className="wa-heading"><h4>Vidljive kartice</h4><button onClick={() => saveLayout(defaults())}>Vrati podrazumevano</button></div><p>Širinu menjaš u zaglavlju kartice. Na telefonu se kartice automatski slažu jedna ispod druge.</p><div>{cards.map(([id, title]) => <label key={id}><input type="checkbox" checked={layout[id].visible} onChange={(event) => updateCard(id, { visible: event.target.checked })} />{title}</label>)}</div>{!preferencesAllowed && <small>Raspored ostaje za ovu posetu. Za pamćenje u pregledaču uključi čuvanje preferencija.</small>}</div>}
     {errors.length > 0 && <div className="wa-error" role="alert">{errors.map((error) => <p key={error}>{error}</p>)}<button onClick={() => setRetry(retry + 1)}>Pokušaj ponovo</button></div>}
     {loading && <p className="wa-loading" role="status">Učitavanje grafikona i merenja…</p>}
-    <div className="wa-grid">{cards.filter(([id]) => layout[id].visible).map(([id, title]) => <article key={id} className={`wa-card wa-span-${layout[id].span}`}><header className="wa-card-header"><div><h4>{title}</h4><small>{notes[id] || period}</small></div>{editing && <div className="wa-card-actions"><select aria-label={`Širina kartice ${title}`} value={layout[id].span} onChange={(event) => updateCard(id, { span: Number(event.target.value) })}><option value={12}>Cela · 1/1</option><option value={6}>Polovina · 1/2</option><option value={4}>Trećina · 1/3</option><option value={8}>Dve trećine · 2/3</option></select><button aria-label={`Sakrij ${title}`} onClick={() => updateCard(id, { visible: false })}>×</button></div>}</header><div className="wa-card-content">{loading && !['quality', 'missing', 'waiting'].includes(id) ? <div className="wa-empty">Učitavanje…</div> : renderCard(id)}</div></article>)}</div>
+    <div className="wa-grid">{cards.filter(([id]) => layout[id].visible).map(([id, title]) => <article key={id} className={`wa-card wa-span-${layout[id].span}`}><header className="wa-card-header"><div><h4>{title}</h4><small>{notes[id] || period}</small></div>{editing && <div className="wa-card-actions"><select aria-label={`Širina kartice ${title}`} value={layout[id].span} onChange={(event) => updateCard(id, { span: Number(event.target.value) })}><option value={12}>Cela · 1/1</option><option value={6}>Polovina · 1/2</option><option value={4}>Trećina · 1/3</option><option value={8}>Dve trećine · 2/3</option></select><button aria-label={`Sakrij ${title}`} onClick={() => updateCard(id, { visible: false })}>×</button></div>}</header><div className="wa-card-content">{renderCard(id)}</div></article>)}</div>
     {!cards.some(([id]) => layout[id].visible) && <div className="wa-empty">Sve kartice su skrivene. Uključi ih kroz „Uredi raspored“.</div>}
   </section>;
 }
