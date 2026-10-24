@@ -203,8 +203,12 @@ export default function AuthModal() {
   // Dropdown States & Refs
   const loginWrapperRef = useRef(null);
   const regWrapperRef = useRef(null);
-  const identityInputRef = useRef(null);
-  const emailSuggestionsRef = useRef(null);
+  const loginIdentityInputRef = useRef(null);
+  const registerIdentityInputRef = useRef(null);
+  const loginEmailSuggestionsRef = useRef(null);
+  const registerEmailSuggestionsRef = useRef(null);
+  const identityInputRef = isLogin ? loginIdentityInputRef : registerIdentityInputRef;
+  const emailSuggestionsRef = isLogin ? loginEmailSuggestionsRef : registerEmailSuggestionsRef;
   const wasAuthOpenRef = useRef(false);
 
   const [flashOpen, setFlashOpen] = useState(false);
@@ -817,6 +821,7 @@ export default function AuthModal() {
                         isLogin === loginPane ? 'active' : 'inactive'
                       }`}
                       aria-hidden={isLogin !== loginPane}
+                      inert={isLogin !== loginPane}
                     >
                       <div className="pane-inner">
                         {loginPane && forgotPassword ? (
@@ -925,7 +930,8 @@ export default function AuthModal() {
                                 )}
 
                                 <input
-                                  ref={identityInputRef}
+                                  ref={loginPane ? loginIdentityInputRef : registerIdentityInputRef}
+                                  id={loginPane ? 'auth-login-identity' : 'auth-register-identity'}
                                   name="identity"
                                   type="text"
                                   placeholder="Email ili Broj telefona"
@@ -956,9 +962,9 @@ export default function AuthModal() {
                                 )}
                               </AnimatePresence>
                               <AnimatePresence>
-                                {showSuggestions && (
+                                {showSuggestions && isLogin === loginPane && (
                                   <motion.ul
-                                    ref={emailSuggestionsRef}
+                                    ref={loginPane ? loginEmailSuggestionsRef : registerEmailSuggestionsRef}
                                     className="auth-dropdown"
                                     aria-label="Predlozi email adresa"
                                     onBlur={(e) => {
