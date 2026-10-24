@@ -365,6 +365,7 @@
   line-height: 16px;
 }
 .auth-field-feedback svg { flex: 0 0 auto; margin-top: 1px; }
+.auth-field-feedback:empty { display: none; }
 
 .custom-error-popout {
   display: flex;
@@ -584,7 +585,7 @@
   overflow-x: hidden; /* I ovde da budemo sigurni */
 }
 .auth-card .auth-dropdown {
-  top: calc(100% - 23px);
+  top: 100%;
   background: var(--color-surface, #f5f5f7);
 }
 .auth-dropdown .auth-email-option {
