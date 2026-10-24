@@ -200,6 +200,7 @@ export default function AuthModal() {
   const regWrapperRef = useRef(null);
   const identityInputRef = useRef(null);
   const emailSuggestionsRef = useRef(null);
+  const wasAuthOpenRef = useRef(false);
 
   const [flashOpen, setFlashOpen] = useState(false);
   const [flashTitle, setFlashTitle] = useState('');
@@ -228,14 +229,18 @@ export default function AuthModal() {
   }, [authOpen]);
 
   useEffect(() => {
+    const isOpening = authOpen && !wasAuthOpenRef.current;
+    wasAuthOpenRef.current = authOpen;
     const savedLogin = readLastLogin();
     const shouldSuggestEmail = Boolean(
       authOpen && mode === 'login' && savedLogin?.provider === 'password',
     );
 
     setLastLogin(savedLogin);
-    setIdentity(shouldSuggestEmail ? savedLogin.email : '');
-    setIsSuggestedEmail(shouldSuggestEmail);
+    if (!authOpen || isOpening) {
+      setIdentity(shouldSuggestEmail ? savedLogin.email : '');
+      setIsSuggestedEmail(shouldSuggestEmail);
+    }
     setPassword('');
     setName('');
     setShowPass(false);
