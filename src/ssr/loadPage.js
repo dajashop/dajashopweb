@@ -96,6 +96,7 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
   }
   if (path === '/') data.homeProducts = { ...listing, requestKey: 'home' };
   data.relatedVariants = variants?.items || [];
+  data.variantGroupId = variants?.groupId || null;
   data.relatedProducts = related || [];
   // Empty successful results are seeds too; failed optional requests can retry in the browser.
   data.relatedVariantsLoaded = Array.isArray(variants?.items);

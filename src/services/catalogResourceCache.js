@@ -10,7 +10,7 @@ export function cachedResource(key, fresh = false) {
 }
 export function rememberResource(key, value) {
   if (typeof window === 'undefined' || value == null) return;
-  const items = Array.isArray(value) ? value : [value];
+  const items = Array.isArray(value) ? value : Array.isArray(value.items) ? value.items : [value];
   const saleExpiry = Math.min(...items.filter(item => item.salePrice && item.saleValidUntil)
     .map(item => Date.parse(item.saleValidUntil)).filter(Number.isFinite));
   entries.delete(key);

@@ -2,13 +2,13 @@ import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { prefetchProduct } from '../services/products.js';
 
-export default function ProductLink({ to, onPointerEnter, onPointerLeave, onFocus, onBlur, ...props }) {
+export default function ProductLink({ to, prefetchImage = false, onPointerEnter, onPointerLeave, onFocus, onBlur, ...props }) {
   const timer = useRef();
   const cancel = () => window.clearTimeout(timer.current);
   const schedule = () => {
     cancel();
     if (typeof to === 'string' && to.startsWith('/product/')) {
-      timer.current = window.setTimeout(() => prefetchProduct(to.slice(9)), 120);
+      timer.current = window.setTimeout(() => prefetchProduct(to.slice(9), { image: prefetchImage }), 120);
     }
   };
   useEffect(() => () => window.clearTimeout(timer.current), []);

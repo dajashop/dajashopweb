@@ -1,5 +1,5 @@
 import { productSeoDescription } from '../utils/productSeoDescription.js';
-import React, { lazy, useEffect, useMemo } from 'react';
+import React, { lazy, useEffect, useMemo, useRef, useState } from 'react';
 import './Product.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCart } from '../hooks/useCart.js';
@@ -30,6 +30,8 @@ import BreadcrumbJsonLd from '../components/seo/BreadcrumbJsonLd.jsx';
 import { seoConfig } from '../config/seo.js';
 import { visibleProductFeatures } from '../utils/catalogPresentation.js';
 import PageStatus from './PageStatus.jsx';
+import { prepareProductVariant, productResourceKey } from '../services/products.js';
+import { rememberResource } from '../services/catalogResourceCache.js';
 
 const DEPARTMENT_LABELS = {
   satovi: 'Ručni Satovi',
@@ -55,16 +57,54 @@ export default function Product() {
   const { flash } = useFlash();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const isLiked = p ? isInWishlist(p.id) : false;
+  const selection = useRef(null);
+  const [pendingSlug, setPendingSlug] = useState(null);
 
+  // Cancel an unfinished selection on navigation or catalog/group changes.
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    const cancel = () => {
+      selection.current?.abort();
+      selection.current = null;
+      setPendingSlug(null);
+    };
+    const events = ['daja:products-changed', 'daja:variant-groups-changed', 'daja:filters-changed'];
+    events.forEach(event => window.addEventListener(event, cancel));
+    return () => {
+      cancel();
+      events.forEach(event => window.removeEventListener(event, cancel));
+    };
   }, [slug]);
 
   useEffect(() => {
     if (p?.redirectTo) navigate(p.redirectTo, { replace: true });
   }, [navigate, p?.redirectTo]);
 
-  const relatedVariants = useProductVariantGroup(slug, Boolean(p?.id));
+  const { items: relatedVariants, groupId: variantGroupId } = useProductVariantGroup(slug, p);
+
+  const selectVariant = async (variant) => {
+    selection.current?.abort();
+    const controller = new AbortController();
+    selection.current = controller;
+    setPendingSlug(variant.slug);
+    try {
+      const next = await prepareProductVariant(variant.slug, { signal: controller.signal });
+      if (controller.signal.aborted || selection.current !== controller) return;
+      if (!next?.id || next.redirectTo) throw new Error('Variant unavailable');
+      // Image preparation may outlast the normal resource TTL; seed the exact
+      // complete payload immediately before the router switches products.
+      rememberResource(productResourceKey(variant.slug), next);
+      navigate(`/product/${variant.slug}`, { replace: true, state: { variantTransition: true } });
+    } catch (error) {
+      if (error.name !== 'AbortError' && selection.current === controller) {
+        flash('Varijanta nije učitana', 'Pokušajte ponovo. Prethodni model je i dalje izabran.', 'error');
+      }
+    } finally {
+      if (selection.current === controller) {
+        selection.current = null;
+        setPendingSlug(null);
+      }
+    }
+  };
 
   // --- [LOGIKA] Da li proizvod ima unete funkcionalnosti? ---
   const hasFeatures = useMemo(() => {
@@ -133,7 +173,7 @@ export default function Product() {
   };
 
   return (
-    <div key={slug} className="product-page-wrapper">
+    <div className="product-page-wrapper">
       <SEOHead
         defer={false}
         title={seoTitle}
@@ -143,7 +183,7 @@ export default function Product() {
         type="product"
         url={`${siteRoot}/product/${p.slug}`}
       />
-      <ProductJsonLd product={p} reviews={p.reviews || []} />
+      <ProductJsonLd product={p} reviews={p.reviews || []} relatedVariants={relatedVariants} groupId={variantGroupId} />
       <BreadcrumbJsonLd
         defer={false}
         items={[
@@ -161,9 +201,10 @@ export default function Product() {
               if (patch.slug && patch.slug !== slug) navigate(`/product/${patch.slug}`, { replace: true });
             }}
             onDeleted={() => navigate(departmentPath, { replace: true })} /></ClientOnly> : null} />
-          <ProductVariants product={p} relatedVariants={relatedVariants} />
+          <ProductVariants product={p} relatedVariants={relatedVariants} onSelect={selectVariant} pendingSlug={pendingSlug} />
 
           <ProductActions
+            key={p.id}
             product={p}
             onAdd={handleAdd}
             onWishlist={handleWishlist}
@@ -192,7 +233,7 @@ export default function Product() {
         {/* H1 and product information precede section headings in the document.
             CSS keeps the gallery in its existing position on desktop and mobile. */}
         <div className="product__gallery-container">
-          <ProductGallery product={p} />
+          <ProductGallery key={p.id} product={p} />
           <div className="desktop-trust">
             <ProductTrust />
           </div>

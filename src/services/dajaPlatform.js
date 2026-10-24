@@ -526,7 +526,7 @@ export const variantGroupsApi = {
   async publicMembers(slug, signal) {
     const data = await apiRequest(`/public/catalog/products/${encodeURIComponent(slug)}/variants`, { auth: false, signal });
     if (!data || !Array.isArray(data.items)) throw new Error('Varijante nisu dostupne.');
-    return data.items.map(normalizeProduct);
+    return { items: data.items.map(normalizeProduct), groupId: data.groupId || null };
   },
 };
 

@@ -4,18 +4,20 @@ import { variantGroupsApi, subscribePublicCatalogRealtime } from '../services/da
 import { useConsent } from '../context/ConsentContext.jsx';
 import { usePageData } from '../ssr/PageData.jsx';
 
-export default function useProductVariantGroup(slug, enabled = true) {
+export default function useProductVariantGroup(slug, product) {
+  const enabled = Boolean(product?.id);
   const { hasDecision } = useConsent();
   const page = usePageData();
   const hasSeed = page?.hydrating && page?.data?.product?.slug === slug && page.data.relatedVariantsLoaded;
-  const initialItems = hasSeed ? page.data.relatedVariants || [] : cachedResource(`variants:${slug}`) || [];
-  const [result, setResult] = useState({ slug, items: initialItems });
+  const initialGroup = hasSeed ? { items: page.data.relatedVariants || [], groupId: page.data.variantGroupId || null }
+    : cachedResource(`variants:${slug}`) || { items: [], groupId: null };
+  const [result, setResult] = useState({ slug, source: product, ...initialGroup });
   useEffect(() => {
     if (!slug || !enabled) return undefined;
     const resourceKey = `variants:${slug}`;
-    if (hasSeed) rememberResource(resourceKey, initialItems);
+    if (hasSeed) rememberResource(resourceKey, initialGroup);
     const stored = cachedResource(resourceKey);
-    if (stored) setResult({ slug, items: stored });
+    if (stored) setResult({ slug, source: product, ...stored });
     let mounted = true;
     let controller;
     const load = async (force = false) => {
@@ -23,10 +25,10 @@ export default function useProductVariantGroup(slug, enabled = true) {
       controller = new AbortController();
       const signal = controller.signal;
       try {
-        const items = await requestResource(resourceKey, requestSignal => variantGroupsApi.publicMembers(slug, requestSignal), { signal, force });
-        if (mounted && !signal.aborted) setResult({ slug, items });
+        const group = await requestResource(resourceKey, requestSignal => variantGroupsApi.publicMembers(slug, requestSignal), { signal, force });
+        if (mounted && !signal.aborted) setResult({ slug, source: product, ...group });
       } catch (error) {
-        if (mounted && !signal.aborted) setResult(current => current.slug === slug ? current : { slug, items: [] });
+        if (mounted && !signal.aborted) setResult(current => current.slug === slug ? current : { slug, source: product, items: [], groupId: null });
       }
     };
     if (!cachedResource(resourceKey, true)) void load();
@@ -51,5 +53,11 @@ export default function useProductVariantGroup(slug, enabled = true) {
       }
     });
   }, [hasDecision]);
-  return result.slug === slug ? result.items : initialItems;
+  if (result.slug === slug) return result;
+  // Keep the last server-resolved group visible during a switch. The request
+  // above still resolves this slug independently, including manual changes.
+  if (result.source && result.items.some(item => item.slug === slug)) {
+    return { groupId: result.groupId, items: [result.source, ...result.items].filter(item => item.slug !== slug) };
+  }
+  return initialGroup;
 }

@@ -5,14 +5,15 @@ import Footer from './components/Footer.jsx';
 import AuthModal from './components/AuthModal.jsx';
 import { useLocation, useNavigationType } from 'react-router-dom';
 import NewsletterModal from './components/modals/NewsletterModal.jsx';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import OrganizationJsonLd from './components/seo/OrganizationJsonLd.jsx';
 import WebSiteJsonLd from './components/seo/WebSiteJsonLd.jsx';
 import PageStatus from './pages/PageStatus.jsx';
 import { usePageData } from './ssr/PageData.jsx';
 
 export default function App() {
-  const { pathname } = useLocation(); // Hvatamo trenutnu putanju
+  const { pathname, state } = useLocation();
+  const previousPath = useRef(pathname);
   const navType = useNavigationType();
   const pageData = usePageData()?.data;
   const pageStatus = pageData?.errorPath === pathname ? pageData.errorStatus : null;
@@ -34,9 +35,12 @@ export default function App() {
 
   // Resetovanje skrola na vrh pri promeni stranice (samo za PUSH/REPLACE)
   useEffect(() => {
+    const from = previousPath.current;
+    previousPath.current = pathname;
+    if (state?.variantTransition && from.startsWith('/product/') && pathname.startsWith('/product/')) return;
     if (navType === 'POP') return; // Back/Forward zadrži native scroll restore
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [pathname, navType]);
+  }, [pathname, navType, state]);
 
   return (
     <div

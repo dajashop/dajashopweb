@@ -11,7 +11,8 @@ export default function useProduct(slug) {
   const includeHiddenForAdmin = Boolean(staffReady && isAdminEmail(user?.email));
   const page = usePageData();
   const resourceKey = productResourceKey(slug, includeHiddenForAdmin);
-  const initialProduct = page?.hydrating && page?.data?.product?.slug === slug ? page.data.product : cachedProductBySlug(slug, includeHiddenForAdmin);
+  const initialProduct = page?.hydrating && page?.data?.product?.slug === slug ? page.data.product
+    : cachedProductBySlug(slug, includeHiddenForAdmin) || (includeHiddenForAdmin ? cachedProductBySlug(slug) : null);
   const [result, setResult] = useState({
     slug, resourceKey, product: initialProduct, loading: Boolean(slug) && !initialProduct, error: null,
   });

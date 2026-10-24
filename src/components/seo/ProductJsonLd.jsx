@@ -45,6 +45,16 @@ function schemaCondition(condition) {
   return `https://schema.org/${known[condition] || known.new}`;
 }
 
+function variantTraits(product) {
+  const specs = Object.fromEntries(Object.entries(product.specs || {}).map(([key, value]) => [
+    key.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s/-]+/g, '_'), value,
+  ]));
+  const combine = keys => [...new Set(keys.map(key => specs[key]).filter(value => typeof value === 'string' && value.trim()))].join(' / ');
+  const color = combine(['color', 'boja', 'boja_brojcanika', 'boja_kucista', 'boja_narukvice', 'boja_okvira', 'boja_sociva']);
+  const material = combine(['material', 'materijal', 'materijal_kucista', 'materijal_narukvice', 'materijal_okvira', 'materijal_sociva']);
+  return { ...(color ? { color } : {}), ...(material ? { material } : {}) };
+}
+
 function getAverageRating(reviews) {
   const values = reviews
     .map((r) => Number(r?.rating ?? r?.stars ?? r?.score))
@@ -85,7 +95,7 @@ function shippingDetails(price) {
   };
 }
 
-export default function ProductJsonLd({ product, reviews = [] }) {
+export default function ProductJsonLd({ product, reviews = [], relatedVariants = [], groupId }) {
   if (!product) {
     return null;
   }
@@ -100,13 +110,17 @@ export default function ProductJsonLd({ product, reviews = [] }) {
         name: imageItem.altText || seoImageAlt || productName,
       }));
   const availability = product.availability?.inStock ?? product.inStock;
+  const productUrl = `${seoConfig.siteUrl.replace(/\/$/, '')}/product/${product.slug}`;
 
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
+    '@id': `${productUrl}#product`,
+    url: productUrl,
     name: productName,
     description,
     image,
+    ...variantTraits(product),
     brand: {
       '@type': 'Brand',
       name: product.brand || seoConfig.siteName,
@@ -141,6 +155,33 @@ export default function ProductJsonLd({ product, reviews = [] }) {
       },
     },
   };
+
+  if (groupId && relatedVariants.length) {
+    // Public grouping identity comes from the same resolver as the selector.
+    // Manual group names and automatic matching rules are never exposed.
+    schema.inProductGroupWithID = groupId;
+    const members = [product, ...relatedVariants];
+    let commonName = String(members[0].name || '');
+    for (const member of members.slice(1)) {
+      while (commonName && !String(member.name || '').startsWith(commonName)) commonName = commonName.slice(0, -1);
+    }
+    const traits = members.map(variantTraits);
+    const variesBy = ['color', 'material'].filter(key => traits.every(item => item[key]) && new Set(traits.map(item => item[key])).size > 1)
+      .map(key => `https://schema.org/${key}`);
+    const commonBrand = members.every(item => item.brand === product.brand) ? product.brand : null;
+    schema.isVariantOf = {
+      '@type': 'ProductGroup',
+      name: [commonBrand, commonName.replace(/[\s\-_/]+$/, '')].filter(Boolean).join(' ') || 'Varijante proizvoda',
+      productGroupID: groupId,
+      ...(commonBrand ? { brand: { '@type': 'Brand', name: commonBrand } } : {}),
+      ...(variesBy.length ? { variesBy } : {}),
+      hasVariant: [
+        { '@id': `${productUrl}#product` },
+        ...relatedVariants.map(variant => ({ '@type': 'Product',
+          url: `${seoConfig.siteUrl.replace(/\/$/, '')}/product/${variant.slug}` })),
+      ],
+    };
+  }
 
   const avgRating = Number.isFinite(Number(product.reviewSummary?.averageRating))
     ? Number(product.reviewSummary.averageRating)

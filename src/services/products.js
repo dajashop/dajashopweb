@@ -89,16 +89,45 @@ export function fetchProductBySlug(slug, { includeHiddenForAdmin = false, signal
     requestSignal => loadProductBySlug(slug, includeHiddenForAdmin, requestSignal), { signal, force });
 }
 const prefetches = new Map();
-export function prefetchProduct(slug) {
+export function prefetchProduct(slug, { image = false } = {}) {
   if (!slug || typeof window === 'undefined' || cachedResource(productResourceKey(slug), true) || prefetches.has(slug) || prefetches.size >= 2) return;
   const connection = navigator.connection;
   if (connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType)) return;
   const controller = new AbortController();
   prefetches.set(slug, controller);
   const timeout = window.setTimeout(() => controller.abort(), 10_000);
-  void fetchProductBySlug(slug, { signal: controller.signal }).catch(() => {}).finally(() => {
+  const load = image ? prepareProductVariant : fetchProductBySlug;
+  void load(slug, { signal: controller.signal }).catch(() => {}).finally(() => {
     window.clearTimeout(timeout); prefetches.delete(slug);
   });
+}
+export async function prepareProductVariant(slug, { signal } = {}) {
+  const product = await fetchProductBySlug(slug, { signal });
+  const first = product?.images?.[0];
+  const src = (typeof first === 'string' ? first : first?.url) || product?.mainImageUrl || product?.image;
+  if (src && typeof Image !== 'undefined') await new Promise((resolve, reject) => {
+    if (signal?.aborted) { reject(new DOMException('Aborted', 'AbortError')); return; }
+    const image = new Image();
+    const cleanup = () => {
+      clearTimeout(timeout);
+      signal?.removeEventListener('abort', abort);
+      image.onload = null;
+      image.onerror = null;
+    };
+    const finish = () => { cleanup(); resolve(); };
+    const abort = () => { cleanup(); reject(new DOMException('Aborted', 'AbortError')); };
+    const timeout = setTimeout(finish, 5000);
+    signal?.addEventListener('abort', abort, { once: true });
+    image.onload = finish;
+    image.onerror = finish;
+    image.src = src;
+    if (image.complete) finish();
+  });
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+  if (product?.salePrice && product.saleValidUntil && Date.parse(product.saleValidUntil) <= Date.now()) {
+    return fetchProductBySlug(slug, { signal, force: true });
+  }
+  return product;
 }
 async function loadProductBySlug(slug, includeHiddenForAdmin, signal) {
   let publicProduct = null;

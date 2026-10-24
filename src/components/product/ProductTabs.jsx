@@ -10,7 +10,8 @@ import { commerceSeoConfig } from '../../config/seo.js';
 import { money } from '../../utils/currency.js';
 
 export default function ProductTabs({ product, hideSpecs = false }) {
-  const [activeTab, setActiveTab] = useState('desc');
+  const [selectedTab, setActiveTab] = useState('desc');
+  const activeTab = hideSpecs && selectedTab === 'specs' ? 'desc' : selectedTab;
 
   return (
     <div className="product-tabs-container">
@@ -70,7 +71,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
         {/* [NOVO] RECENZIJE */}
         {activeTab === 'reviews' && <section>
           <h2 className="sr-only">Recenzije proizvoda</h2>
-          <ProductReviews product={product} />
+          <ProductReviews key={product.id} product={product} />
         </section>}
 
         {/* ISPORUKA */}
