@@ -75,16 +75,9 @@ function saveLastLogin(provider, email) {
 }
 
 const ErrorMessage = ({ message }) => (
-  <motion.div
-    initial={{ opacity: 0, y: -8, height: 0, marginTop: 0 }}
-    animate={{ opacity: 1, y: 0, height: 'auto', marginTop: 6 }}
-    exit={{ opacity: 0, y: -8, height: 0, marginTop: 0 }}
-    transition={{ duration: 0.25, type: 'spring', bounce: 0.3 }}
-    className="custom-error-popout"
-  >
-    <AlertCircle size={14} className="error-icon-pop" />
-    <span>{message}</span>
-  </motion.div>
+  <div className="auth-field-feedback" aria-live="polite">
+    {message && <><AlertCircle size={13} aria-hidden="true" /><span>{message}</span></>}
+  </div>
 );
 
 function PasswordResetRequest({
@@ -431,6 +424,7 @@ export default function AuthModal() {
         setIdentity(valToValidate);
         setPrediction('');
       }
+      setShowSuggestions(false);
     }
 
     const error = validateField(name, valToValidate);
@@ -479,6 +473,16 @@ export default function AuthModal() {
       e.preventDefault();
       handleIdentityChange({ target: { value: identity + e.key } });
       identityInputRef.current?.focus();
+    }
+  };
+
+  const keepSuggestionVisible = (e) => {
+    const list = emailSuggestionsRef.current;
+    if (!list) return;
+    const option = e.currentTarget;
+    if (option.offsetTop < list.scrollTop) list.scrollTop = option.offsetTop;
+    else if (option.offsetTop + option.offsetHeight > list.scrollTop + list.clientHeight) {
+      list.scrollTop = option.offsetTop + option.offsetHeight - list.clientHeight;
     }
   };
 
@@ -804,16 +808,7 @@ export default function AuthModal() {
               </div>
 
               <div className="form-slider">
-                <motion.div
-                  className="track"
-                  animate={{ x: isLogin ? '0%' : '-100%' }}
-                  transition={{
-                    type: 'spring',
-                    stiffness: 520,
-                    damping: 38,
-                    bounce: 0.25,
-                  }}
-                >
+                <div className="track">
                   {[true, false].map((loginPane) => (
                     <div
                       key={loginPane ? 'log' : 'reg'}
@@ -859,14 +854,7 @@ export default function AuthModal() {
                                     required
                                   />
                                 </div>
-                                <AnimatePresence mode="wait">
-                                  {errors.name && (
-                                    <ErrorMessage
-                                      key={`nm-${submitCount}`}
-                                      message={errors.name}
-                                    />
-                                  )}
-                                </AnimatePresence>
+                                <ErrorMessage message={errors.name} />
                               </label>
                             )}
 
@@ -953,14 +941,7 @@ export default function AuthModal() {
                                   }}
                                 />
                               </div>
-                              <AnimatePresence mode="wait">
-                                {errors.identity && (
-                                  <ErrorMessage
-                                    key={`id-${submitCount}`}
-                                    message={errors.identity}
-                                  />
-                                )}
-                              </AnimatePresence>
+                              <ErrorMessage message={errors.identity} />
                               <AnimatePresence>
                                 {showSuggestions && isLogin === loginPane && (
                                   <motion.ul
@@ -983,7 +964,7 @@ export default function AuthModal() {
                                           className="auth-email-option"
                                           tabIndex={identity.includes('@') ? -1 : 0}
                                           onKeyDown={handleSuggestionKeyDown}
-                                          onFocus={(e) => e.currentTarget.scrollIntoView({ block: 'nearest' })}
+                                          onFocus={keepSuggestionVisible}
                                           onMouseDown={(e) => e.preventDefault()}
                                           onClick={() => { selectSuggestion(s); identityInputRef.current?.focus(); }}
                                         >
@@ -1003,9 +984,15 @@ export default function AuthModal() {
                               <label className="field">
                                 <span>Lozinka</span>
                                 <div
-                                  className={`input ${
+                                  className={`input auth-password-control ${
                                     errors.password ? 'input-error' : ''
                                   }`}
+                                  onFocus={() => setErrors(previous => ({ ...previous, password: null }))}
+                                  onBlur={(e) => {
+                                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                                      setErrors(previous => ({ ...previous, password: validateField('password', password) }));
+                                    }
+                                  }}
                                 >
                                   <Lock className="ico" size={18} />
                                   <input
@@ -1014,8 +1001,6 @@ export default function AuthModal() {
                                     placeholder="••••••••"
                                     value={password}
                                     onChange={handlePasswordChange}
-                                    onFocus={handleFieldFocus}
-                                    onBlur={handleBlur}
                                     required
                                     minLength={loginPane ? undefined : 8}
                                     autoComplete={
@@ -1027,6 +1012,9 @@ export default function AuthModal() {
                                   <button
                                     type="button"
                                     className="icon-btn"
+                                    aria-label={showPass ? 'Sakrij lozinku' : 'Prikaži lozinku'}
+                                    aria-pressed={showPass}
+                                    onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => setShowPass((p) => !p)}
                                   >
                                     {showPass ? (
@@ -1036,25 +1024,19 @@ export default function AuthModal() {
                                     )}
                                   </button>
                                 </div>
-                                <AnimatePresence mode="wait">
-                                  {errors.password && (
-                                    <ErrorMessage
-                                      key={`ps-${submitCount}`}
-                                      message={errors.password}
-                                    />
-                                  )}
-                                </AnimatePresence>
+                                {loginPane && <ErrorMessage message={errors.password} />}
                                 {!loginPane && (
-                                  <ul className="auth-password-requirements" aria-label="Uslovi za lozinku">
+                                  <ul className={`auth-password-requirements ${errors.password ? 'has-error' : ''}`} aria-label="Uslovi za lozinku">
                                     {passwordRequirements.map(requirement => (
                                       <li key={requirement.label} className={requirement.met ? 'is-met' : ''}>
-                                        {requirement.met && <span aria-hidden="true">✓ </span>}
+                                        <span className="auth-requirement-mark" aria-hidden="true">{requirement.met ? '✓' : '○'}</span>
                                         {requirement.label}
                                         <span className="sr-only">{requirement.met ? ' — ispunjeno' : ' — nije ispunjeno'}</span>
                                       </li>
                                     ))}
                                   </ul>
                                 )}
+                                {!loginPane && errors.password && errors.password !== PASSWORD_RULE.message && <ErrorMessage message={errors.password} />}
                               </label>
                             )}
                             {loginPane && showPassword && (
@@ -1205,7 +1187,7 @@ export default function AuthModal() {
                       </div>
                     </div>
                   ))}
-                </motion.div>
+                </div>
               </div>
               <div id="recaptcha-container" />
             </motion.div>

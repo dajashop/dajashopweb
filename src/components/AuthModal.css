@@ -8,6 +8,7 @@
   display: grid;
   place-items: center;
   padding: 16px;
+  overflow-y: auto;
 }
 .auth-card {
   width: 100%;
@@ -16,7 +17,11 @@
   padding-top: 40px;
   position: relative;
   box-sizing: border-box;
-  overflow: visible;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 .glass {
   background: linear-gradient(
@@ -232,6 +237,16 @@
 .pane.inactive * {
   box-shadow: none !important;
 }
+.auth-card .form-slider { min-width: 0; overflow: visible; }
+.auth-card .track {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  will-change: auto;
+  transform: none;
+}
+.auth-card .pane { grid-area: 1 / 1; }
+.auth-card .pane.inactive { visibility: hidden; height: 0; overflow: hidden; }
 
 /* Forms */
 .form {
@@ -313,6 +328,12 @@
 .input.input-error .ico {
   color: #ef4444;
 }
+.auth-card .input.input-error {
+  border-color: #dc5b5b !important;
+  background-color: var(--color-surface, #f5f5f7) !important;
+  box-shadow: none !important;
+}
+.auth-card .input.input-error:focus-within { box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.12) !important; }
 
 /* CUSTOM ERROR POPOUT */
 .auth-password-requirements {
@@ -323,13 +344,27 @@
   padding: 0;
   list-style: none;
   font-size: 11px;
+  min-height: 16px;
   line-height: 1.4;
   color: var(--color-muted);
 }
 .auth-password-requirements .is-met {
   color: var(--color-success, #16803c);
-  font-weight: 600;
 }
+.auth-password-requirements li { display: inline-flex; align-items: center; gap: 4px; }
+.auth-requirement-mark { width: 12px; flex: 0 0 12px; text-align: center; }
+.auth-password-requirements.has-error li:not(.is-met) { color: #c83d3d; }
+.auth-field-feedback {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  min-height: 18px;
+  margin-top: 5px;
+  color: #c83d3d;
+  font-size: 11px;
+  line-height: 16px;
+}
+.auth-field-feedback svg { flex: 0 0 auto; margin-top: 1px; }
 
 .custom-error-popout {
   display: flex;
@@ -547,6 +582,10 @@
   max-height: 180px;
   overflow-y: auto;
   overflow-x: hidden; /* I ovde da budemo sigurni */
+}
+.auth-card .auth-dropdown {
+  top: calc(100% - 23px);
+  background: var(--color-surface, #f5f5f7);
 }
 .auth-dropdown .auth-email-option {
   width: 100%;
