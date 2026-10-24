@@ -11,7 +11,6 @@ import { useUndo } from '../hooks/useUndo.js';
 import { usePromo } from '../hooks/usePromo.js';
 import { useAuth } from '../hooks/useAuth.js'; // NOVO: Importujemo Auth
 import { money } from '../utils/currency.js';
-import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import ConfirmModal from '../components/modals/ConfirmModal.jsx';
@@ -80,11 +79,11 @@ function PromoCodeSection({
 }) {
   const [code, setCode] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!code.trim()) return;
-    onApply(code);
-    setCode('');
+    const promotion = await onApply(code);
+    if (promotion) setCode('');
   };
 
   if (activeCode) {
@@ -167,14 +166,13 @@ export default function Cart() {
   const reduceMotion = useReducedMotion();
   const { items, total, dispatch } = useCart();
   const { showUndo } = useUndo();
-  const { user } = useAuth(); // NOVO: Uzimamo ulogovanog korisnika
+  const { user, authReady } = useAuth();
   const saved = useSavedCartItems(user);
   const { flash } = useFlash();
   const activeItemsRef = useRef(items);
   activeItemsRef.current = items;
   const [restoring, setRestoring] = useState(null);
   const [showClearModal, setShowClearModal] = useState(false);
-  const pokusajKodaDobrodoslice = useRef('');
 
   // NOVO: Uzimamo i 'loading' status iz hook-a
   const {
@@ -184,7 +182,7 @@ export default function Cart() {
     error,
     successMsg,
     loading,
-  } = usePromo();
+  } = usePromo({ user, authReady, items, total });
 
   const FREE_SHIPPING_LIMIT = commerceSeoConfig.freeShippingThreshold;
   const SHIPPING_COST = 380;
@@ -206,30 +204,8 @@ export default function Cart() {
 
   const handleApplyPromo = (code) => {
     // NOVO: Prosleđujemo 'user' kao četvrti argument za proveru u bazi
-    validateAndApply(code, total, items, user, false);
+    return validateAndApply(code, total, items, user, false);
   };
-
-  useEffect(() => {
-    const pendingCode = readStoredValue('daja_kod_dobrodoslice_na_cekanju', 'necessary');
-    if (
-      !pendingCode ||
-      pokusajKodaDobrodoslice.current === pendingCode ||
-      appliedPromo ||
-      !user?.email ||
-      !items.length ||
-      loading
-    ) {
-      return;
-    }
-    pokusajKodaDobrodoslice.current = pendingCode;
-    void validateAndApply(pendingCode, total, items, user, true, { persist: true }).then(
-      (promotion) => {
-        if (promotion) {
-          writeStoredValue('daja_kod_dobrodoslice_na_cekanju', null, 'necessary');
-        }
-      },
-    );
-  }, [appliedPromo, items, loading, total, user, validateAndApply]);
 
   const refreshPromo = async (nextItems) => {
     if (!appliedPromo?.code) return;

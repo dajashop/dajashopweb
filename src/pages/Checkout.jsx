@@ -21,11 +21,11 @@ import { commerceSeoConfig } from '../config/seo.js';
 
 export default function Checkout() {
   const { items, total, dispatch } = useCart();
-  const { user, register } = useAuth();
+  const { user, authReady, register } = useAuth();
   const { flash } = useFlash();
 
   // 2. KORISTIMO HOOK (On će automatski povući kod iz localStorage)
-  const { appliedPromo, validateAndApply, removePromo } = usePromo();
+  const { appliedPromo, removePromo, loading: promoLoading } = usePromo({ user, authReady, items, total });
 
   const [payMethod, setPayMethod] = useState('cod');
   const [shippingMethod, setShippingMethod] = useState('courier');
@@ -61,15 +61,6 @@ export default function Checkout() {
   // 3. REKALKULACIJA SA POPUSTOM
   // Važno: Moramo osigurati da je iznos popusta tačan za trenutne artikle
   // (Hook vraća 'amount', ali za svaki slučaj možemo ponovo validirati na mount)
-
-  useEffect(() => {
-    // Kada se učita Checkout, ako imamo kod, proverimo ga ponovo "tiho"
-    // da bismo bili sigurni da je validan za trenutni total i usera
-    if (appliedPromo && appliedPromo.code) {
-      validateAndApply(appliedPromo.code, total, items, user, true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Samo na mount
 
   // Računanje cena
   const discountAmount = appliedPromo ? appliedPromo.amount : 0;
@@ -191,6 +182,7 @@ export default function Checkout() {
   };
 
   const handlePlaceOrder = async () => {
+    if (isProcessing || promoLoading) return;
     const fieldsToSkip =
       shippingMethod === 'pickup' ? ['address', 'city', 'postalCode'] : [];
 
@@ -304,7 +296,7 @@ export default function Checkout() {
             finalTotal={finalTotal}
             handlePlaceOrder={handlePlaceOrder}
             money={money}
-            isLoading={isProcessing}
+            isLoading={isProcessing || promoLoading}
             // 6. PROSLEĐUJEMO PODATKE O POPUSTU U SUMMARY
             appliedPromo={appliedPromo}
             discountAmount={discountAmount}

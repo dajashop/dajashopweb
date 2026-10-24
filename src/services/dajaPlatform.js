@@ -1440,13 +1440,17 @@ export const novostiApi = {
     if (subscription?.kodDobrodoslice) {
       writeStoredValue('daja_kod_dobrodoslice_na_cekanju', subscription.kodDobrodoslice, 'necessary');
     }
+    writeStoredValue('daja_welcome_promo_removed_for', null, 'necessary');
+    window.dispatchEvent(new Event('daja:newsletter-changed'));
     return subscription;
   },
-  confirm(token) {
-    return apiRequest(`/newsletter/confirm?token=${encodeURIComponent(token)}`, {
+  async confirm(token) {
+    const result = await apiRequest(`/newsletter/confirm?token=${encodeURIComponent(token)}`, {
       method: 'GET',
       auth: false,
     });
+    window.dispatchEvent(new Event('daja:newsletter-changed'));
+    return result;
   },
 };
 
@@ -1470,8 +1474,10 @@ export const privacyApi = {
   mine() {
     return apiRequest('/privacy/me');
   },
-  odjaviNovosti() {
-    return apiRequest('/privacy/me/newsletter', { method: 'DELETE' });
+  async odjaviNovosti() {
+    const result = await apiRequest('/privacy/me/newsletter', { method: 'DELETE' });
+    window.dispatchEvent(new Event('daja:newsletter-changed'));
+    return result;
   },
   unsubscribeAlert(id) {
     return apiRequest(`/privacy/me/alerts/${encodeURIComponent(id)}`, { method: 'DELETE' });
