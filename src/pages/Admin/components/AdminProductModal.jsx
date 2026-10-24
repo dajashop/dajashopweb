@@ -14,7 +14,7 @@ import {
   categoryService,
   departmentService,
 } from '../../../services/admin';
-import { saveProduct } from '../../../services/products';
+import { saveProduct, saveCompleteProduct } from '../../../services/products';
 import {
   mediaApi,
   inventoryApi,
@@ -112,6 +112,7 @@ function catalogAttributeKey(value) {
 export default function AdminProductModal({
   product,
   existingProducts = [],
+  taxonomy,
   catalogLoading = false,
   catalogError,
   onClose,
@@ -146,15 +147,18 @@ export default function AdminProductModal({
     return Object.fromEntries(Object.entries(normalized).filter(([, v]) => v));
   };
 
-  const [brands, setBrands] = useState([]);
-  const [departments, setDepartments] = useState([]);
+  const [brands, setBrands] = useState(taxonomy?.brands || []);
+  const [departments, setDepartments] = useState(taxonomy?.departments || []);
   const [locations, setLocations] = useState([]);
   const [warehouseLayout, setWarehouseLayout] = useState({
     warehouses: [],
     zones: [],
     bins: [],
   });
-  const [cats, setCats] = useState([]);
+  const [cats, setCats] = useState(taxonomy?.categories || []);
+  useEffect(() => { if (taxonomy?.brands) setBrands(taxonomy.brands); }, [taxonomy?.brands]);
+  useEffect(() => { if (taxonomy?.categories) setCats(taxonomy.categories); }, [taxonomy?.categories]);
+  useEffect(() => { if (taxonomy?.departments) setDepartments(taxonomy.departments); }, [taxonomy?.departments]);
   const [isSeoOpen, setIsSeoOpen] = useState(true);
   const [ogImageSize, setOgImageSize] = useState(null);
   const [seoPeers, setSeoPeers] = useState([]);
@@ -279,6 +283,7 @@ export default function AdminProductModal({
   const [loading, setLoading] = useState(false);
   const submittingRef = useRef(false);
   const savedProductIdRef = useRef(null);
+  const completeSaveAttempt = useRef(initialProductDraftRef.current?.saveAttempt || null);
   const [mediaReady, setMediaReady] = useState(!product?.id);
   const [imageBusy, setImageBusy] = useState(false);
   const [deletedVariantIds, setDeletedVariantIds] = useState([]);
@@ -391,9 +396,9 @@ export default function AdminProductModal({
     regularPriceEditedRef.current = false;
     slugManuallyEditedRef.current = Boolean(product);
     initialEpcRef.current = validateEpcInput(product?.epc || '').value;
-    const sub1 = brandService.subscribe(setBrands);
-    const sub2 = categoryService.subscribe(setCats);
-    const sub4 = departmentService.subscribe(setDepartments);
+    const sub1 = taxonomy?.brands ? () => {} : brandService.subscribe(setBrands);
+    const sub2 = taxonomy?.categories ? () => {} : categoryService.subscribe(setCats);
+    const sub4 = taxonomy?.departments ? () => {} : departmentService.subscribe(setDepartments);
 
     if (product) {
       // The admin list can expose variant attributes as `specs`, `attributes`,
@@ -603,7 +608,7 @@ export default function AdminProductModal({
     timingHasDraft.current = hasDraftContent;
     onDraftChange(
       hasDraftContent
-        ? { form, pieceDetails, selectedPieceIndex, workTiming: workTiming.meta, savedProductId: savedProductIdRef.current }
+        ? { form, pieceDetails, selectedPieceIndex, workTiming: workTiming.meta, savedProductId: savedProductIdRef.current, saveAttempt: completeSaveAttempt.current }
         : null,
     );
   }, [form, onDraftChange, pieceDetails, product, selectedPieceIndex]);
@@ -1228,7 +1233,51 @@ export default function AdminProductModal({
       if (!savedProductIdRef.current) delete payload.id;
       else payload.id = savedProductIdRef.current;
 
-      const savedProductId = await saveProduct(payload);
+      const toPrice = (amount, type, from, until) => ({
+        amountMinor: Math.round(Number(amount) * 100), currency: form.currency || 'RSD', priceType: type,
+        ...(from ? { validFrom: new Date(from).toISOString() } : {}),
+        ...(until ? { validUntil: new Date(until).toISOString() } : {}),
+      });
+      const completeInput = {
+        product: payload, previousEpc: epcBeforeSave,
+        stock: { quantity: requestedQuantity, reconcileQuantity: shouldReconcileQuantity, persistPlacement: shouldPersistPlacement,
+          pieces: pieces.map(piece => ({ epc: piece.epc || '', locationId: piece.locationId || null, zoneId: piece.zoneId || null, binId: piece.binId || null })) },
+        ...(pendingPrice?.saleChanged ? { sale: { replace: true,
+          ...(pendingPrice.amount ? { price: toPrice(pendingPrice.amount, pendingPrice.type, pendingPrice.from, pendingPrice.until) } : {}) } } : {}),
+        ...(pendingPrice?.costChanged && pendingPrice.costAmount ? { cost: toPrice(pendingPrice.costAmount, 'cost') } : {}),
+        media: (form.images || []).map((image, position) => ({ ...image, position })).filter(image => image.mediaId).map(image => ({
+          mediaId: image.mediaId, ...(image.linkId ? { linkId: image.linkId } : {}), position: image.position,
+          isPrimary: image.position === 0, altText: image.altText || '',
+        })),
+        removedMediaLinkIds, deletedVariantIds,
+        ...(reviewContext && typeof options.reviewNote === 'string' ? { reviewNote: options.reviewNote } : {}),
+      };
+      const signature = JSON.stringify(completeInput);
+      if (completeSaveAttempt.current?.signature !== signature) completeSaveAttempt.current = { signature, requestId: crypto.randomUUID() };
+      if (!product && onDraftChange) onDraftChange({ form, pieceDetails, selectedPieceIndex, workTiming: workTiming.meta, savedProductId: savedProductIdRef.current, saveAttempt: completeSaveAttempt.current });
+      let completed;
+      try {
+        completed = await saveCompleteProduct({ ...completeInput, requestId: completeSaveAttempt.current.requestId });
+      } catch (error) {
+        // Only a missing route permits the legacy flow. A validation or save
+        // failure must never launch a second, partially committed operation.
+        if (error.status !== 404 || !/Cannot POST.*admin\/catalog\/save/i.test(error.message || '')) throw error;
+      }
+      let savedProductId;
+      if (completed) {
+        savedProductId = completed.productId;
+        savedProductIdRef.current = savedProductId;
+        initialEpcRef.current = epcValidation.value;
+        workTiming.attach(savedProductId);
+        const savedImages = (completed.images || []).map(image => ({
+          mediaId: image.mediaId, linkId: image.id, position: image.position, isPrimary: image.isPrimary,
+          url: image.url, thumb: image.url, altText: image.altText || '',
+        }));
+        setForm(previous => ({ ...previous, images: savedImages }));
+        setPendingPrice(null); setDeletedVariantIds([]); setRemovedMediaLinkIds([]);
+        pendingUploadIdsRef.current.clear();
+      } else {
+      savedProductId = await saveProduct(payload);
       savedProductIdRef.current = savedProductId;
       workTiming.attach(savedProductId);
       if (!product && onDraftChange) onDraftChange({ form, pieceDetails, selectedPieceIndex, workTiming: workTiming.meta, savedProductId });
@@ -1469,6 +1518,7 @@ export default function AdminProductModal({
         setForm((previous) => ({ ...previous, images: savedImages }));
         setRemovedMediaLinkIds([]);
       }
+      }
       pendingUploadIdsRef.current.clear();
       if (!product) {
         successfullySavedRef.current = true;
@@ -1477,7 +1527,7 @@ export default function AdminProductModal({
         setNameFocused(false);
         onDraftChange?.(null);
       }
-      if (reviewContext && typeof options.reviewNote === 'string') {
+      if (!completed && reviewContext && typeof options.reviewNote === 'string') {
         await workforceApi.reviewProduct(savedProductId, 'changes_requested', options.reviewNote);
       }
       workTiming.finish(savedProductId);

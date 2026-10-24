@@ -66,6 +66,12 @@ export function subscribeProducts({
   };
 }
 
+export async function saveCompleteProduct(input) {
+  const result = await adminCatalogApi.saveProductBundle(input);
+  notifyProductsChanged({ type: 'upsert', product: result.product, created: !input.product.id });
+  return result;
+}
+
 export async function saveProduct(partial) {
   const productId = await adminCatalogApi.saveProduct(partial);
   // Do not refetch the whole catalog after a one-product change. Every list

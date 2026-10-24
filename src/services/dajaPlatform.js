@@ -530,6 +530,44 @@ export const variantGroupsApi = {
   },
 };
 
+function productWritePayload(product) {
+  const has = (key) => Object.prototype.hasOwnProperty.call(product, key);
+  const productPayload = {};
+  if (has('name')) productPayload.name = product.name;
+  if (has('supplierUrl')) productPayload.supplierUrl = product.supplierUrl?.trim() || null;
+  if (has('bultimeUrl')) productPayload.bultimeUrl = product.bultimeUrl?.trim() || null;
+  if (has('linkelUrl')) productPayload.linkelUrl = product.linkelUrl?.trim() || null;
+  if (has('milanoUrl')) productPayload.milanoUrl = product.milanoUrl?.trim() || null;
+  if (has('timezoneUrl')) productPayload.timezoneUrl = product.timezoneUrl?.trim() || null;
+  if (has('qandqUrl')) productPayload.qandqUrl = product.qandqUrl?.trim() || null;
+  if (has('slug')) productPayload.slug = product.slug;
+  if (has('description'))
+    productPayload.description = product.description || '';
+  if (has('itemCondition'))
+    productPayload.itemCondition = product.itemCondition;
+  if (has('departmentId')) productPayload.departmentId = product.departmentId;
+  if (has('seo')) productPayload.seo = product.seo;
+  if (has('features')) productPayload.features = product.features;
+  if (has('model3DUrl'))
+    productPayload.model3DUrl = product.model3DUrl || null;
+  if (has('marketingFlags'))
+    productPayload.marketingFlags = product.marketingFlags;
+  if (has('brandId')) productPayload.brandId = product.brandId;
+  else if (has('brand_id')) productPayload.brandId = product.brand_id;
+  if (has('primaryCategoryId'))
+    productPayload.primaryCategoryId = product.primaryCategoryId;
+  else if (has('primary_category_id'))
+    productPayload.primaryCategoryId = product.primary_category_id;
+  else if (has('categoryId'))
+    productPayload.primaryCategoryId = product.categoryId;
+  if (has('isVisible')) productPayload.active = product.isVisible !== false;
+  else if (has('active')) productPayload.active = product.active !== false;
+  if (has('published'))
+    productPayload.published = product.published !== false;
+  else if (!product.id) productPayload.published = true;
+  return productPayload;
+}
+
 export const adminCatalogApi = {
   async listProducts({ onPage, signal } = {}) {
     if (onPage) {
@@ -612,41 +650,24 @@ export const adminCatalogApi = {
   async getSupplierExchangeRate() {
     return apiRequest('/supplier-links/exchange-rate', { staff: true });
   },
+  async saveProductBundle({ product, ...bundle }) {
+    const source = product.variants?.[0] || {};
+    const hasPrice = source.currentPriceAmount !== undefined || source.price !== undefined;
+    const variant = {
+      ...(source.id ? { id: source.id } : {}),
+      sku: source.sku, barcode: source.barcode || null, mpn: product.mpn || source.mpn || null,
+      name: source.name || null, gender: source.gender || null,
+      ...(source.epc !== undefined ? { epc: source.epc } : {}),
+      ...(hasPrice ? { currentPriceAmount: source.currentPriceAmount ?? Math.round(Number(source.price || 0) * 100) } : {}),
+      currency: source.currency || 'RSD', attributes: source.attributes || {},
+      active: source.active !== false, published: source.published !== false,
+    };
+    const data = await apiRequest('/admin/catalog/save', { method: 'POST', staff: true,
+      body: { ...bundle, ...(product.id ? { id: product.id } : {}), product: productWritePayload(product), variant } });
+    return { ...data, product: normalizeProduct(data.product) };
+  },
   async saveProduct(product) {
-    const has = (key) => Object.prototype.hasOwnProperty.call(product, key);
-    const productPayload = {};
-    if (has('name')) productPayload.name = product.name;
-    if (has('supplierUrl')) productPayload.supplierUrl = product.supplierUrl?.trim() || null;
-    if (has('bultimeUrl')) productPayload.bultimeUrl = product.bultimeUrl?.trim() || null;
-    if (has('linkelUrl')) productPayload.linkelUrl = product.linkelUrl?.trim() || null;
-    if (has('milanoUrl')) productPayload.milanoUrl = product.milanoUrl?.trim() || null;
-    if (has('timezoneUrl')) productPayload.timezoneUrl = product.timezoneUrl?.trim() || null;
-    if (has('qandqUrl')) productPayload.qandqUrl = product.qandqUrl?.trim() || null;
-    if (has('slug')) productPayload.slug = product.slug;
-    if (has('description'))
-      productPayload.description = product.description || '';
-    if (has('itemCondition'))
-      productPayload.itemCondition = product.itemCondition;
-    if (has('departmentId')) productPayload.departmentId = product.departmentId;
-    if (has('seo')) productPayload.seo = product.seo;
-    if (has('features')) productPayload.features = product.features;
-    if (has('model3DUrl'))
-      productPayload.model3DUrl = product.model3DUrl || null;
-    if (has('marketingFlags'))
-      productPayload.marketingFlags = product.marketingFlags;
-    if (has('brandId')) productPayload.brandId = product.brandId;
-    else if (has('brand_id')) productPayload.brandId = product.brand_id;
-    if (has('primaryCategoryId'))
-      productPayload.primaryCategoryId = product.primaryCategoryId;
-    else if (has('primary_category_id'))
-      productPayload.primaryCategoryId = product.primary_category_id;
-    else if (has('categoryId'))
-      productPayload.primaryCategoryId = product.categoryId;
-    if (has('isVisible')) productPayload.active = product.isVisible !== false;
-    else if (has('active')) productPayload.active = product.active !== false;
-    if (has('published'))
-      productPayload.published = product.published !== false;
-    else if (!product.id) productPayload.published = true;
+    const productPayload = productWritePayload(product);
     const method = product.id ? 'PATCH' : 'POST';
     const path = product.id
       ? `/products/${encodeURIComponent(product.id)}`

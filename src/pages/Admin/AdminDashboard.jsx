@@ -70,7 +70,9 @@ function adminPanel(loader, modal = false) {
 }
 
 const CatalogSearchSettings = adminPanel(() => import('./components/CatalogSearchSettings.jsx'));
-const AdminProductModal = adminPanel(() => import('./components/AdminProductModal.jsx'), true);
+const loadProductEditor = () => import('./components/AdminProductModal.jsx');
+const prepareProductEditor = () => { void loadProductEditor().catch(() => {}); };
+const AdminProductModal = adminPanel(loadProductEditor, true);
 const WorkforcePanel = adminPanel(() => import('./components/WorkforcePanel.jsx'));
 const ExcelManager = adminPanel(() => import('./components/ExcelManager'));
 const PolicyPublicationPanel = adminPanel(() => import('./components/PolicyPublicationPanel.jsx'));
@@ -1382,6 +1384,9 @@ function AdminDashboardContent() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
+                  onPointerEnter={prepareProductEditor}
+                  onFocus={prepareProductEditor}
+                  onTouchStart={prepareProductEditor}
                   onClick={openNew}
                   className="bg-neutral-900 text-white rounded-xl px-5 py-2.5 flex items-center gap-2 hover:bg-black font-bold"
                 >
@@ -2584,6 +2589,7 @@ function AdminDashboardContent() {
           <AdminProductModal
             product={editProduct}
             existingProducts={products}
+            taxonomy={{ brands: taxonomyLoading.brands ? undefined : brands, categories: taxonomyLoading.categories ? undefined : categories, departments: departments.length ? departments : undefined }}
             catalogLoading={productsLoading}
             catalogError={productsError}
             draft={!editProduct && restoreProductDraft ? productDraft?.payload : null}
