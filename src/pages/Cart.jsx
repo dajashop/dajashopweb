@@ -137,7 +137,7 @@ function PromoCodeSection({
           style={{
             color: '#ef4444',
             fontSize: '0.8rem',
-            marginTop: '-10px',
+            marginTop: '8px',
             marginBottom: '10px',
             paddingLeft: '4px',
           }}
@@ -150,7 +150,7 @@ function PromoCodeSection({
           style={{
             color: '#4ade80',
             fontSize: '0.8rem',
-            marginTop: '-10px',
+            marginTop: '8px',
             marginBottom: '10px',
             paddingLeft: '4px',
           }}
