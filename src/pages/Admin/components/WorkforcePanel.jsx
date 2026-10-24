@@ -1,6 +1,5 @@
-import AdminSkeleton, { AdminModalSkeleton } from '../../../components/AdminSkeleton.jsx';
-import LoadErrorBoundary from '../../../components/LoadErrorBoundary.jsx';
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -13,7 +12,6 @@ import {
   Users,
 } from 'lucide-react';
 import { adminCatalogApi, workforceApi } from '../../../services/dajaPlatform';
-const AdminProductModal = lazy(() => import('./AdminProductModal'));
 import WorkforcePricing from './WorkforcePricing';
 import WorkforceTimeline from './WorkforceTimeline';
 import { rsd } from '../utils/workforce';
@@ -54,7 +52,7 @@ function Metric({ label, value }) {
     </div>
   );
 }
-export default function WorkforcePanel({ departments = [], categories = [], brands = [] }) {
+export default function WorkforcePanel({ departments = [], categories = [], brands = [], onEditProduct }) {
   const [members, setMembers] = useState([]);
   const [selected, setSelected] = useState(null);
   const [detail, setDetail] = useState(null);
@@ -62,7 +60,6 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [editing, setEditing] = useState(null);
   const [busy, setBusy] = useState('');
   const [revision, setRevision] = useState(0);
   const selection = useRef(0);
@@ -108,7 +105,7 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
     setError('');
     try {
       const full = await adminCatalogApi.getProduct(product.id);
-      if (selection.current === request) setEditing({ full, review: product });
+      if (selection.current === request) onEditProduct({ product: full, onSuccess: refresh, reviewContext: { product, onReviewed: refresh } });
     } catch (err) {
       setError(err.message || 'Artikal nije moguće otvoriti.');
     } finally {
@@ -540,15 +537,6 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
             </div>
           </details>
         </>
-      )}
-      {editing && (
-        <LoadErrorBoundary><Suspense fallback={<AdminModalSkeleton />}><AdminProductModal
-          key={editing.full.id}
-          product={editing.full}
-          onClose={() => setEditing(null)}
-          onSuccess={refresh}
-          reviewContext={{ product: editing.review, onReviewed: refresh }}
-        /></Suspense></LoadErrorBoundary>
       )}
     </div>
   );

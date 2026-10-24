@@ -117,6 +117,9 @@ export default function AdminProductModal({
   catalogError,
   onClose,
   onSuccess,
+  onSaveStart,
+  onSaveError,
+  stackOrder = 0,
   reviewContext,
   draft: productDraft,
   onDraftChange,
@@ -281,6 +284,7 @@ export default function AdminProductModal({
     return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
   }, []);
   const [loading, setLoading] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const submittingRef = useRef(false);
   const savedProductIdRef = useRef(null);
   const completeSaveAttempt = useRef(initialProductDraftRef.current?.saveAttempt || null);
@@ -1113,8 +1117,10 @@ export default function AdminProductModal({
     // value we still need to unassign.
     const epcBeforeSave = initialEpcRef.current;
     submittingRef.current = true;
+    setSaveError('');
     setLoading(true);
     try {
+      onSaveStart?.({ name: form.name });
       // Validate price dates before POST/PATCH. This prevents a product from
       // being saved when its accompanying sale is invalid.
       if (pendingPrice?.saleChanged && pendingPrice.amount) {
@@ -1532,6 +1538,7 @@ export default function AdminProductModal({
       }
       workTiming.finish(savedProductId);
       await onSuccess?.({ created: !product });
+      if (onSaveStart) return true;
 
       setFlash({ open: true, title: options.reviewNote ? 'Sačuvano i vraćeno na doradu!' : 'Uspešno sačuvano!', ok: true });
       setTimeout(() => {
@@ -1540,6 +1547,8 @@ export default function AdminProductModal({
       return true;
     } catch (err) {
       console.error(err);
+      setSaveError(err?.message || 'Čuvanje nije uspelo.');
+      onSaveError?.(err);
       setFlash({
         open: true,
         title: err?.message || 'Čuvanje nije uspelo.',
@@ -1782,7 +1791,7 @@ export default function AdminProductModal({
   ];
 
   return createPortal(
-    <div style={{ zIndex: 3000 }} className="fixed inset-0 flex items-center justify-center p-4 bg-black/40">
+    <div style={{ zIndex: 3000 + stackOrder, display: loading && onSaveStart ? 'none' : undefined }} className="fixed inset-0 flex items-center justify-center p-4 bg-black/40">
       <FlashModal
         {...flash}
         onClose={() => setFlash({ ...flash, open: false })}
@@ -1831,6 +1840,7 @@ export default function AdminProductModal({
           className="flex-1 overflow-y-auto custom-scrollbar p-8"
           data-lenis-prevent
         >
+          {saveError && <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{saveError}</div>}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-8 flex flex-col gap-6">
               {reviewContext && <WorkforceReviewNotes product={reviewContext.product} onReturn={note => handleSubmit({ reviewNote: note })} disabled={loading || imageBusy || !mediaReady || addingSpec} />}

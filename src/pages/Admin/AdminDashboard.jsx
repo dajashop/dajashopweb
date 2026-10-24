@@ -41,6 +41,7 @@ import {
   Ticket,
 } from 'lucide-react';
 import useProducts from '../../hooks/useProducts';
+import useProductEditors, { prepareProductEditor } from './components/useProductEditors.jsx';
 import {
   deleteProduct,
   saveProduct,
@@ -70,9 +71,6 @@ function adminPanel(loader, modal = false) {
 }
 
 const CatalogSearchSettings = adminPanel(() => import('./components/CatalogSearchSettings.jsx'));
-const loadProductEditor = () => import('./components/AdminProductModal.jsx');
-const prepareProductEditor = () => { void loadProductEditor().catch(() => {}); };
-const AdminProductModal = adminPanel(loadProductEditor, true);
 const WorkforcePanel = adminPanel(() => import('./components/WorkforcePanel.jsx'));
 const ExcelManager = adminPanel(() => import('./components/ExcelManager'));
 const PolicyPublicationPanel = adminPanel(() => import('./components/PolicyPublicationPanel.jsx'));
@@ -628,11 +626,7 @@ function AdminDashboardContent() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef(null);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editProduct, setEditProduct] = useState(null);
   const [productDraft, setProductDraft] = useState(null);
-  const [restoreProductDraft, setRestoreProductDraft] = useState(false);
-  const [draftSessionActive, setDraftSessionActive] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [auditEvents, setAuditEvents] = useState([]);
   const [auditLoading, setAuditLoading] = useState(true);
@@ -728,6 +722,12 @@ function AdminDashboardContent() {
       'necessary',
     );
   }, [user?.id]);
+  const { openEditor, editors, hasEditors: modalOpen, hasDraftEditor } = useProductEditors({
+    existingProducts: products,
+    taxonomy: { brands: taxonomyLoading.brands ? undefined : brands, categories: taxonomyLoading.categories ? undefined : categories, departments: departments.length ? departments : undefined },
+    catalogLoading: productsLoading,
+    catalogError: productsError,
+  });
   const [editingSpecOptionDraft, setEditingSpecOptionDraft] = useState('');
   const [editingSpecOptionsOpen, setEditingSpecOptionsOpen] = useState(false);
 
@@ -1084,24 +1084,15 @@ function AdminDashboardContent() {
   };
 
   const openNew = () => {
-    setEditProduct(null);
-    setRestoreProductDraft(false);
     // Keep an existing recovery draft untouched. A new blank form becomes a
     // draft only when no other unfinished product is waiting in the corner.
-    setDraftSessionActive(!productDraft);
-    setModalOpen(true);
+    openEditor({ onDraftChange: !productDraft && !hasDraftEditor ? saveProductDraft : undefined });
   };
   const openSavedDraft = () => {
-    setEditProduct(null);
-    setRestoreProductDraft(true);
-    setDraftSessionActive(true);
-    setModalOpen(true);
+    openEditor({ draft: productDraft?.payload, onDraftChange: saveProductDraft });
   };
   const openEdit = (p) => {
-    setEditProduct(p);
-    setRestoreProductDraft(false);
-    setDraftSessionActive(false);
-    setModalOpen(true);
+    openEditor({ product: p });
   };
 
   const handleDeleteProduct = async () => {
@@ -1862,7 +1853,7 @@ function AdminDashboardContent() {
           </motion.div>
         )}
 
-        {activeTab === 'workforce' && !isCatalogContributor && <WorkforcePanel departments={departments} categories={categories} brands={brands} />}
+        {activeTab === 'workforce' && !isCatalogContributor && <WorkforcePanel departments={departments} categories={categories} brands={brands} onEditProduct={openEditor} />}
 
         {activeTab === 'privacy' && <PolicyPublicationPanel />}
 
@@ -2584,30 +2575,7 @@ function AdminDashboardContent() {
         )}
       </div>
 
-      <AnimatePresence>
-        {modalOpen && (
-          <AdminProductModal
-            product={editProduct}
-            existingProducts={products}
-            taxonomy={{ brands: taxonomyLoading.brands ? undefined : brands, categories: taxonomyLoading.categories ? undefined : categories, departments: departments.length ? departments : undefined }}
-            catalogLoading={productsLoading}
-            catalogError={productsError}
-            draft={!editProduct && restoreProductDraft ? productDraft?.payload : null}
-            onDraftChange={draftSessionActive ? saveProductDraft : undefined}
-            onClose={() => {
-              setDraftSessionActive(false);
-              setRestoreProductDraft(false);
-              setModalOpen(false);
-            }}
-            onSuccess={({ created } = {}) => {
-              if (created && draftSessionActive) saveProductDraft(null);
-              setDraftSessionActive(false);
-              setRestoreProductDraft(false);
-              setModalOpen(false);
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {editors}
       {productDraft && !modalOpen && (
         <div className="fixed bottom-5 right-5 z-[70] w-[min(22rem,calc(100vw-2.5rem))] rounded-2xl border border-amber-200 bg-white p-4 shadow-2xl shadow-neutral-900/15">
           <div className="flex items-start gap-3">
