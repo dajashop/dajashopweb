@@ -532,7 +532,12 @@
   overflow-y: auto;
   overflow-x: hidden; /* I ovde da budemo sigurni */
 }
-.auth-dropdown li {
+.auth-dropdown .auth-email-option {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
   padding: 10px 14px;
   border-radius: 8px;
   cursor: pointer;
@@ -543,16 +548,20 @@
   align-items: center;
   transition: all 0.15s;
 }
-.auth-dropdown li:hover {
+.auth-dropdown .auth-email-option:hover,
+.auth-dropdown .auth-email-option:focus-visible {
   background: var(--color-primary, #c8a94e);
   color: var(--color-on-primary, #fff);
+  outline: 2px solid var(--color-primary, #c8a94e);
+  outline-offset: -2px;
 }
 .auth-dropdown .domain {
   opacity: 0.6;
   font-size: 0.85em;
   font-weight: 600;
 }
-.auth-dropdown li:hover .domain {
+.auth-dropdown .auth-email-option:hover .domain,
+.auth-dropdown .auth-email-option:focus-visible .domain {
   opacity: 0.9;
   color: inherit;
 }

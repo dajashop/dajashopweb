@@ -198,6 +198,8 @@ export default function AuthModal() {
   // Dropdown States & Refs
   const loginWrapperRef = useRef(null);
   const regWrapperRef = useRef(null);
+  const identityInputRef = useRef(null);
+  const emailSuggestionsRef = useRef(null);
 
   const [flashOpen, setFlashOpen] = useState(false);
   const [flashTitle, setFlashTitle] = useState('');
@@ -416,6 +418,7 @@ export default function AuthModal() {
   };
 
   const handleBlur = (e) => {
+    if (e.relatedTarget?.closest('.auth-dropdown')) return;
     if (e.relatedTarget?.closest('.phone-country-picker, .phone-country-picker__menu')) {
       return;
     }
@@ -454,10 +457,29 @@ export default function AuthModal() {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Tab' && prediction) {
+    if (((e.key === 'Tab' && !e.shiftKey) || e.key === 'ArrowDown') &&
+      showSuggestions && !identity.includes('@')) {
+      const firstOption = emailSuggestionsRef.current?.querySelector('button');
+      if (!firstOption) return;
       e.preventDefault();
-      setIdentity(identity + prediction);
-      setPrediction('');
+      firstOption.focus();
+    }
+  };
+
+  const handleSuggestionKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setShowSuggestions(false);
+      identityInputRef.current?.focus();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const options = [...emailSuggestionsRef.current.querySelectorAll('button')];
+      const index = options.indexOf(e.currentTarget);
+      options[(index + (e.key === 'ArrowDown' ? 1 : options.length - 1)) % options.length]?.focus();
+    } else if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      handleIdentityChange({ target: { value: identity + e.key } });
+      identityInputRef.current?.focus();
     }
   };
 
@@ -906,6 +928,7 @@ export default function AuthModal() {
                                 )}
 
                                 <input
+                                  ref={identityInputRef}
                                   name="identity"
                                   type="text"
                                   placeholder="Email ili Broj telefona"
@@ -938,7 +961,12 @@ export default function AuthModal() {
                               <AnimatePresence>
                                 {showSuggestions && (
                                   <motion.ul
+                                    ref={emailSuggestionsRef}
                                     className="auth-dropdown"
+                                    aria-label="Predlozi email adresa"
+                                    onBlur={(e) => {
+                                      if (!e.currentTarget.contains(e.relatedTarget) && e.relatedTarget !== identityInputRef.current) setShowSuggestions(false);
+                                    }}
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
@@ -946,17 +974,21 @@ export default function AuthModal() {
                                     data-lenis-prevent
                                   >
                                     {suggestions.map((s) => (
-                                      <li
-                                        key={s}
-                                        onMouseDown={(e) => {
-                                          e.preventDefault();
-                                          selectSuggestion(s);
-                                        }}
-                                      >
-                                        {s.split('@')[0]}
-                                        <span className="domain">
-                                          @{s.split('@')[1]}
-                                        </span>
+                                      <li key={s}>
+                                        <button
+                                          type="button"
+                                          className="auth-email-option"
+                                          tabIndex={identity.includes('@') ? -1 : 0}
+                                          onKeyDown={handleSuggestionKeyDown}
+                                          onFocus={(e) => e.currentTarget.scrollIntoView({ block: 'nearest' })}
+                                          onMouseDown={(e) => e.preventDefault()}
+                                          onClick={() => { selectSuggestion(s); identityInputRef.current?.focus(); }}
+                                        >
+                                          {s.split('@')[0]}
+                                          <span className="domain">
+                                            @{s.split('@')[1]}
+                                          </span>
+                                        </button>
                                       </li>
                                     ))}
                                   </motion.ul>
