@@ -172,6 +172,11 @@ export default function AuthModal() {
   // State
   const [identity, setIdentity] = useState('');
   const [password, setPassword] = useState('');
+  const passwordRequirements = [
+    { label: 'Min. 8 karaktera', met: password.trim().length >= 8 },
+    { label: '1 veliko slovo', met: /[A-Z]/.test(password) },
+    { label: '1 broj', met: /\d/.test(password) },
+  ];
   const [name, setName] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [lastLogin, setLastLogin] = useState(readLastLogin);
@@ -337,7 +342,7 @@ export default function AuthModal() {
     setPrediction('');
     setErrors((prev) => ({
       ...prev,
-      identity: getLiveValidationError('identity', val),
+      identity: null,
     }));
 
     const isPhoneStart = /^(\+?[\d]{2,})/.test(val) && !/[a-zA-Z@]/.test(val);
@@ -402,24 +407,9 @@ export default function AuthModal() {
     }
   };
 
-  const getLiveValidationError = (fieldName, value) => {
-    const cleanVal = value ? value.trim() : '';
-
-    // Format emaila i telefona proveravamo tek nakon prvog pokušaja prijave.
-    // Posle toga poruka ostaje korisna dok korisnik ispravlja unos.
-    if (fieldName === 'identity' && submitCount === 0) return null;
-
-    if (!cleanVal) {
-      return submitCount > 0 ? validateField(fieldName, value) : null;
-    }
-
-    if (fieldName === 'identity') return validateField(fieldName, value);
-
-    if (fieldName === 'password' && !isLogin && !isPhone) {
-      return validateField(fieldName, value);
-    }
-
-    return submitCount > 0 ? validateField(fieldName, value) : null;
+  const handleFieldFocus = (e) => {
+    const { name } = e.target;
+    setErrors(previous => ({ ...previous, [name]: null }));
   };
 
   const handleBlur = (e) => {
@@ -439,7 +429,7 @@ export default function AuthModal() {
       }
     }
 
-    const error = getLiveValidationError(name, valToValidate);
+    const error = validateField(name, valToValidate);
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
@@ -448,7 +438,7 @@ export default function AuthModal() {
     setPassword(value);
     setErrors((prev) => ({
       ...prev,
-      password: getLiveValidationError('password', value),
+      password: null,
     }));
   };
 
@@ -457,7 +447,7 @@ export default function AuthModal() {
     setName(val);
     setErrors((prev) => ({
       ...prev,
-      name: getLiveValidationError('name', val),
+      name: null,
     }));
   };
 
@@ -489,6 +479,7 @@ export default function AuthModal() {
   };
 
   const handleSuggestedEmailFocus = (e) => {
+    handleFieldFocus(e);
     if (!isSuggestedEmail) return;
     const input = e.currentTarget;
     window.requestAnimationFrame(() => input?.select());
@@ -858,6 +849,7 @@ export default function AuthModal() {
                                     placeholder="npr. Marko Marković"
                                     value={name}
                                     onChange={handleNameChange}
+                                    onFocus={handleFieldFocus}
                                     onBlur={handleBlur}
                                     required
                                   />
@@ -1016,9 +1008,10 @@ export default function AuthModal() {
                                     placeholder="••••••••"
                                     value={password}
                                     onChange={handlePasswordChange}
+                                    onFocus={handleFieldFocus}
                                     onBlur={handleBlur}
                                     required
-                                    minLength={6}
+                                    minLength={loginPane ? undefined : 8}
                                     autoComplete={
                                       loginPane
                                         ? 'current-password'
@@ -1038,26 +1031,24 @@ export default function AuthModal() {
                                   </button>
                                 </div>
                                 <AnimatePresence mode="wait">
-                                  {errors.password ? (
+                                  {errors.password && (
                                     <ErrorMessage
                                       key={`ps-${submitCount}`}
                                       message={errors.password}
                                     />
-                                  ) : (
-                                    !loginPane && (
-                                      <div
-                                        style={{
-                                          fontSize: '11px',
-                                          marginTop: '4px',
-                                          color: 'var(--color-muted)',
-                                          lineHeight: '1.3',
-                                        }}
-                                      >
-                                        Min 8 karaktera, 1 veliko slovo, 1 broj
-                                      </div>
-                                    )
                                   )}
                                 </AnimatePresence>
+                                {!loginPane && (
+                                  <ul className="auth-password-requirements" aria-label="Uslovi za lozinku">
+                                    {passwordRequirements.map(requirement => (
+                                      <li key={requirement.label} className={requirement.met ? 'is-met' : ''}>
+                                        {requirement.met && <span aria-hidden="true">✓ </span>}
+                                        {requirement.label}
+                                        <span className="sr-only">{requirement.met ? ' — ispunjeno' : ' — nije ispunjeno'}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
                               </label>
                             )}
                             {loginPane && showPassword && (

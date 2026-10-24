@@ -315,6 +315,22 @@
 }
 
 /* CUSTOM ERROR POPOUT */
+.auth-password-requirements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-muted);
+}
+.auth-password-requirements .is-met {
+  color: var(--color-success, #16803c);
+  font-weight: 600;
+}
+
 .custom-error-popout {
   display: flex;
   align-items: center;
