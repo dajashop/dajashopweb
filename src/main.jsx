@@ -18,7 +18,7 @@ const app = (
     <BrowserRouter>
       <AppProviders pageData={pageData}><App /></AppProviders>
     </BrowserRouter>
-  </React.StrictMode>,
+  </React.StrictMode>
 );
 if (pageData && root.hasChildNodes()) hydrateRoot(root, app);
 else createRoot(root).render(app);
