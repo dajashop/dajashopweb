@@ -195,8 +195,8 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
           {error || detailError}
         </p>
       )}
-      {selected && <WorkforceTimeline key={selected.id} userId={selected.id} revision={revision} products={detail?.products || []} productsLoading={!detail && !detailError} productsError={!detail && Boolean(detailError)} />}
-      {selected && <WorkforcePricing key={selected.id} userId={selected.id} departments={departments} brands={brands} onSaved={refresh} />}
+      {selected && <WorkforceTimeline key={`timeline:${selected.id}`} userId={selected.id} revision={revision} products={detail?.products || []} productsLoading={!detail && !detailError} productsError={!detail && Boolean(detailError)} />}
+      {selected && <WorkforcePricing key={`pricing:${selected.id}`} userId={selected.id} departments={departments} brands={brands} onSaved={refresh} />}
       {!selected ? (
         <>
           <WorkforcePricing
