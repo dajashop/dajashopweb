@@ -1056,9 +1056,22 @@ export const ordersApi = {
   },
 };
 
+async function workforceRead(path, query) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 45_000);
+  try {
+    return await apiRequest(path, { staff: true, query, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('Učitavanje učinka traje predugo. Pokušaj ponovo.');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export const workforceApi = {
   dashboard(userId, params) {
-    return apiRequest(`/admin/workforce/${encodeURIComponent(userId)}/dashboard`, { staff: true, query: params });
+    return workforceRead(`/admin/workforce/${encodeURIComponent(userId)}/dashboard`, params);
   },
   recordSession(id, body) {
     return apiRequest(`/admin/work-sessions/${encodeURIComponent(id)}`, { staff: true, method: 'PUT', body });
@@ -1067,16 +1080,16 @@ export const workforceApi = {
     return apiRequest(`/admin/work-sessions/${encodeURIComponent(id)}/abandon`, { staff: true, method: 'POST', body: { startedAt } });
   },
   timeline(userId, date) {
-    return apiRequest(`/admin/workforce/${encodeURIComponent(userId)}/timeline`, { staff: true, query: { date } });
+    return workforceRead(`/admin/workforce/${encodeURIComponent(userId)}/timeline`, { date });
   },
   pricing(userId) {
-    return apiRequest('/admin/workforce-pricing', { staff: true, query: userId ? { userId } : {} });
+    return workforceRead('/admin/workforce-pricing', userId ? { userId } : {});
   },
   savePricing(rule) {
     return apiRequest('/admin/workforce-pricing', { staff: true, method: 'PUT', body: rule });
   },
   list(params = {}) {
-    return apiRequest('/admin/workforce', { staff: true, query: params });
+    return workforceRead('/admin/workforce', params);
   },
   me() {
     return apiRequest('/admin/my-workforce', { staff: true });
@@ -1095,7 +1108,7 @@ export const workforceApi = {
     });
   },
   member(userId) {
-    return apiRequest(`/admin/workforce/${encodeURIComponent(userId)}`, { staff: true });
+    return workforceRead(`/admin/workforce/${encodeURIComponent(userId)}`);
   },
   reviewProduct(productId, status, note) {
     return apiRequest(`/admin/workforce/products/${encodeURIComponent(productId)}/review`, {

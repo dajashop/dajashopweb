@@ -8,7 +8,7 @@ const field =
 
 export default function WorkforcePricing({
   userId,
-  departments,
+  departments = [],
   brands = [],
   onSaved,
 }) {
@@ -20,8 +20,10 @@ export default function WorkforcePricing({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [open, setOpen] = useState(true);
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
     let cancelled = false;
+    setError('');
     workforceApi
       .pricing(userId)
       .then((value) => {
@@ -33,7 +35,7 @@ export default function WorkforcePricing({
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, retry]);
   const save = async (rule) => {
     setBusy(true);
     setError('');
@@ -80,12 +82,12 @@ export default function WorkforcePricing({
       </p>
       {error && (
         <p role="alert" className="mt-3 text-sm text-red-700">
-          {error}
+          {error} <button className="ml-2 font-semibold underline" onClick={() => setRetry(value => value + 1)}>Pokušaj ponovo</button>
         </p>
       )}
-      {!data ? (
+      {!data && !error ? (
         <AdminSkeleton rows={2} label="Učitavanje cenovnika" />
-      ) : (
+      ) : data ? (
         <>
           <p className="mt-3 text-sm">
             Opšta cena: <b>{rsd(data.defaultRateMinor)}</b>
@@ -234,7 +236,7 @@ export default function WorkforcePricing({
             </p>
           )}
         </>
-      )}
+      ) : null}
     </details>
   );
 }

@@ -58,13 +58,18 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [detailError, setDetailError] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [section, setSection] = useState('statistics');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [page, setPage] = useState(1);
   const [busy, setBusy] = useState('');
   const [revision, setRevision] = useState(0);
   const selection = useRef(0);
   const refresh = () => setRevision((value) => value + 1);
   useEffect(() => {
+    if (selected) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
     setError('');
@@ -82,19 +87,21 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
     return () => {
       cancelled = true;
     };
-  }, [revision]);
+  }, [revision, selected]);
   useEffect(() => {
     if (!selected) return;
     let cancelled = false;
-    setError('');
+    setDetailError('');
+    setDetailLoading(true);
     workforceApi
       .member(selected.id)
       .then((value) => {
         if (!cancelled) setDetail(value);
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message);
-      });
+        if (!cancelled) setDetailError(err.message || 'Detalji zaposlenog nisu učitani.');
+      })
+      .finally(() => { if (!cancelled) setDetailLoading(false); });
     return () => {
       cancelled = true;
     };
@@ -147,6 +154,10 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
           Number(a.qualityReviewStatus === 'changes_requested') ||
         new Date(b.createdAt) - new Date(a.createdAt),
     );
+  const pageSize = 25;
+  const pageCount = Math.max(1, Math.ceil(products.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const visibleProducts = products.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
@@ -160,7 +171,10 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
                 setDetail(null);
                 setSearch('');
                 setFilter('all');
+                setPage(1);
                 setError('');
+                setDetailError('');
+                setSection('statistics');
                 setBusy('');
               }}
             >
@@ -178,10 +192,10 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
         </div>
         <button
           className="rounded-xl border border-neutral-200 px-4 py-2 text-sm font-semibold"
-          disabled={loading}
+          disabled={loading || detailLoading}
           onClick={refresh}
         >
-          Osveži podatke
+          {loading || detailLoading ? 'Osvežavanje…' : 'Osveži podatke'}
         </button>
       </header>
       {error && (
@@ -189,8 +203,18 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
           {error}
         </p>
       )}
-      {selected && <WorkforceTimeline key={selected.id} userId={selected.id} revision={revision} products={detail?.products || []} productsLoading={!detail && !error} productsError={!detail && Boolean(error)} />}
-      {selected && <WorkforcePricing key={selected.id} userId={selected.id} departments={departments} brands={brands} onSaved={refresh} />}
+      {selected && <>
+        <nav aria-label="Podaci zaposlenog" className="flex flex-wrap gap-2 rounded-2xl border border-neutral-200 bg-white p-2">
+          {[['statistics', 'Statistika'], ['products', 'Artikli'], ['history', 'Istorija i kontrola'], ['pricing', 'Cenovnik']].map(([id, label]) => (
+            <button key={id} aria-pressed={section === id} onClick={() => setSection(id)} className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-emerald-600 ${section === id ? 'bg-emerald-50 text-emerald-800' : 'text-neutral-500 hover:bg-neutral-50'}`}>{label}</button>
+          ))}
+        </nav>
+        {detailError && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-700"><span>{detailError}</span><button disabled={detailLoading} className="font-bold underline" onClick={refresh}>Pokušaj ponovo</button></div>}
+        <div hidden={section !== 'statistics'}>
+          <WorkforceTimeline key={selected.id} userId={selected.id} revision={revision} products={detail?.products || []} productsLoading={!detail && !detailError} productsError={!detail && Boolean(detailError)} />
+        </div>
+        {section === 'pricing' && <WorkforcePricing key={selected.id} userId={selected.id} departments={departments} brands={brands} onSaved={refresh} />}
+      </>}
       {!selected ? (
         <>
           <WorkforcePricing
@@ -205,7 +229,7 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
               {members.map((member) => (
                 <button
                   key={member.id}
-                  onClick={() => setSelected(member)}
+                  onClick={() => { setDetail(null); setDetailError(''); setError(''); setDetailLoading(true); setSection('statistics'); setSelected(member); }}
                   className="group rounded-2xl border border-neutral-200 bg-white p-6 text-left shadow-sm transition hover:border-emerald-500 hover:shadow-md focus-visible:outline-emerald-600"
                 >
                   <div className="flex items-start gap-3">
@@ -269,11 +293,11 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
           )}
         </>
       ) : !detail ? (
-        error ? <p role="alert" className="p-8 text-red-600">Detalji nisu učitani. <button onClick={refresh}>Pokušaj ponovo</button></p> : <AdminSkeleton label="Učitavanje artikala i obračuna" />
+        ['products', 'history'].includes(section) && !detailError ? <AdminSkeleton label="Učitavanje artikala i obračuna" /> : null
       ) : (
         <>
 
-          <details className="rounded-2xl border border-neutral-200 bg-white p-5">
+          {section === 'statistics' && <details className="rounded-2xl border border-neutral-200 bg-white p-5">
             <summary className="mb-3 cursor-pointer text-sm font-bold">Ukupni podaci zaposlenog i obračun</summary>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
             <Metric label="Danas" value={worker.createdToday} />
@@ -304,9 +328,9 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
             Europe/Belgrade. Ukupni unosi i obračun uključuju kasnije obrisane
             artikle.
           </p>
-          </details>
+          </details>}
 
-          <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+          {section === 'products' && <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 p-5">
               <h3 className="font-bold">
                 Artikli zaposlenog{' '}
@@ -320,14 +344,14 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
                     className="w-40 py-2 text-sm outline-none"
                     placeholder="Naziv, šifra, brend…"
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                   />
                 </label>
                 <select
                   aria-label="Status artikala"
                   className="rounded-xl border px-3 py-2 text-sm"
                   value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
+                  onChange={(e) => { setFilter(e.target.value); setPage(1); }}
                 >
                   <option value="all">Svi statusi</option>
                   <option value="pending">Na proveri</option>
@@ -356,7 +380,7 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
-                  {products.map((product) => (
+                  {visibleProducts.map((product) => (
                     <tr
                       key={product.id}
                       className={
@@ -494,18 +518,26 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
                 </tbody>
               </table>
             </div>
+            {products.length > 0 && <nav aria-label="Stranice artikala zaposlenog" className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 p-4 text-sm text-neutral-500">
+              <span>{(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, products.length)} od {products.length} artikala</span>
+              <div className="flex items-center gap-3">
+                <button disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)} className="rounded-lg border px-3 py-2 disabled:opacity-40">Prethodna</button>
+                <span aria-live="polite">{currentPage} / {pageCount}</span>
+                <button disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)} className="rounded-lg border px-3 py-2 disabled:opacity-40">Sledeća</button>
+              </div>
+            </nav>}
             {!products.length && (
               <p className="p-8 text-center text-neutral-500">
                 Nema artikala za izabrani filter.
               </p>
             )}
-          </section>
-          <details className="rounded-2xl border border-neutral-200 bg-white p-5">
+          </section>}
+          {section === 'history' && <details open className="rounded-2xl border border-neutral-200 bg-white p-5">
             <summary className="cursor-pointer font-bold">
               Istorija rada i kontrole · poslednjih 250 događaja
             </summary>
             <div className="mt-4 divide-y divide-neutral-100">
-              {detail.activity.map((event) => (
+              {(detail.activity || []).map((event) => (
                 <details key={event.id} className="py-3 text-sm">
                   <summary className="cursor-pointer">
                     {operations[event.operation] || event.operation} ·{' '}
@@ -529,13 +561,13 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
                   </pre>
                 </details>
               ))}
-              {!detail.activity.length && (
+              {!detail.activity?.length && (
                 <p className="text-sm text-neutral-500">
                   Nema zabeleženih aktivnosti.
                 </p>
               )}
             </div>
-          </details>
+          </details>}
         </>
       )}
     </div>

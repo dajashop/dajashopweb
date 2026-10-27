@@ -17,7 +17,7 @@ const cards = [
   ['missing', 'Najčešći nedostaci', 6, false], ['waiting', 'Čekanje na proveru i doradu', 6, false],
   ['groups', 'Učinak po brendu i odeljenju', 6, false], ['trend', 'Trend poslednjih 30 dana', 6, false],
   ['strip', 'Aktivnost kroz dan', 6, false], ['team', 'Poređenje zaposlenih', 12, false],
-  ['timeline', 'Timeline', 12, true]
+  ['timeline', 'Aktivnosti zaposlenog', 12, true]
 ];
 const defaults = () => Object.fromEntries(cards.map(([id, , span, visible]) => [id, { span, visible }]));
 function normalizeLayout(value) {
