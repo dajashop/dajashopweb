@@ -233,9 +233,10 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
                       size={20}
                     />
                   </div>
-                  <div className="my-5 grid grid-cols-3 gap-2">
+                  <div className="my-5 grid grid-cols-2 gap-2">
                     <Metric label="Danas" value={member.createdToday} />
                     <Metric label="Juče" value={member.createdYesterday} />
+                    <Metric label="Poslednjih 7 dana" value={member.createdLast7Days ?? '—'} />
                     <Metric label="Ukupno" value={member.createdTotal} />
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
@@ -284,6 +285,7 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
             <Metric label="Danas" value={worker.createdToday} />
             <Metric label="Juče" value={worker.createdYesterday} />
+            <Metric label="Poslednjih 7 dana" value={worker.createdLast7Days ?? '—'} />
             <Metric label="Ukupno dodatih" value={worker.createdTotal} />
             <Metric label="Poslednjih 30 dana" value={worker.createdInPeriod} />
             <Metric label="Odobrenih trenutno" value={worker.approvedCount} />
