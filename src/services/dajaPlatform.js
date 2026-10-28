@@ -1174,6 +1174,7 @@ export function subscribeReaderFind(sessionId, onEvent, onError) {
 }
 
 export const productAlertsApi = {
+  confirm(token) { return apiRequest('/product-alerts/confirm', { method: 'POST', auth: false, body: { token } }); },
   subscribe(productId, payload, { auth = true } = {}) {
     return apiRequest(`/products/${encodeURIComponent(productId)}/alerts`, {
       method: 'POST',
@@ -1230,6 +1231,12 @@ function writeStoredProductAlertState(state) {
 }
 
 export const productAlertSubscriptions = {
+  clearContact() {
+    writeStoredProductAlertState({ subscriptions: {} });
+  },
+  saveContact(contact) {
+    writeStoredProductAlertState({ ...readStoredProductAlertState(), ...contact });
+  },
   typesFor(productId, variantId) {
     if (!productId || !variantId) return [];
     const prefix = `${String(productId)}:${String(variantId)}:`;
@@ -1478,7 +1485,16 @@ export const novostiApi = {
   },
 };
 
+export const emailAdminApi = {
+  health() { return apiRequest('/admin/emails', { staff: true }); },
+  retry(id) { return apiRequest('/admin/emails/' + encodeURIComponent(id) + '/retry', { method: 'POST', staff: true }); },
+};
+
 export const privacyApi = {
+  unsubscribe(kind, token) {
+    if (!['newsletter', 'product-alert'].includes(kind)) throw new Error('Link za odjavu nije važeći.');
+    return apiRequest('/privacy/unsubscribe/' + kind + '?token=' + encodeURIComponent(token), { method: 'POST', auth: false });
+  },
   current() {
     return apiRequest('/privacy/current', { auth: false });
   },

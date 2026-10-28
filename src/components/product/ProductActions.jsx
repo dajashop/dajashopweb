@@ -51,8 +51,11 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
         }
         setSubscribedTypes(activeTypes);
       })
-      .catch(() => {
-        // The locally saved state remains available if the status lookup fails.
+      .catch((error) => {
+        if (!cancelled && !authenticated && [400, 422].includes(error?.status)) {
+          productAlertSubscriptions.clearContact();
+          setSubscribedTypes([]);
+        }
       });
 
     return () => {
@@ -65,7 +68,12 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
     setGuestAlertType(type);
   };
 
-  const handleGuestSubscription = ({ type, deliveryChannel, newsletterWarning, contact }) => {
+  const handleGuestSubscription = ({ type, deliveryChannel, newsletterWarning, contact, requiresConfirmation }) => {
+    if (requiresConfirmation) {
+      setGuestAlertType(null);
+      flash('Potvrdite email adresu', 'Proverite email i potvrdite prijavu preko dugmeta u poruci. Obaveštenje će se tada uključiti.', 'info');
+      return;
+    }
     if (!user?.email && !user?.phoneNumber) {
       productAlertSubscriptions.markSubscribed(
         product.id,

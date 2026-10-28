@@ -66,8 +66,13 @@ export default function ProductAlertModal({
         setNewsletterSubscribed(status?.newsletterSubscribed === true);
         if (status?.maskedEmail) setMaskedEmail(status.maskedEmail);
       })
-      .catch(() => {
-        // The alert form remains available when the optional status lookup fails.
+      .catch((requestError) => {
+        if (!cancelled && !authenticated && [400, 422].includes(requestError?.status)) {
+          productAlertSubscriptions.clearContact();
+          setManagementToken('');
+          setMaskedEmail('');
+          setUseAnotherEmail(true);
+        }
       });
 
     return () => {
@@ -133,6 +138,7 @@ export default function ProductAlertModal({
       }
 
       onSubscribed?.({
+        requiresConfirmation: result?.requiresConfirmation === true,
         type,
         deliveryChannel,
         newsletterWarning,

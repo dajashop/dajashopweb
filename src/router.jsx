@@ -61,6 +61,7 @@ export default function AppRoutes() {
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/newsletter-confirm" element={<NewsletterConfirm />} />
+      <Route path="/product-alert-confirm" element={<NewsletterConfirm productAlert />} />
       <Route path="/logout" element={<Logout />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/contact" element={<Contact />} />

@@ -74,6 +74,7 @@ const CatalogSearchSettings = adminPanel(() => import('./components/CatalogSearc
 const WorkforcePanel = adminPanel(() => import('./components/WorkforcePanel.jsx'));
 const ExcelManager = adminPanel(() => import('./components/ExcelManager'));
 const PolicyPublicationPanel = adminPanel(() => import('./components/PolicyPublicationPanel.jsx'));
+const EmailDeliveryPanel = adminPanel(() => import('./components/EmailDeliveryPanel.jsx'));
 const SupplierQueuePanel = adminPanel(() => import('./components/SupplierQueuePanel.jsx'));
 const PromotionManager = adminPanel(() => import('./components/PromotionManager.jsx'));
 const FilterManager = adminPanel(() => import('./components/FilterManager.jsx'));
@@ -1857,7 +1858,7 @@ function AdminDashboardContent() {
 
         {activeTab === 'workforce' && !isCatalogContributor && <WorkforcePanel departments={departments} categories={categories} brands={brands} onEditProduct={openEditor} />}
 
-        {activeTab === 'privacy' && <PolicyPublicationPanel />}
+        {activeTab === 'privacy' && <><EmailDeliveryPanel /><PolicyPublicationPanel /></>}
 
         {activeTab === 'access' && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">

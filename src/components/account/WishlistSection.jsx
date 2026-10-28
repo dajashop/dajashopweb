@@ -51,8 +51,11 @@ function WishlistAlertButton({ item }) {
         }
         setSubscribedTypes(activeTypes);
       })
-      .catch(() => {
-        // The locally saved state remains available if the status lookup fails.
+      .catch((error) => {
+        if (!cancelled && !authenticated && [400, 422].includes(error?.status)) {
+          productAlertSubscriptions.clearContact();
+          setSubscribedTypes([]);
+        }
       });
 
     return () => {
@@ -118,7 +121,12 @@ function WishlistAlertButton({ item }) {
     }
   };
 
-  const handleGuestSubscription = ({ deliveryChannel, newsletterWarning, contact }) => {
+  const handleGuestSubscription = ({ deliveryChannel, newsletterWarning, contact, requiresConfirmation }) => {
+    if (requiresConfirmation) {
+      setShowGuestAlertModal(false);
+      flash('Potvrdite email adresu', 'Proverite email i potvrdite prijavu preko dugmeta u poruci. Obaveštenje će se tada uključiti.', 'info');
+      return;
+    }
     if (!user?.email && !user?.phoneNumber) {
       productAlertSubscriptions.markSubscribed(
         product.id,

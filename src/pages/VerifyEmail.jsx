@@ -1,3 +1,4 @@
+import { isInvalidEmailLink } from '../utils/emailErrors.js';
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -22,6 +23,7 @@ export default function VerifyEmail() {
   const { user, showAuth } = useAuth();
   const [status, setStatus] = useState('loading');
   const [message, setMessage] = useState('Proveravamo verifikacioni link...');
+  const [retry, setRetry] = useState(0);
   const [resendState, setResendState] = useState('idle');
   const verificationToken = searchParams.get('token');
 
@@ -32,18 +34,23 @@ export default function VerifyEmail() {
       return;
     }
 
+    let cancelled = false;
+    setStatus('loading');
     authApi
       .verifyEmail(verificationToken)
       .then(() => {
+        if (cancelled) return;
         setStatus('success');
         setMessage('Vaša email adresa je uspešno potvrđena. Srećna kupovina!');
       })
       .catch((error) => {
-        console.error(error);
-        setStatus('error');
-        setMessage('Verifikacioni link više nije važeći. Možda je već otvoren ili je istekao.');
+        if (cancelled) return;
+        const invalid = isInvalidEmailLink(error);
+        setStatus(invalid ? 'error' : 'retry');
+        setMessage(invalid ? 'Verifikacioni link više nije važeći. Zatražite novi link.' : 'Provera trenutno nije uspela. Pokušajte ponovo kada veza bude dostupna.');
       });
-  }, [verificationToken]);
+    return () => { cancelled = true; };
+  }, [verificationToken, retry]);
 
   const isLoading = status === 'loading';
   const isSuccess = status === 'success';
@@ -86,15 +93,17 @@ export default function VerifyEmail() {
           ) : isSuccess ? (
             <p className="verify-email-page__eyebrow verify-email-page__eyebrow--success"><CheckCircle2 size={14} /> Verifikacija uspešna</p>
           ) : (
-            <p className="verify-email-page__eyebrow verify-email-page__eyebrow--error"><Hourglass size={14} /> Link je istekao</p>
+            <p className="verify-email-page__eyebrow verify-email-page__eyebrow--error"><Hourglass size={14} /> {status === 'retry' ? 'Provera nije uspela' : 'Link je istekao'}</p>
           )}
-          <h1>{isLoading ? 'Potvrda je u toku' : isSuccess ? 'Vaša email adresa je uspešno verifikovana!' : 'Verifikacioni link je istekao'}</h1>
+          <h1>{isLoading ? 'Potvrda je u toku' : isSuccess ? 'Vaša email adresa je uspešno verifikovana!' : status === 'retry' ? 'Pokušajte proveru ponovo' : 'Verifikacioni link je istekao'}</h1>
           <p className="verify-email-page__description">{message}</p>
 
           {!isLoading && (
             <div className="verify-email-page__actions">
               {isSuccess ? (
                 <Link to="/catalog" className="verify-email-page__primary"><ShoppingBag size={18} /> Pronađi svoj sat <ArrowRight size={17} /></Link>
+              ) : status === 'retry' ? (
+                <button type="button" className="verify-email-page__primary" onClick={() => setRetry(value => value + 1)}><RefreshCw size={18} /> Pokušaj ponovo</button>
               ) : (
                 <button type="button" className="verify-email-page__primary" onClick={requestNewLink} disabled={resendState === 'loading' || resendState === 'sent' || resendState === 'verified'}>
                   {resendState === 'loading' ? <Loader2 size={18} className="animate-spin" /> : resendState === 'sent' || resendState === 'verified' ? <CheckCircle2 size={18} /> : <RefreshCw size={18} />}

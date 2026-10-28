@@ -13,7 +13,7 @@ const SECURITY_HEADERS = headerRules.split(/\r?\n\s*\r?\n/)[0].split(/\r?\n/)
   .filter(Boolean).map(match => [match[1].trim(), match[2]]);
 
 const PRIVATE_PATHS = new Set(['/cart', '/checkout', '/account', '/orders', '/admin',
-  '/verify-email', '/reset-password', '/newsletter-confirm', '/logout', '/unsubscribe', '/privacy', '/cookies', '/terms', '/search']);
+  '/verify-email', '/reset-password', '/newsletter-confirm', '/product-alert-confirm', '/logout', '/unsubscribe', '/privacy', '/cookies', '/terms', '/search']);
 
 async function errorPage(status, request, env) {
   try {

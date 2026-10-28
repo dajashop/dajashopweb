@@ -1,32 +1,38 @@
-import { useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle2, MailX } from 'lucide-react';
+import { privacyApi } from '../services/dajaPlatform.js';
+import { isInvalidEmailLink } from '../utils/emailErrors.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
-import './LegalDocument.css';
+import './ResetPassword.css';
 
 export default function Unsubscribe() {
   const [params] = useSearchParams();
-  const success = params.get('status') === 'success';
-  const productAlert = params.get('kind') === 'product-alert';
-  const title = productAlert
-    ? success
-      ? 'Obaveštenje za artikal je isključeno'
-      : 'Obaveštenje je već isključeno'
-    : success
-      ? 'Odjava je potvrđena'
-      : 'Ovaj link je već iskorišćen';
-  const message = productAlert
-    ? success
-      ? 'Više nećete dobijati obaveštenja za ovaj artikal.'
-      : 'Nema aktivnog obaveštenja za ovaj artikal ili je već isključeno.'
-    : success
-      ? 'Više nećete primati novosti emailom.'
-      : 'Nema aktivne prijave za novosti emailom, ili je odjava već izvršena.';
-  return (
-    <main className="legal-document legal-document--unsubscribe container">
-      <SEOHead title="Odjava" noIndex={true} />
-      {success ? <CheckCircle2 size={42} /> : <MailX size={42} />}
-      <h1>{title}</h1>
-      <p>{message}</p>
-    </main>
-  );
+  const kind = params.get('kind') === 'product-alert' ? 'product-alert' : 'newsletter';
+  const token = params.get('token');
+  const [status, setStatus] = useState(params.get('status') ? 'success' : token ? 'ready' : 'invalid');
+  const [error, setError] = useState('');
+  const label = kind === 'product-alert' ? 'obaveštenja za ovaj artikal' : 'novosti i ponude';
+  async function unsubscribe() {
+    setStatus('saving');
+    setError('');
+    try {
+      await privacyApi.unsubscribe(kind, token);
+      setStatus('success');
+    } catch (requestError) {
+      setError(requestError.message || 'Odjava trenutno nije uspela. Pokušajte ponovo.');
+      setStatus(isInvalidEmailLink(requestError) ? 'invalid' : 'ready');
+    }
+  }
+  return <section className="reset-password-page" aria-live="polite">
+    <SEOHead title="Odjava" noIndex={true} />
+    <div className="reset-password-page__card">
+      <div className="reset-password-page__icon">{status === 'success' ? <CheckCircle2 size={28} /> : <MailX size={28} />}</div>
+      <h1>{status === 'success' ? 'Odjava je potvrđena.' : 'Potvrdite odjavu.'}</h1>
+      <p className="reset-password-page__copy">{status === 'success' ? `Više nećete primati ${label}.` : status === 'invalid' ? 'Link za odjavu nije potpun. Otvorite link iz email poruke.' : `Klikom na dugme isključujete ${label}.`}</p>
+      {['ready', 'saving'].includes(status) && <button className="reset-password-page__button" onClick={unsubscribe} disabled={status === 'saving'}>{status === 'saving' ? 'Čuvamo odjavu…' : 'Potvrdi odjavu'}</button>}
+      {error && <p className="reset-password-page__error">{error}</p>}
+      <Link to="/" className="reset-password-page__secondary">Nazad na DajaShop</Link>
+    </div>
+  </section>;
 }

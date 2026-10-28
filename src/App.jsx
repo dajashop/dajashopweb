@@ -29,10 +29,10 @@ export default function App() {
     pathname === '/naocare' ||
     pathname === '/logout' ||
     pathname === '/verify-email' ||
-    pathname === '/newsletter-confirm' ||
+    pathname === '/newsletter-confirm' || pathname === '/product-alert-confirm' ||
     pathname === '/reset-password' || Boolean(pageStatus);
   const isFullBleedPage =
-    pathname === '/logout' || pathname === '/verify-email' || pathname === '/reset-password' || pathname === '/newsletter-confirm' || Boolean(pageStatus);
+    pathname === '/logout' || pathname === '/verify-email' || pathname === '/reset-password' || pathname === '/newsletter-confirm' || pathname === '/product-alert-confirm' || Boolean(pageStatus);
 
   // Resetovanje skrola na vrh pri promeni stranice (samo za PUSH/REPLACE)
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function App() {
         style={isFullBleedPage ? undefined : { padding: '20px 0 48px' }}
       >
         <AuthModal />
-        {!['/newsletter-confirm', '/verify-email', '/reset-password', '/unsubscribe'].includes(pathname) && <NewsletterModal />}
+        {!['/product-alert-confirm', '/newsletter-confirm', '/verify-email', '/reset-password', '/unsubscribe'].includes(pathname) && <NewsletterModal />}
         {pageStatus ? <PageStatus status={pageStatus} /> : <AppRoutes />}
       </main>
       <Footer />

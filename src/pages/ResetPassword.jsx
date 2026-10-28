@@ -1,3 +1,4 @@
+import { isInvalidEmailLink } from '../utils/emailErrors.js';
 import React, { useState } from 'react';
 import { CheckCircle2, Eye, EyeOff, KeyRound, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -42,9 +43,9 @@ export default function ResetPassword() {
       setStatus('success');
     } catch (error) {
       console.error(error);
-      setStatus('invalid');
+      setStatus(isInvalidEmailLink(error) ? 'invalid' : 'ready');
       setErrors({
-        form: error?.message || 'Link za promenu lozinke nije važeći ili je istekao.',
+        form: error?.message || 'Promena trenutno nije uspela. Podaci su sačuvani u formi; pokušajte ponovo.',
       });
     }
   }
