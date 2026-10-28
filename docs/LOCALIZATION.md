@@ -1,6 +1,6 @@
 # Jezici i valute prodavnice
 
-U redu sa ikonama zaglavlja postoji jedno dugme sa zastavicom izabranog jezika, podrazumevano Srbije. Otvara zajednički meni za jezik i valutu. Izbori ostaju nezavisni; valuta se pamti kroz postojeći sloj neophodne memorije nakon inicijalizacije saglasnosti.
+U redu sa ikonama zaglavlja postoji samo zastavica izabranog jezika i mala strelica desno, bez vidljivog okvira, podrazumevano Srbija. Otvara zajednički meni za jezik i valutu. Izbori ostaju nezavisni; valuta se pamti kroz postojeći sloj neophodne memorije nakon inicijalizacije saglasnosti.
 
 Srpski koristi putanje bez prefiksa, a engleski `/en`, npr. `/en`, `/en/catalog` i `/en/product/model`. URL određuje jezik u SSR-u i prvom klijentskom renderu. Zapamćeni jezik nikada ne nadjačava adresu. Promena jezika vodi na odgovarajuću adresu iste stranice uz očuvanje query/hash dela. React Router basename čuva prefiks za navigaciju, filtere i Link komponente. Za obične `href` veze koristiti `localizePath` iz `useStorefront()`.
 
@@ -28,6 +28,8 @@ Opisi artikala su zaseban sadržaj iz baze. Ako postoji `product.attributes._tra
 `useStorefront().money(amountRsd)` formatira iznos za izabrani jezik i valutu. `moneyRsd(amountRsd)` uvek prikazuje stvarni iznos za naplatu. RSD nema decimale u prikazu, EUR ima dve. Sve računanje popusta, dostave, cena, budžeta i filter parametara ostaje u RSD. Košarica i podaci poslati API-ju ne sadrže preračunate EUR iznose.
 
 Kurs stiže sa `GET /api/v1/public/catalog/exchange-rates` iz projekta `daja-platform`. Izvor je zvanična važeća srednja kursna lista NBS (`https://webappcenter.nbs.rs/ExchangeRateWebApp/ExchangeRate/CurrentMiddleRate`), a ne prosek kupovnog i prodajnog kursa. Odgovor uključuje `asOf`, `fetchedAt` i `sourceUrl`. Serverski keš važi do 15 minuta i obavezno se ponovo proverava pri prvom zahtevu svakog novog dana po vremenu u Beogradu. Vikendom i praznicima aktuelna NBS lista ostaje poslednja važeća lista. Osvežavanje je vezano za zahteve sajta i ne zahteva poseban cron.
+
+API vraća standardni omotač `{ data, meta, requestId }`. Pregledač prvo izdvaja `data` pa čita `eurRsdRate` i `asOf`; podržan je i odgovor bez omotača.
 
 Pregledač osvežava kurs na 15 minuta i pri povratku na tab. U meniju prikazuje odnos EUR/RSD i datum liste. Ako kurs nije dostupan, prikazuju se RSD cene, EUR je onemogućen u meniju i ponuđen je ponovni pokušaj. Ne koristi se izmišljeni rezervni kurs. Checkout u EUR režimu jasno prikazuje informativni karakter EUR cena i konačan RSD iznos za plaćanje.
 

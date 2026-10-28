@@ -74,8 +74,9 @@ export function StorefrontProvider({ children, initialLanguage = 'sr' }) {
     setRateStatus('loading');
     fetch(`${API_BASE_URL}/public/catalog/exchange-rates`, { signal: controller.signal, credentials: 'omit' })
       .then(response => { if (!response.ok) throw new Error('Exchange rate unavailable'); return response.json(); })
-      .then(data => {
-        const rate = Number(data.eurRsdRate);
+      .then(payload => {
+        const data = payload?.data ?? payload;
+        const rate = Number(data?.eurRsdRate);
         if (!Number.isFinite(rate) || rate <= 0) throw new Error('Invalid exchange rate');
         if (active) { setEurRsdRate(rate); setRateDate(data.asOf || null); setRateStatus('ready'); }
       })

@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { CURRENCIES, LANGUAGES, useStorefront } from './StorefrontContext.jsx';
 import { localizedPath } from './paths.js';
@@ -42,6 +42,7 @@ export default function StorefrontPreferences() {
         if (!open && ['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); event.stopPropagation(); setOpen(true); }
       }}>
       <img className="storefront-flag" src={`/flags/${current.flag}.svg`} alt="" width="24" height="16" />
+      <ChevronDown className="storefront-preference__chevron" size={10} strokeWidth={2} aria-hidden="true" />
     </button>
     {open && <div id={id} className="storefront-preference__panel" role="menu" aria-label={t('Jezik i valuta')}>
       <div role="group" aria-labelledby={`${id}-language`}>
