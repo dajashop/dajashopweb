@@ -69,12 +69,14 @@
 }
 .header__brand-logo {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 0;
   display: block;
   width: 100%;
-  height: 100%;
+  height: 40px;
   object-fit: contain;
   object-position: left center;
+  transform: translateY(-50%);
 }
 
 /* Actions */
