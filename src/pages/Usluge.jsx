@@ -33,7 +33,7 @@ export default function Usluge() {
     <ServiceBreadcrumbs />
     <header className="svc-hero">
       <div className="svc-hero-copy">
-        <p className="svc-eyebrow">DajaShop · Usluge u Nišu</p>
+        <p className="svc-kicker">DajaShop, usluge u Nišu</p>
         <h1>Usluge u Nišu.<br /><span>Pažnja u detaljima.</span></h1>
         <p className="svc-lead">Lični pečat na poklonu. Sat koji ponovo radi i dobro stoji. Daljinski za lakši ulazak. Pet usluga, na jednom mestu.</p>
         <div className="svc-actions">
@@ -50,14 +50,14 @@ export default function Usluge() {
     </header>
     <section className="svc-section" id="sve-usluge" aria-labelledby="svc-all-title">
       <div className="svc-section-heading">
-        <div><p className="svc-eyebrow">Šta radimo</p><h2 id="svc-all-title">Izaberite svoju uslugu.</h2></div>
+        <div><p className="svc-kicker">Šta radimo</p><h2 id="svc-all-title">Izaberite svoju uslugu.</h2></div>
         <p>Otvorite uslugu za detalje, pripremu za dolazak i odgovore na česta pitanja.</p>
       </div>
       <div className="svc-grid">
         {serviceCatalog.map((service, index) => <Link className={`svc-card${index === 0 ? ' svc-card--featured' : ''}`} to={service.path} key={service.slug}>
           <div className="svc-card-content">
             <div className="svc-card-top"><span className="svc-icon"><ServiceIcon kind={service.kind} /></span><span className="svc-number">0{index + 1}</span></div>
-            <p className="svc-eyebrow">{service.category}</p>
+            <p className="svc-card-category">{service.category}</p>
             <h3>{service.title}</h3>
             <p className="svc-card-summary">{service.summary}</p>
             <span className="svc-card-link">Saznajte više <ArrowUpRight size={20} aria-hidden="true" /></span>
@@ -67,7 +67,7 @@ export default function Usluge() {
       </div>
     </section>
     <section className="svc-section" aria-labelledby="svc-process-title">
-      <div className="svc-section-heading"><div><p className="svc-eyebrow">Od ideje do detalja</p><h2 id="svc-process-title">Jednostavno, korak po korak.</h2></div></div>
+      <div className="svc-section-heading"><div><p className="svc-kicker">Kako izgleda poseta</p><h2 id="svc-process-title">Jednostavno, korak po korak.</h2></div></div>
       <ol className="svc-process">
         <li><span>01</span><h3>Izaberite uslugu</h3><p>Pogledajte šta usluga obuhvata i šta je korisno poneti.</p></li>
         <li><span>02</span><h3>Javite se ili svratite</h3><p>Za dodatne informacije nas pozovite, ili donesite predmet u radnju u Nišu.</p></li>

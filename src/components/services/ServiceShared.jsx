@@ -26,7 +26,7 @@ export function ServiceVisit({ service }) {
   const mapQuery = encodeURIComponent(`${business.name}, ${business.street}, ${business.city}`);
   return <section className="svc-visit" id="posetite-nas" aria-labelledby="svc-visit-title">
     <div>
-      <p className="svc-eyebrow">Vidimo se u radnji</p>
+      <p className="svc-kicker">Vidimo se u radnji</p>
       <h2 id="svc-visit-title">Donesite predmet.<br />Dogovorićemo detalje.</h2>
       <p>Pregledaćemo šta je potrebno i dogovoriti cenu i rok pre početka rada. Za informacije pre dolaska, pozovite nas ili pošaljite upit.</p>
       <div className="svc-actions">

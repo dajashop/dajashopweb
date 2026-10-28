@@ -47,7 +47,7 @@ export default function ServiceDetail() {
     <ServiceBreadcrumbs service={service} />
     <header className="svc-hero">
       <div className="svc-hero-copy">
-        <p className="svc-eyebrow">DajaShop · {service.category}</p>
+        <p className="svc-kicker">DajaShop, {service.category}</p>
         <h1>{service.title}<span className="svc-city"> u Nišu.</span></h1>
         <p className="svc-lead">{service.summary}</p>
         <div className="svc-actions">
@@ -63,7 +63,7 @@ export default function ServiceDetail() {
     </header>
     <div className="svc-details-layout svc-section" id="o-usluzi">
       <section className="svc-description" aria-labelledby="svc-about-title">
-        <p className="svc-eyebrow">O usluzi</p>
+        <p className="svc-kicker">O usluzi</p>
         <h2 id="svc-about-title">{service.tagline}</h2>
         {service.paragraphs.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
         <h3>Šta usluga obuhvata</h3>
@@ -79,7 +79,7 @@ export default function ServiceDetail() {
       </aside>
     </div>
     <section className="svc-faq svc-section" aria-labelledby="svc-faq-title">
-      <div><p className="svc-eyebrow">Dobro je znati</p><h2 id="svc-faq-title">Česta pitanja.</h2><p>Još nešto vas zanima? <Link to="/contact">Tu smo da pomognemo.</Link></p></div>
+      <div><p className="svc-kicker">Dobro je znati</p><h2 id="svc-faq-title">Česta pitanja.</h2><p>Još nešto vas zanima? <Link to="/contact">Tu smo da pomognemo.</Link></p></div>
       <div className="svc-faq-items">{service.faqs.map(faq => <details key={faq.question}>
         <summary>{faq.question}<span aria-hidden="true" className="svc-faq-plus" /></summary>
         <p>{faq.answer}</p>
@@ -87,7 +87,7 @@ export default function ServiceDetail() {
     </section>
     <ServiceVisit service={service} />
     <section className="svc-section" aria-labelledby="svc-related-title">
-      <div className="svc-section-heading"><div><p className="svc-eyebrow">Još iz naše radnje</p><h2 id="svc-related-title">Ostale usluge.</h2></div><Link className="svc-text-link" to="/usluge">Sve usluge <ArrowUpRight size={18} aria-hidden="true" /></Link></div>
+      <div className="svc-section-heading"><div><p className="svc-kicker">Još iz naše radnje</p><h2 id="svc-related-title">Ostale usluge.</h2></div><Link className="svc-text-link" to="/usluge">Sve usluge <ArrowUpRight size={18} aria-hidden="true" /></Link></div>
       <div className="svc-related">{serviceCatalog.filter(item => item.slug !== service.slug).map(item => <Link key={item.slug} to={item.path}>
         <ServiceIcon kind={item.kind} /><h3>{item.title}</h3><ArrowUpRight size={18} aria-hidden="true" />
       </Link>)}</div>
