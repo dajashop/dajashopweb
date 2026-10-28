@@ -1,5 +1,10 @@
 ## 🛍️ DajaShop - Moderna E-Commerce Prodavnica Satova
 
+Mapa povezivanja sajta, aplikacija, Rendera, Cloudflare-a i mejlova nalazi se u
+[docs/INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md) (snimak od 28.10.2026).
+Za potvrđene infrastrukturne veze koristi ovu mapu; istorijski opisi ispod mogu
+opisivati raniju implementaciju. Uputstva za budući rad su u [AGENTS.md](AGENTS.md).
+
 [![React](https://img.shields.io/badge/React-19.2.0-61DAFB?logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-7.2.2-646CFF?logo=vite)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1.17-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
