@@ -54,8 +54,8 @@ export default function Header() {
             )}
           </Link>
 
-          <HeaderLoginButton />
           <StorefrontPreferences />
+          <HeaderLoginButton />
 
           <button
             ref={anchorRef}
