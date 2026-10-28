@@ -86,7 +86,7 @@ export default function useProductEditors(sharedProps) {
         />
       </Suspense></LoadErrorBoundary>
     ))}
-    {createPortal(<div className="pointer-events-none fixed bottom-5 left-5 z-[4100] flex max-h-[70vh] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-3 overflow-y-auto">
+    {notices.length > 0 && createPortal(<div className="pointer-events-none fixed bottom-5 left-5 z-[4100] flex max-h-[70vh] w-[min(22rem,calc(100vw-2.5rem))] flex-col gap-3 overflow-y-auto">
       {notices.map(notice => <SaveNotice key={notice.id} notice={notice} onDismiss={dismissNotice} onRestore={restore} />)}
     </div>, document.body)}
   </>;

@@ -1,4 +1,4 @@
-import { lazy, memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import './ProductCard.css';
 import Link from './ProductLink.jsx';
 import { money } from '../utils/currency.js';
@@ -12,9 +12,7 @@ import { deleteProduct, saveProduct } from '../services/products';
 import CatalogCardImage from './CatalogCardImage.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 
-// Uvozimo Modal
-import ClientOnly from './ClientOnly.jsx';
-const AdminProductModal = import.meta.env.SSR ? () => null : lazy(() => import('../pages/Admin/components/AdminProductModal.jsx'));
+import useProductEditors from '../pages/Admin/components/useProductEditors.jsx';
 import ConfirmModal from '../components/modals/ConfirmModal.jsx';
 
 const slideVariants = {
@@ -38,8 +36,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
   const isLiked = isInWishlist(p.id);
 
   // Stanja za modale
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+  const { openEditor, editors } = useProductEditors();
   const [isLoadingEditor, setIsLoadingEditor] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [isFlagMenuOpen, setIsFlagMenuOpen] = useState(false);
@@ -90,8 +87,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
       // admin editor needs the complete staff record, including inventory,
       // RFID placement, SEO and variant data.
       const fullProduct = await adminCatalogApi.getProduct(p.id);
-      setEditingProduct(fullProduct);
-      setIsEditModalOpen(true);
+      openEditor({ product: fullProduct });
     } catch (error) {
       console.error('Učitavanje artikla za izmenu nije uspelo:', error);
       alert('Artikal nije moguće učitati za izmenu. Pokušajte ponovo.');
@@ -555,21 +551,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
         </div>
       </motion.div>
       {/* Modali */}
-      <AnimatePresence>
-        {isEditModalOpen && (
-          <ClientOnly><AdminProductModal
-            product={editingProduct}
-            onClose={() => {
-              setIsEditModalOpen(false);
-              setEditingProduct(null);
-            }}
-            onSuccess={() => {
-              setIsEditModalOpen(false);
-              setEditingProduct(null);
-            }}
-          /></ClientOnly>
-        )}
-      </AnimatePresence>
+      {editors}
 
       <ConfirmModal
         isOpen={!!deleteId}

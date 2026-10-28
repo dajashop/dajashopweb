@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence } from 'framer-motion';
 import { Edit3, Eye, EyeOff, Star, Trash2, ExternalLink } from 'lucide-react';
 import { adminCatalogApi, isAdminEmail } from '../../services/dajaPlatform.js';
 import { deleteProduct, saveProduct } from '../../services/products.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFlash } from '../../hooks/useFlash.js';
-import AdminProductModal from '../../pages/Admin/components/AdminProductModal.jsx';
+import useProductEditors from '../../pages/Admin/components/useProductEditors.jsx';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
 
 const flags = { new: 'Novo', popular: 'Popularno', recommended: 'Preporučeno' };
@@ -44,7 +43,7 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
   const [record, setRecord] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const { openEditor, editors } = useProductEditors();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showFlags, setShowFlags] = useState(false);
   const [eurRsdRate, setEurRsdRate] = useState(null);
@@ -59,7 +58,7 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
 
   useEffect(() => {
     let cancelled = false;
-    setRecord(null); setError(''); setEditing(false); setShowFlags(false); setConfirmDelete(false);
+    setRecord(null); setError(''); setShowFlags(false); setConfirmDelete(false);
     adminCatalogApi.getProduct(product.id).then((data) => {
       if (!cancelled) setRecord(data);
     }).catch((caught) => { if (!cancelled) setError(caught.message || 'Admin podaci nisu dostupni.'); });
@@ -90,7 +89,6 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
   };
 
   const afterEdit = async () => {
-    setEditing(false);
     try {
       const fresh = await adminCatalogApi.getProduct(product.id);
       setRecord(fresh); onUpdated(fresh);
@@ -133,11 +131,11 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
     <div className="product-admin-commands">
       <button type="button" disabled={!record || busy} onClick={() => setShowFlags((previous) => !previous)} title="Oznake proizvoda" aria-label="Oznake proizvoda" aria-expanded={showFlags} className={selectedFlags.length ? 'is-tagged' : ''}><Star size={16} fill={selectedFlags.length ? 'currentColor' : 'none'} /></button>
       <button type="button" disabled={!record || busy} onClick={() => update({ isVisible: record.isVisible === false })} title={record?.isVisible === false ? 'Prikaži proizvod' : 'Sakrij proizvod'} aria-label={record?.isVisible === false ? 'Prikaži proizvod' : 'Sakrij proizvod'} className="is-visibility">{record?.isVisible === false ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-      <button type="button" disabled={!record || busy} onClick={() => setEditing(true)} title="Izmeni proizvod i linkove" aria-label="Izmeni proizvod i linkove" className="is-edit"><Edit3 size={16} /></button>
+      <button type="button" disabled={!record || busy} onClick={() => openEditor({ product: record, onSuccess: afterEdit })} title="Izmeni proizvod i linkove" aria-label="Izmeni proizvod i linkove" className="is-edit"><Edit3 size={16} /></button>
       {isAdminEmail(user?.email) && <button type="button" disabled={!record || busy} onClick={() => setConfirmDelete(true)} title="Obriši proizvod" aria-label="Obriši proizvod" className="is-delete"><Trash2 size={16} /></button>}
     </div>
     {showFlags && <div className="product-admin-flags">{Object.entries(flags).map(([key, label]) => <button key={key} type="button" disabled={busy} aria-pressed={selectedFlags.includes(key)} onClick={() => update({ marketingFlags: selectedFlags.includes(key) ? selectedFlags.filter((flag) => flag !== key) : [...selectedFlags, key] })}>{label}</button>)}</div>}
-    <AnimatePresence>{editing && record && <AdminProductModal product={record} onClose={() => setEditing(false)} onSuccess={afterEdit} />}</AnimatePresence>
+    {editors}
     {createPortal(<div style={{ position: 'relative', zIndex: 3000 }}><ConfirmModal isOpen={confirmDelete} onClose={() => { if (!busy) setConfirmDelete(false); }} onConfirm={remove} title="Obriši proizvod?" description="Ova akcija je nepovratna." confirmText="Obriši" isDanger /></div>, document.body)}
   </div>;
 }
