@@ -1,4 +1,5 @@
-import { isInvalidEmailLink } from '../utils/emailErrors.js';
+import { isEmailLinkToken, isInvalidEmailLink } from '../utils/emailErrors.js';
+import { useEmailLinkRequest } from '../hooks/useEmailLinkRequest.js';
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -26,9 +27,11 @@ export default function VerifyEmail() {
   const [retry, setRetry] = useState(0);
   const [resendState, setResendState] = useState('idle');
   const verificationToken = searchParams.get('token');
+  const beginRequest = useEmailLinkRequest(verificationToken);
 
   useEffect(() => {
-    if (!verificationToken) {
+    setResendState('idle');
+    if (!isEmailLinkToken(verificationToken)) {
       setStatus('error');
       setMessage('Link nije potpun. Zatražite novi link za verifikaciju.');
       return;
@@ -52,6 +55,12 @@ export default function VerifyEmail() {
     return () => { cancelled = true; };
   }, [verificationToken, retry]);
 
+  useEffect(() => {
+    if (resendState !== 'sent') return undefined;
+    const timer = window.setTimeout(() => setResendState('idle'), 5 * 60 * 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendState]);
+
   const isLoading = status === 'loading';
   const isSuccess = status === 'success';
   const illustration = isSuccess
@@ -63,14 +72,17 @@ export default function VerifyEmail() {
       showAuth('login');
       return;
     }
+    const request = beginRequest();
+    if (!request) return;
     setResendState('loading');
     try {
       const response = await customerApi.requestEmailVerification();
+      if (!request.isCurrent()) return;
       setResendState(response?.status === 'already_verified' ? 'verified' : 'sent');
     } catch (error) {
-      console.error(error);
+      if (!request.isCurrent()) return;
       setResendState('failed');
-    }
+    } finally { request.finish(); }
   }
 
   return (
@@ -111,6 +123,7 @@ export default function VerifyEmail() {
                 </button>
               )}
               <Link to="/" className="verify-email-page__secondary">{isSuccess ? 'Nazad na početnu' : 'Idi na početnu stranu'} <ArrowRight size={17} /></Link>
+              {resendState === 'sent' && <p className="verify-email-page__notice">Proverite prijemno sanduče i neželjenu poštu. Novi link možete zatražiti za pet minuta.</p>}
               {resendState === 'failed' && <p className="verify-email-page__notice">Slanje nije uspelo. Pokušajte ponovo za trenutak.</p>}
               {resendState === 'verified' && <p className="verify-email-page__notice">Vaša email adresa je već verifikovana.</p>}
             </div>

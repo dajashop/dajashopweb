@@ -1473,12 +1473,13 @@ export const novostiApi = {
     window.dispatchEvent(new Event('daja:newsletter-changed'));
     return subscription;
   },
-  async confirm(token) {
+  async confirm(token, { isCurrent = () => true } = {}) {
     const result = await apiRequest('/newsletter/confirm', {
       method: 'POST',
       body: { token },
       auth: false,
     });
+    if (!isCurrent()) return result;
     if (result?.kodDobrodoslice) writeStoredValue('daja_kod_dobrodoslice_na_cekanju', result.kodDobrodoslice, 'necessary');
     window.dispatchEvent(new Event('daja:newsletter-changed'));
     return result;

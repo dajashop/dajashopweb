@@ -1,5 +1,6 @@
-import { isInvalidEmailLink } from '../utils/emailErrors.js';
-import React, { useState } from 'react';
+import { useEmailLinkRequest } from '../hooks/useEmailLinkRequest.js';
+import { isEmailLinkToken, isInvalidEmailLink } from '../utils/emailErrors.js';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Eye, EyeOff, KeyRound, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { authApi } from '../services/dajaPlatform.js';
@@ -15,10 +16,11 @@ const PASSWORD_REQUIREMENTS = [
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
+  const beginRequest = useEmailLinkRequest(token);
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [status, setStatus] = useState(token ? 'ready' : 'invalid');
+  const [status, setStatus] = useState(isEmailLinkToken(token) ? 'ready' : 'invalid');
   const [errors, setErrors] = useState({});
   const passwordRequirements = PASSWORD_REQUIREMENTS.map((requirement) => ({
     ...requirement,
@@ -28,26 +30,39 @@ export default function ResetPassword() {
   const confirmationMatches = Boolean(confirmation) && confirmation === password;
   const confirmationInvalid = Boolean(confirmation) && !confirmationMatches;
 
+  useEffect(() => {
+    setPassword('');
+    setConfirmation('');
+    setShowPassword(false);
+    setErrors({});
+    setStatus(isEmailLinkToken(token) ? 'ready' : 'invalid');
+  }, [token]);
+
   async function submit(event) {
     event.preventDefault();
     const nextErrors = {};
     if (!passwordIsValid) nextErrors.password = 'Lozinka ne ispunjava sve uslove.';
     if (confirmation !== password) nextErrors.confirmation = 'Lozinke se ne podudaraju.';
-    if (!token) nextErrors.form = 'Link za promenu lozinke nije potpun.';
+    if (!isEmailLinkToken(token)) nextErrors.form = 'Link za promenu lozinke nije potpun ili nije važeći.';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
+    const request = beginRequest();
+    if (!request) return;
     setStatus('saving');
     try {
       await authApi.resetPassword(token, password);
+      if (!request.isCurrent()) return;
+      setPassword('');
+      setConfirmation('');
       setStatus('success');
     } catch (error) {
-      console.error(error);
+      if (!request.isCurrent()) return;
       setStatus(isInvalidEmailLink(error) ? 'invalid' : 'ready');
       setErrors({
         form: error?.message || 'Promena trenutno nije uspela. Podaci su sačuvani u formi; pokušajte ponovo.',
       });
-    }
+    } finally { request.finish(); }
   }
 
   const isSuccess = status === 'success';

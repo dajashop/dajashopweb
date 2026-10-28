@@ -1,3 +1,5 @@
+import { isEmailLinkPath } from '../utils/emailLinkPrivacy.js';
+
 const SCRIPT_ID = 'dajashop-cloudflare-web-analytics';
 const SCRIPT_SRC = 'https://static.cloudflareinsights.com/beacon.min.js';
 
@@ -12,6 +14,7 @@ function configuredToken() {
  */
 export function loadCloudflareWebAnalytics() {
   if (typeof document === 'undefined') return false;
+  if (isEmailLinkPath(window.location.pathname) || new URLSearchParams(window.location.search).has('token')) return false;
 
   const token = configuredToken();
   if (!token) {

@@ -2,6 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 import { seoConfig } from '../../config/seo.js';
+import { isEmailLinkPath } from '../../utils/emailLinkPrivacy.js';
 
 function ensureAbsoluteUrl(value) {
   if (!value) return '';
@@ -31,7 +32,8 @@ export default function SEOHead({
   const imageUrl = ensureAbsoluteUrl(image);
   const isHome = currentPath === '/' || title === 'Početna';
   const fullTitle = homeTitle || (isHome ? siteName : `${title} | ${siteName}`);
-  const robotsValue = noIndex
+  const sensitiveEmailLink = isEmailLinkPath(currentPath);
+  const robotsValue = sensitiveEmailLink ? 'noindex,nofollow,noarchive' : noIndex
     ? 'noindex,follow,max-image-preview:large'
     : 'index,follow,max-image-preview:large';
   const twitterSite = seoConfig.twitterHandle
@@ -47,6 +49,7 @@ export default function SEOHead({
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
       <meta name="robots" content={robotsValue} />
+      {sensitiveEmailLink && <meta name="referrer" content="no-referrer" />}
       <link rel="canonical" href={canonicalUrl} />
 
       <meta property="og:title" content={fullTitle} />
