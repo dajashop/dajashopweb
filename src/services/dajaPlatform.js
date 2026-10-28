@@ -585,7 +585,7 @@ export const adminCatalogApi = {
         }
         if (!Array.isArray(batch?.items)) throw new Error('Proizvodi nisu dostupni.');
         items.push(...batch.items.map(normalizeProduct));
-        items.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0) || String(a.id).localeCompare(String(b.id)));
+        items.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0) || String(b.id).localeCompare(String(a.id)));
         onPage([...items], true);
         after = batch.nextCursor;
         if (!after) return items;

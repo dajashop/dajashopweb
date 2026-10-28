@@ -1155,7 +1155,9 @@ function AdminDashboardContent() {
     const rankDifference = rank(left) - rank(right);
     if (rankDifference) return rankDifference;
     return new Date(right.qualityReviewedAt || right.updatedAt || 0).getTime()
-      - new Date(left.qualityReviewedAt || left.updatedAt || 0).getTime();
+      - new Date(left.qualityReviewedAt || left.updatedAt || 0).getTime()
+      || new Date(right.updatedAt || 0).getTime() - new Date(left.updatedAt || 0).getTime()
+      || String(right.id).localeCompare(String(left.id));
   }), [products, searchTerm, searchFilters, isCatalogContributor]);
   const returnedForRevisionCount = isCatalogContributor
     ? products.filter((product) => product.qualityReviewStatus === 'changes_requested').length

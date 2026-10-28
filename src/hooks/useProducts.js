@@ -52,7 +52,13 @@ export default function useProducts(params = {}) {
             if (patch === null) merged.delete(id);
             else merged.set(id, { ...merged.get(id), ...patch });
           }
-          return [...merged.values()];
+          const next = [...merged.values()];
+          // Merging partial pages must not retain the previous snapshot's
+          // positions until the final response arrives.
+          if (memoizedParams.admin) next.sort((left, right) =>
+            new Date(right.updatedAt || 0) - new Date(left.updatedAt || 0)
+              || String(right.id).localeCompare(String(left.id)));
+          return next;
         });
         if (!partial && loadingAdminChanges.current === changes) loadingAdminChanges.current = null;
         if (memoizedParams.admin && !partial) window.dispatchEvent(new Event('daja:supplier-refresh'));
