@@ -2,6 +2,8 @@ import React from 'react';
 import { useCart } from '../../hooks/useCart';
 import EngravingSummary from '../engraving/EngravingSummary';
 import { ArrowRight, ShieldCheck, Ticket } from 'lucide-react'; // Dodao Ticket ikonicu
+import { CHECKOUT_UNAVAILABLE_MESSAGE } from '../../hooks/useCheckoutAvailability.js';
+import { seoConfig } from '../../config/seo.js';
 
 export default function OrderSummary({
   total,
@@ -11,6 +13,9 @@ export default function OrderSummary({
   handlePlaceOrder,
   money,
   isLoading,
+  availability,
+  isCheckingAvailability,
+  onCheckAvailability,
   appliedPromo, // NOVO: Primamo objekat promo koda
   discountAmount, // NOVO: Iznos popusta
 }) {
@@ -60,14 +65,31 @@ export default function OrderSummary({
         </div>
       </div>
 
+      {availability !== 'available' && (
+        <div id="checkout-availability" className="checkout-availability" role="status" aria-live="polite">
+          <p>{availability === 'checking' ? 'Proveravamo da li je poručivanje dostupno…' : CHECKOUT_UNAVAILABLE_MESSAGE}</p>
+          {availability === 'unavailable' && (
+            <div className="checkout-availability-actions">
+              <a href={`tel:${seoConfig.business.phone.replace(/[^+\d]/g, '')}`}>Pozovite nas</a>
+              <a href={`mailto:${seoConfig.business.email}`}>Pišite nam</a>
+              <button type="button" onClick={() => void onCheckAvailability()} disabled={isCheckingAvailability}>
+                {isCheckingAvailability ? 'Proveravamo…' : 'Proveri ponovo'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <button
         type="button"
         onClick={handlePlaceOrder}
         className="checkout-btn btn-primary"
-        disabled={isLoading} // Onemogući klik dok se šalje
+        disabled={isLoading || availability !== 'available'}
+        aria-describedby={availability !== 'available' ? 'checkout-availability' : undefined}
+        aria-busy={isLoading || availability === 'checking'}
       >
-        {isLoading ? 'Obrada...' : 'Potvrdi porudžbinu'}
-        {!isLoading && <ArrowRight size={18} />}
+        {isLoading ? 'Obrada...' : availability === 'checking' ? 'Provera dostupnosti…' : availability === 'unavailable' ? 'Trenutno nije dostupno' : 'Potvrdi porudžbinu'}
+        {!isLoading && availability === 'available' && <ArrowRight size={18} />}
       </button>
 
       <div className="secure-badge">

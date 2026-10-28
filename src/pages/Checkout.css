@@ -266,6 +266,54 @@
   transform: scale(0.98);
 }
 
+.checkout-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.checkout-availability {
+  padding: 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.checkout-availability p {
+  margin: 0;
+}
+
+.checkout-availability-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 12px;
+}
+
+.checkout-availability-actions a,
+.checkout-availability-actions button {
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.checkout-availability-actions button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.checkout-availability-actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .secure-badge {
   display: flex;
   justify-content: center;

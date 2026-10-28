@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Checkout.css';
 import { useCart } from '../hooks/useCart.js';
 import { useFormValidator } from '../hooks/useFormValidator.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useFlash } from '../hooks/useFlash.js';
 import { usePromo } from '../hooks/usePromo.js';
+import { CHECKOUT_UNAVAILABLE_MESSAGE, useCheckoutAvailability } from '../hooks/useCheckoutAvailability.js';
 import { money } from '../utils/currency.js';
 import { PASSWORD_RULE } from '../data/validationRules.js';
 import { AnimatePresence } from 'framer-motion';
@@ -32,6 +33,8 @@ export default function Checkout() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [orderData, setOrderData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const submissionInProgress = useRef(false);
+  const { availability, isChecking, checkAvailability, markUnavailable } = useCheckoutAvailability();
 
   const [submitCount, setSubmitCount] = useState(0);
   const [showRegPopover, setShowRegPopover] = useState(false);
@@ -182,26 +185,30 @@ export default function Checkout() {
   };
 
   const handlePlaceOrder = async () => {
-    if (isProcessing || promoLoading) return;
+    if (submissionInProgress.current || isProcessing || promoLoading || availability !== 'available') return;
     const fieldsToSkip =
       shippingMethod === 'pickup' ? ['address', 'city', 'postalCode'] : [];
 
     if (validateAll(fieldsToSkip)) {
+      submissionInProgress.current = true;
       setIsProcessing(true);
 
-      if (createAccount && !user && password) {
-        try {
-          await register({
-            identity: formData.email,
-            password: password,
-            name: `${formData.name} ${formData.surname}`,
-          });
-        } catch (err) {
-          console.warn('Auto-reg failed', err);
-        }
-      }
-
       try {
+        // Recheck immediately before sending, even if the last background check passed.
+        if (!(await checkAvailability())) return;
+
+        if (createAccount && !user && password) {
+          try {
+            await register({
+              identity: formData.email,
+              password: password,
+              name: `${formData.name} ${formData.surname}`,
+            });
+          } catch (err) {
+            console.warn('Auto-reg failed', err);
+          }
+        }
+
         const newOrder = await ordersApi.create({
           customer: {
             ...formData,
@@ -225,12 +232,15 @@ export default function Checkout() {
         dispatch({ type: 'CLEAR' });
       } catch (error) {
         console.error('Greška pri slanju porudžbine:', error);
+        const unavailable = !error.status || error.status >= 500;
+        if (unavailable) markUnavailable();
         flash(
           'Greška',
-          items.some((item) => item.engraving) ? `Porudžbina nije poslata. ${error.status === 409 ? 'Gravura je promenjena. Otvorite je u korpi i ponovo potvrdite dizajn.' : error.message}` : 'Nismo uspeli da sačuvamo porudžbinu. Pokušajte ponovo.',
+          unavailable ? CHECKOUT_UNAVAILABLE_MESSAGE : items.some((item) => item.engraving) ? `Porudžbina nije poslata. ${error.status === 409 ? 'Gravura je promenjena. Otvorite je u korpi i ponovo potvrdite dizajn.' : error.message}` : 'Nismo uspeli da sačuvamo porudžbinu. Pokušajte ponovo.',
           'error',
         );
       } finally {
+        submissionInProgress.current = false;
         setIsProcessing(false);
       }
     } else {
@@ -297,6 +307,9 @@ export default function Checkout() {
             handlePlaceOrder={handlePlaceOrder}
             money={money}
             isLoading={isProcessing || promoLoading}
+            availability={availability}
+            isCheckingAvailability={isChecking}
+            onCheckAvailability={checkAvailability}
             // 6. PROSLEĐUJEMO PODATKE O POPUSTU U SUMMARY
             appliedPromo={appliedPromo}
             discountAmount={discountAmount}
