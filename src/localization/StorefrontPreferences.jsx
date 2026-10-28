@@ -72,7 +72,7 @@ export default function StorefrontPreferences() {
           disabled={!rates[option.code]} className="header-dropdown__item storefront-preference__currency" onClick={() => setCurrency(option.code)}>
           <span className="storefront-preference__currency-code">{option.code}</span>
           <span className="storefront-preference__check" aria-hidden="true">{option.code === displayCurrency && <Check size={10} strokeWidth={3} />}</span>
-          <span className="storefront-preference__currency-name">{t(option.label)}</span>
+          <span className="storefront-preference__currency-name">{t(option.label)}{' '}<span className="storefront-preference__currency-symbol">({option.symbol})</span></span>
         </button>)}
         </div>
       </div>

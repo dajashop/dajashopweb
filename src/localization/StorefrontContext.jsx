@@ -10,12 +10,12 @@ export const LANGUAGES = [
   { code: 'en', label: 'English', short: 'EN', flag: 'gb', locale: 'en-GB' },
 ];
 export const CURRENCIES = [
-  { code: 'RSD', label: 'Srpski dinar', flag: 'rs' },
-  { code: 'EUR', label: 'Evro', flag: 'eu' },
-  { code: 'USD', label: 'Američki dolar' },
-  { code: 'BAM', label: 'Konvertibilna marka (KM)' },
-  { code: 'MKD', label: 'Makedonski denar' },
-  { code: 'CHF', label: 'Švajcarski franak' },
+  { code: 'RSD', label: 'Srpski dinar', symbol: 'din.', flag: 'rs' },
+  { code: 'EUR', label: 'Evro', symbol: '€', flag: 'eu' },
+  { code: 'USD', label: 'Američki dolar', symbol: '$' },
+  { code: 'BAM', label: 'Konvertibilna marka', symbol: 'KM' },
+  { code: 'MKD', label: 'Makedonski denar', symbol: 'ден.' },
+  { code: 'CHF', label: 'Švajcarski franak', symbol: 'Fr.' },
 ];
 const LANGUAGE_KEY = 'dajashop_language';
 const CURRENCY_KEY = 'dajashop_currency';
