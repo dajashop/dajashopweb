@@ -28,6 +28,8 @@ Pet zasebnih ilustrativnih vizuala napravljeno je ugrađenim imagegen alatom: gr
 
 `ServiceVisual.jsx` koristi `srcSet` i `sizes`; samo glavni vizual ima eager/high prioritet, a kartice i srodne usluge su lazy. Prelom za telefone odvaja sliku od teksta. Slike za deljenje su stvarno 1200 × 630, u skladu sa metapodacima. Za pripremu zamenskog izvora koristiti `node scripts/prepare-service-assets.mjs <kind> <source.png>`; postojeći sharp pravi iste četiri datoteke bez instalacije novih paketa. `kind` je `engraving`, `battery`, `strap`, `sizing` ili `remote`.
 
-Nema slušanja skrola, zaključavanja stranice ni animacija ulaska. Hover prelazi poštuju `prefers-reduced-motion`. FAQ i sekcijski linkovi koriste ponašanje pregledača.
+Animacije su samo CSS: blag jednokratan ulazak uvoda, zum fotografija na hover/fokus, reakcije dugmadi i strelica i otvaranje FAQ odgovora. Sadržaj nije inicijalno sakriven, a nema slušanja skrola, zaključavanja stranice, parallax efekta ili dodatne biblioteke. `prefers-reduced-motion` isključuje animacije i pomeranja; boja i vidljiv fokus ostaju kao povratna informacija.
+
+FAQ zadržava nativni `details/summary`. Glatko širenje i zatvaranje koristi `::details-content`, `interpolate-size` i diskretnu tranziciju `content-visibility` samo kada pregledač podržava sve te mogućnosti. Ostali pregledači zadržavaju standardno otvaranje sa kratkim prelazom vidljivog odgovora. Izvori za ovaj dodatak: [Chrome — styling details](https://developer.chrome.com/blog/styling-details) i [animiranje intrinsic dimenzija](https://developer.chrome.com/docs/css-ui/animate-to-height-auto).
 
 Implementacija je pregledana kroz izvorni kod. Testovi, build i provera deploya nisu pokretani, po zahtevu korisnika. Nisu merene Core Web Vitals vrednosti ili SEO rezultat.
