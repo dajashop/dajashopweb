@@ -149,6 +149,7 @@ export default function AuthModal() {
     oauth,
     oauthJustSucceeded,
     dismissOauthSuccess,
+    pendingEmailVerify,
     detectIdentity,
     passkeyLogin,
     passkeyRegister,

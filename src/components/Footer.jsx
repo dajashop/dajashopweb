@@ -51,7 +51,9 @@ export default function Footer() {
       setSuccess(true);
       flash(
         'Uspeh',
-        subscription?.imaPravoNaKodDobrodoslice
+        subscription?.requiresConfirmation
+          ? 'Proverite email i potvrdite prijavu. Novosti ćete primati tek nakon potvrde. Proverite i spam folder.'
+          : subscription?.imaPravoNaKodDobrodoslice
           ? 'Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i kod dobrodošlice.'
           : subscription?.poslatMailDobrodoslice
             ? 'Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice.'
