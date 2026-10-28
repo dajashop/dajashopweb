@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Ctx } from './AuthContext';
 import {
   authApi,
@@ -39,6 +39,7 @@ function normalizePhoneIdentity(value) {
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { hasDecision } = useConsent();
   const [user, setUser] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
@@ -174,8 +175,14 @@ export function AuthProvider({ children }) {
 
     setAuthTokens({ accessToken, refreshToken });
     setOauthJustSucceeded(true);
-    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-  }, [hasDecision]);
+    // Keep React Router in sync with the cleaned address. A direct history
+    // replacement leaves the consumed OAuth fragment in useLocation(), where
+    // language links could copy it and announce the same login again.
+    navigate({ pathname: location.pathname, search: location.search, hash: '' }, {
+      replace: true,
+      state: location.state,
+    });
+  }, [hasDecision, location, navigate]);
 
   const dismissOauthSuccess = useCallback(() => {
     setOauthJustSucceeded(false);

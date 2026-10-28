@@ -6,6 +6,8 @@ Ponuda valuta je RSD, EUR, USD, BAM (KM), MKD i CHF. Meniji jezika/valuta i desk
 
 Srpski koristi putanje bez prefiksa, a engleski `/en`, npr. `/en`, `/en/catalog` i `/en/product/model`. URL određuje jezik u SSR-u i prvom klijentskom renderu. Zapamćeni jezik nikada ne nadjačava adresu. Promena jezika vodi na odgovarajuću adresu iste stranice uz očuvanje query/hash dela. React Router basename čuva prefiks za navigaciju, filtere i Link komponente. Za obične `href` veze koristiti `localizePath` iz `useStorefront()`.
 
+Posle obrade OAuth prijave njen fragment se uklanja kroz React Router `navigate(..., { replace: true })`, da se istovremeno očiste adresa i stanje rutera. Promena jezika čita aktuelnu adresu iz `window.location`; ne sme ponovo prenositi već iskorišćene parametre prijave niti prikazivati potvrdu prijave pri obnovi postojeće sesije.
+
 Javne engleske stranice server odmah renderuje na engleskom. Svaka javna verzija ima svoj canonical i uzajamne sr/en/x-default hreflang veze. Backend sitemap uključuje obe verzije i odgovarajuće XHTML alternates. Privatne stranice, email linkovi i filtrirane stranice zadržavaju postojeća noindex/cache pravila i pod `/en`.
 
 ## Novi tekstovi

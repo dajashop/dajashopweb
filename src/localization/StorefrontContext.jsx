@@ -3,7 +3,6 @@ import { API_BASE_URL } from '../services/apiClient.js';
 import { isNecessaryStorageAllowed, readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 import { formatMoney } from '../utils/currency.js';
 import { translate } from './translate.js';
-import { useLocation } from 'react-router-dom';
 import { localizedPath } from './paths.js';
 
 export const LANGUAGES = [
@@ -26,7 +25,6 @@ export function StorefrontProvider({ children, initialLanguage = 'sr' }) {
   // Language follows the URL on the server and client; stored preferences
   // must never silently change the language of an indexed page.
   const language = initialLanguage === 'en' ? 'en' : 'sr';
-  const location = useLocation();
   const [currency, updateCurrency] = useState('RSD');
   const [rates, setRates] = useState({ RSD: 1 });
   const [rateDate, setRateDate] = useState(null);
@@ -40,8 +38,12 @@ export function StorefrontProvider({ children, initialLanguage = 'sr' }) {
   const setLanguage = useCallback(code => {
     if (!LANGUAGES.some(item => item.code === code)) return;
     writeStoredValue(LANGUAGE_KEY, code);
-    if (code !== language) window.location.assign(localizedPath(`${location.pathname}${location.search}${location.hash}`, code));
-  }, [language, location.pathname, location.search, location.hash]);
+    if (code !== language) {
+      // Read the current address at the click, after any OAuth cleanup.
+      const { pathname, search, hash } = window.location;
+      window.location.assign(localizedPath(`${pathname}${search}${hash}`, code));
+    }
+  }, [language]);
   const setCurrency = useCallback(code => {
     if (!CURRENCIES.some(item => item.code === code)) return;
     chosen.current.currency = code;
