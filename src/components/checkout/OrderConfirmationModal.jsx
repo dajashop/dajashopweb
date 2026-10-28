@@ -93,7 +93,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
           <h2 id="order-title">Hvala na poverenju, {vocativeName}!</h2>
           <p className="order-lead">
             Vaša porudžbina <strong>#{orderId}</strong> je uspešno primljena.
-            Potvrdu smo poslali na <strong>{order.customer.email}</strong>.
+            {order.customer.email && <>Potvrda porudžbine stići će na <strong>{order.customer.email}</strong>. Proverite i spam folder.</>}
           </p>
         </div>
 

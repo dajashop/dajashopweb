@@ -42,7 +42,9 @@ export default function NewsletterModal() {
         policyVersion: policy?.version,
         acceptedMarketing: true,
       });
-      if (subscription?.alreadySubscribed) {
+      if (subscription?.requiresConfirmation) {
+        setStatus('confirmation');
+      } else if (subscription?.alreadySubscribed) {
         setStatus('duplicate');
       } else {
         setStatus(
@@ -95,6 +97,8 @@ export default function NewsletterModal() {
                 <p>Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i kod dobrodošlice.</p>
               </div>
             )}
+
+            {status === 'confirmation' && <div className="newsletter-success"><div className="success-icon"><Check size={32} /></div><h2>Proverite email</h2><p>Otvorite poruku za potvrdu prijave. Novosti ćete primati tek kada potvrdite svoju email adresu. Proverite i spam folder.</p></div>}
 
             {status === 'dobrodoslica' && (
               <div className="newsletter-success">

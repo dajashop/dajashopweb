@@ -21,6 +21,7 @@ import About from './pages/About.jsx';
 const AdminDashboard = import.meta.env.SSR ? AdminDashboardSkeleton : browserPage(() => import('./pages/Admin/AdminDashboard.jsx'), <AdminDashboardSkeleton />);
 const VerifyEmail = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/VerifyEmail.jsx'));
 const ResetPassword = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/ResetPassword.jsx'));
+const NewsletterConfirm = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/NewsletterConfirm.jsx'));
 const Logout = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Logout.jsx'));
 import FAQ from './pages/FAQ.jsx';
 import Contact from './pages/Contact.jsx';
@@ -59,6 +60,7 @@ export default function AppRoutes() {
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/newsletter-confirm" element={<NewsletterConfirm />} />
       <Route path="/logout" element={<Logout />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/contact" element={<Contact />} />

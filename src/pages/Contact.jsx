@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
 import './Contact.css';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import GoogleMapEmbed from '../components/privacy/GoogleMapEmbed.jsx';
+import { apiRequest } from '../services/apiClient.js';
 
 /**
  * @file src/pages/Contact.jsx
@@ -18,11 +19,25 @@ const MAP_EMBED_URL = `https://www.google.com/maps/embed/v1/place?key=${
 // NAPOMENA: Za produkciju, MAP_API_KEY se obično čita iz import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
 export default function Contact() {
-  const handleSubmit = (e) => {
+  const [status, setStatus] = useState('idle');
+  const requestId = useRef(null);
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Logika za slanje forme ide ovde (npr. API poziv)
-    alert('Vaša poruka je uspešno primljena. Hvala Vam na kontaktu!');
-    e.target.reset(); // Resetovanje forme nakon simulacije slanja
+    if (status === 'sending') return;
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    requestId.current ??= crypto.randomUUID();
+    setStatus('sending');
+    try {
+      await apiRequest('/contact', { method: 'POST', auth: false, retry: false,
+        body: { name: data.get('name'), email: data.get('email'), phone: data.get('phone'),
+          message: data.get('message'), website: data.get('website'), requestId: requestId.current } });
+      setStatus('success');
+      requestId.current = null;
+      form.reset();
+    } catch {
+      setStatus('error');
+    }
   };
 
   return (
@@ -86,13 +101,8 @@ export default function Contact() {
               <h3>Elektronska pošta</h3>
               <p>Za upite van radnog vremena ili detaljnu dokumentaciju.</p>
               <p>
-                <a href="mailto:info@dajashop.com">info@dajashop.com</a>{' '}
-                (Generalni upiti)
-                <br />
-                <a href="mailto:cvelenis42@yahoo.com">
-                  cvelenis42@yahoo.com
-                </a>{' '}
-                (Direktni kontakt)
+                <a href="mailto:cvelenis42@yahoo.com">cvelenis42@yahoo.com</a>{' '}
+                (Upiti i korisnička podrška)
               </p>
             </div>
           </div>
@@ -149,13 +159,20 @@ export default function Contact() {
           Popunite kratak formular, a mi ćemo Vam odgovoriti u najkraćem mogućem
           roku, najčešće u roku od 24 časa.
         </p>
-        <form className="contact-form" onSubmit={handleSubmit}>
+        <form className="contact-form" onSubmit={handleSubmit} onChange={() => { if (status !== 'sending') { requestId.current = null; setStatus('idle'); } }}>
+          <fieldset className="contact-fields" disabled={status === 'sending'}>
+          <div className="contact-honeypot" aria-hidden="true">
+            <label htmlFor="contact-website">Website</label>
+            <input id="contact-website" name="website" tabIndex={-1} autoComplete="off" />
+          </div>
           <div className="form-group">
             <label htmlFor="name">Vaše puno ime i prezime*</label>
             <input
               type="text"
               id="name"
               name="name"
+              minLength={2}
+              maxLength={160}
               required
               placeholder="Npr. Petar Petrović"
             />
@@ -167,6 +184,7 @@ export default function Contact() {
               type="email"
               id="email"
               name="email"
+              maxLength={240}
               required
               placeholder="npr. email@domen.com"
             />
@@ -178,6 +196,7 @@ export default function Contact() {
               type="tel"
               id="phone"
               name="phone"
+              maxLength={60}
               placeholder="Npr. +381 6x xxx xxxx"
             />
           </div>
@@ -188,14 +207,19 @@ export default function Contact() {
               id="message"
               name="message"
               rows="5"
+              minLength={10}
+              maxLength={5000}
               required
               placeholder="Molimo Vas da detaljno opišete Vaš upit..."
             ></textarea>
           </div>
 
           <button type="submit" className="btn--primary">
-            Pošalji poruku
+            {status === 'sending' ? 'Šaljemo poruku…' : 'Pošalji poruku'}
           </button>
+          </fieldset>
+          {status === 'success' && <p className="contact-notice contact-notice--success" role="status">Vaša poruka je primljena. Hvala vam na javljanju! Odgovorićemo na navedenu email adresu.</p>}
+          {status === 'error' && <p className="contact-notice contact-notice--error" role="alert">Poruka nije primljena. Pokušajte ponovo ili nam pišite na <a href="mailto:cvelenis42@yahoo.com">cvelenis42@yahoo.com</a>. Vaš unos je sačuvan u formularu.</p>}
         </form>
       </section>
     </div>

@@ -77,7 +77,7 @@ function ProfileSection({ user }) {
         'Uspeh',
         response?.status === 'already_verified'
           ? 'Ova email adresa je već verifikovana.'
-          : 'Verifikacioni link je poslat na vaš email i važi 15 minuta.',
+          : 'Proverite svoj email i spam folder. Verifikacioni link važi 15 minuta.',
         'info',
       );
     } catch (error) {

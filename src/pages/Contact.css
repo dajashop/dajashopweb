@@ -188,6 +188,14 @@
 }
 
 /* Responsive Layout */
+.contact-fields { display:grid; gap:15px; min-width:0; margin:0; padding:0; border:0; }
+.contact-fields:disabled { opacity:.7; }
+.contact-honeypot { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.contact-notice { margin:8px 0 0; padding:16px; border:1px solid; border-radius:10px; line-height:1.6; }
+.contact-notice--success { color:#166534; background:#f0fdf4; border-color:#86efac; }
+.contact-notice--error { color:#991b1b; background:#fef2f2; border-color:#fca5a5; }
+.contact-notice a { color:inherit; text-decoration:underline; }
+
 @media (max-width: 768px) {
   .contact-content {
     grid-template-columns: 1fr;

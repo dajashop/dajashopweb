@@ -119,7 +119,7 @@ function PasswordResetRequest({
       </label>
       {isSent && (
         <p className="auth-password-reset-request__notice" role="status">
-          Link za promenu lozinke je poslat na adresu {email}.
+          Ako postoji nalog sa adresom {email}, stići će poruka za promenu lozinke. Proverite i spam folder.
         </p>
       )}
       <motion.button
@@ -149,7 +149,6 @@ export default function AuthModal() {
     oauth,
     oauthJustSucceeded,
     dismissOauthSuccess,
-    pendingEmailVerify,
     detectIdentity,
     passkeyLogin,
     passkeyRegister,
@@ -601,7 +600,9 @@ export default function AuthModal() {
         if (r === 'phone-code') {
           setAwaitPhoneCode(true);
           setSentTo(identity);
-        } else if (pendingEmailVerify) {
+        } else if (r === 'email-verify') {
+          hideAuth();
+          openFlash('Potvrdite email adresu', 'Nalog je napravljen. Proverite email i spam folder za link za potvrdu adrese.');
         } else {
           hideAuth();
           openFlash('Registracija uspešna', 'Srećna kupovina! 🛍️');

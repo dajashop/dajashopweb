@@ -17,6 +17,7 @@ export default function PrivacySection({ user }) {
   const [busy, setBusy] = useState('');
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [preview, setPreview] = useState(null);
 
   const refresh = useCallback(async () => {
@@ -45,6 +46,7 @@ export default function PrivacySection({ user }) {
   }, [preview]);
 
   const odjaviNovosti = async () => {
+    setNotice('');
     setBusy('newsletter');
     try {
       await privacyApi.odjaviNovosti();
@@ -63,7 +65,7 @@ export default function PrivacySection({ user }) {
     }
     setBusy('newsletter');
     try {
-      await novostiApi.subscribe(user.email, {
+      const subscription = await novostiApi.subscribe(user.email, {
         source: 'account_privacy',
         policyVersion: policy?.version,
         acceptedMarketing: true,
@@ -71,6 +73,7 @@ export default function PrivacySection({ user }) {
       });
       setMarketingOptIn(false);
       await refresh();
+      setNotice(subscription.requiresConfirmation ? 'Proverite email i potvrdite prijavu na novosti.' : 'Prijavljeni ste na novosti.');
     } catch (requestError) {
       setError(requestError.message || 'Prijava na novosti nije uspela.');
     } finally {
@@ -111,6 +114,7 @@ export default function PrivacySection({ user }) {
       </header>
 
       {error && <p className="privacy-section__error">{error}</p>}
+      {notice && <p role="status">{notice}</p>}
 
       <article className="privacy-section__card card glass">
         <div className="privacy-section__title"><span className="privacy-section__icon"><Cookie size={24} /></span><h4>Kolačići i lokalna memorija</h4></div>

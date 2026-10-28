@@ -98,7 +98,7 @@ export default function VerifyEmail() {
               ) : (
                 <button type="button" className="verify-email-page__primary" onClick={requestNewLink} disabled={resendState === 'loading' || resendState === 'sent' || resendState === 'verified'}>
                   {resendState === 'loading' ? <Loader2 size={18} className="animate-spin" /> : resendState === 'sent' || resendState === 'verified' ? <CheckCircle2 size={18} /> : <RefreshCw size={18} />}
-                  {resendState === 'sent' ? 'Link je poslat' : resendState === 'verified' ? 'Email je već potvrđen' : 'Pošalji novi link'}
+                  {resendState === 'sent' ? 'Proverite email' : resendState === 'verified' ? 'Email je već potvrđen' : 'Pošalji novi link'}
                 </button>
               )}
               <Link to="/" className="verify-email-page__secondary">{isSuccess ? 'Nazad na početnu' : 'Idi na početnu stranu'} <ArrowRight size={17} /></Link>

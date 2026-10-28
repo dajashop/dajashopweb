@@ -1467,10 +1467,12 @@ export const novostiApi = {
     return subscription;
   },
   async confirm(token) {
-    const result = await apiRequest(`/newsletter/confirm?token=${encodeURIComponent(token)}`, {
-      method: 'GET',
+    const result = await apiRequest('/newsletter/confirm', {
+      method: 'POST',
+      body: { token },
       auth: false,
     });
+    if (result?.kodDobrodoslice) writeStoredValue('daja_kod_dobrodoslice_na_cekanju', result.kodDobrodoslice, 'necessary');
     window.dispatchEvent(new Event('daja:newsletter-changed'));
     return result;
   },
