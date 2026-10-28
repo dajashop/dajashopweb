@@ -56,11 +56,25 @@
 
 /* Brand */
 .header__brand {
+  position: relative;
   font-weight: 700;
   font-size: 1.25rem;
   letter-spacing: 0.2px;
   text-decoration: none;
   white-space: nowrap;
+}
+/* Naziv čuva postojeći prostor; SVG ne utiče na dimenzije zaglavlja. */
+.header__brand-sizing {
+  visibility: hidden;
+}
+.header__brand-logo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: left center;
 }
 
 /* Actions */

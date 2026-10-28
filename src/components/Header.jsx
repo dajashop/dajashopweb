@@ -13,6 +13,7 @@ import { useWishlist } from '../context/WishlistProvider.jsx';
 
 import HamburgerMenu from './HamburgerMenu.jsx';
 import StorefrontPreferences from '../localization/StorefrontPreferences.jsx';
+import brandLogo from '../assets/dajashop-logo.svg';
 
 export default function Header() {
   const { t: translateText } = useStorefront();
@@ -28,7 +29,10 @@ export default function Header() {
   return (
     <header className="header card shadow">
       <div className="container header__grid">
-        <Link to="/" className="header__brand">{translateText("DajaShop")}</Link>
+        <Link to="/" className="header__brand">
+          <span className="header__brand-sizing" aria-hidden="true">{translateText("DajaShop")}</span>
+          <img className="header__brand-logo" src={brandLogo} alt="DajaShop" />
+        </Link>
 
         <div className="header__search">
           <SearchBar />
