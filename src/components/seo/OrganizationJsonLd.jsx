@@ -11,6 +11,7 @@ export default function OrganizationJsonLd() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Store',
+    '@id': `${seoConfig.siteUrl.replace(/\/$/, '')}/#organization`,
     name: business.name,
     url: seoConfig.siteUrl,
     logo: seoConfig.siteLogoUrl,

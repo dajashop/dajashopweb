@@ -174,6 +174,7 @@ export default function Footer() {
               <Link to="/muski-satovi">Muški satovi</Link>
               <Link to="/zenski-satovi">Ženski satovi</Link>
               <Link to="/about">O nama</Link>
+              <Link to="/usluge">Usluge</Link>
               <Link to="/contact">Kontakt</Link>
             </nav>
           </div>

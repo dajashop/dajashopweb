@@ -3,10 +3,12 @@ import { decodeCatalogParams } from '../utils/catalogUrls.js';
 import { configuredFilterParams } from '../utils/filterConfiguration.js';
 import { catalogPageRequest } from '../utils/catalogPageRequest.js';
 import { isBrandPath } from '../utils/catalogUrls.js';
+import { serviceCatalog } from '../data/serviceCatalog.js';
 
 export const PUBLIC_PATHS = new Set([
   '/', '/catalog', '/muski-satovi', '/zenski-satovi', '/naocare',
   '/baterije', '/daljinski', '/about', '/contact', '/faq', '/usluge', '/graviranje',
+  ...serviceCatalog.map(service => service.path),
 ]);
 export const CATALOG_DEPARTMENTS = {
   '/catalog': 'satovi', '/muski-satovi': 'satovi', '/zenski-satovi': 'satovi',

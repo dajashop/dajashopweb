@@ -26,6 +26,7 @@ const Logout = import.meta.env.SSR ? () => null : browserPage(() => import('./pa
 import FAQ from './pages/FAQ.jsx';
 import Contact from './pages/Contact.jsx';
 import Usluge from './pages/Usluge.jsx';
+import ServiceDetail from './pages/ServiceDetail.jsx';
 import Engraving from './pages/Engraving.jsx';
 import PageStatus from './pages/PageStatus.jsx';
 const OrdersPage = import.meta.env.SSR ? AdminDashboardSkeleton : browserPage(() => import('./pages/Admin/OrdersPage'), <AdminDashboardSkeleton />);
@@ -66,6 +67,7 @@ export default function AppRoutes() {
       <Route path="/faq" element={<FAQ />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/usluge" element={<Usluge />} />
+      <Route path="/usluge/:serviceSlug" element={<ServiceDetail />} />
       <Route path="/graviranje" element={<Engraving />} />
       <Route path="/admin/orders" element={<OrdersPage />} />
       <Route path="/privacy" element={<LegalDocument kind="privacy" />} />

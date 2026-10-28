@@ -1,177 +1,79 @@
-// File: src/pages/Usluge.jsx
-// Stranica za prikaz usluga - Sve u jednoj komponenti
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-// Ažurirano: Uklanjamo ShieldCheck, dodajemo KeyRound za daljinske
-import { Store, BatteryCharging, Wrench, KeyRound, Sparkles } from 'lucide-react';
-import '../pages/About.css';
+import { ArrowDown, ArrowUpRight, MapPin } from 'lucide-react';
 import SEOHead from '../components/seo/SEOHead.jsx';
+import JsonLd from '../components/seo/JsonLd.jsx';
+import BreadcrumbJsonLd from '../components/seo/BreadcrumbJsonLd.jsx';
+import ServiceArtwork from '../components/services/ServiceArtwork.jsx';
+import { ServiceBreadcrumbs, ServiceIcon, ServiceVisit } from '../components/services/ServiceShared.jsx';
+import { serviceCatalog, servicesOverview } from '../data/serviceCatalog.js';
+import { seoConfig } from '../config/seo.js';
+import './Usluge.css';
 
-// Varijante za animaciju ulaska stranice
-const pageVariants = {
-  initial: { opacity: 0, y: 20 },
-  in: { opacity: 1, y: 0 },
-  out: { opacity: 0, y: -20 },
-};
-
-// Lokalni stilovi za kartice usluga, bazirani na temama
-const serviceCardStyle = {
-  padding: '30px',
-  background: 'var(--color-surface)',
-  border: '1px solid var(--color-accent)',
-  borderRadius: '16px',
-  minHeight: '250px',
-  display: 'flex',
-  flexDirection: 'column',
-};
-
-const highlightBoxStyle = {
-  padding: '15px',
-  borderLeft: '3px solid var(--color-primary)',
-  background: 'var(--color-surface)',
-  borderRadius: '4px',
-  marginTop: '15px',
-};
-
-// Komponenta Usluge sa svim informacijama unutar sebe
 export default function Usluge() {
-  // Array sa podacima o uslugama, ažuriran prema zahtevu
-  const services = [
-    {
-      Icon: Sparkles,
-      title: 'Precizno Lasersko Graviranje',
-      description:
-        'Personalizujte sat, nakit ili poklon preciznim laserskim graviranjem. Dodajte ime, datum ili poruku koja ostaje zauvek.',
-      warning:
-        'Za najbolji rezultat, posetite nas u radnji u Nišu sa predmetom koji želite da personalizujete.',
-      id: 1,
-    },
-    {
-      Icon: BatteryCharging,
-      title: 'Ekspertna Zamena Baterije Sata',
-      description:
-        'Vaš sat zaslužuje najviši nivo pažnje. Naša usluga obuhvata profesionalnu zamenu baterije uz korišćenje isključivo visokokvalitetnih ćelija. Pružamo garanciju na ugrađenu bateriju.',
-      warning:
-        'Molimo Vas da imate u vidu da se ova usluga sprovodi isključivo u našoj radnji u Nišu. Nismo u mogućnosti da pružamo uslugu zamene baterije putem kurirskih službi, čime osiguravamo najviši standard kvaliteta i sigurnosti.',
-      id: 2,
-    },
-    {
-      Icon: Wrench,
-      title: 'Zamena Narukvica i Korekcija Veličine',
-      description:
-        'Stručna montaža novih narukvica, kao i precizno podešavanje dužine metalnih narukvica Vašeg sata. Neophodan profesionalni alat i ekspertiza su ključni za dugovečnost Vašeg sata.',
-      warning:
-        'Ova usluga zahteva direktan pregled i rad našeg majstora. Dostupna isključivo u Daja Shop radnji.',
-      id: 3,
-    },
-    {
-      Icon: KeyRound, // NOVO: Za daljinske upravljače za garaže
-      title: 'Učenje Daljinskih Upravljača za Garaže/Kapije',
-      description:
-        'Pružamo profesionalnu uslugu programiranja i sinhronizacije daljinskih upravljača za Vaša garažna vrata, kapije ili rampe. Osigurajte sebi jednostavan i pouzdan pristup uz našu tehničku podršku.',
-      warning:
-        'Uspostavljanje veze i programiranje daljinskih upravljača zahteva prisustvo starog daljinskog upravljača kako bi se obezbedila puna kompatibilnost i uspešno uparivanje sa sistemom.',
-      id: 4,
-    },
-  ];
-
-  return (
-    <AnimatePresence mode="wait">
-      <motion.main
-        className="usluge container"
-        key="uslugePage"
-        initial={false}
-        animate="in"
-        exit="out"
-        variants={pageVariants}
-        transition={{ duration: 0.5 }}
-        style={{ padding: '48px 0', gap: '64px' }}
-      >
-        <SEOHead
-          title="Lasersko graviranje i usluge"
-          description="Personalizujte svoj poklon preciznim laserskim graviranjem. Dostupne su i zamena baterija, korekcija narukvica i programiranje daljinskih upravljača."
-        />
-        <header className="section">
-          <h1 className="h1" style={{ color: 'var(--color-primary)' }}>
-            Profesionalne Usluge i Servis
-          </h1>
-          <p className="lead">
-            U Daja Shopu, naša posvećenost Vašem zadovoljstvu prevazilazi
-            prodaju. Nudimo pažljivo odabrane profesionalne servisne usluge,
-            sprovedene sa najvećom preciznošću i poštovanjem prema Vašem
-            proizvodu.
-          </p>
-        </header>
-
-        <section className="usluge-grid section">
-          <h2 className="h2" style={{ marginBottom: '32px' }}>
-            Specijalizovane Servisne Usluge (Dostupne Samo u Radnji)
-          </h2>
-
-          <div className="grid-3" style={{ gap: '24px' }}>
-            {services.map((service, index) => (
-              <motion.div
-                key={service.id}
-                className="card shadow glass"
-                style={serviceCardStyle}
-                initial={false}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.6 }}
-                whileHover={{ scale: 1.02 }}
-              >
-                <div
-                  className="icon"
-                  style={{
-                    color: 'var(--color-primary)',
-                    fontSize: '2.5rem',
-                    marginBottom: '16px',
-                  }}
-                >
-                  <service.Icon size={40} />
-                </div>
-                <h3
-                  className="h2"
-                  style={{
-                    fontSize: '1.5em',
-                    color: 'var(--color-primary)',
-                    marginBottom: '10px',
-                  }}
-                >
-                  {service.title}
-                </h3>
-                <p className="lead" style={{ flexGrow: 1 }}>
-                  {service.description}
-                </p>
-                {service.id === 1 && <Link className="btn" style={{ margin: '12px 0' }} to="/graviranje">Napravi gravuru na satu →</Link>}
-
-                <div style={highlightBoxStyle}>
-                  <p
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontWeight: 'bold',
-                      color: 'var(--color-primary)',
-                    }}
-                  >
-                    <Store size={20} style={{ marginRight: '10px' }} />
-                    VAŽNO OBAVEŠTENJE
-                  </p>
-                  <p
-                    style={{
-                      marginTop: '10px',
-                      color: 'var(--color-text)',
-                      fontSize: '0.95em',
-                    }}
-                  >
-                    {service.warning}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+  const base = seoConfig.siteUrl.replace(/\/$/, '');
+  return <div className="svc-page">
+    <SEOHead {...servicesOverview} url="/usluge" defer={false}>
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content="DajaShop — usluge u Nišu" />
+    </SEOHead>
+    <BreadcrumbJsonLd defer={false} items={[{ name: 'Usluge', url: `${base}/usluge` }]} />
+    <JsonLd defer={false} data={{
+      '@context': 'https://schema.org', '@type': 'CollectionPage',
+      '@id': `${base}/usluge#webpage`, url: `${base}/usluge`,
+      name: servicesOverview.title, description: servicesOverview.description,
+      inLanguage: 'sr-Latn',
+      mainEntity: {
+        '@type': 'ItemList', numberOfItems: serviceCatalog.length,
+        itemListElement: serviceCatalog.map((service, index) => ({
+          '@type': 'ListItem', position: index + 1, name: service.title, url: `${base}${service.path}`
+        }))
+      }
+    }} />
+    <ServiceBreadcrumbs />
+    <header className="svc-hero">
+      <div className="svc-hero-copy">
+        <p className="svc-eyebrow">DajaShop · Usluge u Nišu</p>
+        <h1>Usluge u Nišu.<br /><span>Pažnja u detaljima.</span></h1>
+        <p className="svc-lead">Lični pečat na poklonu. Sat koji ponovo radi i dobro stoji. Daljinski za lakši ulazak. Pet usluga, na jednom mestu.</p>
+        <div className="svc-actions">
+          <a className="svc-button svc-button--primary" href="#sve-usluge">Istražite usluge <ArrowDown size={18} aria-hidden="true" /></a>
+          <Link className="svc-text-link" to="/contact">Kontaktirajte nas <ArrowUpRight size={18} aria-hidden="true" /></Link>
+        </div>
+        <p className="svc-location"><MapPin size={16} aria-hidden="true" /> {seoConfig.business.street}, {seoConfig.business.city}</p>
+      </div>
+      <div className="svc-hero-art" aria-hidden="true">
+        <span className="svc-art-label">Detalji koji znače</span>
+        <ServiceArtwork />
+        <div className="svc-art-caption"><span>01 — 05</span><span>Usluge u našoj radnji</span></div>
+      </div>
+    </header>
+    <section className="svc-section" id="sve-usluge" aria-labelledby="svc-all-title">
+      <div className="svc-section-heading">
+        <div><p className="svc-eyebrow">Šta radimo</p><h2 id="svc-all-title">Izaberite svoju uslugu.</h2></div>
+        <p>Otvorite uslugu za detalje, pripremu za dolazak i odgovore na česta pitanja.</p>
+      </div>
+      <div className="svc-grid">
+        {serviceCatalog.map((service, index) => <Link className={`svc-card${index === 0 ? ' svc-card--featured' : ''}`} to={service.path} key={service.slug}>
+          <div className="svc-card-content">
+            <div className="svc-card-top"><span className="svc-icon"><ServiceIcon kind={service.kind} /></span><span className="svc-number">0{index + 1}</span></div>
+            <p className="svc-eyebrow">{service.category}</p>
+            <h3>{service.title}</h3>
+            <p className="svc-card-summary">{service.summary}</p>
+            <span className="svc-card-link">Saznajte više <ArrowUpRight size={20} aria-hidden="true" /></span>
           </div>
-        </section>
-      </motion.main>
-    </AnimatePresence>
-  );
+          {index === 0 && <div className="svc-card-art"><ServiceArtwork kind={service.kind} /></div>}
+        </Link>)}
+      </div>
+    </section>
+    <section className="svc-section" aria-labelledby="svc-process-title">
+      <div className="svc-section-heading"><div><p className="svc-eyebrow">Od ideje do detalja</p><h2 id="svc-process-title">Jednostavno, korak po korak.</h2></div></div>
+      <ol className="svc-process">
+        <li><span>01</span><h3>Izaberite uslugu</h3><p>Pogledajte šta usluga obuhvata i šta je korisno poneti.</p></li>
+        <li><span>02</span><h3>Javite se ili svratite</h3><p>Za dodatne informacije nas pozovite, ili donesite predmet u radnju u Nišu.</p></li>
+        <li><span>03</span><h3>Dogovorimo detalje</h3><p>Nakon pregleda potvrđujemo mogućnost izrade, cenu i rok.</p></li>
+      </ol>
+    </section>
+    <ServiceVisit />
+  </div>;
 }
