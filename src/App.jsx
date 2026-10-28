@@ -27,6 +27,7 @@ export default function App() {
     pathname === '/daljinski' ||
     pathname === '/baterije' ||
     pathname === '/naocare' ||
+    pathname === '/usluge' || pathname.startsWith('/usluge/') ||
     pathname === '/logout' ||
     pathname === '/verify-email' ||
     pathname === '/newsletter-confirm' || pathname === '/product-alert-confirm' ||

@@ -108,14 +108,22 @@ export const serviceCatalog = [
 ].map(service => ({
   ...service,
   path: `/usluge/${service.slug}`,
-  image: `/images/services/${service.slug}.jpg`
+  image: `/images/services/${service.kind}-share.jpg`
 }));
 
 export const servicesOverview = {
   title: 'Usluge u Nišu — graviranje, satovi i daljinski',
   description: 'Pet usluga u DajaShop radnji u Nišu: lasersko graviranje, zamena baterije i narukvice sata, skraćivanje narukvice i programiranje daljinskih upravljača.',
   keywords: 'usluge Niš, lasersko graviranje, zamena baterije sata, zamena narukvice, skraćivanje narukvice, programiranje daljinskih',
-  image: '/images/services/usluge.jpg'
+  image: '/images/services/engraving-share.jpg'
+};
+
+export const serviceMedia = {
+  engraving: { height: 720, alt: 'Lasersko graviranje na metalnom poklopcu ručnog sata' },
+  battery: { height: 686, alt: 'Zamena dugmaste baterije u kvarcnom ručnom satu' },
+  strap: { height: 900, alt: 'Ručni sat, kožne narukvice i alat za njihovu zamenu' },
+  sizing: { height: 800, alt: 'Podešavanje dužine metalne narukvice sata i uklonjeni članci' },
+  remote: { height: 800, alt: 'Daljinski upravljači za kapiju i elektronski prijemnik' }
 };
 
 export const getService = slug => serviceCatalog.find(service => service.slug === slug);

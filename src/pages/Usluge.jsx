@@ -3,19 +3,19 @@ import { ArrowDown, ArrowUpRight, MapPin } from 'lucide-react';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import JsonLd from '../components/seo/JsonLd.jsx';
 import BreadcrumbJsonLd from '../components/seo/BreadcrumbJsonLd.jsx';
-import ServiceArtwork from '../components/services/ServiceArtwork.jsx';
-import { ServiceBreadcrumbs, ServiceIcon, ServiceVisit } from '../components/services/ServiceShared.jsx';
+import ServiceVisual from '../components/services/ServiceVisual.jsx';
+import { ServiceBreadcrumbs, ServiceCard, ServiceVisit } from '../components/services/ServiceShared.jsx';
 import { serviceCatalog, servicesOverview } from '../data/serviceCatalog.js';
 import { seoConfig } from '../config/seo.js';
 import './Usluge.css';
 
 export default function Usluge() {
   const base = seoConfig.siteUrl.replace(/\/$/, '');
-  return <div className="svc-page">
+  return <div className="services-page">
     <SEOHead {...servicesOverview} url="/usluge" defer={false}>
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="DajaShop — usluge u Nišu" />
+      <meta property="og:image:alt" content="Lasersko graviranje — jedna od pet DajaShop usluga u Nišu" />
     </SEOHead>
     <BreadcrumbJsonLd defer={false} items={[{ name: 'Usluge', url: `${base}/usluge` }]} />
     <JsonLd defer={false} data={{
@@ -31,47 +31,33 @@ export default function Usluge() {
       }
     }} />
     <ServiceBreadcrumbs />
-    <header className="svc-hero">
-      <div className="svc-hero-copy">
-        <p className="svc-kicker">DajaShop, usluge u Nišu</p>
-        <h1>Usluge u Nišu.<br /><span>Pažnja u detaljima.</span></h1>
-        <p className="svc-lead">Lični pečat na poklonu. Sat koji ponovo radi i dobro stoji. Daljinski za lakši ulazak. Pet usluga, na jednom mestu.</p>
-        <div className="svc-actions">
-          <a className="svc-button svc-button--primary" href="#sve-usluge">Istražite usluge <ArrowDown size={18} aria-hidden="true" /></a>
-          <Link className="svc-text-link" to="/contact">Kontaktirajte nas <ArrowUpRight size={18} aria-hidden="true" /></Link>
+    <header className="services-hero services-hero--overview">
+      <ServiceVisual />
+      <div className="services-hero__copy">
+        <span className="services-hero__location"><MapPin size={19} aria-hidden="true" />DajaShop u Nišu</span>
+        <h1>Usluge sa pažnjom za svaki detalj.</h1>
+        <p>Gravura koja ostaje. Sat koji ponovo radi i lepo stoji. Daljinski za jednostavniji ulazak. Sve na jednom mestu.</p>
+        <div className="services-actions">
+          <a className="services-button services-button--light" href="#sve-usluge">Izaberite uslugu <ArrowDown size={20} aria-hidden="true" /></a>
+          <Link className="services-hero__link" to="/contact">Kontaktirajte nas <ArrowUpRight size={20} aria-hidden="true" /></Link>
         </div>
-        <p className="svc-location"><MapPin size={16} aria-hidden="true" /> {seoConfig.business.street}, {seoConfig.business.city}</p>
-      </div>
-      <div className="svc-hero-art" aria-hidden="true">
-        <span className="svc-art-label">Detalji koji znače</span>
-        <ServiceArtwork />
-        <div className="svc-art-caption"><span>01 — 05</span><span>Usluge u našoj radnji</span></div>
       </div>
     </header>
-    <section className="svc-section" id="sve-usluge" aria-labelledby="svc-all-title">
-      <div className="svc-section-heading">
-        <div><p className="svc-kicker">Šta radimo</p><h2 id="svc-all-title">Izaberite svoju uslugu.</h2></div>
-        <p>Otvorite uslugu za detalje, pripremu za dolazak i odgovore na česta pitanja.</p>
+
+    <section className="services-section" id="sve-usluge" aria-labelledby="services-all-title">
+      <div className="services-section-heading">
+        <h2 id="services-all-title">Šta možemo da uradimo za vas?</h2>
+        <p>Izaberite uslugu i pogledajte šta obuhvata, šta da ponesete i kako da nam se javite.</p>
       </div>
-      <div className="svc-grid">
-        {serviceCatalog.map((service, index) => <Link className={`svc-card${index === 0 ? ' svc-card--featured' : ''}`} to={service.path} key={service.slug}>
-          <div className="svc-card-content">
-            <div className="svc-card-top"><span className="svc-icon"><ServiceIcon kind={service.kind} /></span><span className="svc-number">0{index + 1}</span></div>
-            <p className="svc-card-category">{service.category}</p>
-            <h3>{service.title}</h3>
-            <p className="svc-card-summary">{service.summary}</p>
-            <span className="svc-card-link">Saznajte više <ArrowUpRight size={20} aria-hidden="true" /></span>
-          </div>
-          {index === 0 && <div className="svc-card-art"><ServiceArtwork kind={service.kind} /></div>}
-        </Link>)}
-      </div>
+      <div className="services-grid">{serviceCatalog.map((service, index) => <ServiceCard service={service} featured={index === 0} key={service.slug} />)}</div>
     </section>
-    <section className="svc-section" aria-labelledby="svc-process-title">
-      <div className="svc-section-heading"><div><p className="svc-kicker">Kako izgleda poseta</p><h2 id="svc-process-title">Jednostavno, korak po korak.</h2></div></div>
-      <ol className="svc-process">
-        <li><span>01</span><h3>Izaberite uslugu</h3><p>Pogledajte šta usluga obuhvata i šta je korisno poneti.</p></li>
-        <li><span>02</span><h3>Javite se ili svratite</h3><p>Za dodatne informacije nas pozovite, ili donesite predmet u radnju u Nišu.</p></li>
-        <li><span>03</span><h3>Dogovorimo detalje</h3><p>Nakon pregleda potvrđujemo mogućnost izrade, cenu i rok.</p></li>
+
+    <section className="services-process" aria-labelledby="services-process-title">
+      <div className="services-section-heading"><h2 id="services-process-title">Od vašeg pitanja do rešenja.</h2><p>Bez nejasnoća: mogućnost rada, cenu i rok dogovaramo sa vama pre početka.</p></div>
+      <ol>
+        <li><span>01</span><h3>Izaberite uslugu</h3><p>Pogledajte detalje i pripremite predmet ili podatke koji su potrebni.</p></li>
+        <li><span>02</span><h3>Javite se ili svratite</h3><p>Pozovite nas za prvu informaciju ili dođite u našu radnju u Nišu.</p></li>
+        <li><span>03</span><h3>Dogovorimo detalje</h3><p>Pregledamo predmet i zajedno potvrdimo odgovarajući način rada.</p></li>
       </ol>
     </section>
     <ServiceVisit />

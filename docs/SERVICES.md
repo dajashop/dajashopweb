@@ -10,7 +10,9 @@ Pregled je na `/usluge`. Pet zasebnih stranica:
 
 ## Izvori i održavanje
 
-`src/data/serviceCatalog.js` sadrži sadržaj, slugove, opise, ključne reči, pitanja i povezane linkove. `Usluge.jsx` prikazuje pregled, a `ServiceDetail.jsx` pojedinačnu uslugu. Stilovi su ograničeni na `.svc-*` u `Usluge.css`; zajedničke komponente i dekorativne SVG ilustracije su u `src/components/services/`.
+`src/data/serviceCatalog.js` sadrži sadržaj, slugove, opise, ključne reči, pitanja, povezane linkove i opise vizuala. `Usluge.jsx` prikazuje pregled, a `ServiceDetail.jsx` pojedinačnu uslugu. Novi stilovi su ograničeni na `.services-*` u `Usluge.css`; zajedničke komponente su u `src/components/services/`.
+
+Stranice imaju sopstveni okvir `width: min(1600px, 92vw)`, kao `.container` u headeru. U `App.jsx` njihove putanje koriste široki glavni okvir kako ne bi postojala dva ugnježdena suženja. Duži pasusi imaju ograničenu dužinu reda, dok stranica, fotografije i sekcije koriste punu širinu tog okvira.
 
 Adresa, telefon i email dolaze iz postojeće `seoConfig.business` konfiguracije. Ne dodavati neproverene cene, rokove, ocene ili obećanja o kompatibilnosti. `/graviranje` ostaje postojeći editor, povezan sa informativne stranice laserskog graviranja.
 
@@ -22,7 +24,9 @@ SSR allowlist u `src/ssr/loadPage.js` uzima putanje iz kataloga usluga. Sadržaj
 
 Sitemap se generiše u drugom projektu: `daja-platform/apps/api/src/plan2.controllers.ts`. Kada se menja slug ili dodaje usluga, ažurirati i taj spisak. Sitemap ima postojeći keš od jednog sata.
 
-Slike za deljenje linkova su JPEG datoteke dimenzija 1200 × 630 u `public/images/services/`. Nakon promene naslova regenerisati ih komandom `npm run assets:services` i sačuvati datoteke u Git. Koristi se već postojeći `sharp`, bez novih zavisnosti. Slike se ne učitavaju u sadržaju stranice; ilustracije na stranici su inline SVG sa definisanim odnosom stranica.
+Pet zasebnih ilustrativnih vizuala napravljeno je ugrađenim imagegen alatom: graviranje, zamena baterije, zamena narukvice, skraćivanje i daljinski. Nisu dokumentarne fotografije radnje. Datoteke su u `public/images/services/`: `{kind}-{640,960,1600}.webp` za stranicu i `{kind}-share.jpg` za deljenje linka. Promptovi i pravac dizajna su u [SERVICE-VISUALS.md](SERVICE-VISUALS.md).
+
+`ServiceVisual.jsx` koristi `srcSet` i `sizes`; samo glavni vizual ima eager/high prioritet, a kartice i srodne usluge su lazy. Prelom za telefone odvaja sliku od teksta. Slike za deljenje su stvarno 1200 × 630, u skladu sa metapodacima. Za pripremu zamenskog izvora koristiti `node scripts/prepare-service-assets.mjs <kind> <source.png>`; postojeći sharp pravi iste četiri datoteke bez instalacije novih paketa. `kind` je `engraving`, `battery`, `strap`, `sizing` ili `remote`.
 
 Nema slušanja skrola, zaključavanja stranice ni animacija ulaska. Hover prelazi poštuju `prefers-reduced-motion`. FAQ i sekcijski linkovi koriste ponašanje pregledača.
 

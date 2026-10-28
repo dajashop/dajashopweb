@@ -7,8 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "node scripts/build.mjs",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "assets:services": "node scripts/generate-service-images.mjs"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1108.0",
