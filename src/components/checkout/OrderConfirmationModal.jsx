@@ -143,7 +143,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
               <span>{translateText("Ukupno za plaćanje:")}</span>
               <span className="total-price">{money(order.finalTotal)}</span>
             </div>
-            {displayCurrency === 'EUR' && <p className="summary-currency-note">
+            {displayCurrency !== 'RSD' && <p className="summary-currency-note">
               {translateText('Konačan iznos za plaćanje')}: <strong>{moneyRsd(order.finalTotal)}</strong>
             </p>}
           </div>

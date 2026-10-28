@@ -68,8 +68,8 @@ export default function OrderSummary({
         </div>
       </div>
 
-      {displayCurrency === 'EUR' && <p className="summary-currency-note">
-        {translateText('EUR cene su informativne. Plaćanje je u RSD.')}<br />
+      {displayCurrency !== 'RSD' && <p className="summary-currency-note">
+        {translateText('Cene u stranoj valuti su informativne. Plaćanje je u RSD.')}<br />
         <strong>{translateText('Konačan iznos za plaćanje')}: {moneyRsd(finalTotal)}</strong>
       </p>}
 

@@ -1,12 +1,14 @@
-export function formatMoney(amount, { locale = 'sr-RS', currency = 'RSD', eurRsdRate } = {}) {
+export function formatMoney(amount, { locale = 'sr-RS', currency = 'RSD', rates = {}, eurRsdRate } = {}) {
   const value = Number(amount) || 0;
-  const useEuro = currency === 'EUR' && Number.isFinite(eurRsdRate) && eurRsdRate > 0;
+  const multiplier = currency === 'RSD' ? 1 : Number(rates[currency] ?? (currency === 'EUR' && eurRsdRate > 0 ? 1 / eurRsdRate : NaN));
+  const code = Number.isFinite(multiplier) && multiplier > 0 ? currency : 'RSD';
+  const fractions = code === 'RSD' ? 0 : 2;
   return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: useEuro ? 'EUR' : 'RSD',
-    minimumFractionDigits: useEuro ? 2 : 0,
-    maximumFractionDigits: useEuro ? 2 : 0,
-  }).format(useEuro ? value / eurRsdRate : value);
+    currency: code,
+    minimumFractionDigits: fractions,
+    maximumFractionDigits: fractions,
+  }).format(code === 'RSD' ? value : value * multiplier);
 }
 
 // Administration, stored prices and order calculations retain the base currency.

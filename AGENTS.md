@@ -8,10 +8,11 @@
 ## Jezici i valute prodavnice
 
 - Svaki novi ili izmenjeni tekst namenjen kupcima odmah pripremiti na srpskom i engleskom. Koristiti `useStorefront().t(...)` i dopuniti `src/localization/en.json` u istom commitu. Prevod pripremiti tokom rada na funkciji, bez posebnog korisnikovog zahteva.
-- Cene za kupce prikazivati kroz `useStorefront().money(...)`. Osnovne cene, filter parametri i obračuni porudžbina ostaju u RSD; EUR je informativni prikaz po kursu sa javnog API-ja.
+- Cene za kupce prikazivati kroz `useStorefront().money(...)`. Osnovne cene, filter parametri i obračuni porudžbina ostaju u RSD; EUR, USD, BAM, MKD i CHF su informativni prikazi po dnevnoj NBS listi sa javnog API-ja. `rates` sadrži jedinice odabrane valute za 1 RSD.
 - Ne prevoditi vrednosti koje služe kao identifikatori, API parametri, korisnički unosi, tekst gravure ili recenzije. Za preveden opis artikla koristiti `attributes._translations.en.description`; bez prevoda prikazati original sa oznakom jezika.
 - Detalji i primeri: [docs/LOCALIZATION.md](docs/LOCALIZATION.md).
 - Srpski je podrazumevan na putanjama bez prefiksa; engleski je pod `/en` (npr. `/en/catalog`). Jezik uvek određuje URL, uključujući SSR; zapamćeno podešavanje ne sme ga promeniti bez navigacije. Interne React Router veze koriste automatski basename, a obične `href` veze `useStorefront().localizePath(...)`. Canonical, hreflang i sitemap moraju ostati usklađeni.
+- Padajući meniji hamburgera i jezika/valuta koriste zajedničku komponentu `src/components/ui/HeaderDropdown.jsx` i njene stilove; promene izgleda primenjivati tu.
 
 ## Mapa projekata i infrastrukture
 

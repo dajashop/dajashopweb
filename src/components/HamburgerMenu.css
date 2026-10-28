@@ -230,57 +230,6 @@
 /* ==============================
    Desktop dropdown (Right Aligned)
    ============================== */
-.hm__dropdown {
-  background: var(--color-surface, #fff);
-  color: var(--color-text, #111);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: 14px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
-  overflow: visible;
-  padding: 6px;
-  position: fixed;
-  z-index: 90;
-}
-
-.hm__dropdown::before {
-  content: "";
-  position: absolute;
-  top: -7px;
-  left: var(--arrow-x, 50%);
-  right: auto;
-  transform: translateX(-50%) rotate(45deg);
-  width: 12px;
-  height: 12px;
-  background: var(--color-surface, #fff);
-  border-left: 1px solid var(--color-border, #e5e7eb);
-  border-top: 1px solid var(--color-border, #e5e7eb);
-  border-top-left-radius: 2px;
-  pointer-events: none;
-}
-
-.hm__ddNav {
-  display: grid;
-  gap: 2px;
-}
-
-.hm__ddItem {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 8px;
-  text-decoration: none;
-  color: inherit;
-  font-size: 0.95rem;
-  transition: background 0.1s;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-}
-.hm__ddItem:hover {
-  background: color-mix(in oklab, var(--color-surface, #fff) 94%, black);
-}
 .hm__ddItem.is-strong {
   font-weight: 700;
   border-top: 1px solid var(--color-border, #e5e7eb);

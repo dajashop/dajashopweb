@@ -7,7 +7,6 @@ import React, {
   useEffect,
   useRef,
   useCallback,
-  useLayoutEffect,
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -19,6 +18,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import { isAdminEmail, ordersApi, subscribeRealtime } from '../services/dajaPlatform.js';
 import { getStaffAccessToken } from '../services/apiClient.js';
 import SocialLinks from './SocialLinks.jsx';
+import HeaderDropdown from './ui/HeaderDropdown.jsx';
 
 // Ikonice
 import {
@@ -36,8 +36,6 @@ import {
   LogOut,
 } from 'lucide-react';
 import './HamburgerMenu.css';
-
-const DROPDOWN_WIDTH = 220;
 
 export default function HamburgerMenu({
   open,
@@ -108,8 +106,7 @@ export default function HamburgerMenu({
 
   if (!portalReady || typeof document === 'undefined') return null;
 
-  return createPortal(
-    isDesktop ? (
+  return isDesktop ? (
       <DesktopDropdown
         open={open}
         onClose={onClose}
@@ -122,7 +119,7 @@ export default function HamburgerMenu({
         isStaff={staffReady}
         unreadOrders={unreadOrders} // <--- ŠALJEMO DOLE
       />
-    ) : (
+    ) : createPortal(
       <MobileSheet
         open={open}
         onClose={onClose}
@@ -132,8 +129,7 @@ export default function HamburgerMenu({
         isAdmin={isAdmin}
         isStaff={staffReady}
         unreadOrders={unreadOrders} // <--- ŠALJEMO DOLE
-      />
-    ),
+      />,
     document.body
   );
 }
@@ -167,32 +163,6 @@ function DesktopDropdown({
   const { t: translateText } = useStorefront();
 
   const ddRef = useRef(null);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
-
-  const recalc = useCallback(() => {
-    if (!anchorEl?.current) return;
-    const r = anchorEl.current.getBoundingClientRect();
-    const GAP = 8;
-    const leftCentered = Math.round(r.left + r.width / 2 - DROPDOWN_WIDTH / 2);
-    const clampedLeft = Math.max(
-      8,
-      Math.min(leftCentered, window.innerWidth - DROPDOWN_WIDTH - 8)
-    );
-    setPos({ top: Math.round(r.bottom + GAP), left: clampedLeft });
-  }, [anchorEl]);
-
-  useLayoutEffect(() => {
-    if (!open) return;
-    recalc();
-    const onScroll = () => recalc();
-    const onResize = () => recalc();
-    window.addEventListener('scroll', onScroll, true);
-    window.addEventListener('resize', onResize);
-    return () => {
-      window.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', onResize);
-    };
-  }, [open, recalc]);
 
   useEffect(() => {
     if (!open) return;
@@ -211,32 +181,9 @@ function DesktopDropdown({
     };
   }, [open, onClose, anchorEl]);
 
-  const variants = {
-    hidden: { opacity: 0, scale: 0.96, y: -6 },
-    visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.14 } },
-    exit: { opacity: 0, scale: 0.98, y: -4, transition: { duration: 0.12 } },
-  };
-
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          ref={ddRef}
-          className="hm__dropdown card"
-          style={{
-            position: 'fixed',
-            top: pos.top,
-            left: pos.left,
-            width: DROPDOWN_WIDTH,
-            zIndex: 90,
-          }}
-          role="menu"
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          variants={variants}
-        >
-          <nav className="hm__ddNav">
+    <HeaderDropdown open={open} anchorRef={anchorEl} panelRef={ddRef} id="hm-panel" label={translateText('Meni')}>
+          <nav className="header-dropdown__items">
             <DDItem to="/about" label={translateText("O nama")} onClose={onClose} />
             <DDItem to="/catalog" label={translateText("Prodavnica")} onClose={onClose} />
             <DDItem to="/usluge" label={translateText("Usluge")} onClose={onClose} />
@@ -246,7 +193,7 @@ function DesktopDropdown({
             {/* ADMIN SEKCIJA */}
             {isAdmin && (
               <>
-                <div className="border-t border-white/10 my-1"></div>
+                <div className="header-dropdown__separator" role="separator" />
                 <DDItem
                   to="/admin"
                   label={translateText("Admin Dashboard")}
@@ -257,7 +204,7 @@ function DesktopDropdown({
                 {/* Link ka Porudžbinama sa brojačem */}
                 <Link
                   to="/admin/orders"
-                  className="hm__ddItem"
+                  className="header-dropdown__item hm__ddItem"
                   role="menuitem"
                   onClick={onClose}
                   style={{
@@ -273,13 +220,13 @@ function DesktopDropdown({
                   )}
                 </Link>
 
-                <div className="border-t border-white/10 my-1"></div>
+                <div className="header-dropdown__separator" role="separator" />
               </>
             )}
 
             {isStaff && !isAdmin && (
               <>
-                <div className="border-t border-white/10 my-1"></div>
+                <div className="header-dropdown__separator" role="separator" />
                 <DDItem to="/admin" label={translateText("Katalog proizvoda")} onClose={onClose} style={{ color: '#0f9f78' }} />
               </>
             )}
@@ -294,7 +241,7 @@ function DesktopDropdown({
                 <button
                   type="button"
                   role="menuitem"
-                  className="hm__ddItem hm__logout"
+                  className="header-dropdown__item hm__ddItem hm__logout"
                   onClick={() => {
                     onClose();
                     void logout();
@@ -306,7 +253,7 @@ function DesktopDropdown({
               <button
                 type="button"
                 role="menuitem"
-                className="hm__ddItem"
+                className="header-dropdown__item hm__ddItem"
                 onClick={() => {
                   showAuth('login');
                   onClose();
@@ -321,9 +268,7 @@ function DesktopDropdown({
               strong
             />
           </nav>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </HeaderDropdown>
   );
 }
 
@@ -333,7 +278,7 @@ function DDItem({ to, label, strong, onClose, style }) {
   return (
     <Link
       to={to}
-      className={`hm__ddItem${strong ? ' is-strong' : ''}`}
+      className={`header-dropdown__item hm__ddItem${strong ? ' is-strong' : ''}`}
       role="menuitem"
       onClick={onClose}
       style={style}
