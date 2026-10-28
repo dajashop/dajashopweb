@@ -7,6 +7,7 @@ import ServiceVisual from '../components/services/ServiceVisual.jsx';
 import { ServiceBreadcrumbs, ServiceCard, ServiceVisit } from '../components/services/ServiceShared.jsx';
 import { serviceCatalog, servicesOverview } from '../data/serviceCatalog.js';
 import { seoConfig } from '../config/seo.js';
+import { scrollToServiceSection } from '../utils/serviceSectionNavigation.js';
 import './Usluge.css';
 
 export default function Usluge() {
@@ -38,7 +39,7 @@ export default function Usluge() {
         <h1>Usluge sa pažnjom za svaki detalj.</h1>
         <p>Gravura koja ostaje. Sat koji ponovo radi i lepo stoji. Daljinski za jednostavniji ulazak. Sve na jednom mestu.</p>
         <div className="services-actions">
-          <a className="services-button services-button--light" href="#sve-usluge">Izaberite uslugu <ArrowDown size={20} aria-hidden="true" /></a>
+          <a className="services-button services-button--light" href="#sve-usluge" onClick={scrollToServiceSection}>Izaberite uslugu <ArrowDown size={20} aria-hidden="true" /></a>
           <Link className="services-hero__link" to="/contact">Kontaktirajte nas <ArrowUpRight size={20} aria-hidden="true" /></Link>
         </div>
       </div>

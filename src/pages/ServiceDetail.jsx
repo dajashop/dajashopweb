@@ -7,6 +7,7 @@ import ServiceVisual from '../components/services/ServiceVisual.jsx';
 import { ServiceBreadcrumbs, ServiceFacts, ServiceIcon, ServiceVisit } from '../components/services/ServiceShared.jsx';
 import { getService, serviceCatalog } from '../data/serviceCatalog.js';
 import { seoConfig } from '../config/seo.js';
+import { scrollToServiceSection } from '../utils/serviceSectionNavigation.js';
 import PageStatus from './PageStatus.jsx';
 import './Usluge.css';
 
@@ -53,7 +54,7 @@ export default function ServiceDetail() {
         <p>{service.summary}</p>
         <div className="services-actions">
           <a className="services-button services-button--light" href={`mailto:${seoConfig.business.email}?subject=${subject}`}><Mail size={20} aria-hidden="true" />Pošaljite upit</a>
-          <a className="services-hero__link" href="#o-usluzi">Pogledajte detalje <ArrowDown size={20} aria-hidden="true" /></a>
+          <a className="services-hero__link" href="#o-usluzi" onClick={scrollToServiceSection}>Pogledajte detalje <ArrowDown size={20} aria-hidden="true" /></a>
         </div>
       </div>
     </header>
