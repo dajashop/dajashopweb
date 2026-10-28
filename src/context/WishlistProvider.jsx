@@ -3,7 +3,7 @@ import { useFlash } from '../hooks/useFlash';
 import { useAuth } from '../hooks/useAuth';
 import { customerApi } from '../services/dajaPlatform';
 import { useConsent } from './ConsentContext.jsx';
-import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
+import { readStoredValue, removeStoredValue, writeStoredValue } from '../services/consentStorage.js';
 
 const WishlistContext = createContext();
 
@@ -13,14 +13,17 @@ export const WishlistProvider = ({ children }) => {
   const [wishlist, setWishlist] = useState(() => {
     try {
       const saved = readStoredValue('daja_wishlist', 'necessary');
-      return saved ? JSON.parse(saved) : [];
+      const items = saved ? JSON.parse(saved) : [];
+      return Array.isArray(items) ? items : [];
     } catch {
       return [];
     }
   });
 
   const { flash } = useFlash();
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
+  const userId = user?.uid || user?.id || null;
+  const previousUserId = useRef(null);
   const { hasDecision } = useConsent();
   const loadedServerWishlist = useRef(false);
   const isServerUpdate = useRef(false);
@@ -29,20 +32,38 @@ export const WishlistProvider = ({ children }) => {
   const hasCrossTabState = useRef(false);
   const hydratedGuestWishlist = useRef(false);
   const guestWishlistPersistence = useRef(false);
+  const pendingChanges = useRef([]);
+  const serverDirty = useRef(false);
+  const accountController = useRef(null);
+  const pendingLoad = useRef(null);
 
   useEffect(() => {
     latestWishlist.current = wishlist;
   }, [wishlist]);
 
   useEffect(() => {
-    if (!hasDecision) return undefined;
+    if (!hasDecision || !authReady) return undefined;
     loadedServerWishlist.current = false;
     hasCrossTabState.current = false;
 
-    if (!user) {
+    if (previousUserId.current && previousUserId.current !== userId) {
+      removeStoredValue('daja_wishlist');
+      guestWishlistPersistence.current = false;
+      hydratedGuestWishlist.current = true;
+      isServerUpdate.current = true;
+      latestWishlist.current = [];
+      pendingChanges.current = [];
+      serverDirty.current = false;
+      setWishlist([]);
+    }
+    previousUserId.current = userId;
+
+    if (!userId) {
       if (!hydratedGuestWishlist.current) {
         try {
-          const localWishlist = JSON.parse(readStoredValue('daja_wishlist', 'necessary') || '[]');
+          const saved = guestWishlistPersistence.current ? latestWishlist.current
+            : JSON.parse(readStoredValue('daja_wishlist', 'necessary') || '[]');
+          const localWishlist = Array.isArray(saved) ? saved : [];
           guestWishlistPersistence.current = localWishlist.length > 0;
           setWishlist(localWishlist);
         } catch {
@@ -54,38 +75,54 @@ export const WishlistProvider = ({ children }) => {
     }
 
     let cancelled = false;
-    customerApi
-      .getWishlist()
+    const controller = new AbortController();
+    accountController.current = controller;
+    const load = () => customerApi
+      .getWishlist({ signal: controller.signal })
       .then((serverList) => {
         if (cancelled) return;
-        if (hasCrossTabState.current) {
-          loadedServerWishlist.current = true;
-          return;
-        }
         let localList = [];
         try {
-          localList = JSON.parse(readStoredValue('daja_wishlist', 'necessary') || '[]');
+          const saved = JSON.parse(readStoredValue('daja_wishlist', 'necessary') || '[]');
+          localList = Array.isArray(saved) ? saved : [];
         } catch {
           localList = [];
         }
-        const merged = [...serverList];
+        let merged = [...(hasCrossTabState.current || serverList)];
         localList.forEach((localItem) => {
           if (!merged.some((item) => item.id === localItem.id)) merged.push(localItem);
         });
+        const changes = pendingChanges.current;
+        pendingChanges.current = [];
+        merged = changes.reduce((current, change) => change(current), merged);
         isServerUpdate.current = true;
+        latestWishlist.current = merged;
         setWishlist(merged);
         loadedServerWishlist.current = true;
-        if (merged.length !== serverList.length) customerApi.setWishlist(merged);
-      })
-      .catch((error) => console.error('Wishlist load error:', error));
+        if (localList.length || changes.length) {
+          serverDirty.current = true;
+          return customerApi.setWishlist(merged, { signal: controller.signal }).then(() => {
+            if (cancelled) return;
+            removeStoredValue('daja_wishlist');
+            guestWishlistPersistence.current = false;
+            if (latestWishlist.current === merged) serverDirty.current = false;
+            wishlistChannel.current?.postMessage({ type: 'replace-state', wishlist: latestWishlist.current });
+          });
+        }
+      });
+    const pending = navigator.locks?.request
+      ? navigator.locks.request(`daja:wishlist-merge:${userId}`, { signal: controller.signal }, load)
+      : load();
+    pendingLoad.current = pending;
+    pending.catch((error) => { if (!cancelled) console.error('Wishlist load error:', error); });
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [hasDecision, user]);
+  }, [hasDecision, authReady, userId]);
 
   useEffect(() => {
-    const userId = user?.uid || user?.id;
     if (
       !hasDecision ||
       !userId ||
@@ -105,7 +142,7 @@ export const WishlistProvider = ({ children }) => {
         return;
       }
       if (data?.type === 'replace-state' && Array.isArray(data.wishlist)) {
-        hasCrossTabState.current = true;
+        hasCrossTabState.current = data.wishlist;
         isServerUpdate.current = true;
         setWishlist(data.wishlist);
       }
@@ -116,7 +153,7 @@ export const WishlistProvider = ({ children }) => {
       if (wishlistChannel.current === channel) wishlistChannel.current = null;
       channel.close();
     };
-  }, [hasDecision, user?.id, user?.uid]);
+  }, [hasDecision, userId]);
 
   useEffect(() => {
     const applyProductChange = (event) => {
@@ -161,22 +198,25 @@ export const WishlistProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (!hasDecision) return undefined;
+    if (!hasDecision || !authReady) return undefined;
     if (isServerUpdate.current) {
       isServerUpdate.current = false;
       return;
     }
 
-    if (user) {
+    if (userId) {
       if (!loadedServerWishlist.current) return;
       wishlistChannel.current?.postMessage({
         type: 'replace-state',
         wishlist,
       });
+      const controller = accountController.current;
       const t = setTimeout(() => {
-        customerApi.setWishlist(wishlist).catch((error) =>
-          console.error('Wishlist save error:', error),
-        );
+        customerApi.setWishlist(wishlist, { signal: controller.signal }).then(() => {
+          if (latestWishlist.current === wishlist) serverDirty.current = false;
+        }).catch((error) => {
+          if (!controller.signal.aborted) console.error('Wishlist save error:', error);
+        });
       }, 500);
       return () => clearTimeout(t);
     }
@@ -184,19 +224,46 @@ export const WishlistProvider = ({ children }) => {
     if (!hydratedGuestWishlist.current || !guestWishlistPersistence.current) return undefined;
     writeStoredValue('daja_wishlist', JSON.stringify(wishlist), 'necessary');
     return undefined;
-  }, [hasDecision, wishlist, user]);
+  }, [hasDecision, authReady, wishlist, userId]);
+
+  useEffect(() => {
+    const flush = (event) => {
+      if (userId) {
+        const controller = accountController.current;
+        event.detail.push(Promise.resolve(pendingLoad.current).then(() => {
+          if (controller && !controller.signal.aborted && loadedServerWishlist.current && serverDirty.current) {
+            return customerApi.setWishlist(latestWishlist.current, { signal: controller.signal });
+          }
+        }));
+      }
+    };
+    window.addEventListener('daja:before-logout', flush);
+    return () => window.removeEventListener('daja:before-logout', flush);
+  }, [userId]);
+
+  const updateWishlist = (change) => {
+    const next = change(latestWishlist.current);
+    latestWishlist.current = next;
+    setWishlist(next);
+    if (!userId) {
+      guestWishlistPersistence.current = true;
+      writeStoredValue('daja_wishlist', JSON.stringify(next), 'necessary');
+    } else {
+      serverDirty.current = true;
+      if (!loadedServerWishlist.current) pendingChanges.current.push(change);
+    }
+  };
 
   const toggleWishlist = (product) => {
-    if (!user) guestWishlistPersistence.current = true;
-    const exists = wishlist.find((item) => item.id === product.id);
+    const exists = latestWishlist.current.find((item) => item.id === product.id);
 
     if (exists) {
-      setWishlist((prev) => prev.filter((item) => item.id !== product.id));
+      updateWishlist((prev) => prev.filter((item) => item.id !== product.id));
       flash('Uklonjeno', 'Proizvod uklonjen iz liste zelja.', 'info');
       return;
     }
 
-    setWishlist((prev) => [
+    updateWishlist((prev) => [
       ...prev,
       {
         id: product.id,
@@ -211,14 +278,12 @@ export const WishlistProvider = ({ children }) => {
   };
 
   const removeFromWishlist = (id) => {
-    if (!user) guestWishlistPersistence.current = true;
-    setWishlist((prev) => prev.filter((item) => item.id !== id));
+    updateWishlist((prev) => prev.filter((item) => item.id !== id));
     flash('Uklonjeno', 'Proizvod uklonjen iz liste zelja.', 'info');
   };
 
   const addToWishlist = (product) => {
-    if (!user) guestWishlistPersistence.current = true;
-    setWishlist((prev) => {
+    updateWishlist((prev) => {
       if (prev.some((item) => item.id === product.id)) return prev;
       return [...prev, product];
     });

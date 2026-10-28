@@ -924,6 +924,13 @@ export function createCollectionService(collectionName) {
   };
 }
 
+const customerWriteQueues = { cart: Promise.resolve(), wishlist: Promise.resolve() };
+function queueCustomerWrite(collection, save) {
+  const pending = customerWriteQueues[collection].catch(() => {}).then(save);
+  customerWriteQueues[collection] = pending;
+  return pending;
+}
+
 export const customerApi = {
   async me() {
     const data = await apiRequest('/customers/me');
@@ -950,42 +957,44 @@ export const customerApi = {
       method: 'DELETE',
     });
   },
-  async getCart() {
-    const data = await apiRequest('/customers/me/cart');
+  async getCart(options = {}) {
+    const data = await apiRequest('/customers/me/cart', options);
     return toArrayPayload(data, ['items', 'cart']);
   },
-  setCart(items) {
-    return apiRequest('/customers/me/cart', { method: 'PUT', body: { items } });
+  setCart(items, options = {}) {
+    return queueCustomerWrite('cart', () =>
+      apiRequest('/customers/me/cart', { ...options, method: 'PUT', body: { items } }));
   },
-  async getWishlist() {
-    const data = await apiRequest('/customers/me/wishlist');
+  async getWishlist(options = {}) {
+    const data = await apiRequest('/customers/me/wishlist', options);
     return toArrayPayload(data, ['items', 'wishlist']);
   },
-  async setWishlist(items) {
-    const next = Array.isArray(items) ? items : [];
-    const current = await this.getWishlist().catch(() => []);
-    const nextIds = new Set(
-      next.map((item) => item.id || item.productId).filter(Boolean),
-    );
-    await Promise.all(
-      current
-        .filter((item) => !nextIds.has(item.id || item.productId))
-        .map((item) =>
-          apiRequest(
-            `/customers/me/wishlist/${encodeURIComponent(item.id || item.productId)}`,
-            {
-              method: 'DELETE',
-            },
-          ).catch(() => null),
-        ),
-    );
-    for (const item of next) {
-      await apiRequest('/customers/me/wishlist', {
-        method: 'POST',
-        body: { item },
-      });
-    }
-    return next;
+  setWishlist(items, options = {}) {
+    return queueCustomerWrite('wishlist', async () => {
+      const next = Array.isArray(items) ? items : [];
+      const current = await this.getWishlist(options);
+      const nextIds = new Set(
+        next.map((item) => item.id || item.productId).filter(Boolean),
+      );
+      await Promise.all(
+        current
+          .filter((item) => !nextIds.has(item.id || item.productId))
+          .map((item) =>
+            apiRequest(
+              `/customers/me/wishlist/${encodeURIComponent(item.id || item.productId)}`,
+              { ...options, method: 'DELETE' },
+            ),
+          ),
+      );
+      for (const item of next) {
+        await apiRequest('/customers/me/wishlist', {
+          ...options,
+          method: 'POST',
+          body: { item },
+        });
+      }
+      return next;
+    });
   },
   updateProfile(payload) {
     return apiRequest('/customers/me', { method: 'PATCH', body: payload });

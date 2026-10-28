@@ -273,6 +273,9 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
+    const pendingSaves = [];
+    window.dispatchEvent(new CustomEvent('daja:before-logout', { detail: pendingSaves }));
+    await Promise.allSettled(pendingSaves);
     await authApi.logout();
     setUser(null);
     setUserInfo(null);

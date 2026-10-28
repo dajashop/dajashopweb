@@ -4,11 +4,12 @@ import { useAuth } from '../hooks/useAuth';
 import { customerApi, subscribePublicCatalogRealtime } from '../services/dajaPlatform';
 import { applyPublicProductRealtimeEvent } from '../services/products';
 import { useConsent } from './ConsentContext.jsx';
-import { readStoredValue, writeStoredValue } from '../services/consentStorage.js';
+import { readStoredValue, removeStoredValue, writeStoredValue } from '../services/consentStorage.js';
 
 const initial = () => {
   try {
-    return JSON.parse(readStoredValue('cart', 'necessary') || '[]');
+    const saved = JSON.parse(readStoredValue('cart', 'necessary') || '[]');
+    return Array.isArray(saved) ? saved : [];
   } catch {
     return [];
   }
@@ -90,7 +91,9 @@ function reducer(state, action) {
 
 export function CartProvider({ children }) {
   const [items, dispatch] = useReducer(reducer, [], initial);
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
+  const userId = user?.uid || user?.id || null;
+  const previousUserId = useRef(null);
   const { hasDecision } = useConsent();
   const loadedServerCart = useRef(false);
   const isServerUpdate = useRef(false);
@@ -99,19 +102,35 @@ export function CartProvider({ children }) {
   const hasCrossTabState = useRef(false);
   const hydratedGuestCart = useRef(false);
   const guestCartPersistence = useRef(false);
+  const pendingActions = useRef([]);
+  const serverDirty = useRef(false);
+  const accountController = useRef(null);
+  const pendingLoad = useRef(null);
 
   useEffect(() => {
     latestItems.current = items;
   }, [items]);
 
   useEffect(() => {
-    if (!hasDecision) return undefined;
+    if (!hasDecision || !authReady) return undefined;
     loadedServerCart.current = false;
     hasCrossTabState.current = false;
 
-    if (!user) {
+    if (previousUserId.current && previousUserId.current !== userId) {
+      removeStoredValue('cart');
+      guestCartPersistence.current = false;
+      hydratedGuestCart.current = true;
+      isServerUpdate.current = true;
+      latestItems.current = [];
+      pendingActions.current = [];
+      serverDirty.current = false;
+      dispatch({ type: 'CLEAR' });
+    }
+    previousUserId.current = userId;
+
+    if (!userId) {
       if (!hydratedGuestCart.current) {
-        const localItems = initial();
+        const localItems = guestCartPersistence.current ? latestItems.current : initial();
         guestCartPersistence.current = localItems.length > 0;
         dispatch({ type: 'REPLACE', items: localItems });
         hydratedGuestCart.current = true;
@@ -120,41 +139,59 @@ export function CartProvider({ children }) {
     }
 
     let cancelled = false;
-    customerApi
-      .getCart()
+    const controller = new AbortController();
+    accountController.current = controller;
+    const load = () => customerApi
+      .getCart({ signal: controller.signal })
       .then((serverCart) => {
         if (cancelled) return;
-        if (hasCrossTabState.current) {
-          loadedServerCart.current = true;
-          return;
-        }
         const localItems = initial();
-        const merged = [...serverCart];
+        let merged = [...(hasCrossTabState.current || serverCart)];
         localItems.forEach((localItem) => {
-          if (!merged.some((item) => (item.lineId || item.id) === (localItem.lineId || localItem.id))) merged.push(localItem);
+          const index = merged.findIndex((item) => (item.lineId || item.id) === (localItem.lineId || localItem.id));
+          if (index < 0) merged.push(localItem);
+          else merged[index] = { ...merged[index], qty: (Number(merged[index].qty) || 1) + (Number(localItem.qty) || 1) };
         });
+        const actions = pendingActions.current;
+        pendingActions.current = [];
+        merged = actions.reduce(reducer, merged);
         isServerUpdate.current = true;
+        latestItems.current = merged;
         dispatch({ type: 'REPLACE', items: merged });
         loadedServerCart.current = true;
-        if (merged.length !== serverCart.length) customerApi.setCart(merged);
-      })
-      .catch((error) => console.error('Cart load error:', error));
+        if (localItems.length || actions.length) {
+          serverDirty.current = true;
+          return customerApi.setCart(merged, { signal: controller.signal }).then(() => {
+            if (cancelled) return;
+            removeStoredValue('cart');
+            guestCartPersistence.current = false;
+            if (latestItems.current === merged) serverDirty.current = false;
+            cartChannel.current?.postMessage({ type: 'replace-state', items: latestItems.current });
+          });
+        }
+      });
+    // Only one tab consumes the shared guest cart at a time.
+    const pending = navigator.locks?.request
+      ? navigator.locks.request(`daja:cart-merge:${userId}`, { signal: controller.signal }, load)
+      : load();
+    pendingLoad.current = pending;
+    pending.catch((error) => { if (!cancelled) console.error('Cart load error:', error); });
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [hasDecision, user]);
+  }, [hasDecision, authReady, userId]);
 
   useEffect(() => {
-    if (!hasDecision || !user) return undefined;
+    if (!hasDecision || !userId) return undefined;
 
     return subscribePublicCatalogRealtime((event) => {
       void applyPublicProductRealtimeEvent(event);
     });
-  }, [hasDecision, user]);
+  }, [hasDecision, userId]);
 
   useEffect(() => {
-    const userId = user?.uid || user?.id;
     if (
       !hasDecision ||
       !userId ||
@@ -174,7 +211,7 @@ export function CartProvider({ children }) {
         return;
       }
       if (data?.type === 'replace-state' && Array.isArray(data.items)) {
-        hasCrossTabState.current = true;
+        hasCrossTabState.current = data.items;
         isServerUpdate.current = true;
         dispatch({ type: 'REPLACE', items: data.items });
       }
@@ -185,7 +222,7 @@ export function CartProvider({ children }) {
       if (cartChannel.current === channel) cartChannel.current = null;
       channel.close();
     };
-  }, [hasDecision, user?.id, user?.uid]);
+  }, [hasDecision, userId]);
 
   useEffect(() => {
     const applyProductChange = (event) => {
@@ -205,22 +242,25 @@ export function CartProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!hasDecision) return undefined;
+    if (!hasDecision || !authReady) return undefined;
     if (isServerUpdate.current) {
       isServerUpdate.current = false;
       return;
     }
 
-    if (user) {
+    if (userId) {
       if (!loadedServerCart.current) return;
       cartChannel.current?.postMessage({
         type: 'replace-state',
         items,
       });
+      const controller = accountController.current;
       const t = setTimeout(() => {
-        customerApi.setCart(items).catch((error) =>
-          console.error('Cart save error:', error),
-        );
+        customerApi.setCart(items, { signal: controller.signal }).then(() => {
+          if (latestItems.current === items) serverDirty.current = false;
+        }).catch((error) => {
+          if (!controller.signal.aborted) console.error('Cart save error:', error);
+        });
       }, 500);
       return () => clearTimeout(t);
     }
@@ -228,7 +268,22 @@ export function CartProvider({ children }) {
     if (!hydratedGuestCart.current || !guestCartPersistence.current) return undefined;
     writeStoredValue('cart', JSON.stringify(items), 'necessary');
     return undefined;
-  }, [hasDecision, items, user]);
+  }, [hasDecision, authReady, items, userId]);
+
+  useEffect(() => {
+    const flush = (event) => {
+      if (userId) {
+        const controller = accountController.current;
+        event.detail.push(Promise.resolve(pendingLoad.current).then(() => {
+          if (controller && !controller.signal.aborted && loadedServerCart.current && serverDirty.current) {
+            return customerApi.setCart(latestItems.current, { signal: controller.signal });
+          }
+        }));
+      }
+    };
+    window.addEventListener('daja:before-logout', flush);
+    return () => window.removeEventListener('daja:before-logout', flush);
+  }, [userId]);
 
   const total = useMemo(
     () => items.reduce((sum, item) => sum + item.price * item.qty, 0),
@@ -236,11 +291,18 @@ export function CartProvider({ children }) {
   );
   const count = useMemo(() => items.reduce((sum, item) => sum + item.qty, 0), [items]);
   const customerDispatch = useCallback((action) => {
-    if (!user && !['REPLACE', 'UPDATE_PRODUCT', 'REMOVE_PRODUCT'].includes(action?.type)) {
-      guestCartPersistence.current = true;
+    if (!['REPLACE', 'UPDATE_PRODUCT', 'REMOVE_PRODUCT'].includes(action?.type)) {
+      latestItems.current = reducer(latestItems.current, action);
+      if (!userId) {
+        guestCartPersistence.current = true;
+        writeStoredValue('cart', JSON.stringify(latestItems.current), 'necessary');
+      } else {
+        serverDirty.current = true;
+        if (!loadedServerCart.current) pendingActions.current.push(action);
+      }
     }
     dispatch(action);
-  }, [user]);
+  }, [userId]);
 
   return (
     <CartCtx.Provider value={{ items, cart: items, dispatch: customerDispatch, total, count }}>
