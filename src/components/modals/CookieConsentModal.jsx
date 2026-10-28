@@ -26,7 +26,7 @@ export default function CookieConsentModal({
   onAll,
   onSave,
 }) {
-  const { t: translateText } = useStorefront();
+  const { t: translateText, localizePath } = useStorefront();
 
   const [panel, setPanel] = useState(PANELS.consent);
   const [preferences, setPreferences] = useState(false);
@@ -164,7 +164,7 @@ export default function CookieConsentModal({
             <div><BarChart3 size={20} /><p><strong>{translateText("Analitika")}</strong>{translateText(" nam pokazuje kako posetioci koriste sajt, bez prikazivanja oglasa.")}</p></div>
             <div><Info size={20} /><p><strong>{translateText("Marketing i neklasifikovani kolačići")}</strong>{translateText(" trenutno se ne koriste na sajtu.")}</p></div>
           </div>
-          <p className="cookie-consent__links">{translateText("Pročitajte ")}<a href="/cookies">{translateText("politiku kolačića")}</a>{translateText(" i ")}<a href="/privacy">{translateText("politiku privatnosti")}</a>.
+          <p className="cookie-consent__links">{translateText("Pročitajte ")}<a href={localizePath('/cookies')}>{translateText("politiku kolačića")}</a>{translateText(" i ")}<a href={localizePath('/privacy')}>{translateText("politiku privatnosti")}</a>.
           </p>
           <p className="cookie-consent__version">{translateText("Verzija politike: ")}{translateText(policy?.version || 'u pripremi')}</p>
         </div>

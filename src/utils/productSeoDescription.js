@@ -1,4 +1,5 @@
 import { descriptionText, metaDescription } from '../components/description.js';
+import { translate } from '../localization/translate.js';
 
 const normalizeKey = (value) => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[\s_-]+/g, '_');
 const watchSpecs = [
@@ -19,12 +20,13 @@ const eyewearSpecs = [
 ];
 
 // Use known useful facts in a stable order, never arbitrary attribute keys.
-export function productSeoDescription(product = {}) {
-  const explicit = metaDescription(product.seo?.metaDescription);
-  const description = metaDescription(product.description, true);
+export function productSeoDescription(product = {}, language = 'sr') {
+  const translated = product.attributes?._translations?.[language];
+  const explicit = metaDescription(language === 'en' ? translated?.metaDescription : product.seo?.metaDescription);
+  const description = metaDescription(language === 'en' ? translated?.description : product.description, true);
   if (explicit || description) return explicit || description;
 
-  const title = [product.brand, product.name].map(value => descriptionText(value || '')).filter(Boolean).join(' ') || 'Proizvod';
+  const title = [product.brand, product.name].map(value => descriptionText(value || '')).filter(Boolean).join(' ') || translate('Proizvod', language);
   let text = `${title.replace(/[.!?]+$/, '')}.`;
   const specs = new Map(Object.entries(product.specs || {}).map(([key, value]) => [normalizeKey(key), value]));
   let count = 0;
@@ -33,12 +35,12 @@ export function productSeoDescription(product = {}) {
     if (!['string', 'number', 'boolean'].includes(typeof raw)) continue;
     const value = descriptionText(String(raw)).replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
     if (!value || /^(ne|false|0|n\/a|-|bez luminescencije)$/i.test(value)) continue;
-    const fact = /^(da|true)$/i.test(value) ? label : `${label}: ${value}`;
+    const fact = /^(da|true)$/i.test(value) ? translate(label, language) : `${translate(label, language)}: ${translate(value, language)}`;
     const candidate = `${text} ${fact.replace(/[.!?]+$/, '')}.`;
     if (candidate.length > 160) continue;
     text = candidate;
     if (++count === 4) break;
   }
-  if (!count) text += ' Pogledajte detalje proizvoda u DajaShop prodavnici.';
+  if (!count) text += ` ${translate('Pogledajte detalje proizvoda u DajaShop prodavnici.', language)}`;
   return metaDescription(text);
 }

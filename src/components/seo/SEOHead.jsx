@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 import { seoConfig } from '../../config/seo.js';
 import { isEmailLinkPath } from '../../utils/emailLinkPrivacy.js';
+import { localizedSiteUrl } from '../../localization/paths.js';
 
 function ensureAbsoluteUrl(value) {
   if (!value) return '';
@@ -31,7 +32,10 @@ export default function SEOHead({
   const siteName = seoConfig.siteName || 'DajaShop';
   const baseUrl = seoConfig.siteUrl?.replace(/\/$/, '') || '';
   const currentPath = location.pathname || '/';
-  const canonicalUrl = ensureAbsoluteUrl(url || `${baseUrl}${currentPath}`);
+  const canonicalSource = ensureAbsoluteUrl(url || `${baseUrl}${currentPath}`);
+  const canonicalUrl = localizedSiteUrl(canonicalSource, language, baseUrl);
+  const serbianUrl = localizedSiteUrl(canonicalSource, 'sr', baseUrl);
+  const englishUrl = localizedSiteUrl(canonicalSource, 'en', baseUrl);
   const imageUrl = ensureAbsoluteUrl(image);
   const isHome = currentPath === '/' || title === 'Početna';
   const fullTitle = homeTitle ? translateText(homeTitle) : isHome ? siteName : `${translateText(title)} | ${siteName}`;
@@ -55,6 +59,11 @@ export default function SEOHead({
       <meta name="robots" content={robotsValue} />
       {sensitiveEmailLink && <meta name="referrer" content="no-referrer" />}
       <link rel="canonical" href={canonicalUrl} />
+      {!sensitiveEmailLink && !noIndex && <>
+        <link rel="alternate" hrefLang="sr" href={serbianUrl} />
+        <link rel="alternate" hrefLang="en" href={englishUrl} />
+        <link rel="alternate" hrefLang="x-default" href={serbianUrl} />
+      </>}
 
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={translatedDescription} />

@@ -5,6 +5,7 @@ import App from './App.jsx';
 import './styles/base.css';
 import AppProviders from './AppProviders.jsx';
 import { recoverChunkLoad } from './utils/chunkRecovery.js';
+import { pathLanguage } from './localization/paths.js';
 
 window.addEventListener('vite:preloadError', event => {
   if (recoverChunkLoad(event.payload)) event.preventDefault();
@@ -13,10 +14,11 @@ window.addEventListener('vite:preloadError', event => {
 const root = document.getElementById('root');
 const dataElement = document.getElementById('daja-page-data');
 const pageData = dataElement ? JSON.parse(dataElement.textContent) : null;
+const language = pathLanguage(window.location.pathname);
 const app = (
   <React.StrictMode>
-    <BrowserRouter>
-      <AppProviders pageData={pageData}><App /></AppProviders>
+    <BrowserRouter basename={language === 'en' ? '/en' : '/'}>
+      <AppProviders pageData={pageData} language={language}><App /></AppProviders>
     </BrowserRouter>
   </React.StrictMode>
 );

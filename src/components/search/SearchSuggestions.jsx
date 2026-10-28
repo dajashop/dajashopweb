@@ -3,10 +3,10 @@ import { ArrowUpRight, ArrowRight, PackageSearch, RefreshCw, Search, Watch, X } 
 
 
 export function SearchProductRow({ product, ...props }) {
-  const { t: translateText, money } = useStorefront();
+  const { t: translateText, money, localizePath } = useStorefront();
 
   const price = money(product.salePrice ?? product.price);
-  return <a href={`/product/${encodeURIComponent(product.slug)}`} className="live-search__product" title={translateText(product.inStock ? undefined : 'Nema na stanju')}
+  return <a href={localizePath(`/product/${encodeURIComponent(product.slug)}`)} className="live-search__product" title={translateText(product.inStock ? undefined : 'Nema na stanju')}
     aria-label={translateText(`${product.brand || ''} ${product.name}, ${price}${product.inStock ? '' : ', nema na stanju'}`)} {...props}>
     <span className="live-search__thumbnail">{product.thumbnailUrl || product.image
       ? <img src={product.thumbnailUrl || product.image} alt="" loading="lazy" decoding="async" /> : <Watch size={38} aria-hidden="true" />}</span>
@@ -22,7 +22,7 @@ const categories = [
 ];
 
 export default function SearchSuggestions({ data, loading, error, retry, query, recommendations, onNavigate, onCorrect, onLiteral, literal = false, active, onActive, idPrefix = 'live-search' }) {
-  const { t: translateText } = useStorefront();
+  const { t: translateText, localizePath } = useStorefront();
 
   const hasQuery = query.trim().length >= 2;
   const groups = data?.groups || {};
@@ -42,13 +42,13 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
   const renderLeft = () => <aside className="live-search__facets" aria-label={translateText("Brendovi, kolekcije i filteri")}>
     {order.filter((kind) => groups[kind]?.length).map((kind) => <section className="live-search__group" key={kind} aria-label={translateText(titles[kind])}>
       <h3>{translateText(titles[kind])}</h3>
-      {groups[kind].map((item) => <a key={item.id} href={item.href} className="live-search__suggestion" {...link(item.href)}>
+      {groups[kind].map((item) => <a key={item.id} href={localizePath(item.href)} className="live-search__suggestion" {...link(item.href)}>
         <span><strong>{translateText(item.label)}</strong><small>{translateText(departmentNames[item.detail] || item.detail)}</small></span><ArrowUpRight size={14} aria-hidden="true" />
       </a>)}
     </section>)}
     {hasQuery && data?.completions?.length > 0 && <section className="live-search__group"><h3>{translateText("Nastavi pretragu")}</h3>{data.completions.map(item=><button type="button" key={item.query} className="live-search__completion" {...option(()=>onCorrect(item.query))}><span>{translateText(item.label)}</span><small>{translateText(item.count)}</small><ArrowUpRight size={14}/></button>)}</section>}
     <section className="live-search__group live-search__categories" aria-label={translateText("Odeljenja")}><h3>{translateText("Istražite odeljenja")}</h3><div>
-      {categories.map((item) => <a key={item.href} href={item.href} className="live-search__category" {...link(item.href)}>{translateText(item.label)}<ArrowUpRight size={12} aria-hidden="true" /></a>)}
+      {categories.map((item) => <a key={item.href} href={localizePath(item.href)} className="live-search__category" {...link(item.href)}>{translateText(item.label)}<ArrowUpRight size={12} aria-hidden="true" /></a>)}
     </div></section>
   </aside>;
   const renderRight = () => <section className="live-search__matches" aria-label={translateText("Artikli")}>
@@ -80,7 +80,7 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
       <div className={`live-search__layout ${hasQuery ? '' : 'is-idle'}`}>{translateText(left)}{translateText(right)}</div>
     </div>
     {allProps && <footer className="live-search__footer">
-      {allProps && <a href={seeAllHref} className="live-search__all" {...allProps}>{translateText("Prikaži sve (")}{translateText(data.total)})<ArrowRight size={17} aria-hidden="true" /></a>}
+      {allProps && <a href={localizePath(seeAllHref)} className="live-search__all" {...allProps}>{translateText("Prikaži sve (")}{translateText(data.total)})<ArrowRight size={17} aria-hidden="true" /></a>}
     </footer>}
   </>;
 }

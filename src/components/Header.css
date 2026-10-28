@@ -1,16 +1,15 @@
 /* ===== Vars ===== */
 :root {
-  --header-preferences-h: 36px;
   --header-bar-h: 64px;
   --header-search-h: 56px;
-  --header-sticky-offset: calc(var(--header-preferences-h) + var(--header-bar-h) + 48px);
+  --header-sticky-offset: calc(var(--header-bar-h) + 48px);
 }
 
 @media (max-width: 768px) {
   :root {
     --header-bar-h: 56px;
     --header-search-h: 52px;
-    --header-sticky-offset: calc(var(--header-preferences-h) + var(--header-bar-h) + var(--header-search-h));
+    --header-sticky-offset: calc(var(--header-bar-h) + var(--header-search-h));
   }
 }
 
@@ -240,4 +239,8 @@
   font-weight: 800;
   line-height: 1;
   pointer-events: none;
+}
+@media (max-width: 480px) {
+  .header__actions .btn-ghost.pill { width: 36px; height: 36px; padding: 0; }
+  .header__actions .btn-ghost.pill span { display: none; }
 }

@@ -27,7 +27,6 @@ export default function Header() {
 
   return (
     <header className="header card shadow">
-      <StorefrontPreferences />
       <div className="container header__grid">
         <Link to="/" className="header__brand">{translateText("DajaShop")}</Link>
 
@@ -56,6 +55,7 @@ export default function Header() {
           </Link>
 
           <HeaderLoginButton />
+          <StorefrontPreferences />
 
           <button
             ref={anchorRef}

@@ -25,7 +25,7 @@ export default function ProductAlertModal({
   authenticated = false,
   onSubscribed,
 }) {
-  const { t: translateText } = useStorefront();
+  const { t: translateText, localizePath } = useStorefront();
 
   const { policy } = useConsent();
   const [deliveryChannel, setDeliveryChannel] = useState('email');
@@ -250,7 +250,7 @@ export default function ProductAlertModal({
             </>
           ))}
 
-          <p className="product-alert-modal__privacy-note">{translateText("Potvrdom tražite ovo obaveštenje putem ")}{translateText(isEmailChannel ? 'emaila' : 'SMS-a')}{translateText(". Kontakt koristimo samo za tu svrhu; detalji su u ")}<a href="/privacy">{translateText("politici privatnosti")}</a>.
+          <p className="product-alert-modal__privacy-note">{translateText("Potvrdom tražite ovo obaveštenje putem ")}{translateText(isEmailChannel ? 'emaila' : 'SMS-a')}{translateText(". Kontakt koristimo samo za tu svrhu; detalji su u ")}<a href={localizePath('/privacy')}>{translateText("politici privatnosti")}</a>.
           </p>
 
           {isEmailChannel && !newsletterSubscribed && (

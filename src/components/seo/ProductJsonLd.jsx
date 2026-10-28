@@ -2,6 +2,8 @@ import { productSeoDescription } from '../../utils/productSeoDescription.js';
 import React from 'react';
 import JsonLd from './JsonLd.jsx';
 import { commerceSeoConfig, seoConfig } from '../../config/seo.js';
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
+import { localizedSiteUrl } from '../../localization/paths.js';
 
 function collectProductImages(product) {
   const list = [];
@@ -96,6 +98,7 @@ function shippingDetails(price) {
 }
 
 export default function ProductJsonLd({ product, reviews = [], relatedVariants = [], groupId }) {
+  const { language, t } = useStorefront();
   if (!product) {
     return null;
   }
@@ -103,14 +106,14 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
   const imageUrls = collectProductImages(product);
   const seoImageAlt = (product.seo?.imageAltText || '').trim();
   const productName = `${product.brand || ''} ${product.name || ''}`.trim();
-  const description = productSeoDescription(product);
+  const description = productSeoDescription(product, language);
   const image = imageUrls.map((imageItem) => ({
         '@type': 'ImageObject',
         url: imageItem.url,
         name: imageItem.altText || seoImageAlt || productName,
       }));
   const availability = product.availability?.inStock ?? product.inStock;
-  const productUrl = `${seoConfig.siteUrl.replace(/\/$/, '')}/product/${product.slug}`;
+  const productUrl = localizedSiteUrl(`/product/${encodeURIComponent(product.slug)}`, language, seoConfig.siteUrl);
 
   const schema = {
     '@context': 'https://schema.org',
@@ -130,7 +133,7 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
     ...gtinProperty(product.barcode),
     offers: {
       '@type': 'Offer',
-      url: `${seoConfig.siteUrl.replace(/\/$/, '')}/product/${product.slug}`,
+      url: productUrl,
       priceCurrency: 'RSD',
       price: String(product.price ?? ''),
       availability: `https://schema.org/${availability ? 'InStock' : 'OutOfStock'}`,
@@ -171,14 +174,14 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
     const commonBrand = members.every(item => item.brand === product.brand) ? product.brand : null;
     schema.isVariantOf = {
       '@type': 'ProductGroup',
-      name: [commonBrand, commonName.replace(/[\s\-_/]+$/, '')].filter(Boolean).join(' ') || 'Varijante proizvoda',
+      name: [commonBrand, commonName.replace(/[\s\-_/]+$/, '')].filter(Boolean).join(' ') || t('Varijante proizvoda'),
       productGroupID: groupId,
       ...(commonBrand ? { brand: { '@type': 'Brand', name: commonBrand } } : {}),
       ...(variesBy.length ? { variesBy } : {}),
       hasVariant: [
         { '@id': `${productUrl}#product` },
         ...relatedVariants.map(variant => ({ '@type': 'Product',
-          url: `${seoConfig.siteUrl.replace(/\/$/, '')}/product/${variant.slug}` })),
+          url: localizedSiteUrl(`/product/${encodeURIComponent(variant.slug)}`, language, seoConfig.siteUrl) })),
       ],
     };
   }

@@ -13,7 +13,7 @@ export default function HeaderLoginButton() {
   // Ako korisnik NIJE ulogovan
   if (!user) {
     return (
-      <button className="btn-ghost pill" onClick={() => showAuth('login')}>
+      <button className="btn-ghost pill" aria-label={translateText('Prijavi se')} onClick={() => showAuth('login')}>
         <User size={18} />
         <span>{translateText("Prijavi se")}</span>
       </button>

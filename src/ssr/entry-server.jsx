@@ -4,10 +4,12 @@ import { StaticRouter } from 'react-router-dom';
 import App from '../App.jsx';
 import AppProviders from '../AppProviders.jsx';
 import { normalizeProduct } from '../services/dajaPlatform.js';
+import { pathLanguage } from '../localization/paths.js';
 
 export function renderPage(location, snapshot, siteUrl) {
+  const language = pathLanguage(typeof location === 'string' ? location.split(/[?#]/)[0] : location.pathname);
   const data = {
-    ...snapshot, siteUrl,
+    ...snapshot, siteUrl, language,
     catalogPage: snapshot.catalogPage ? { ...snapshot.catalogPage, items: snapshot.catalogPage.items.map(normalizeProduct) } : null,
     homeProducts: snapshot.homeProducts ? { ...snapshot.homeProducts, items: snapshot.homeProducts.items.map(normalizeProduct) } : null,
     catalog: snapshot.catalog?.map(normalizeProduct) ?? null,
@@ -19,11 +21,11 @@ export function renderPage(location, snapshot, siteUrl) {
   // Rendering App as a fragment puts those tags in the root's body markup
   // and no longer populates the legacy Helmet context.
   const documentHtml = renderToString(
-    <html lang="sr">
+    <html lang={language}>
       <head />
       <body>
-        <React.StrictMode><StaticRouter location={location}>
-          <AppProviders pageData={data}><App /></AppProviders>
+        <React.StrictMode><StaticRouter basename={language === 'en' ? '/en' : '/'} location={location}>
+          <AppProviders pageData={data} language={language}><App /></AppProviders>
         </StaticRouter></React.StrictMode>
       </body>
     </html>,
@@ -42,10 +44,12 @@ export function renderDocument(template, rendered) {
   // Keep favicon, viewport, built CSS/module links and CSP in the template
   // head; replace its default SEO tags with React's page-specific metadata.
   return template
+    .replace(/<html\b[^>]*>/i, tag => tag.replace(/\s+lang=["'][^"']*["']/i, '').replace(/>$/, ` lang="${rendered.data.language}">`))
     .replace(/<head\b[^>]*>[\s\S]*?<\/head>/i, templateHead => templateHead
       .replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, '')
       .replace(/<meta\b[^>]*(?:name=["'](?:description|keywords|robots|twitter:[^"']+)["']|property=["']og:[^"']+["'])[^>]*>/gi, '')
       .replace(/<link\b[^>]*rel=["']canonical["'][^>]*>/gi, '')
+      .replace(/<link\b[^>]*rel=["']alternate["'][^>]*>/gi, '')
       .replace(/<\/head>/i, () => `${rendered.head}</head>`))
     .replace('<div id="root"></div>', () => `<div id="root">${rendered.body}</div><script id="daja-page-data" type="application/json">${serialized}</script>`);
 }

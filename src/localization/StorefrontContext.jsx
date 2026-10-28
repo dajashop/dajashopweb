@@ -3,6 +3,8 @@ import { API_BASE_URL } from '../services/apiClient.js';
 import { isNecessaryStorageAllowed, readStoredValue, writeStoredValue } from '../services/consentStorage.js';
 import { formatMoney } from '../utils/currency.js';
 import { translate } from './translate.js';
+import { useLocation } from 'react-router-dom';
+import { localizedPath } from './paths.js';
 
 export const LANGUAGES = [
   { code: 'sr', label: 'Srpski', short: 'SR', flag: 'rs', locale: 'sr-RS' },
@@ -16,24 +18,26 @@ const LANGUAGE_KEY = 'dajashop_language';
 const CURRENCY_KEY = 'dajashop_currency';
 const StorefrontContext = createContext(null);
 
-export function StorefrontProvider({ children }) {
-  // Match Serbian/RSD SSR on the first client render before restoring choices.
-  const [language, updateLanguage] = useState('sr');
+export function StorefrontProvider({ children, initialLanguage = 'sr' }) {
+  // Language follows the URL on the server and client; stored preferences
+  // must never silently change the language of an indexed page.
+  const language = initialLanguage === 'en' ? 'en' : 'sr';
+  const location = useLocation();
   const [currency, updateCurrency] = useState('RSD');
   const [eurRsdRate, setEurRsdRate] = useState(null);
+  const [rateDate, setRateDate] = useState(null);
   const [rateStatus, setRateStatus] = useState('loading');
   const [rateAttempt, setRateAttempt] = useState(0);
-  const chosen = useRef({ language: null, currency: null });
+  const chosen = useRef({ currency: null });
   const restored = useRef(false);
   const locale = LANGUAGES.find(item => item.code === language)?.locale || 'sr-RS';
   const displayCurrency = currency === 'EUR' && eurRsdRate ? 'EUR' : 'RSD';
 
   const setLanguage = useCallback(code => {
     if (!LANGUAGES.some(item => item.code === code)) return;
-    chosen.current.language = code;
-    updateLanguage(code);
     writeStoredValue(LANGUAGE_KEY, code);
-  }, []);
+    if (code !== language) window.location.assign(localizedPath(`${location.pathname}${location.search}${location.hash}`, code));
+  }, [language, location.pathname, location.search, location.hash]);
   const setCurrency = useCallback(code => {
     if (!CURRENCIES.some(item => item.code === code)) return;
     chosen.current.currency = code;
@@ -45,16 +49,13 @@ export function StorefrontProvider({ children }) {
     const restore = () => {
       if (!isNecessaryStorageAllowed() || restored.current) return;
       restored.current = true;
-      const savedLanguage = chosen.current.language || readStoredValue(LANGUAGE_KEY);
       const savedCurrency = chosen.current.currency || readStoredValue(CURRENCY_KEY);
-      if (LANGUAGES.some(item => item.code === savedLanguage)) updateLanguage(savedLanguage);
       if (CURRENCIES.some(item => item.code === savedCurrency)) updateCurrency(savedCurrency);
-      if (chosen.current.language) writeStoredValue(LANGUAGE_KEY, chosen.current.language);
+      writeStoredValue(LANGUAGE_KEY, language);
       if (chosen.current.currency) writeStoredValue(CURRENCY_KEY, chosen.current.currency);
     };
     const sync = event => {
       if (!isNecessaryStorageAllowed()) return;
-      if (event.key === LANGUAGE_KEY && LANGUAGES.some(item => item.code === event.newValue)) updateLanguage(event.newValue);
       if (event.key === CURRENCY_KEY && CURRENCIES.some(item => item.code === event.newValue)) updateCurrency(event.newValue);
     };
     restore();
@@ -64,7 +65,7 @@ export function StorefrontProvider({ children }) {
       window.removeEventListener('daja:consent-state', restore);
       window.removeEventListener('storage', sync);
     };
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -76,7 +77,7 @@ export function StorefrontProvider({ children }) {
       .then(data => {
         const rate = Number(data.eurRsdRate);
         if (!Number.isFinite(rate) || rate <= 0) throw new Error('Invalid exchange rate');
-        if (active) { setEurRsdRate(rate); setRateStatus('ready'); }
+        if (active) { setEurRsdRate(rate); setRateDate(data.asOf || null); setRateStatus('ready'); }
       })
       .catch(() => { if (active) { setEurRsdRate(null); setRateStatus('error'); } })
       .finally(() => clearTimeout(timeout));
@@ -89,11 +90,14 @@ export function StorefrontProvider({ children }) {
   const retryRate = useCallback(() => setRateAttempt(value => value + 1), []);
   useEffect(() => { document.documentElement.lang = language; }, [language]);
   useEffect(() => {
-    const interval = setInterval(retryRate, 60 * 60 * 1000);
-    return () => clearInterval(interval);
+    const interval = setInterval(retryRate, 15 * 60 * 1000);
+    const visible = () => { if (document.visibilityState === 'visible') retryRate(); };
+    document.addEventListener('visibilitychange', visible);
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', visible); };
   }, [retryRate]);
-  const value = useMemo(() => ({ language, locale, currency, displayCurrency, setLanguage, setCurrency, eurRsdRate, rateStatus, retryRate, t, money, moneyRsd }),
-    [language, locale, currency, displayCurrency, setLanguage, setCurrency, eurRsdRate, rateStatus, retryRate, t, money, moneyRsd]);
+  const localizePath = useCallback(value => localizedPath(value, language), [language]);
+  const value = useMemo(() => ({ language, locale, currency, displayCurrency, setLanguage, setCurrency, eurRsdRate, rateDate, rateStatus, retryRate, t, money, moneyRsd, localizePath }),
+    [language, locale, currency, displayCurrency, setLanguage, setCurrency, eurRsdRate, rateDate, rateStatus, retryRate, t, money, moneyRsd, localizePath]);
   return <StorefrontContext.Provider value={value}>{children}</StorefrontContext.Provider>;
 }
 

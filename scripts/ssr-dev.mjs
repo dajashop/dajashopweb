@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { loadEnv } from 'vite';
 import { isBrandPath } from '../src/utils/catalogUrls.js';
 import { PUBLIC_SITE_URL } from '../src/config/publicSite.js';
+import { pathLanguage, stripLanguagePrefix, localizedPath } from '../src/localization/paths.js';
 
 export default function ssrDev() {
   return {
@@ -13,7 +14,7 @@ export default function ssrDev() {
       const apiBase = (env.DAJA_API_BASE_URL || env.VITE_DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url, 'http://localhost');
-        const path = url.pathname.replace(/\/+$/, '') || '/';
+        const path = stripLanguagePrefix(url.pathname).replace(/\/+$/, '') || '/';
         if (!['GET', 'HEAD'].includes(req.method)) return next();
         try {
           // Load application modules through Vite so import.meta.env is
@@ -23,7 +24,7 @@ export default function ssrDev() {
           const snapshot = await loadPage(url, apiBase);
           if (snapshot.missing) { res.statusCode = 404; res.end('Proizvod nije pronađen.'); return; }
           if (snapshot.redirectTo) {
-            res.writeHead(301, { Location: snapshot.redirectTo }); res.end(); return;
+            res.writeHead(301, { Location: localizedPath(snapshot.redirectTo, pathLanguage(url.pathname)) }); res.end(); return;
           }
           const template = await server.transformIndexHtml(req.url,
             await readFile(resolve(server.config.root, 'index.html'), 'utf8'));

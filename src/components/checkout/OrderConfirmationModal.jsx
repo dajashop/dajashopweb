@@ -33,7 +33,7 @@ function toVocative(name) {
 }
 
 function OrderConfirmationModal({ order, money, onClose }) {
-  const { t: translateText, language, displayCurrency, moneyRsd } = useStorefront();
+  const { t: translateText, language, displayCurrency, moneyRsd, localizePath } = useStorefront();
 
   const initialFocusRef = useRef(null);
   const orderId = order.id;
@@ -245,7 +245,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
 
         <div className="order-actions">
           <a
-            href="/"
+            href={localizePath('/')}
             className="btn-primary checkout-btn"
             ref={initialFocusRef}
             onClick={onClose}

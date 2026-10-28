@@ -8,7 +8,7 @@ import { useConsent } from '../../context/ConsentContext.jsx';
 import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
 
 export default function NewsletterModal() {
-  const { t: translateText } = useStorefront();
+  const { t: translateText, localizePath } = useStorefront();
 
   const { preferencesAllowed, policy } = useConsent();
   const [isVisible, setIsVisible] = useState(false);
@@ -140,7 +140,7 @@ export default function NewsletterModal() {
                     onChange={(event) => setEmail(event.target.value)}
                     disabled={status === 'loading'}
                   />
-                  <p className="newsletter-consent-notice">{translateText("Klikom na „Prijavi me” saglasni ste da vam DajaShop šalje email obaveštenja o akcijama i ponudama. Više u ")}<a href="/privacy">{translateText("Politici privatnosti")}</a>.
+                  <p className="newsletter-consent-notice">{translateText("Klikom na „Prijavi me” saglasni ste da vam DajaShop šalje email obaveštenja o akcijama i ponudama. Više u ")}<a href={localizePath('/privacy')}>{translateText("Politici privatnosti")}</a>.
                   </p>
                   {(errorMsg || status === 'error') && (
                     <span className="newsletter-message error-message">

@@ -9,10 +9,10 @@ import { ConsentProvider } from './context/ConsentProvider.jsx';
 import { PageDataProvider } from './ssr/PageData.jsx';
 import { StorefrontProvider } from './localization/StorefrontContext.jsx';
 
-export default function AppProviders({ children, pageData = null, helmetContext }) {
+export default function AppProviders({ children, pageData = null, helmetContext, language = 'sr' }) {
   return (
     <PageDataProvider data={pageData}>
-      <StorefrontProvider>
+      <StorefrontProvider initialLanguage={language}>
       <ConsentProvider><AuthProvider><ThemeProvider><CartProvider>
         <FlashProvider><UndoProvider><WishlistProvider>
           <HelmetProvider context={helmetContext}>{children}</HelmetProvider>

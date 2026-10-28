@@ -4,6 +4,7 @@ import { configuredFilterParams } from '../utils/filterConfiguration.js';
 import { catalogPageRequest } from '../utils/catalogPageRequest.js';
 import { isBrandPath } from '../utils/catalogUrls.js';
 import { serviceCatalog } from '../data/serviceCatalog.js';
+import { stripLanguagePrefix } from '../localization/paths.js';
 
 export const PUBLIC_PATHS = new Set([
   '/', '/catalog', '/muski-satovi', '/zenski-satovi', '/naocare',
@@ -24,7 +25,7 @@ export function publicCacheSeconds(data, maximum = 60) {
 }
 
 export async function loadPage(url, apiBase, readProduct, readCatalog, readRelated) {
-  const path = url.pathname.replace(/\/+$/, '') || '/';
+  const path = stripLanguagePrefix(url.pathname).replace(/\/+$/, '') || '/';
   const api = async (route, optional = false) => {
     try {
       const response = await fetch(`${apiBase}${route}`, { signal: AbortSignal.timeout(optional ? 3000 : 8000) });

@@ -49,7 +49,7 @@ const DEPARTMENT_PATHS = {
 };
 
 export default function Product() {
-  const { t: translateText } = useStorefront();
+  const { t: translateText, language } = useStorefront();
 
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -132,8 +132,8 @@ export default function Product() {
     p.thumbnailUrl ||
     p.images?.[0]?.thumb ||
     p.image;
-  const seoTitle = p.seo?.metaTitle || productTitle;
-  const seoDescription = productSeoDescription(p);
+  const seoTitle = (language === 'en' ? p.attributes?._translations?.en?.metaTitle : p.seo?.metaTitle) || productTitle;
+  const seoDescription = productSeoDescription(p, language);
   const seoKeywords = p.seo?.metaKeywords || undefined;
   const seoImage = p.seo?.ogImage || productImage;
   const department = p.department || 'satovi';

@@ -1,18 +1,16 @@
-.storefront-preferences-bar {
-  border-bottom: 1px solid var(--color-border, #d2d2d7);
-  background: var(--color-bg, #fff);
-}
-.storefront-preferences { min-height: 36px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
-.storefront-preferences__divider { height: 14px; width: 1px; background: var(--color-border, #d2d2d7); }
-.storefront-preference { position: relative; }
-.storefront-preference__trigger { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; border: 0; padding: 4px 8px; background: transparent; color: var(--color-text); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.storefront-preference { position: relative; z-index: 60; }
+.storefront-preference__trigger { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0; border: 1px solid var(--color-border, #d2d2d7); border-radius: 10px; padding: 5px; background: transparent; color: var(--color-text); cursor: pointer; }
 .storefront-preference__trigger:hover, .storefront-preference__option:hover, .storefront-preference__option:focus-visible { background: var(--color-surface, #f5f5f7); }
 .storefront-preference__trigger:focus-visible, .storefront-preference__option:focus-visible, .storefront-preference__retry:focus-visible { outline: 2px solid var(--color-text); outline-offset: -2px; border-radius: 5px; }
-.storefront-flag { display: block; width: 22px; height: 16px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px #0002; flex-shrink: 0; }
-.storefront-preference__panel { position: absolute; top: calc(100% + 4px); right: 0; z-index: 80; width: 248px; padding: 5px; border: 1px solid var(--color-border, #d2d2d7); border-radius: 10px; background: var(--color-bg, #fff); color: var(--color-text); box-shadow: 0 8px 24px #0002; }
-.storefront-preference__option { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 42px; border: 0; border-radius: 6px; padding: 8px 10px; background: transparent; color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.storefront-flag { display: block; width: 24px; height: 16px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px #0002; flex-shrink: 0; }
+.storefront-preference__panel { position: absolute; top: calc(100% + 9px); right: 0; z-index: 80; width: min(272px, calc(100vw - 24px)); max-height: calc(100dvh - 88px); overflow-y: auto; padding: 8px; border: 1px solid var(--color-border, #d2d2d7); border-radius: 12px; background: var(--color-bg, #fff); color: var(--color-text); box-shadow: 0 8px 24px #0002; }
+.storefront-preference__heading { margin: 5px 10px; color: var(--color-muted); font-size: 12px; font-weight: 600; }
+.storefront-preference__currency { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--color-border, #d2d2d7); }
+.storefront-preference__option { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 42px; border: 0; border-radius: 6px; padding: 8px 10px; background: transparent; color: inherit; font: inherit; font-size: 13px; text-align: left; text-decoration: none; cursor: pointer; }
 .storefront-preference__option:disabled { opacity: .5; cursor: wait; }
 .storefront-preference__code { margin-left: auto; color: var(--color-muted); font-size: 11px; }
-.storefront-preference__note { margin: 5px 8px 3px; padding-top: 9px; border-top: 1px solid var(--color-border, #d2d2d7); color: var(--color-muted); font-size: 11px; line-height: 1.6; }
-.storefront-preference__retry { border: 0; background: transparent; color: inherit; font: inherit; font-size: 12px; text-decoration: underline; padding: 6px 8px; }
-@media (max-width: 360px) { .storefront-preference:first-child .storefront-preference__panel { right: -80px; } }
+.storefront-preference__rate { display: grid; gap: 3px; margin: 8px 10px; font-size: 12px; line-height: 1.5; }
+.storefront-preference__rate a { color: var(--color-muted); font-size: 11px; text-decoration: underline; }
+.storefront-preference__note { margin: 5px 10px 3px; padding-top: 9px; border-top: 1px solid var(--color-border, #d2d2d7); color: var(--color-muted); font-size: 11px; line-height: 1.6; }
+.storefront-preference__retry { border: 0; background: transparent; color: inherit; font: inherit; font-size: 12px; text-decoration: underline; padding: 6px 10px; }
+@media (max-width: 480px) { .storefront-preference__panel { right: -48px; } }

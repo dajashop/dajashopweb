@@ -3,5 +3,6 @@ export const EMAIL_LINK_PATHS = new Set([
 ]);
 
 export function isEmailLinkPath(pathname) {
-  return EMAIL_LINK_PATHS.has(pathname.replace(/\/$/, '') || '/');
+  return EMAIL_LINK_PATHS.has(stripLanguagePrefix(pathname).replace(/\/$/, '') || '/');
 }
+import { stripLanguagePrefix } from '../localization/paths.js';
