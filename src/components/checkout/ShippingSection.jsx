@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -20,6 +21,8 @@ export default function ShippingSection({
   orderNote,
   setOrderNote,
 }) {
+  const { t: translateText } = useStorefront();
+
   const reduceMotion = useReducedMotion();
   const detailTransition = {
     height: { duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] },
@@ -32,7 +35,7 @@ export default function ShippingSection({
       <section className="checkout-section card glass">
         <div className="section-header">
           <div className="step-badge">2</div>
-          <h2>Način isporuke</h2>
+          <h2>{translateText("Način isporuke")}</h2>
         </div>
         <div className="shipping-options">
           <label
@@ -43,11 +46,11 @@ export default function ShippingSection({
             <div className="radio-info">
               <Truck size={20} className="text-primary" />
               <div>
-                <span className="radio-title">Isporuka kurirskom službom</span>
+                <span className="radio-title">{translateText("Isporuka kurirskom službom")}</span>
                 <span className="radio-desc">
-                  {isFreeShipping
+                  {translateText(isFreeShipping
                     ? 'Besplatna dostava'
-                    : `Cena: ${money(COURIER_COST)}`}
+                    : `Cena: ${money(COURIER_COST)}`)}
                 </span>
               </div>
             </div>
@@ -60,9 +63,7 @@ export default function ShippingSection({
                     minWidth: '100px',
                     display: 'inline-block',
                   }}
-                >
-                  Besplatna
-                </span>
+                >{translateText("Besplatna")}</span>
               ) : (
                 <span>{money(COURIER_COST)}</span>
               )}
@@ -87,18 +88,15 @@ export default function ShippingSection({
             <div className="radio-info">
               <MapPin size={20} className="text-primary" />
               <div>
-                <span className="radio-title">Preuzimanje u prodavnici</span>
-                <span className="radio-desc">
-                                    Niš, Podzemni prolaz lokal C31 (Uvek
-                  besplatno)
-                </span>
+                <span className="radio-title">{translateText("Preuzimanje u prodavnici")}</span>
+                <span className="radio-desc">{translateText("Niš, Podzemni prolaz lokal C31 (Uvek besplatno)")}</span>
               </div>
             </div>
             <div
               className="radio-price"
               style={{ textAlign: 'right', minWidth: '100px' }}
             >
-              <span className="text-success">Besplatna</span>
+              <span className="text-success">{translateText("Besplatna")}</span>
             </div>
             <input
               type="radio"
@@ -132,9 +130,7 @@ export default function ShippingSection({
                   size={18}
                   // Koristim direktan stil ovde jer su klase nepoznate
                   style={{ color: 'var(--color-primary)' }}
-                />
-                Dodatne instrukcije za kurira (Opciono)
-              </label>
+                />{translateText("Dodatne instrukcije za kurira (Opciono)")}</label>
 
               <div
                 // Imitacija input-group stila korišćenjem tematskih varijabli
@@ -144,7 +140,7 @@ export default function ShippingSection({
                   id="order-note-textarea"
                   value={orderNote}
                   onChange={(e) => setOrderNote(e.target.value)}
-                  placeholder="Npr. interfon ne radi, molimo Vas da nas pozovete 10 minuta pre isporuke, ili ostavite paket kod komšije (broj 15)."
+                  placeholder={translateText("Npr. interfon ne radi, molimo Vas da nas pozovete 10 minuta pre isporuke, ili ostavite paket kod komšije (broj 15).")}
                   rows={3}
                   maxLength={200}
                   className="w-full p-4 bg-transparent focus:outline-none text-[var(--color-text)] placeholder:text-[var(--color-muted)] resize-none"
@@ -155,10 +151,7 @@ export default function ShippingSection({
                   }}
                 />
               </div>
-              <p className="text-xs text-[var(--color-muted)] mt-2">
-                Unesite do 200 karaktera. Detaljne instrukcije pomažu da Vaša
-                isporuka protekne glatko i efikasno.
-              </p>
+              <p className="text-xs text-[var(--color-muted)] mt-2">{translateText("Unesite do 200 karaktera. Detaljne instrukcije pomažu da Vaša isporuka protekne glatko i efikasno.")}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -175,7 +168,7 @@ export default function ShippingSection({
             style={{ overflow: 'hidden', padding: 0 }}
           >
             <div style={{ padding: '24px' }}>
-              <h3>Lokacija prodavnice:</h3>
+              <h3>{translateText("Lokacija prodavnice:")}</h3>
               <div className="location-box" style={{ marginTop: '12px' }}>
                 <p
                   style={{
@@ -183,19 +176,14 @@ export default function ShippingSection({
                     fontWeight: '700',
                     color: 'var(--text)',
                   }}
-                >
-                  Daja Shop Niš
-                </p>
-                <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-                                    Podzemni prolaz lokal C31, Obrenovićeva bb,
-                  Niš
-                </p>
+                >{translateText("Daja Shop Niš")}</p>
+                <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{translateText("Podzemni prolaz lokal C31, Obrenovićeva bb, Niš")}</p>
               </div>
             </div>
             <div className="map-container">
               <GoogleMapEmbed
                 className="map-iframe"
-                title="Daja Shop Lokacija"
+                title={translateText("Daja Shop Lokacija")}
                 width="100%"
                 height="100%"
                 loading="lazy"

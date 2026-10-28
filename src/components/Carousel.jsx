@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import "./Carousel.css";
 
@@ -8,6 +9,8 @@ export default function Carousel({
   arrows = true,
   showDots = true,
 }) {
+  const { t: translateText } = useStorefront();
+
   const items = React.Children.toArray(children);
   const [idx, setIdx] = useState(0);
   const timer = useRef(null);
@@ -34,7 +37,7 @@ export default function Carousel({
       >
         {items.map((it, i) => (
           <div className="carousel__slide" key={i} aria-hidden={i !== idx}>
-            {it}
+            {translateText(it)}
           </div>
         ))}
       </div>
@@ -44,14 +47,14 @@ export default function Carousel({
           <button
             className="carousel__arrow left"
             onClick={prev}
-            aria-label="Prethodno"
+            aria-label={translateText("Prethodno")}
           >
             ‹
           </button>
           <button
             className="carousel__arrow right"
             onClick={next}
-            aria-label="Sledeće"
+            aria-label={translateText("Sledeće")}
           >
             ›
           </button>
@@ -65,7 +68,7 @@ export default function Carousel({
               key={i}
               className={`dot ${i === idx ? "is-active" : ""}`}
               onClick={() => goto(i)}
-              aria-label={`Idi na slajd ${i + 1}`}
+              aria-label={translateText(`Idi na slajd ${i + 1}`)}
             />
           ))}
         </div>

@@ -163,14 +163,17 @@ export function filterConfiguredProducts(products, params, configuration, { fixe
     });
   });
 }
-export function configuredFilterChips(params, configuration) {
+export function configuredFilterChips(params, configuration, { money, t = value => value } = {}) {
   return filterLeaves(configuration).flatMap((node) => {
     if (node.style === 'range') {
       const min = params.get(rangeKey(node, 'min')); const max = params.get(rangeKey(node, 'max'));
       if (min === null && max === null) return [];
-      return [{ key: `range:${node.id}`, val: null, label: `${node.title}: ${min === null ? '0' : Number(min).toLocaleString('sr-Latn')}–${max === null ? '∞' : Number(max).toLocaleString('sr-Latn')} ${node.unit}` }];
+      const isPrice = node.sources[0] === 'price' && money;
+      const from = isPrice ? money(min === null ? 0 : min) : min === null ? '0' : Number(min).toLocaleString('sr-Latn');
+      const to = max === null ? '∞' : isPrice ? money(max) : Number(max).toLocaleString('sr-Latn');
+      return [{ key: `range:${node.id}`, val: null, label: `${t(node.title)}: ${from}–${to}${isPrice ? '' : ` ${node.unit}`}` }];
     }
-    return node.options.filter((option) => option.visible && params.getAll(selectionKey(node)).includes(option.id)).map((option) => ({ key: selectionKey(node), val: option.id, label: `${node.title}: ${option.label}` }));
+    return node.options.filter((option) => option.visible && params.getAll(selectionKey(node)).includes(option.id)).map((option) => ({ key: selectionKey(node), val: option.id, label: `${t(node.title)}: ${t(option.label)}` }));
   });
 }
 export function validateFilterConfiguration(configuration) {

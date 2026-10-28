@@ -1,15 +1,18 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React from 'react';
 import './HomeProductCard.css';
 import Link from '../ProductLink.jsx';
 import { useCart } from '../../hooks/useCart.js';
 import { useFlash } from '../../hooks/useFlash.js';
-import { money } from '../../utils/currency.js';
+
 
 /**
  * Minimal product card for the Home page.
  * Intentionally lighter than the global ProductCard.
  */
 export default function HomeProductCard({ product }) {
+  const { t: translateText, money } = useStorefront();
+
   const { dispatch } = useCart();
   const { flash } = useFlash();
 
@@ -57,33 +60,29 @@ export default function HomeProductCard({ product }) {
   return (
     <article className={`homeCard${product.department === 'naocare' ? ' homeCard--eyewear' : ''}`}>
       <Link to={`/product/${slug}`} className="homeCard__img">
-        <img src={primaryImg} alt={name} loading="lazy" />
+        <img src={primaryImg} alt={translateText(name)} loading="lazy" />
       </Link>
 
       <div className="homeCard__body">
         <div className="homeCard__meta">
-          {brand && <span className="homeCard__brand">{brand}</span>}
+          {brand && <span className="homeCard__brand">{translateText(brand)}</span>}
           {(gender || category) && (
             <span className="homeCard__pill">
-              {gender || 'Unisex'}
-              {category ? ` · ${category}` : ''}
+              {translateText(gender || 'Unisex')}
+              {translateText(category ? ` · ${category}` : '')}
             </span>
           )}
         </div>
 
         <Link to={`/product/${slug}`} className="homeCard__name">
-          {name}
+          {translateText(name)}
         </Link>
 
         <div className="homeCard__foot">
           <span className="homeCard__price">{money(price)}</span>
           <div className="homeCard__actions">
-            <Link to={`/product/${slug}`} className="btn btn--ghost-sm">
-              Detalji
-            </Link>
-            <button type="button" className="btn btn--primary-sm" onClick={handleAdd}>
-              Dodaj
-            </button>
+            <Link to={`/product/${slug}`} className="btn btn--ghost-sm">{translateText("Detalji")}</Link>
+            <button type="button" className="btn btn--primary-sm" onClick={handleAdd}>{translateText("Dodaj")}</button>
           </div>
         </div>
       </div>

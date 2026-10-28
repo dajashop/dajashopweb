@@ -1,12 +1,15 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React from 'react';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function PaymentSection({ payMethod, setPayMethod }) {
+  const { t: translateText } = useStorefront();
+
   return (
     <section className="checkout-section card glass">
       <div className="section-header">
         <div className="step-badge">3</div>
-        <h2>Način plaćanja</h2>
+        <h2>{translateText("Način plaćanja")}</h2>
       </div>
       <div className="payment-options">
         <label
@@ -15,10 +18,8 @@ export default function PaymentSection({ payMethod, setPayMethod }) {
           <div className="radio-info">
             <div className="icon-box">💵</div>
             <div>
-              <span className="radio-title">Plaćanje pouzećem</span>
-              <span className="radio-desc">
-                Platite kuriru prilikom preuzimanja
-              </span>
+              <span className="radio-title">{translateText("Plaćanje pouzećem")}</span>
+              <span className="radio-desc">{translateText("Platite kuriru prilikom preuzimanja")}</span>
             </div>
           </div>
           <input

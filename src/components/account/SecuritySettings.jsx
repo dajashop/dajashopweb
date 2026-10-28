@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // src/components/account/SecuritySettings.jsx
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
@@ -37,6 +38,8 @@ const statusVariants = {
 };
 
 const SecuritySettings = () => {
+  const { t: translateText } = useStorefront();
+
   const { user, linkPasskey } = useAuth();
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
 
@@ -47,7 +50,7 @@ const SecuritySettings = () => {
       customerApi.linkOAuth('google');
     } catch (err) {
       console.error(err);
-      alert('Greska: ' + err.message);
+      alert(translateText('Greska: ' + err.message));
     }
   };
 
@@ -60,10 +63,10 @@ const SecuritySettings = () => {
 
       await linkPasskey(passkeyName);
 
-      alert('✅ Uspešno! Vaš otisak prsta/FaceID je povezan sa nalogom.');
+      alert(translateText('✅ Uspešno! Vaš otisak prsta/FaceID je povezan sa nalogom.'));
     } catch (err) {
       console.error(err);
-      alert('❌ Greška: ' + err.message);
+      alert(translateText('❌ Greška: ' + err.message));
     } finally {
       setIsPasskeyLoading(false);
     }
@@ -106,9 +109,7 @@ const SecuritySettings = () => {
       initial="hidden"
       animate="visible"
     >
-      <motion.h2 className="text-xl font-semibold mb-4" variants={itemVariants}>
-        Sigurnost i Prijavljivanje
-      </motion.h2>
+      <motion.h2 className="text-xl font-semibold mb-4" variants={itemVariants}>{translateText("Sigurnost i Prijavljivanje")}</motion.h2>
 
       {/* --- SEKCIJA 1: GOOGLE --- */}
       <motion.div
@@ -118,10 +119,8 @@ const SecuritySettings = () => {
         <div className="flex items-center gap-3">
           <GoogleIcon />
           <div>
-            <span className="font-medium block">Google Nalog</span>
-            <span className="text-xs text-gray-500">
-              Koristite Google za bržu prijavu.
-            </span>
+            <span className="font-medium block">{translateText("Google Nalog")}</span>
+            <span className="text-xs text-gray-500">{translateText("Koristite Google za bržu prijavu.")}</span>
           </div>
         </div>
 
@@ -135,8 +134,7 @@ const SecuritySettings = () => {
               exit="exit"
               className="text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full text-sm border border-green-200 flex items-center gap-1"
             >
-              <Check size={14} /> Povezano
-            </motion.span>
+              <Check size={14} />{translateText(" Povezano")}</motion.span>
           ) : (
             <motion.button
               key="google-connect-btn"
@@ -147,9 +145,7 @@ const SecuritySettings = () => {
               onClick={handleGoogleLink}
               className="text-blue-600 hover:underline text-sm font-medium"
               disabled={!user}
-            >
-              Poveži sada
-            </motion.button>
+            >{translateText("Poveži sada")}</motion.button>
           )}
         </AnimatePresence>
       </motion.div>
@@ -162,10 +158,8 @@ const SecuritySettings = () => {
         <div className="flex items-center gap-3">
           <LockKeyhole size={24} className="text-gray-900" />
           <div>
-            <span className="font-medium block">Biometrija (Passkey)</span>
-            <span className="text-xs text-gray-500">
-              Prijavite se otiskom prsta ili licem.
-            </span>
+            <span className="font-medium block">{translateText("Biometrija (Passkey)")}</span>
+            <span className="text-xs text-gray-500">{translateText("Prijavite se otiskom prsta ili licem.")}</span>
           </div>
         </div>
 
@@ -179,8 +173,7 @@ const SecuritySettings = () => {
               exit="exit"
               className="text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full text-sm border border-green-200 flex items-center gap-1"
             >
-              <Check size={14} /> Povezano
-            </motion.span>
+              <Check size={14} />{translateText(" Povezano")}</motion.span>
           ) : (
             <motion.button
               key="passkey-add-btn"
@@ -200,8 +193,7 @@ const SecuritySettings = () => {
                 <Loader2 size={18} className="animate-spin" />
               ) : (
                 <>
-                  <LockKeyhole size={18} /> Dodaj Passkey
-                </>
+                  <LockKeyhole size={18} />{translateText(" Dodaj Passkey")}</>
               )}
             </motion.button>
           )}

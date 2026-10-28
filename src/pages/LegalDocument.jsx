@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import SEOHead from '../components/seo/SEOHead.jsx';
@@ -11,6 +12,8 @@ const fallbackTitles = {
 };
 
 export default function LegalDocument({ kind }) {
+  const { t: translateText } = useStorefront();
+
   const [document, setDocument] = useState(null);
   const [error, setError] = useState('');
 
@@ -29,23 +32,23 @@ export default function LegalDocument({ kind }) {
   const title = document?.title || fallbackTitles[kind];
   return (
     <article className="legal-document container">
-      <SEOHead title={title} noIndex={true} />
+      <SEOHead title={translateText(title)} noIndex={true} />
       <header>
-        <h1>{title}</h1>
-        {document?.updatedAt && <p>Verzija / datum: {document.version || document.updatedAt}</p>}
+        <h1>{translateText(title)}</h1>
+        {document?.updatedAt && <p>{translateText("Verzija / datum: ")}{translateText(document.version || document.updatedAt)}</p>}
       </header>
-      {!document && !error && <div className="legal-document__loading"><Loader2 className="animate-spin" size={22} /> Učitavanje dokumenta…</div>}
-      {error && <p className="legal-document__error">{error}</p>}
+      {!document && !error && <div className="legal-document__loading"><Loader2 className="animate-spin" size={22} />{translateText(" Učitavanje dokumenta…")}</div>}
+      {error && <p className="legal-document__error">{translateText(error)}</p>}
       {document?.ready === false && (
         <aside className="legal-document__draft">
           <AlertTriangle size={20} />
-          <span>Ovaj pravni dokument je tehnički nacrt i ne sme biti objavljen kao konačna politika dok ga ne odobrite.</span>
+          <span>{translateText("Ovaj pravni dokument je tehnički nacrt i ne sme biti objavljen kao konačna politika dok ga ne odobrite.")}</span>
         </aside>
       )}
       {document?.sections?.map((section) => (
         <section key={section.title}>
-          <h2>{section.title}</h2>
-          {section.body?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+          <h2>{translateText(section.title)}</h2>
+          {section.body?.map((paragraph) => <p key={paragraph}>{translateText(paragraph)}</p>)}
         </section>
       ))}
     </article>

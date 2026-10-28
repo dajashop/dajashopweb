@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
@@ -5,6 +6,8 @@ import { RotateCcw, X } from "lucide-react";
 import "./UndoToast.css";
 
 export default function UndoToast({ visible, item, onUndo, onClose, duration = 6000 }) {
+  const { t: translateText } = useStorefront();
+
   // Tajmer za auto-zatvaranje
   useEffect(() => {
     if (!visible) return;
@@ -24,16 +27,16 @@ export default function UndoToast({ visible, item, onUndo, onClose, duration = 6
           role="alert"
         >
           <div className="undo-content">
-            <span className="undo-label">Uklonjeno:</span>
-            <span className="undo-name">{item.name}</span>
+            <span className="undo-label">{translateText("Uklonjeno:")}</span>
+            <span className="undo-name">{translateText(item.name)}</span>
           </div>
 
           <div className="undo-actions">
             <button onClick={onUndo} className="btn-undo">
               <RotateCcw size={14} />
-              <span>Vrati</span>
+              <span>{translateText("Vrati")}</span>
             </button>
-            <button onClick={onClose} className="btn-close" aria-label="Zatvori">
+            <button onClick={onClose} className="btn-close" aria-label={translateText("Zatvori")}>
               <X size={16} />
             </button>
           </div>

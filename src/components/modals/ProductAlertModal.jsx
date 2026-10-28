@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Bell, X } from 'lucide-react';
@@ -24,6 +25,8 @@ export default function ProductAlertModal({
   authenticated = false,
   onSubscribed,
 }) {
+  const { t: translateText } = useStorefront();
+
   const { policy } = useConsent();
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [email, setEmail] = useState('');
@@ -167,19 +170,19 @@ export default function ProductAlertModal({
           type="button"
           className="product-alert-modal__close"
           onClick={onClose}
-          aria-label="Zatvori"
+          aria-label={translateText("Zatvori")}
           disabled={submitting}
         >
           <X size={20} />
         </button>
 
         <div className="product-alert-modal__icon"><Bell size={22} /></div>
-        <h2 id="product-alert-modal-title">Obavesti me</h2>
-        <p>Javićemo vam {ALERT_LABELS[type]}.</p>
+        <h2 id="product-alert-modal-title">{translateText("Obavesti me")}</h2>
+        <p>{translateText("Javićemo vam ")}{translateText(ALERT_LABELS[type])}.</p>
 
         <form onSubmit={handleSubmit}>
           <fieldset className="product-alert-modal__channels">
-            <legend>Način obaveštavanja</legend>
+            <legend>{translateText("Način obaveštavanja")}</legend>
             <label>
               <input
                 type="radio"
@@ -188,9 +191,7 @@ export default function ProductAlertModal({
                 checked={isEmailChannel}
                 onChange={() => setDeliveryChannel('email')}
                 disabled={submitting}
-              />
-              Email
-            </label>
+              />{translateText("Email")}</label>
             <label>
               <input
                 type="radio"
@@ -199,22 +200,18 @@ export default function ProductAlertModal({
                 checked={!isEmailChannel}
                 onChange={() => setDeliveryChannel('sms')}
                 disabled={submitting}
-              />
-              SMS
-            </label>
+              />{translateText("SMS")}</label>
           </fieldset>
 
-          {isEmailChannel && reusableGuestEmail ? (
+          {translateText(isEmailChannel && reusableGuestEmail ? (
             <div className="product-alert-modal__saved-contact">
-              <strong>Email za obaveštenje</strong>
-              <span>{maskedEmail || 'Sačuvana email adresa'}</span>
-              <button type="button" onClick={() => setUseAnotherEmail(true)} disabled={submitting}>
-                Koristi drugi email
-              </button>
+              <strong>{translateText("Email za obaveštenje")}</strong>
+              <span>{translateText(maskedEmail || 'Sačuvana email adresa')}</span>
+              <button type="button" onClick={() => setUseAnotherEmail(true)} disabled={submitting}>{translateText("Koristi drugi email")}</button>
             </div>
           ) : isEmailChannel ? (
             <>
-              <label htmlFor="product-alert-subscription-email">Email adresa</label>
+              <label htmlFor="product-alert-subscription-email">{translateText("Email adresa")}</label>
               <input
                 id="product-alert-subscription-email"
                 type="email"
@@ -227,7 +224,7 @@ export default function ProductAlertModal({
                     setNewsletterSubscribed(false);
                   }
                 }}
-                placeholder="vas@email.com"
+                placeholder={translateText("vas@email.com")}
                 autoComplete="email"
                 required={needsEmailInput}
                 readOnly={authenticated}
@@ -237,7 +234,7 @@ export default function ProductAlertModal({
             </>
           ) : (
             <>
-              <label htmlFor="product-alert-subscription-phone">Broj telefona</label>
+              <label htmlFor="product-alert-subscription-phone">{translateText("Broj telefona")}</label>
               <input
                 id="product-alert-subscription-phone"
                 type="tel"
@@ -251,11 +248,9 @@ export default function ProductAlertModal({
                 autoFocus
               />
             </>
-          )}
+          ))}
 
-          <p className="product-alert-modal__privacy-note">
-            Potvrdom tražite ovo obaveštenje putem {isEmailChannel ? 'emaila' : 'SMS-a'}. Kontakt
-            koristimo samo za tu svrhu; detalji su u <a href="/privacy">politici privatnosti</a>.
+          <p className="product-alert-modal__privacy-note">{translateText("Potvrdom tražite ovo obaveštenje putem ")}{translateText(isEmailChannel ? 'emaila' : 'SMS-a')}{translateText(". Kontakt koristimo samo za tu svrhu; detalji su u ")}<a href="/privacy">{translateText("politici privatnosti")}</a>.
           </p>
 
           {isEmailChannel && !newsletterSubscribed && (
@@ -266,7 +261,7 @@ export default function ProductAlertModal({
                 onChange={(event) => setSubscribeToEmailMarketing(event.target.checked)}
                 disabled={submitting}
               />
-              <span>Želim da dobijam novosti, ponude i savete putem emaila.</span>
+              <span>{translateText("Želim da dobijam novosti, ponude i savete putem emaila.")}</span>
             </label>
           )}
 
@@ -278,13 +273,13 @@ export default function ProductAlertModal({
                 onChange={(event) => setSubscribeToSmsMarketing(event.target.checked)}
                 disabled={submitting}
               />
-              <span>Želim da dobijam novosti i ponude putem SMS-a.</span>
+              <span>{translateText("Želim da dobijam novosti i ponude putem SMS-a.")}</span>
             </label>
           )}
 
-          {error && <p className="product-alert-modal__error">{error}</p>}
+          {error && <p className="product-alert-modal__error">{translateText(error)}</p>}
           <button type="submit" disabled={submitting}>
-            {submitting ? 'Čuvamo…' : 'Potvrdi obaveštenje'}
+            {translateText(submitting ? 'Čuvamo…' : 'Potvrdi obaveštenje')}
           </button>
         </form>
       </div>

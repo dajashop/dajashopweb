@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // ==============================
 // File: src/components/about/AboutStory.jsx
 // MODERAN REDIZAJN: Fokus na Misiju i Viziju u Glass karticama
@@ -19,6 +20,8 @@ const itemVariants = {
 };
 
 export default function AboutStory() {
+  const { t: translateText } = useStorefront();
+
   return (
     <motion.section
       className="section"
@@ -43,18 +46,9 @@ export default function AboutStory() {
               margin: '0 auto 10px',
               borderColor: 'var(--color-primary)',
             }}
-          >
-            NAŠA PRIČA
-          </p>
-          <h2 className="h2" style={{ marginBottom: '20px' }}>
-            Upoznajte DajaShop
-          </h2>
-          <p className="lead" style={{ maxWidth: '800px', margin: '0 auto' }}>
-            DajaShop je prodavnica satova u Nišu, na adresi Podzemni prolaz,
-            lokal C31, 18000 Niš. Na našem sajtu možete pregledati modele,
-            uporediti njihove karakteristike i poručiti sat. Ako vam je
-            potreban savet, kontaktirajte nas ili posetite prodavnicu.
-          </p>
+          >{translateText("NAŠA PRIČA")}</p>
+          <h2 className="h2" style={{ marginBottom: '20px' }}>{translateText("Upoznajte DajaShop")}</h2>
+          <p className="lead" style={{ maxWidth: '800px', margin: '0 auto' }}>{translateText("DajaShop je prodavnica satova u Nišu, na adresi Podzemni prolaz, lokal C31, 18000 Niš. Na našem sajtu možete pregledati modele, uporediti njihove karakteristike i poručiti sat. Ako vam je potreban savet, kontaktirajte nas ili posetite prodavnicu.")}</p>
         </motion.div>
 
         {/* II. Misija i Vizija (2-Kolone Grid sa Glass Efektom) */}
@@ -71,14 +65,8 @@ export default function AboutStory() {
             <h3
               className="h2"
               style={{ color: 'var(--color-primary)', marginBottom: '15px' }}
-            >
-              Gde se nalazimo
-            </h3>
-            <p className="lead" style={{ fontSize: '18px' }}>
-              Naša prodavnica nalazi se u Podzemnom prolazu, lokal C31, u
-              Nišu. Za informacije o dostupnosti modela i dolasku pozovite
-              nas ili pošaljite Viber poruku na +381 64 126 24 25.
-            </p>
+            >{translateText("Gde se nalazimo")}</h3>
+            <p className="lead" style={{ fontSize: '18px' }}>{translateText("Naša prodavnica nalazi se u Podzemnom prolazu, lokal C31, u Nišu. Za informacije o dostupnosti modela i dolasku pozovite nas ili pošaljite Viber poruku na +381 64 126 24 25.")}</p>
           </motion.div>
 
           {/* B. Vizija Kartica - Koristi glass i shadow klase iz About.css */}
@@ -90,15 +78,8 @@ export default function AboutStory() {
             <h3
               className="h2"
               style={{ color: 'var(--color-primary)', marginBottom: '15px' }}
-            >
-              Kako možemo da pomognemo
-            </h3>
-            <p className="lead" style={{ fontSize: '18px' }}>
-              Pomažemo pri izboru sata i odgovaramo na pitanja o modelima,
-              porudžbinama i garanciji. Za servisiranje organizujemo slanje
-              sata ovlašćenom servisu. Pišite nam na info@dajashop.com ili
-              nas kontaktirajte telefonom i preko Vibera.
-            </p>
+            >{translateText("Kako možemo da pomognemo")}</h3>
+            <p className="lead" style={{ fontSize: '18px' }}>{translateText("Pomažemo pri izboru sata i odgovaramo na pitanja o modelima, porudžbinama i garanciji. Za servisiranje organizujemo slanje sata ovlašćenom servisu. Pišite nam na info@dajashop.com ili nas kontaktirajte telefonom i preko Vibera.")}</p>
           </motion.div>
         </motion.div>
       </div>

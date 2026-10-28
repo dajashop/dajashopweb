@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect, useState } from 'react';
 import { Bell, BellRing, Heart } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -11,6 +12,8 @@ import ProductAlertModal from '../modals/ProductAlertModal.jsx';
 import './ProductActions.css';
 
 export default function ProductActions({ product, onAdd, onWishlist, isLiked }) {
+  const { t: translateText } = useStorefront();
+
   const { user } = useAuth();
   const { flash } = useFlash();
   const [guestAlertType, setGuestAlertType] = useState(null);
@@ -112,22 +115,20 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
             ) : (
               <Bell size={19} />
             )}
-            {outOfStockSubscribed
+            {translateText(outOfStockSubscribed
               ? outOfStockAlertType === 'price_change'
                 ? 'Pratite promenu cene'
                 : 'Obaveštenje je uključeno'
-              : 'Obavesti me kada bude na stanju'}
+              : 'Obavesti me kada bude na stanju')}
           </button>
         ) : (
-          <button className="cta-button" onClick={onAdd}>
-            Dodaj u korpu
-          </button>
+          <button className="cta-button" onClick={onAdd}>{translateText("Dodaj u korpu")}</button>
         )}
 
         <button
           className="wishlist-button"
           onClick={onWishlist}
-          title={isLiked ? 'Ukloni iz želja' : 'Dodaj u želje'}
+          title={translateText(isLiked ? 'Ukloni iz želja' : 'Dodaj u želje')}
         >
           <Heart
             size={24}
@@ -140,8 +141,8 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
           className={`price-alert-button${subscribedTypes.includes('price_change') ? ' is-subscribed' : ''}`}
           onClick={() => requestAlert('price_change')}
           disabled={subscribedTypes.includes('price_change')}
-          title={subscribedTypes.includes('price_change') ? 'Pratite promenu cene' : 'Obavesti me kada se cena promeni'}
-          aria-label={subscribedTypes.includes('price_change') ? 'Pratite promenu cene' : 'Obavesti me kada se cena promeni'}
+          title={translateText(subscribedTypes.includes('price_change') ? 'Pratite promenu cene' : 'Obavesti me kada se cena promeni')}
+          aria-label={translateText(subscribedTypes.includes('price_change') ? 'Pratite promenu cene' : 'Obavesti me kada se cena promeni')}
         >
           {subscribedTypes.includes('price_change') ? <BellRing size={22} aria-hidden="true" /> : <Bell size={22} aria-hidden="true" />}
         </button>

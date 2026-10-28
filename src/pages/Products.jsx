@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { productSeoDescription } from '../utils/productSeoDescription.js';
 import React, { lazy, useEffect, useMemo, useRef, useState } from 'react';
 import './Product.css';
@@ -48,6 +49,8 @@ const DEPARTMENT_PATHS = {
 };
 
 export default function Product() {
+  const { t: translateText } = useStorefront();
+
   const { slug } = useParams();
   const navigate = useNavigate();
   const { product: p, loading, error, updateProduct } = useProduct(slug);
@@ -111,13 +114,13 @@ export default function Product() {
     return visibleProductFeatures(p?.features).length > 0;
   }, [p]);
 
-  if (loading) return <><SEOHead title="Proizvod" keywords="" defer={false} /><ProductSkeleton /></>;
+  if (loading) return <><SEOHead title={translateText("Proizvod")} keywords="" defer={false} /><ProductSkeleton /></>;
   if (error || !p)
     return <PageStatus status={error && error.status !== 404 ? 503 : 404} />;
   if (p.redirectTo) return (
     <div className="container product-loading">
-      <SEOHead title="Proizvod" keywords="" defer={false} />
-      <p role="status">Preusmeravanje...</p>
+      <SEOHead title={translateText("Proizvod")} keywords="" defer={false} />
+      <p role="status">{translateText("Preusmeravanje...")}</p>
     </div>
   );
 
@@ -176,8 +179,8 @@ export default function Product() {
     <div className="product-page-wrapper">
       <SEOHead
         defer={false}
-        title={seoTitle}
-        description={seoDescription}
+        title={translateText(seoTitle)}
+        description={translateText(seoDescription)}
         keywords={seoKeywords}
         image={seoImage}
         type="product"

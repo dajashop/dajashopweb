@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // ==============================
 // File: src/components/about/AboutMarquee.jsx
 // Brand Marquee - Horizontalni scroll logotipa
@@ -15,6 +16,8 @@ const logos = [
 ];
 
 export default function AboutMarquee() {
+  const { t: translateText } = useStorefront();
+
   const scrollSpeed = 50; // Brzina animacije u px/s (CSS bi je definisao)
 
   // Koristićemo div umesto motion da se izbegne kompleksnost custom X animacije,
@@ -34,7 +37,7 @@ export default function AboutMarquee() {
           <div key={index} style={{ padding: '0 20px', opacity: 0.7 }}>
             <img
               src={logo.src}
-              alt={logo.name + ' logo'}
+              alt={translateText(logo.name + ' logo')}
               style={{ maxHeight: '40px', filter: 'grayscale(100%)' }} // Minimalistički logo
             />
           </div>

@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   motion,
@@ -16,6 +17,8 @@ import {
 import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 
 export default function ImageGalleryModal({ images, initialIndex, onClose, containThumbnails = false }) {
+  const { t: translateText } = useStorefront();
+
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isImgLoaded, setIsImgLoaded] = useState(false);
@@ -159,7 +162,7 @@ export default function ImageGalleryModal({ images, initialIndex, onClose, conta
               <ProgressiveImage
                 src={images[currentIndex].url || '/placeholder.png'}
                 thumbSrc={images[currentIndex].thumb}
-                alt="Gallery preview"
+                alt={translateText("Gallery preview")}
                 onLoad={() => setIsImgLoaded(true)}
                 className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg"
               />
@@ -196,7 +199,7 @@ export default function ImageGalleryModal({ images, initialIndex, onClose, conta
             {isImgLoaded && (
               <div className="absolute bottom-4 right-4 bg-black/50 px-3 py-1.5 rounded-full text-white text-xs font-medium pointer-events-none flex items-center gap-2 backdrop-blur-sm border border-white/10 z-210">
                 {isZoomed ? <ZoomOut size={14} /> : <ZoomIn size={14} />}
-                {isZoomed ? 'Klikni za izlaz' : 'Klikni za zum'}
+                {translateText(isZoomed ? 'Klikni za izlaz' : 'Klikni za zum')}
               </div>
             )}
           </div>
@@ -225,7 +228,7 @@ export default function ImageGalleryModal({ images, initialIndex, onClose, conta
                 <img
                   src={img.thumb || img.url || '/placeholder.png'}
                   className={`w-full h-full ${containThumbnails ? 'object-contain bg-white p-1' : 'object-cover'}`}
-                  alt={`thumbnail-${idx}`}
+                  alt={translateText(`thumbnail-${idx}`)}
                 />
               </button>
             ))}

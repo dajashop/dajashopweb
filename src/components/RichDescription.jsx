@@ -1,9 +1,12 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect, useRef, useState, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { descriptionHtml, descriptionText } from './description';
 import './rich-description.css';
 
 export function RichDescription({ value, onChange, disabled = false, maxLength = 4000 }) {
+  const { t: translateText } = useStorefront();
+
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const [position, setPosition] = useState({ left: 12, top: 12, width: 560 });
@@ -80,16 +83,16 @@ export function RichDescription({ value, onChange, disabled = false, maxLength =
   };
   const tools = [['Podebljano', 'bold'], ['Kurziv', 'italic'], ['Podvučeno', 'underline'], ['Lista •', 'insertUnorderedList'], ['Lista 1.', 'insertOrderedList'], ['Pasus', 'formatBlock', 'p'], ['Naslov', 'formatBlock', 'h3'], ['Ukloni format', 'removeFormat'], ['Poništi', 'undo'], ['Ponovi', 'redo']];
   return <div>
-    <span className="description-label" id={`${id}-label`}>Opis (opciono)</span>
-    <button className="description-trigger" type="button" ref={trigger} disabled={disabled} aria-labelledby={`${id}-label`} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => setOpen(true)}><span>{descriptionText(value).replace(/\n/g, ' ') || 'Dodajte i uredite opis…'}</span><small>Uredi ▾</small></button>
-    {open && createPortal(<div className="description-overlay" onClick={(event) => event.stopPropagation()} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
-      <section className="description-panel" ref={panel} style={position} id={id} role="dialog" aria-modal="true" aria-label="Uredi opis" onMouseDown={(event) => event.stopPropagation()}>
-        <header><strong>Uredi opis</strong><button type="button" onClick={close} aria-label="Zatvori editor">✕</button></header>
-        <div className="description-toolbar" role="toolbar" aria-label="Formatiranje opisa">{tools.map(([label, name, argument]) => <button type="button" key={name + label} onMouseDown={(event) => event.preventDefault()} onClick={() => command(name, argument)}>{label}</button>)}<button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => move(-1)} title="Pomeri izabrani pasus ili stavku liste gore">↑ Gore</button><button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => move(1)} title="Pomeri izabrani pasus ili stavku liste dole">↓ Dole</button></div>
-        <div className="description-content rich-description" ref={editor} contentEditable suppressContentEditableWarning role="textbox" tabIndex={0} aria-multiline="true" aria-label="Opis artikla" onInput={publish} onPaste={(event) => { event.preventDefault(); command('insertText', event.clipboardData.getData('text/plain')); }} />
-        {error && <p className="description-error" role="alert">{error}</p>}
-        <footer><span>Enter: novi pasus · Izmene ulaze u obrazac</span><button type="button" onClick={close}>Gotovo</button></footer>
+    <span className="description-label" id={`${id}-label`}>{translateText("Opis (opciono)")}</span>
+    <button className="description-trigger" type="button" ref={trigger} disabled={disabled} aria-labelledby={`${id}-label`} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => setOpen(true)}><span>{translateText(descriptionText(value).replace(/\n/g, ' ') || 'Dodajte i uredite opis…')}</span><small>{translateText("Uredi ▾")}</small></button>
+    {translateText(open && createPortal(<div className="description-overlay" onClick={(event) => event.stopPropagation()} onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
+      <section className="description-panel" ref={panel} style={position} id={id} role="dialog" aria-modal="true" aria-label={translateText("Uredi opis")} onMouseDown={(event) => event.stopPropagation()}>
+        <header><strong>{translateText("Uredi opis")}</strong><button type="button" onClick={close} aria-label={translateText("Zatvori editor")}>✕</button></header>
+        <div className="description-toolbar" role="toolbar" aria-label={translateText("Formatiranje opisa")}>{tools.map(([label, name, argument]) => <button type="button" key={name + label} onMouseDown={(event) => event.preventDefault()} onClick={() => command(name, argument)}>{translateText(label)}</button>)}<button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => move(-1)} title={translateText("Pomeri izabrani pasus ili stavku liste gore")}>{translateText("↑ Gore")}</button><button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => move(1)} title={translateText("Pomeri izabrani pasus ili stavku liste dole")}>{translateText("↓ Dole")}</button></div>
+        <div className="description-content rich-description" ref={editor} contentEditable suppressContentEditableWarning role="textbox" tabIndex={0} aria-multiline="true" aria-label={translateText("Opis artikla")} onInput={publish} onPaste={(event) => { event.preventDefault(); command('insertText', event.clipboardData.getData('text/plain')); }} />
+        {error && <p className="description-error" role="alert">{translateText(error)}</p>}
+        <footer><span>{translateText("Enter: novi pasus · Izmene ulaze u obrazac")}</span><button type="button" onClick={close}>{translateText("Gotovo")}</button></footer>
       </section>
-    </div>, document.body)}
+    </div>, document.body))}
   </div>;
 }

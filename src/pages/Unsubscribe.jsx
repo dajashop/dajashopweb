@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect, useState } from 'react';
 import { useEmailLinkRequest } from '../hooks/useEmailLinkRequest.js';
 import { useSearchParams, Link } from 'react-router-dom';
@@ -8,6 +9,8 @@ import SEOHead from '../components/seo/SEOHead.jsx';
 import './ResetPassword.css';
 
 export default function Unsubscribe() {
+  const { t: translateText } = useStorefront();
+
   const [params] = useSearchParams();
   const kind = params.get('kind') === 'product-alert' ? 'product-alert' : 'newsletter';
   const token = params.get('token') || '';
@@ -37,14 +40,14 @@ export default function Unsubscribe() {
     } finally { request.finish(); }
   }
   return <section className="reset-password-page" aria-live="polite">
-    <SEOHead title="Odjava" noIndex={true} />
+    <SEOHead title={translateText("Odjava")} noIndex={true} />
     <div className="reset-password-page__card">
       <div className="reset-password-page__icon">{status === 'success' ? <CheckCircle2 size={28} /> : <MailX size={28} />}</div>
-      <h1>{status === 'success' ? 'Odjava je potvrđena.' : 'Potvrdite odjavu.'}</h1>
-      <p className="reset-password-page__copy">{status === 'success' ? `Više nećete primati ${label}.` : status === 'invalid' ? 'Link za odjavu nije potpun ili nije važeći. Otvorite link iz email poruke.' : `Klikom na dugme isključujete ${label}.`}</p>
-      {['ready', 'saving'].includes(status) && <button className="reset-password-page__button" onClick={unsubscribe} disabled={status === 'saving'}>{status === 'saving' ? 'Čuvamo odjavu…' : 'Potvrdi odjavu'}</button>}
-      {error && <p className="reset-password-page__error">{error}</p>}
-      <Link to="/" className="reset-password-page__secondary">Nazad na DajaShop</Link>
+      <h1>{translateText(status === 'success' ? 'Odjava je potvrđena.' : 'Potvrdite odjavu.')}</h1>
+      <p className="reset-password-page__copy">{translateText(status === 'success' ? `Više nećete primati ${label}.` : status === 'invalid' ? 'Link za odjavu nije potpun ili nije važeći. Otvorite link iz email poruke.' : `Klikom na dugme isključujete ${label}.`)}</p>
+      {['ready', 'saving'].includes(status) && <button className="reset-password-page__button" onClick={unsubscribe} disabled={status === 'saving'}>{translateText(status === 'saving' ? 'Čuvamo odjavu…' : 'Potvrdi odjavu')}</button>}
+      {error && <p className="reset-password-page__error">{translateText(error)}</p>}
+      <Link to="/" className="reset-password-page__secondary">{translateText("Nazad na DajaShop")}</Link>
     </div>
   </section>;
 }

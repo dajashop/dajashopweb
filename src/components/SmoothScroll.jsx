@@ -1,8 +1,11 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect, useRef } from "react";
 import { ReactLenis } from "@studio-freight/react-lenis";
 import { useLocation } from "react-router-dom";
 
 export default function SmoothScroll({ children }) {
+  const { t: translateText } = useStorefront();
+
   const lenisRef = useRef();
   const { pathname } = useLocation();
 
@@ -24,7 +27,7 @@ export default function SmoothScroll({ children }) {
         // Možeš dodati 'lerp: 0.1' za još mekši osećaj, ali duration je obično dovoljan
       }}
     >
-      {children}
+      {translateText(children)}
     </ReactLenis>
   );
 }

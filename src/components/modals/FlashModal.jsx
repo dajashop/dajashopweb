@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect } from "react";
 // eslint-disable-next-line no-unused-vars
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,6 +13,8 @@ export default function FlashModal({
   duration = 2000,
   icon,
 }) {
+  const { t: translateText } = useStorefront();
+
   // Auto close logika ostaje ista
   useEffect(() => {
     if (!open) return;
@@ -53,8 +56,8 @@ export default function FlashModal({
               {icon ?? <CheckCircle2 size={24} strokeWidth={3} />}
             </div>
 
-            <h3 className="flash-title">{title}</h3>
-            {subtitle && <p className="flash-subtitle">{subtitle}</p>}
+            <h3 className="flash-title">{translateText(title)}</h3>
+            {subtitle && <p className="flash-subtitle">{translateText(subtitle)}</p>}
           </motion.div>
         </motion.div>
       )}

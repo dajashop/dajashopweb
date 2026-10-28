@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useRef, useState } from 'react';
 import './WatchFinder.css';
 import { motion as Motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -19,7 +20,7 @@ import {
 import { Link } from 'react-router-dom';
 import ProductCard from './ProductCard.jsx';
 import useProducts from '../hooks/useProducts.js';
-import { money } from '../utils/currency.js';
+
 const MotionLink = Motion(Link);
 
 function normalizeText(value = '') {
@@ -604,6 +605,8 @@ export default function WatchFinder({
   layout = 'stack',
   variant = 'light',
 }) {
+  const { t: translateText, money } = useStorefront();
+
   const isSplit = layout === 'split';
   const isDark = variant === 'dark';
   const isEditorial = variant === 'editorial';
@@ -634,8 +637,8 @@ export default function WatchFinder({
   })();
   const twoLinePromptTitle = (
     <>
-      <span>Zbunjuje te</span>
-      <span>Previše izbora?</span>
+      <span>{translateText("Zbunjuje te")}</span>
+      <span>{translateText("Previše izbora?")}</span>
     </>
   );
   const asideTitle = isEditorial ? twoLinePromptTitle : 'Pronađi sat koji ti stvarno leži.';
@@ -786,6 +789,7 @@ export default function WatchFinder({
   };
 
   const renderOptionChip = (opt, optionIndex) => {
+    const optionLabel = Array.isArray(opt.range) ? `${translateText('Do')} ${money(opt.range[1])}` : translateText(opt.label);
     const active = answers[current.key] === opt.value;
     const visual = OPTION_VISUALS[current.key]?.[optionIndex] || {};
     const Icon = visual.icon || null;
@@ -806,12 +810,12 @@ export default function WatchFinder({
         className={`wf-chip ${active ? 'is-active' : ''} ${
           isBrandLogoOnly ? 'wf-chip--brand-logo-only' : ''
         }`}
-        aria-label={opt.label}
+        aria-label={optionLabel}
         onClick={() => handleSelect(current.key, opt.value)}
       >
         {hasVisual && (
           <span className={`wf-chip__iconWrap ${showLogo ? 'is-logo' : 'is-icon'}`} aria-hidden="true">
-            {showLogo ? (
+            {translateText(showLogo ? (
               <img
                 className="wf-chip__logo"
                 src={visual.logoSrc}
@@ -827,11 +831,11 @@ export default function WatchFinder({
               </span>
             ) : (
               <Icon className="wf-chip__icon" />
-            )}
+            ))}
           </span>
         )}
         <span className={`wf-chip__label ${isBrandLogoOnly ? 'wf-chip__label--srOnly' : ''}`}>
-          {opt.label}
+          {optionLabel}
         </span>
       </Motion.button>
     );
@@ -897,10 +901,8 @@ export default function WatchFinder({
                 transition={sectionTransition}
                 className="wf-selectionState wf-selectionState--loading"
               >
-                <h2 className="wf-selectionTitle">Pravimo selekciju za tebe…</h2>
-                <p className="wf-selectionCopy">
-                  Samo trenutak, proveravamo modele koji se najbolje poklapaju sa tvojim odgovorima.
-                </p>
+                <h2 className="wf-selectionTitle">{translateText("Pravimo selekciju za tebe…")}</h2>
+                <p className="wf-selectionCopy">{translateText("Samo trenutak, proveravamo modele koji se najbolje poklapaju sa tvojim odgovorima.")}</p>
                 <div className="wf-selectionLoader" aria-hidden="true" />
               </Motion.div>
             ) : (
@@ -914,19 +916,15 @@ export default function WatchFinder({
                 className="wf-selectionState wf-selectionState--resultsOnly"
               >
                 <div className="wf-selectionHead">
-                  <h2>Evo tvojih rezultata</h2>
+                  <h2>{translateText("Evo tvojih rezultata")}</h2>
                   <p className="wf-selectionCopy wf-selectionCopy--split">
-                    <span className="wf-selectionCopy__line">
-                      Izdvojili smo modele koji najbolje prate tvoj stil i budžet.
-                    </span>
-                    <span className="wf-selectionCopy__line">
-                      Prelistaj predloge ili otvori celu kolekciju.
-                    </span>
+                    <span className="wf-selectionCopy__line">{translateText("Izdvojili smo modele koji najbolje prate tvoj stil i budžet.")}</span>
+                    <span className="wf-selectionCopy__line">{translateText("Prelistaj predloge ili otvori celu kolekciju.")}</span>
                   </p>
                 </div>
 
                 {results.length === 0 ? (
-                  <div className="wf-empty">Još uvek nema predloga — probaj druga pitanja.</div>
+                  <div className="wf-empty">{translateText("Još uvek nema predloga — probaj druga pitanja.")}</div>
                 ) : (
                   <Motion.div
                     className="wf-results__grid"
@@ -956,14 +954,13 @@ export default function WatchFinder({
                     whileHover={buttonHoverAnimation}
                     whileTap={buttonTapAnimation}
                     transition={buttonMotionTransition}
-                  >
-                    Pogledaj sve <ArrowRight size={16} />
+                  >{translateText("Pogledaj sve ")}<ArrowRight size={16} />
                   </MotionLink>
                   <Motion.button
                     className="btn btn--ghost wf-iconBtn wf-reset"
                     onClick={handleReset}
-                    aria-label="Restart"
-                    title="Restart"
+                    aria-label={translateText("Restart")}
+                    title={translateText("Restart")}
                     whileHover={buttonHoverAnimation}
                     whileTap={buttonTapAnimation}
                     transition={buttonMotionTransition}
@@ -981,10 +978,10 @@ export default function WatchFinder({
 
   const resultsContent = (
     <>
-      {loading && <div className="wf-skeleton">Učitavanje predloga…</div>}
+      {loading && <div className="wf-skeleton">{translateText("Učitavanje predloga…")}</div>}
 
       {!loading && results.length === 0 && (
-        <div className="wf-empty">Još uvek nema predloga — probaj druga pitanja.</div>
+        <div className="wf-empty">{translateText("Još uvek nema predloga — probaj druga pitanja.")}</div>
       )}
 
       {!loading && results.length > 0 && (
@@ -1005,12 +1002,12 @@ export default function WatchFinder({
               transition={cardMotionTransition}
             >
               <Link to={`/product/${p.slug}`} className="wf-card-mini__img">
-                <img src={p.thumbnailUrl || p.image} alt={p.name} loading="lazy" />
+                <img src={p.thumbnailUrl || p.image} alt={translateText(p.name)} loading="lazy" />
               </Link>
               <div className="wf-card-mini__body">
-                <div className="wf-card-mini__brand">{p.brand}</div>
+                <div className="wf-card-mini__brand">{translateText(p.brand)}</div>
                 <Link to={`/product/${p.slug}`} className="wf-card-mini__name">
-                  {p.name}
+                  {translateText(p.name)}
                 </Link>
                 <div className="wf-card-mini__price">{money(p.price)}</div>
               </div>
@@ -1030,7 +1027,7 @@ export default function WatchFinder({
       transition={rootTransition}
     >
       <Motion.div className="wf-card" layout transition={cardMotionTransition}>
-        {showPhoneIntroOnly ? (
+        {translateText(showPhoneIntroOnly ? (
           <Motion.div
             key="phone-intro"
             variants={sectionVariants}
@@ -1040,33 +1037,30 @@ export default function WatchFinder({
             transition={sectionTransition}
             className="wf-introSimple"
           >
-            <h2 className="wf-intro__title wf-twoLineTitle">{twoLinePromptTitle}</h2>
-            <p className="wf-intro__copy">
-              Odgovori na par kratkih pitanja i odmah dobijaš predloge koji su stvarno za tebe.
-            </p>
+            <h2 className="wf-intro__title wf-twoLineTitle">{translateText(twoLinePromptTitle)}</h2>
+            <p className="wf-intro__copy">{translateText("Odgovori na par kratkih pitanja i odmah dobijaš predloge koji su stvarno za tebe.")}</p>
             <Motion.button
               className="btn btn--primary"
               onClick={handleStart}
               whileHover={buttonHoverAnimation}
               whileTap={buttonTapAnimation}
               transition={buttonMotionTransition}
-            >
-              Pokreni pitanja <ArrowRight size={16} />
+            >{translateText("Pokreni pitanja ")}<ArrowRight size={16} />
             </Motion.button>
           </Motion.div>
         ) : isSplit ? (
           <div className="wf-grid">
             <div className="wf-aside">
               <div>
-                <h2 className={isEditorial ? 'wf-twoLineTitle' : undefined}>{asideTitle}</h2>
-                <p className="lede wf-aside__lede">{modeDescription}</p>
+                <h2 className={isEditorial ? 'wf-twoLineTitle' : undefined}>{translateText(asideTitle)}</h2>
+                <p className="lede wf-aside__lede">{translateText(modeDescription)}</p>
               </div>
               <div className="wf-aside__actions">
                 <Motion.button
                   className="btn btn--ghost wf-iconBtn wf-reset"
                   onClick={handleReset}
-                  aria-label="Resetuj kviz"
-                  title="Resetuj kviz"
+                  aria-label={translateText("Resetuj kviz")}
+                  title={translateText("Resetuj kviz")}
                   whileHover={buttonHoverAnimation}
                   whileTap={buttonTapAnimation}
                   transition={buttonMotionTransition}
@@ -1079,8 +1073,7 @@ export default function WatchFinder({
                   whileHover={buttonHoverAnimation}
                   whileTap={buttonTapAnimation}
                   transition={buttonMotionTransition}
-                >
-                  Pogledaj sve <ArrowRight size={16} />
+                >{translateText("Pogledaj sve ")}<ArrowRight size={16} />
                 </MotionLink>
               </div>
             </div>
@@ -1097,19 +1090,15 @@ export default function WatchFinder({
                     transition={sectionTransition}
                     className="wf-introSimple"
                   >
-                    <h3 className="wf-intro__title wf-twoLineTitle">{twoLinePromptTitle}</h3>
-                    <p className="wf-intro__copy">
-                      Odgovori na par kratkih pitanja i odmah dobijaš preporuke po stilu, budžetu
-                      i detaljima koje tražiš.
-                    </p>
+                    <h3 className="wf-intro__title wf-twoLineTitle">{translateText(twoLinePromptTitle)}</h3>
+                    <p className="wf-intro__copy">{translateText("Odgovori na par kratkih pitanja i odmah dobijaš preporuke po stilu, budžetu i detaljima koje tražiš.")}</p>
                     <Motion.button
                       className="btn btn--primary"
                       onClick={handleStart}
                       whileHover={buttonHoverAnimation}
                       whileTap={buttonTapAnimation}
                       transition={buttonMotionTransition}
-                    >
-                      Pokreni pitanja <ArrowRight size={16} />
+                    >{translateText("Pokreni pitanja ")}<ArrowRight size={16} />
                     </Motion.button>
                   </Motion.div>
                 )}
@@ -1126,27 +1115,25 @@ export default function WatchFinder({
                   >
                     {!isDark && (
                       <div className="wf-step__head">
-                        {isEditorial ? (
+                        {translateText(isEditorial ? (
                           <div className="wf-step__topRow">
                             <button
                               className="wf-backInline"
-                              aria-label="Nazad"
+                              aria-label={translateText("Nazad")}
                               onClick={handlePrev}
                               disabled={!canGoBack}
                             >
                               <ArrowLeft size={22} />
                             </button>
-                            <div className="wf-step__question">{current.title}</div>
+                            <div className="wf-step__question">{translateText(current.title)}</div>
                           </div>
                         ) : (
                           (isSplit || isEditorial) && (
-                            <div className="wf-step__question">{current.title}</div>
+                            <div className="wf-step__question">{translateText(current.title)}</div>
                           )
-                        )}
+                        ))}
                         {isEditorial && (
-                          <p className="wf-step__hint">
-                            Odaberi opciju koja najbolje opisuje ono što tražiš.
-                          </p>
+                          <p className="wf-step__hint">{translateText("Odaberi opciju koja najbolje opisuje ono što tražiš.")}</p>
                         )}
                       </div>
                     )}
@@ -1161,15 +1148,14 @@ export default function WatchFinder({
                     </Motion.div>
                     {!isEditorial && (
                       <div className="wf-help">
-                        <p className="wf-help__title">Need help?</p>
+                        <p className="wf-help__title">{translateText("Need help?")}</p>
                         <p className="wf-help__copy">
-                          {HELPERS[current.key]?.help ||
-                            'Odaberi najbližu opciju – sve se može promeniti u rezultatima.'}
+                          {translateText(HELPERS[current.key]?.help ||
+                            'Odaberi najbližu opciju – sve se može promeniti u rezultatima.')}
                         </p>
-                        <p className="wf-help__tip">
-                          Watch tip:{' '}
-                          {HELPERS[current.key]?.tip ||
-                            'Pogledaj predloge pa doradi filtere u katalogu.'}
+                        <p className="wf-help__tip">{translateText("Watch tip:")}{translateText(' ')}
+                          {translateText(HELPERS[current.key]?.tip ||
+                            'Pogledaj predloge pa doradi filtere u katalogu.')}
                         </p>
                       </div>
                     )}
@@ -1178,7 +1164,7 @@ export default function WatchFinder({
                       <div className="wf-actions">
                         <button
                           className="btn btn--ghost wf-backOnly"
-                          aria-label="Nazad"
+                          aria-label={translateText("Nazad")}
                           onClick={handlePrev}
                         >
                           <ArrowLeft size={16} />
@@ -1197,8 +1183,8 @@ export default function WatchFinder({
           <div className="wf-inner">
             <div className="wf-head">
               <div>
-                <h2>{headingTitle}</h2>
-                <p className="lede">{modeDescription}</p>
+                <h2>{translateText(headingTitle)}</h2>
+                <p className="lede">{translateText(modeDescription)}</p>
               </div>
             </div>
 
@@ -1214,19 +1200,15 @@ export default function WatchFinder({
                     transition={sectionTransition}
                     className="wf-introSimple"
                   >
-                    <h3 className="wf-intro__title wf-twoLineTitle">{twoLinePromptTitle}</h3>
-                    <p className="wf-intro__copy">
-                      Odgovori na par kratkih pitanja i odmah dobijaš preporuke po stilu, budžetu
-                      i detaljima koje tražiš.
-                    </p>
+                    <h3 className="wf-intro__title wf-twoLineTitle">{translateText(twoLinePromptTitle)}</h3>
+                    <p className="wf-intro__copy">{translateText("Odgovori na par kratkih pitanja i odmah dobijaš preporuke po stilu, budžetu i detaljima koje tražiš.")}</p>
                     <Motion.button
                       className="btn btn--primary"
                       onClick={handleStart}
                       whileHover={buttonHoverAnimation}
                       whileTap={buttonTapAnimation}
                       transition={buttonMotionTransition}
-                    >
-                      Pokreni pitanja <ArrowRight size={16} />
+                    >{translateText("Pokreni pitanja ")}<ArrowRight size={16} />
                     </Motion.button>
                   </Motion.div>
                 )}
@@ -1246,18 +1228,16 @@ export default function WatchFinder({
                         <div className="wf-step__topRow">
                           <button
                             className="wf-backInline"
-                            aria-label="Nazad"
+                            aria-label={translateText("Nazad")}
                             onClick={handlePrev}
                             disabled={!canGoBack}
                           >
                             <ArrowLeft size={22} />
                           </button>
-                          <div className="wf-step__question">{current.title}</div>
+                          <div className="wf-step__question">{translateText(current.title)}</div>
                         </div>
                         {isEditorial && (
-                          <p className="wf-step__hint">
-                            Odaberi opciju koja najbolje opisuje ono što tražiš.
-                          </p>
+                          <p className="wf-step__hint">{translateText("Odaberi opciju koja najbolje opisuje ono što tražiš.")}</p>
                         )}
                       </div>
                     )}
@@ -1272,15 +1252,14 @@ export default function WatchFinder({
                     </Motion.div>
                     {!isEditorial && (
                       <div className="wf-help">
-                        <p className="wf-help__title">Need help?</p>
+                        <p className="wf-help__title">{translateText("Need help?")}</p>
                         <p className="wf-help__copy">
-                          {HELPERS[current.key]?.help ||
-                            'Odaberi najbližu opciju – sve se može promeniti u rezultatima.'}
+                          {translateText(HELPERS[current.key]?.help ||
+                            'Odaberi najbližu opciju – sve se može promeniti u rezultatima.')}
                         </p>
-                        <p className="wf-help__tip">
-                          Watch tip:{' '}
-                          {HELPERS[current.key]?.tip ||
-                            'Pogledaj predloge pa doradi filtere u katalogu.'}
+                        <p className="wf-help__tip">{translateText("Watch tip:")}{translateText(' ')}
+                          {translateText(HELPERS[current.key]?.tip ||
+                            'Pogledaj predloge pa doradi filtere u katalogu.')}
                         </p>
                       </div>
                     )}
@@ -1289,7 +1268,7 @@ export default function WatchFinder({
                       <div className="wf-actions">
                         <button
                           className="btn btn--ghost wf-backOnly"
-                          aria-label="Nazad"
+                          aria-label={translateText("Nazad")}
                           onClick={handlePrev}
                         >
                           <ArrowLeft size={16} />
@@ -1303,11 +1282,11 @@ export default function WatchFinder({
             </div>
             {isDark && <div className="wf-illustration" aria-hidden="true" />}
           </div>
-        )}
+        ))}
 
         {showEditorialNote && (
           <div className="wf-editorialNote wf-editorialNote--full">
-            <div className="wf-editorialNote__lead">Treba ti pomoć?</div>
+            <div className="wf-editorialNote__lead">{translateText("Treba ti pomoć?")}</div>
             <AnimatePresence mode="wait" initial={false}>
               <Motion.div
                 key={editorialNoteMotionKey}
@@ -1318,8 +1297,8 @@ export default function WatchFinder({
                 exit="exit"
                 transition={noteTransition}
               >
-                <p className="wf-editorialNote__copy">{editorialNoteCopy}</p>
-                <p className="wf-editorialNote__tip">{editorialNoteTip}</p>
+                <p className="wf-editorialNote__copy">{translateText(editorialNoteCopy)}</p>
+                <p className="wf-editorialNote__tip">{translateText(editorialNoteTip)}</p>
               </Motion.div>
             </AnimatePresence>
           </div>
@@ -1336,7 +1315,7 @@ export default function WatchFinder({
                 exit={{ opacity: 0, y: -8 }}
                 transition={sectionTransition}
               >
-                {resultsContent}
+                {translateText(resultsContent)}
               </Motion.div>
             )}
           </AnimatePresence>
@@ -1355,7 +1334,7 @@ export default function WatchFinder({
             exit={{ opacity: 0, y: -8 }}
             transition={sectionTransition}
           >
-            {resultsContent}
+            {translateText(resultsContent)}
           </Motion.div>
         )}
       </AnimatePresence>

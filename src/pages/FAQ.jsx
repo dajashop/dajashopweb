@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 // src/pages/FAQ.jsx
 
 import React, { useState } from 'react';
@@ -11,6 +12,8 @@ import './FAQ.css';
 
 // Komponenta za pojedinačni akordeon
 const AccordionItem = ({ item }) => {
+  const { t: translateText } = useStorefront();
+
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -21,7 +24,7 @@ const AccordionItem = ({ item }) => {
         aria-expanded={isOpen}
         aria-controls={`faq-answer-${item.id}`}
       >
-        <h3 className="faq__q-text">{item.question}</h3>
+        <h3 className="faq__q-text">{translateText(item.question)}</h3>
         <ChevronDown
           size={20}
           className={`faq__icon ${isOpen ? 'is-open' : ''}`}
@@ -32,13 +35,15 @@ const AccordionItem = ({ item }) => {
         className={`faq__answer ${isOpen ? 'is-visible' : ''}`}
         // Koristimo CSS za tranziciju
       >
-        <p>{item.answer}</p>
+        <p>{translateText(item.answer)}</p>
       </div>
     </div>
   );
 };
 
 export default function FAQ() {
+  const { t: translateText } = useStorefront();
+
   const faqJsonItems = faqContent.map((item) => ({
     question: item.question,
     answer: item.answer,
@@ -47,36 +52,28 @@ export default function FAQ() {
   return (
     <main className="faq-page container">
       <SEOHead
-        title="Često postavljana pitanja"
-        description="Odgovori na najčešća pitanja o poručivanju, isporuci i reklamacijama u DajaShop-u."
+        title={translateText("Često postavljana pitanja")}
+        description={translateText("Odgovori na najčešća pitanja o poručivanju, isporuci i reklamacijama u DajaShop-u.")}
       />
       <FAQJsonLd items={faqJsonItems} />
       <Breadcrumbs />
 
       {/* PROFESIONALAN NASLOV I PODNASLOV */}
-      <h1 className="title-lg faq__title">Često Postavljana Pitanja (FAQ)</h1>
-      <p className="lead-text faq__subtitle">
-        Ovde možete pronaći detaljne odgovore na najčešća pitanja naših cenjenih
-        kupaca vezana za naručivanje, isporuku, plaćanje i reklamacije.
-      </p>
+      <h1 className="title-lg faq__title">{translateText("Često Postavljana Pitanja (FAQ)")}</h1>
+      <p className="lead-text faq__subtitle">{translateText("Ovde možete pronaći detaljne odgovore na najčešća pitanja naših cenjenih kupaca vezana za naručivanje, isporuku, plaćanje i reklamacije.")}</p>
 
       <section className="faq__list">
-        <h2 className="sr-only">Odgovori na česta pitanja</h2>
+        <h2 className="sr-only">{translateText("Odgovori na česta pitanja")}</h2>
         {faqContent.map((item) => (
           <AccordionItem key={item.id} item={item} />
         ))}
       </section>
 
       <section className="faq__contact-prompt card">
-        <h2>Niste pronašli odgovor?</h2>
-        <p>
-          Ako imate bilo kakvih dodatnih pitanja, naš tim za podršku vam stoji
-          na raspolaganju. Kontaktirajte nas direktno, rado ćemo vam pomoći.
-        </p>
+        <h2>{translateText("Niste pronašli odgovor?")}</h2>
+        <p>{translateText("Ako imate bilo kakvih dodatnih pitanja, naš tim za podršku vam stoji na raspolaganju. Kontaktirajte nas direktno, rado ćemo vam pomoći.")}</p>
         {/* Koristimo stil dugmeta iz teme */}
-        <Link to="/contact" className="btn btn--primary">
-          Kontaktirajte nas
-        </Link>
+        <Link to="/contact" className="btn btn--primary">{translateText("Kontaktirajte nas")}</Link>
       </section>
     </main>
   );

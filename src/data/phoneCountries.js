@@ -32,10 +32,14 @@ function normalizeForSearch(value) {
     .toLocaleLowerCase('sr-Latn');
 }
 
-export function filterPhoneCountries(query) {
+const englishNames = new Intl.DisplayNames(['en'], { type: 'region', fallback: 'code' });
+const englishCountries = PHONE_COUNTRIES.map(country => ({ ...country, label: englishNames.of(country.code) || country.code }));
+
+export function filterPhoneCountries(query, language = 'sr') {
+  const countries = language === 'en' ? englishCountries : PHONE_COUNTRIES;
   const needle = normalizeForSearch(query).trim();
-  if (!needle) return PHONE_COUNTRIES;
-  return PHONE_COUNTRIES.filter(({ code, dial, label }) =>
+  if (!needle) return countries;
+  return countries.filter(({ code, dial, label }) =>
     normalizeForSearch(`${label} ${code} ${dial}`).includes(needle)
   );
 }

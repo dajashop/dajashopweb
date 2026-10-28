@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 // [IZMENA] Dodata MessageSquareQuote ikonica
@@ -32,6 +33,8 @@ function toVocative(name) {
 }
 
 function OrderConfirmationModal({ order, money, onClose }) {
+  const { t: translateText, language, displayCurrency, moneyRsd } = useStorefront();
+
   const initialFocusRef = useRef(null);
   const orderId = order.id;
   const [showMap, setShowMap] = useState(false);
@@ -40,7 +43,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
   const firstName = order.customer.name
     ? order.customer.name.split(' ')[0]
     : '';
-  const vocativeName = toVocative(firstName);
+  const vocativeName = language === 'en' ? firstName || 'Customer' : toVocative(firstName);
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -90,21 +93,19 @@ function OrderConfirmationModal({ order, money, onClose }) {
         <div className="order-header">
           <CheckCircle2 size={32} className="text-success-ico" />
           {/* [IZMENA] Koristimo vocativeName umesto order.customer.name */}
-          <h2 id="order-title">Hvala na poverenju, {vocativeName}!</h2>
-          <p className="order-lead">
-            Vaša porudžbina <strong>#{orderId}</strong> je uspešno primljena.
-            {order.customer.email && <>Potvrda porudžbine stići će na <strong>{order.customer.email}</strong>. Proverite i spam folder.</>}
+          <h2 id="order-title">{translateText("Hvala na poverenju, ")}{vocativeName}!</h2>
+          <p className="order-lead">{translateText("Vaša porudžbina ")}<strong>#{translateText(orderId)}</strong>{translateText(" je uspešno primljena.")}{order.customer.email && <>{translateText("Potvrda porudžbine stići će na ")}<strong>{order.customer.email}</strong>{translateText(". Proverite i spam folder.")}</>}
           </p>
         </div>
 
         <div className="receipt-details">
-          <h3 className="details-title">Detalji porudžbine:</h3>
-          {(order.items || []).filter((item) => item.engraving).map((item) => <div key={item.lineId || item.id}><b>{item.name}</b><EngravingSummary item={item} /></div>)}
+          <h3 className="details-title">{translateText("Detalji porudžbine:")}</h3>
+          {(order.items || []).filter((item) => item.engraving).map((item) => <div key={item.lineId || item.id}><b>{translateText(item.name)}</b><EngravingSummary item={item} /></div>)}
           <div className="item-list">
             {order.items.map((item) => (
               <div key={item.id} className="item-row">
-                <div className="item-name">{item.name}</div>
-                <div className="item-qty">x {item.qty}</div>
+                <div className="item-name">{translateText(item.name)}</div>
+                <div className="item-qty">{translateText("x ")}{translateText(item.qty)}</div>
                 <div className="item-price">{money(item.price * item.qty)}</div>
               </div>
             ))}
@@ -112,7 +113,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
 
           <div className="summary-section">
             <div className="summary-row">
-              <span>Međuzbir:</span>
+              <span>{translateText("Međuzbir:")}</span>
               <span>{money(order.subtotal)}</span>
             </div>
 
@@ -121,37 +122,39 @@ function OrderConfirmationModal({ order, money, onClose }) {
                 <span
                   style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  <Ticket size={14} /> Popust ({order.promoCode}):
+                  <Ticket size={14} />{translateText(" Popust (")}{translateText(order.promoCode)}):
                 </span>
                 <span>-{money(order.discountAmount)}</span>
               </div>
             )}
 
             <div className="summary-row">
-              <span>{shippingLabel}:</span>
+              <span>{translateText(shippingLabel)}:</span>
               <span className="text-success">
-                {order.shippingCost === 0
+                {translateText(order.shippingCost === 0
                   ? 'Besplatna'
-                  : money(order.shippingCost)}
+                  : money(order.shippingCost))}
               </span>
             </div>
 
             <div className="hr"></div>
 
             <div className="summary-row total">
-              <span>Ukupno za plaćanje:</span>
+              <span>{translateText("Ukupno za plaćanje:")}</span>
               <span className="total-price">{money(order.finalTotal)}</span>
             </div>
+            {displayCurrency === 'EUR' && <p className="summary-currency-note">
+              {translateText('Konačan iznos za plaćanje')}: <strong>{moneyRsd(order.finalTotal)}</strong>
+            </p>}
           </div>
 
           <div className="delivery-info">
-            <h4>{isPickup ? 'Adresa preuzimanja:' : 'Adresa dostave:'}</h4>
+            <h4>{translateText(isPickup ? 'Adresa preuzimanja:' : 'Adresa dostave:')}</h4>
 
             {isPickup ? (
               <>
-                <p>Niš, TPC Gorča lokal C31</p>
-                <p>
-                  Vaš kontakt telefon: {order.customer.phone || 'Nije unet'}
+                <p>{translateText("Niš, TPC Gorča lokal C31")}</p>
+                <p>{translateText("Vaš kontakt telefon: ")}{translateText(order.customer.phone || 'Nije unet')}
                 </p>
 
                 <button
@@ -168,8 +171,8 @@ function OrderConfirmationModal({ order, money, onClose }) {
                     marginTop: '12px',
                   }}
                 >
-                  <MapPin size={16} />{' '}
-                  {showMap ? 'Sakrij mapu' : 'Prikaži lokaciju na mapi'}
+                  <MapPin size={16} />{translateText(' ')}
+                  {translateText(showMap ? 'Sakrij mapu' : 'Prikaži lokaciju na mapi')}
                 </button>
                 <AnimatePresence>
                   {showMap && (
@@ -182,7 +185,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
                     >
                       <GoogleMapEmbed
                         className="map-iframe"
-                        title="Lokacija preuzimanja"
+                        title={translateText("Lokacija preuzimanja")}
                         width="100%"
                         height="100%"
                         style={{ border: 0 }}
@@ -200,10 +203,10 @@ function OrderConfirmationModal({ order, money, onClose }) {
                   {order.customer.name} {order.customer.surname}
                 </p>
                 <p>
-                  {order.customer.address}, {order.customer.city}{' '}
-                  {order.customer.postalCode}
+                  {order.customer.address}, {order.customer.city}{translateText(' ')}
+                  {translateText(order.customer.postalCode)}
                 </p>
-                <p>Telefon: {order.customer.phone || 'Nije unet'}</p>
+                <p>{translateText("Telefon: ")}{translateText(order.customer.phone || 'Nije unet')}</p>
               </>
             )}
           </div>
@@ -233,9 +236,8 @@ function OrderConfirmationModal({ order, money, onClose }) {
                   fontSize: '0.75rem',
                 }}
               >
-                <MessageSquareQuote size={16} /> Vaša napomena
-              </div>
-              <p style={{ margin: 0, fontStyle: 'italic' }}>"{order.note}"</p>
+                <MessageSquareQuote size={16} />{translateText(" Vaša napomena")}</div>
+              <p style={{ margin: 0, fontStyle: 'italic' }}>"{translateText(order.note)}"</p>
             </div>
           )}
           {/* ----------------------------- */}
@@ -247,8 +249,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
             className="btn-primary checkout-btn"
             ref={initialFocusRef}
             onClick={onClose}
-          >
-            Nastavi kupovinu <ShoppingBag size={18} />
+          >{translateText("Nastavi kupovinu ")}<ShoppingBag size={18} />
           </a>
         </div>
       </motion.div>

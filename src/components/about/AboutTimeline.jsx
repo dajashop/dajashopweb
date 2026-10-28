@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // ==============================
 // File: src/components/about/AboutTimeline.jsx
 // Vizuelna Hronologija - Dinamički Timeline sa tačnim početkom 2007.
@@ -58,6 +59,8 @@ const itemVariants = {
 };
 
 export default function AboutTimeline() {
+  const { t: translateText } = useStorefront();
+
   return (
     <motion.section
       className="section"
@@ -74,9 +77,7 @@ export default function AboutTimeline() {
           className="h2 text-center"
           variants={itemVariants}
           style={{ marginBottom: '60px' }}
-        >
-          Naša Hronologija: 18 Godina Poverenja
-        </motion.h2>
+        >{translateText("Naša Hronologija: 18 Godina Poverenja")}</motion.h2>
 
         <motion.div className="timeline-container">
           {timelineEvents.map((event, index) => (
@@ -103,16 +104,16 @@ export default function AboutTimeline() {
                   color: 'var(--color-on-primary)',
                 }}
               >
-                {event.year}
+                {translateText(event.year)}
               </p>
               <h3
                 className="h3"
                 style={{ color: 'var(--color-text)', marginBottom: '4px' }}
               >
-                {event.title}
+                {translateText(event.title)}
               </h3>
               <p className="lead" style={{ fontSize: '16px' }}>
-                {event.description}
+                {translateText(event.description)}
               </p>
             </motion.div>
           ))}

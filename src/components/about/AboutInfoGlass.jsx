@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // ==============================
 // File: src/components/about/AboutInfoGlass.jsx
 // Informacije i brzi faktoidi
@@ -25,10 +26,12 @@ const itemVariants = {
 };
 
 export default function AboutInfoGlass() {
+  const { t: translateText } = useStorefront();
+
   return (
     <section className="section">
       <div className="container">
-        <h2 className="sr-only">Dostava, originalnost i lokacija</h2>
+        <h2 className="sr-only">{translateText("Dostava, originalnost i lokacija")}</h2>
         <motion.div
           className="grid-3"
           variants={containerVariants}
@@ -47,10 +50,10 @@ export default function AboutInfoGlass() {
                 className="h3"
                 style={{ color: 'var(--color-primary)', marginBottom: '8px' }}
               >
-                {card.title}
+                {translateText(card.title)}
               </h3>
               <p className="lead" style={{ fontSize: '15px' }}>
-                {card.text}
+                {translateText(card.text)}
               </p>
             </motion.div>
           ))}

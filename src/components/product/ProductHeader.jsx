@@ -1,10 +1,13 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React from 'react';
 import Breadcrumbs from '../Breadcrumbs.jsx';
-import { money } from '../../utils/currency.js';
+
 import { storefrontFeatures } from '../../config/storefrontFeatures.js';
 import './ProductHeader.css'; // OBAVEZNO: Uvozi svoj CSS
 
 export default function ProductHeader({ product, adminTools }) {
+  const { t: translateText, money } = useStorefront();
+
   if (!product) return null;
   const legacyRegularPrice =
     product.regularPrice ??
@@ -42,12 +45,12 @@ export default function ProductHeader({ product, adminTools }) {
       <div className={adminTools ? 'product-header-summary has-admin-tools' : 'product-header-summary'}>
       <div className="product-header-main">
       <h1 className="header-title">
-        <span className="brand-label">{product.brand}</span>
-        <span className="model-name">{product.name}</span>
+        <span className="brand-label">{translateText(product.brand)}</span>
+        <span className="model-name">{translateText(product.name)}</span>
       </h1>
 
       <div className="price-tag">
-        {hasSale ? (
+        {translateText(hasSale ? (
           <>
             <span className="product-regular-price">
               {money(legacyRegularPrice)}
@@ -56,16 +59,16 @@ export default function ProductHeader({ product, adminTools }) {
           </>
         ) : (
           money(currentPrice)
-        )}
+        ))}
       </div>
 
       {showStock && (
         <p
           className={`product-stock ${inStock ? 'is-in-stock' : 'is-out-of-stock'}`}
         >
-          {inStock
+          {translateText(inStock
             ? `Na stanju${Number.isFinite(Number(availableQuantity)) ? `: ${availableQuantity} kom` : ''}`
-            : 'Trenutno nije na stanju'}
+            : 'Trenutno nije na stanju')}
         </p>
       )}
 
@@ -73,20 +76,20 @@ export default function ProductHeader({ product, adminTools }) {
         <dl className="product-identifiers">
           {product.barcode ? (
             <>
-              <dt>GTIN/EAN</dt>
-              <dd>{product.barcode}</dd>
+              <dt>{translateText("GTIN/EAN")}</dt>
+              <dd>{translateText(product.barcode)}</dd>
             </>
           ) : null}
           {product.mpn ? (
             <>
-              <dt>MPN</dt>
-              <dd>{product.mpn}</dd>
+              <dt>{translateText("MPN")}</dt>
+              <dd>{translateText(product.mpn)}</dd>
             </>
           ) : null}
         </dl>
       )}
       </div>
-      {adminTools}
+      {translateText(adminTools)}
       </div>
     </div>
   );

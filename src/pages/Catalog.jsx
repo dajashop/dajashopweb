@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import './Catalog.css';
 import { useNavigationType, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
@@ -30,6 +31,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import { isAdminEmail } from '../services/dajaPlatform.js';
 
 import { readSessionValue, writeSessionValue } from '../services/consentStorage.js';
+
 
 const PER_PAGE = 32;
 const scrollPositions = new Map();
@@ -89,6 +91,8 @@ function brandDescription(name) {
 }
 
 export default function Catalog({ department = 'satovi', seo }) {
+  const { t: translateText, money } = useStorefront();
+
   const { user, staffReady } = useAuth();
   const includeHiddenForAdmin = Boolean(staffReady && isAdminEmail(user?.email));
   const baseSeo = seo || departmentSEO[department] || departmentSEO.satovi;
@@ -181,7 +185,7 @@ export default function Catalog({ department = 'satovi', seo }) {
   const activeFilters = useMemo(() => {
     if (filterConfigurationLoading || filterConfigurationError) return [];
     if (filterConfiguration) {
-      const chips = configuredFilterChips(configuredParams, filterConfiguration);
+      const chips = configuredFilterChips(configuredParams, filterConfiguration, { money, t: translateText });
       const q = configuredParams.get('q');
       if (q) chips.unshift({ key: 'q', val: q, label: `Traži: "${q}"` });
       return chips;
@@ -205,9 +209,7 @@ export default function Catalog({ department = 'satovi', seo }) {
       active.push({
         key: 'price',
         val: 'price',
-        label: `${Number(min || 0).toLocaleString()} - ${Number(
-          max || '∞',
-        ).toLocaleString()} RSD`,
+        label: `${money(min || 0)} - ${max ? money(max) : '∞'}`,
       });
     }
 
@@ -229,7 +231,7 @@ export default function Catalog({ department = 'satovi', seo }) {
     });
 
     return active;
-  }, [sp, configuredParams, filterConfiguration, filterConfigurationLoading, filterConfigurationError]);
+  }, [sp, configuredParams, filterConfiguration, filterConfigurationLoading, filterConfigurationError, money, translateText]);
 
   const mechanismEntry = filterUrlEntries(filterConfiguration).find(entry => entry.key === 'mehanizam');
   const chosenMechanism = mechanismEntry?.options.filter(entry => configuredParams.getAll(`cf_${mechanismEntry.node.id}`).includes(entry.option.id)) || [];
@@ -319,7 +321,7 @@ export default function Catalog({ department = 'satovi', seo }) {
       return (
         <div className="flex flex-col items-center justify-center h-64 p-6 text-red-500">
           <AlertTriangle size={32} />
-          <p className="mt-3 font-bold">Greška pri učitavanju</p>
+          <p className="mt-3 font-bold">{translateText("Greška pri učitavanju")}</p>
         </div>
       );
     }
@@ -328,23 +330,22 @@ export default function Catalog({ department = 'satovi', seo }) {
       return (
         <div className="flex flex-col items-center justify-center h-64 p-8 rounded-2xl border border-(--color-border) bg-surface text-center">
           <p className="text-xl font-semibold text-text">
-            {brandName && !hasFilteredCatalogUrl
+            {translateText(brandName && !hasFilteredCatalogUrl
               ? `Trenutno nema dostupnih ${brandName} satova.`
-              : 'Nema rezultata za izabrane filtere.'}
+              : 'Nema rezultata za izabrane filtere.')}
           </p>
           <button
             onClick={clearAllFilters}
             className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-onPrimary font-bold shadow-lg hover:opacity-90 transition-opacity"
           >
-            <ArrowLeft size={18} /> Resetuj filtere
-          </button>
+            <ArrowLeft size={18} />{translateText(" Resetuj filtere")}</button>
         </div>
       );
     }
 
     return (
       <>
-        {err && <p role="status">Nova stranica trenutno nije dostupna. <button type="button" onClick={listing.retry}>Pokušaj ponovo</button></p>}
+        {err && <p role="status">{translateText("Nova stranica trenutno nije dostupna. ")}<button type="button" onClick={listing.retry}>{translateText("Pokušaj ponovo")}</button></p>}
         <div aria-busy={listing.changingPage} onClickCapture={event => {
           if (listing.changingPage) { event.preventDefault(); event.stopPropagation(); }
         }}><ProductGrid items={itemsToShow} blankImages={listing.changingPage} /></div>
@@ -357,9 +358,7 @@ export default function Catalog({ department = 'satovi', seo }) {
               getPageUrl={getPageUrl}
             />
           </div>
-          <p className="catalog__page-count">
-            Prikazano {itemsToShow.length} od ukupno {totalCount} proizvoda
-          </p>
+          <p className="catalog__page-count">{translateText("Prikazano ")}{translateText(itemsToShow.length)}{translateText(" od ukupno ")}{translateText(totalCount)}{translateText(" proizvoda")}</p>
         </div>
       </>
     );
@@ -373,8 +372,8 @@ export default function Catalog({ department = 'satovi', seo }) {
       transition={{ duration: 0.4 }}
     >
       <SEOHead
-        title={`${brandName ? catalogTitle : activeSeo.title}${page > 1 ? ` — strana ${page}` : ''}`}
-        description={catalogDescription}
+        title={translateText(`${brandName ? catalogTitle : activeSeo.title}${page > 1 ? ` — strana ${page}` : ''}`)}
+        description={translateText(catalogDescription)}
         keywords={activeSeo.keywords}
         url={`${siteRoot}${activeSeo.path}${page > 1 ? `?page=${page}` : ''}`}
         noIndex={hasFilteredCatalogUrl}
@@ -412,12 +411,10 @@ export default function Catalog({ department = 'satovi', seo }) {
 
             <div className="catalog__toprow mt-4 pb-4 border-b border-(--color-border) relative min-h-[40px]">
               <div className="flex flex-wrap items-center gap-2 flex-1">
-                <h1 className="catalog__title text-2xl font-bold text-text mr-2 whitespace-nowrap">{catalogTitle}</h1>
+                <h1 className="catalog__title text-2xl font-bold text-text mr-2 whitespace-nowrap">{translateText(catalogTitle)}</h1>
 
                 {activeFilters.length === 0 && (
-                  <span className="catalog__pill catalog__pill--ghost">
-                    Svi proizvodi
-                  </span>
+                  <span className="catalog__pill catalog__pill--ghost">{translateText("Svi proizvodi")}</span>
                 )}
 
                 {activeFilters.map((f, idx) => (
@@ -425,9 +422,9 @@ export default function Catalog({ department = 'satovi', seo }) {
                     key={`${f.key}-${f.val}-${idx}`}
                     onClick={() => removeFilter(f.key, f.val)}
                     className="catalog__pill"
-                    title="Ukloni filter"
+                    title={translateText("Ukloni filter")}
                   >
-                    {f.label}
+                    {translateText(f.label)}
                     <X size={13} className="catalog__pill-x" />
                   </button>
                 ))}
@@ -436,38 +433,35 @@ export default function Catalog({ department = 'satovi', seo }) {
                   <button
                     onClick={clearAllFilters}
                     className="catalog__pill catalog__pill--danger"
-                  >
-                    Obriši sve
-                  </button>
+                  >{translateText("Obriši sve")}</button>
                 )}
               </div>
 
             </div>
 
-            <p className="catalog__description">{catalogDescription}</p>
+            <p className="catalog__description">{translateText(catalogDescription)}</p>
 
             <div className="catalog__subrow">
               <div className="catalog__showing">
-                {listing.displayingPrevious ? (err ? 'Novi rezultati trenutno nisu dostupni' : 'Učitavanje novih rezultata…') : listing.data ? `Ukupno ${totalCount} proizvoda` : 'Učitavanje proizvoda…'}
-                {listing.updating && <span className="ml-2 inline-flex items-center gap-1 text-neutral-500" role="status"><Loader2 size={14} className="animate-spin" /> Osvežavanje…</span>}
+                {translateText(listing.displayingPrevious ? (err ? 'Novi rezultati trenutno nisu dostupni' : 'Učitavanje novih rezultata…') : listing.data ? `Ukupno ${totalCount} proizvoda` : 'Učitavanje proizvoda…')}
+                {listing.updating && <span className="ml-2 inline-flex items-center gap-1 text-neutral-500" role="status"><Loader2 size={14} className="animate-spin" />{translateText(" Osvežavanje…")}</span>}
                 {includeHiddenForAdmin && listing.data && (
-                  <span className="ml-2 text-neutral-500">
-                    · Sakriveno {hiddenCount}
+                  <span className="ml-2 text-neutral-500">{translateText("· Sakriveno ")}{translateText(hiddenCount)}
                   </span>
                 )}
               </div>
               <div className="catalog__sort-block">
-                <span className="catalog__sort-label">Sortiraj</span>
+                <span className="catalog__sort-label">{translateText("Sortiraj")}</span>
                 <div className="catalog__sort relative">
                   <select
                     value={sortParam}
                     onChange={(e) => handleSortChange(e.target.value)}
                     className="catalog__sort-select text-sm font-semibold text-text bg-white border border-(--color-border) rounded-full pl-3 pr-9 py-1.5 shadow-[0_6px_20px_rgba(0,0,0,0.05)] hover:-translate-y-[1px] transition-transform duration-150 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    aria-label="Sortiraj"
+                    aria-label={translateText("Sortiraj")}
                   >
                     {SORT_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
-                        {opt.label}
+                        {translateText(opt.label)}
                       </option>
                     ))}
                   </select>
@@ -486,7 +480,7 @@ export default function Catalog({ department = 'satovi', seo }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
           >
-            {renderContent()}
+            {translateText(renderContent())}
           </motion.div>
         </main>
       </div>

@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -44,6 +45,8 @@ function swatch(value) {
 }
 
 export default function ColorFilter({ values, selected, onToggle, label, columns = 5, showCounts = false }) {
+  const { t: translateText } = useStorefront();
+
   const [tooltip, setTooltip] = useState(null);
   const tooltipId = useId();
   useEffect(() => {
@@ -61,23 +64,23 @@ export default function ColorFilter({ values, selected, onToggle, label, columns
   };
   return (
     <>
-    <div className="color-filter-grid" role="group" aria-label={label} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+    <div className="color-filter-grid" role="group" aria-label={translateText(label)} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
       {values.map(({ value, label: name = value, count, color, image }) => (
         <button key={value} type="button" className={`color-filter-card ${selected.includes(value) ? 'is-active' : ''}`}
-          style={image ? { background: `url("${encodeURI(image).replace(/"/g, '%22')}") center / cover`, color: '#fff' } : color ? { background: color, color: '#fff' } : swatch(name)} aria-pressed={selected.includes(value)} aria-label={name}
+          style={image ? { background: `url("${encodeURI(image).replace(/"/g, '%22')}") center / cover`, color: '#fff' } : color ? { background: color, color: '#fff' } : swatch(name)} aria-pressed={selected.includes(value)} aria-label={translateText(name)}
           aria-describedby={tooltip?.value === name ? tooltipId : undefined}
           onMouseEnter={(event) => showName(event, name)} onMouseLeave={() => setTooltip(null)}
           onFocus={(event) => showName(event, name)} onBlur={() => setTooltip(null)}
           onKeyDown={(event) => { if (event.key === 'Escape') setTooltip(null); }}
           onClick={(event) => { showName(event, name); onToggle(value); }}>
-          {showCounts && <span className="color-filter-count">{count}</span>}
+          {showCounts && <span className="color-filter-count">{translateText(count)}</span>}
         </button>
       ))}
     </div>
-    {tooltip && createPortal(
-      <span id={tooltipId} role="tooltip" className="color-filter-tooltip" style={{ left: tooltip.x, top: tooltip.y }}>{tooltip.value}</span>,
+    {translateText(tooltip && createPortal(
+      <span id={tooltipId} role="tooltip" className="color-filter-tooltip" style={{ left: tooltip.x, top: tooltip.y }}>{translateText(tooltip.value)}</span>,
       document.body,
-    )}
+    ))}
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useState, useEffect } from 'react';
 import { Star, LogIn } from 'lucide-react';
 // import { useNavigate } from 'react-router-dom'; // Više nam ne treba za login dugme
@@ -7,6 +8,8 @@ import { useFlash } from '../../hooks/useFlash';
 import './ProductReviews.css';
 
 export default function ProductReviews({ product }) {
+  const { t: translateText } = useStorefront();
+
   // [IZMENA] Izvlačimo showAuth funkciju iz konteksta
   const { user, showAuth } = useAuth();
   const { flash } = useFlash();
@@ -42,11 +45,11 @@ export default function ProductReviews({ product }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (rating === 0) {
-      alert('Molimo vas ocenite proizvod zvezdicama.');
+      alert(translateText('Molimo vas ocenite proizvod zvezdicama.'));
       return;
     }
     if (!comment.trim()) {
-      alert('Molimo vas napišite komentar.');
+      alert(translateText('Molimo vas napišite komentar.'));
       return;
     }
 
@@ -96,63 +99,59 @@ export default function ProductReviews({ product }) {
   };
 
   if (loading)
-    return <div className="p-4 text-center text-gray-500">Učitavanje...</div>;
+    return <div className="p-4 text-center text-gray-500">{translateText("Učitavanje...")}</div>;
 
   return (
     <div className="reviews-container">
       {/* 1. STATISTIKA */}
       <div className="reviews-summary">
-        <div className="big-rating">{averageRating}</div>
+        <div className="big-rating">{translateText(averageRating)}</div>
         <div className="stars-summary">
           <div className="stars-row">
-            {renderStars(Math.round(averageRating), 20)}
+            {translateText(renderStars(Math.round(averageRating), 20))}
           </div>
-          <span className="total-reviews">
-            Na osnovu {reviews.length} recenzija
-          </span>
+          <span className="total-reviews">{translateText("Na osnovu ")}{translateText(reviews.length)}{translateText(" recenzija")}</span>
         </div>
       </div>
 
       {/* 2. LISTA */}
       <div className="reviews-list">
-        {reviews.length === 0 ? (
-          <p className="no-reviews-text">
-            Još uvek nema recenzija. Budite prvi!
-          </p>
+        {translateText(reviews.length === 0 ? (
+          <p className="no-reviews-text">{translateText("Još uvek nema recenzija. Budite prvi!")}</p>
         ) : (
           reviews.map((rev) => (
             <div key={rev.id} className="review-item">
               <div className="review-header">
                 <span className="reviewer-name">{rev.userName}</span>
                 <span className="review-date">
-                  {rev.createdAt?.seconds
+                  {translateText(rev.createdAt?.seconds
                     ? new Date(rev.createdAt.seconds * 1000).toLocaleDateString(
                         'sr-RS'
                       )
-                    : 'Upravo sada'}
+                    : 'Upravo sada')}
                 </span>
               </div>
-              <div className="review-rating">{renderStars(rev.rating, 14)}</div>
+              <div className="review-rating">{translateText(renderStars(rev.rating, 14))}</div>
               <p className="review-text">{rev.comment}</p>
             </div>
           ))
-        )}
+        ))}
       </div>
 
       {/* 3. FORMA ILI LOGIN DUGME */}
       {user ? (
         <form className="review-form" onSubmit={handleSubmit}>
-          <h3 className="form-title">Napišite recenziju</h3>
-          <div className="rating-input">{renderStars(0, 28, true)}</div>
+          <h3 className="form-title">{translateText("Napišite recenziju")}</h3>
+          <div className="rating-input">{translateText(renderStars(0, 28, true))}</div>
           <textarea
             className="comment-input"
-            placeholder="Podelite vaše utiske o ovom proizvodu..."
+            placeholder={translateText("Podelite vaše utiske o ovom proizvodu...")}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             disabled={submitting}
           />
           <button type="submit" className="submit-btn" disabled={submitting}>
-            {submitting ? 'Slanje...' : 'Pošalji recenziju'}
+            {translateText(submitting ? 'Slanje...' : 'Pošalji recenziju')}
           </button>
         </form>
       ) : (
@@ -161,15 +160,13 @@ export default function ProductReviews({ product }) {
           <div className="prompt-icon">
             <LogIn size={24} />
           </div>
-          <h3>Želite da ostavite recenziju?</h3>
-          <p>Morate biti prijavljeni da biste ocenili proizvod.</p>
+          <h3>{translateText("Želite da ostavite recenziju?")}</h3>
+          <p>{translateText("Morate biti prijavljeni da biste ocenili proizvod.")}</p>
 
           <button
             onClick={() => showAuth('login')}
             className="login-btn-action"
-          >
-            Prijavi se / Registruj se
-          </button>
+          >{translateText("Prijavi se / Registruj se")}</button>
         </div>
       )}
     </div>

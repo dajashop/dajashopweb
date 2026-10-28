@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useState, useRef } from 'react';
 import './Header.css';
 import { Link } from 'react-router-dom';
@@ -11,8 +12,11 @@ import { Heart, ShoppingBag } from 'lucide-react';
 import { useWishlist } from '../context/WishlistProvider.jsx';
 
 import HamburgerMenu from './HamburgerMenu.jsx';
+import StorefrontPreferences from '../localization/StorefrontPreferences.jsx';
 
 export default function Header() {
+  const { t: translateText } = useStorefront();
+
   const { count, cart } = useCart();
   const { count: wishlistCount } = useWishlist();
   const { user, staffReady } = useAuth();
@@ -23,10 +27,9 @@ export default function Header() {
 
   return (
     <header className="header card shadow">
+      <StorefrontPreferences />
       <div className="container header__grid">
-        <Link to="/" className="header__brand">
-          DajaShop
-        </Link>
+        <Link to="/" className="header__brand">{translateText("DajaShop")}</Link>
 
         <div className="header__search">
           <SearchBar />
@@ -37,18 +40,18 @@ export default function Header() {
           <Link className="header__cart desktop-only" to="/cart">
             <ShoppingBag size={22} />
             {/* <span>Korpa</span> */}
-            <span className="badge">{count}</span>
+            <span className="badge">{translateText(count)}</span>
           </Link>
 
           {/* LISTA ŽELJA: Klasa 'header__wishlist' (nema korpu na mobilnom) */}
           <Link
             className="header__wishlist"
             to="/account/wishlist"
-            title="Lista želja"
+            title={translateText("Lista želja")}
           >
             <Heart size={22} />
             {wishlistCount > 0 && (
-              <span className="badge">{wishlistCount}</span>
+              <span className="badge">{translateText(wishlistCount)}</span>
             )}
           </Link>
 
@@ -57,7 +60,7 @@ export default function Header() {
           <button
             ref={anchorRef}
             className="hamburger"
-            aria-label={menuOpen ? 'Zatvori meni' : 'Otvori meni'}
+            aria-label={translateText(menuOpen ? 'Zatvori meni' : 'Otvori meni')}
             aria-expanded={menuOpen}
             aria-controls="hm-panel"
             onClick={() => setMenuOpen((v) => !v)}
@@ -66,8 +69,8 @@ export default function Header() {
             <span className="hamburger__line"></span>
             <span className="hamburger__line"></span>
             {unreadOrders > 0 && (
-              <span className="hamburger__notification" aria-label={`${unreadOrders} novih porudžbina`}>
-                {unreadOrders > 99 ? '99+' : unreadOrders}
+              <span className="hamburger__notification" aria-label={translateText(`${unreadOrders} novih porudžbina`)}>
+                {translateText(unreadOrders > 99 ? '99+' : unreadOrders)}
               </span>
             )}
           </button>

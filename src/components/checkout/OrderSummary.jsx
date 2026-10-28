@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React from 'react';
 import { useCart } from '../../hooks/useCart';
 import EngravingSummary from '../engraving/EngravingSummary';
@@ -19,14 +20,16 @@ export default function OrderSummary({
   appliedPromo, // NOVO: Primamo objekat promo koda
   discountAmount, // NOVO: Iznos popusta
 }) {
+  const { t: translateText, displayCurrency, moneyRsd } = useStorefront();
+
   const { items } = useCart();
   return (
     <div className="summary-card card glass">
-      <h2>Pregled porudžbine</h2>
-      {items.filter((item) => item.engraving).map((item) => <div key={item.lineId || item.id}><b>{item.name}</b><EngravingSummary item={item} editable /></div>)}
+      <h2>{translateText("Pregled porudžbine")}</h2>
+      {items.filter((item) => item.engraving).map((item) => <div key={item.lineId || item.id}><b>{translateText(item.name)}</b><EngravingSummary item={item} editable /></div>)}
       <div className="summary-rows">
         <div className="summary-row">
-          <span className="muted">Međuzbir</span>
+          <span className="muted">{translateText("Međuzbir")}</span>
           <span>{money(total)}</span>
         </div>
 
@@ -42,16 +45,16 @@ export default function OrderSummary({
                 color: '#ef4444',
               }}
             >
-              <Ticket size={14} /> Popust ({appliedPromo.code})
+              <Ticket size={14} />{translateText(" Popust (")}{translateText(appliedPromo.code)})
             </span>
             <span>-{money(discountAmount)}</span>
           </div>
         )}
 
         <div className="summary-row">
-          <span className="muted">Isporuka</span>
+          <span className="muted">{translateText("Isporuka")}</span>
           {finalShipping === 0 ? (
-            <span className="text-success">Besplatna</span>
+            <span className="text-success">{translateText("Besplatna")}</span>
           ) : (
             <span>{money(finalShipping)}</span>
           )}
@@ -60,20 +63,25 @@ export default function OrderSummary({
         <div className="hr"></div>
 
         <div className="summary-total">
-          <span>Ukupno</span>
+          <span>{translateText("Ukupno")}</span>
           <span className="total-price">{money(finalTotal)}</span>
         </div>
       </div>
 
+      {displayCurrency === 'EUR' && <p className="summary-currency-note">
+        {translateText('EUR cene su informativne. Plaćanje je u RSD.')}<br />
+        <strong>{translateText('Konačan iznos za plaćanje')}: {moneyRsd(finalTotal)}</strong>
+      </p>}
+
       {availability !== 'available' && (
         <div id="checkout-availability" className="checkout-availability" role="status" aria-live="polite">
-          <p>{availability === 'checking' ? 'Proveravamo da li je poručivanje dostupno…' : CHECKOUT_UNAVAILABLE_MESSAGE}</p>
+          <p>{translateText(availability === 'checking' ? 'Proveravamo da li je poručivanje dostupno…' : CHECKOUT_UNAVAILABLE_MESSAGE)}</p>
           {availability === 'unavailable' && (
             <div className="checkout-availability-actions">
-              <a href={`tel:${seoConfig.business.phone.replace(/[^+\d]/g, '')}`}>Pozovite nas</a>
-              <a href={`mailto:${seoConfig.business.email}`}>Pišite nam</a>
+              <a href={`tel:${seoConfig.business.phone.replace(/[^+\d]/g, '')}`}>{translateText("Pozovite nas")}</a>
+              <a href={`mailto:${seoConfig.business.email}`}>{translateText("Pišite nam")}</a>
               <button type="button" onClick={() => void onCheckAvailability()} disabled={isCheckingAvailability}>
-                {isCheckingAvailability ? 'Proveravamo…' : 'Proveri ponovo'}
+                {translateText(isCheckingAvailability ? 'Proveravamo…' : 'Proveri ponovo')}
               </button>
             </div>
           )}
@@ -88,13 +96,12 @@ export default function OrderSummary({
         aria-describedby={availability !== 'available' ? 'checkout-availability' : undefined}
         aria-busy={isLoading || availability === 'checking'}
       >
-        {isLoading ? 'Obrada...' : availability === 'checking' ? 'Provera dostupnosti…' : availability === 'unavailable' ? 'Trenutno nije dostupno' : 'Potvrdi porudžbinu'}
+        {translateText(isLoading ? 'Obrada...' : availability === 'checking' ? 'Provera dostupnosti…' : availability === 'unavailable' ? 'Trenutno nije dostupno' : 'Potvrdi porudžbinu')}
         {!isLoading && availability === 'available' && <ArrowRight size={18} />}
       </button>
 
       <div className="secure-badge">
-        <ShieldCheck size={16} /> Sigurna kupovina
-      </div>
+        <ShieldCheck size={16} />{translateText(" Sigurna kupovina")}</div>
     </div>
   );
 }

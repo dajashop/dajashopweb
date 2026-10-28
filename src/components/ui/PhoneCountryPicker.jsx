@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -25,12 +26,14 @@ export default function PhoneCountryPicker({
   className = '',
   menuWidth = 280,
 }) {
+  const { t: translateText, language } = useStorefront();
+
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [position, setPosition] = useState(null);
-  const visibleCountries = filterPhoneCountries(search);
+  const visibleCountries = filterPhoneCountries(search, language);
 
   const close = () => {
     setIsOpen(false);
@@ -78,9 +81,9 @@ export default function PhoneCountryPicker({
   return (
     <>
       <div ref={triggerRef} className={`phone-country-picker ${className}`.trim()}>
-        {renderTrigger({ isOpen, toggle })}
+        {translateText(renderTrigger({ isOpen, toggle }))}
       </div>
-      {createPortal(
+      {translateText(createPortal(
         <AnimatePresence>
           {isOpen && position && (
             <motion.div
@@ -97,8 +100,8 @@ export default function PhoneCountryPicker({
                   type="search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Pronađi državu ili pozivni broj"
-                  aria-label="Pretraži države"
+                  placeholder={translateText("Pronađi državu ili pozivni broj")}
+                  aria-label={translateText("Pretraži države")}
                 />
               </div>
               <div className="phone-country-picker__results" data-lenis-prevent>
@@ -111,21 +114,21 @@ export default function PhoneCountryPicker({
                   >
                     <img src={getFlagUrl(option.code)} alt="" aria-hidden="true" />
                     <span className="phone-country-picker__option-copy">
-                      <strong>{option.label}</strong>
-                      <small>{option.dial}</small>
+                      <strong>{translateText(option.label)}</strong>
+                      <small>{translateText(option.dial)}</small>
                     </span>
-                    {country?.code === option.code && <Check size={16} aria-label="Izabrano" />}
+                    {country?.code === option.code && <Check size={16} aria-label={translateText("Izabrano")} />}
                   </button>
                 ))}
                 {visibleCountries.length === 0 && (
-                  <p className="phone-country-picker__empty">Nema odgovarajuće države.</p>
+                  <p className="phone-country-picker__empty">{translateText("Nema odgovarajuće države.")}</p>
                 )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>,
         document.body
-      )}
+      ))}
     </>
   );
 }

@@ -1,9 +1,12 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { useState } from 'react';
 import { MapPinned } from 'lucide-react';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import './GoogleMapEmbed.css';
 
 export default function GoogleMapEmbed({ src, title, className = '', ...iframeProps }) {
+  const { t: translateText } = useStorefront();
+
   const { googleAllowed, requestGooglePermission } = useConsent();
   const [requesting, setRequesting] = useState(false);
 
@@ -23,15 +26,15 @@ export default function GoogleMapEmbed({ src, title, className = '', ...iframePr
           <MapPinned size={22} />
         </div>
         <div className="google-map-consent-copy">
-          <strong>Prikaz mape je isključen</strong>
-          <p>Dozvolite funkcionalne usluge da biste videli lokaciju prodavnice.</p>
+          <strong>{translateText("Prikaz mape je isključen")}</strong>
+          <p>{translateText("Dozvolite funkcionalne usluge da biste videli lokaciju prodavnice.")}</p>
         </div>
         <button type="button" onClick={() => void allowGoogle()} disabled={requesting}>
-          {requesting ? 'Otvaramo izbor…' : 'Prikaži mapu'}
+          {translateText(requesting ? 'Otvaramo izbor…' : 'Prikaži mapu')}
         </button>
       </div>
     );
   }
 
-  return <iframe className={className} title={title} src={src} {...iframeProps} />;
+  return <iframe className={className} title={translateText(title)} src={src} {...iframeProps} />;
 }

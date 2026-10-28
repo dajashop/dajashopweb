@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 ﻿import React, {
   useState,
   useEffect,
@@ -81,6 +82,8 @@ export default function DeliveryForm({
   flash,
   // NOVO: Props za napomenu
 }) {
+  const { t: translateText } = useStorefront();
+
   const reduceMotion = useReducedMotion();
   const emailInputRef = useRef(null);
   const addressSelectorRef = useRef(null);
@@ -515,7 +518,7 @@ export default function DeliveryForm({
       }`}
     >
       {/* STILOVI SA TEMATSKIM VARIJABLAMA */}
-      <style>{`
+      <style>{translateText(`
         .address-selector-wrapper { position: relative; margin-bottom: 24px; z-index: 40; }
         
         .address-selector-btn {
@@ -560,11 +563,11 @@ export default function DeliveryForm({
             color: var(--color-primary); 
         }
 
-      `}</style>
+      `)}</style>
 
       <div className="section-header">
         <div className="step-badge">1</div>
-        <h2>Podaci za isporuku</h2>
+        <h2>{translateText("Podaci za isporuku")}</h2>
       </div>
 
       {/* --- ADDRESS SELECTOR --- */}
@@ -576,8 +579,8 @@ export default function DeliveryForm({
             onClick={() => setIsAddressSelectorOpen(!isAddressSelectorOpen)}
           >
             <div className="flex items-center gap-3">
-              {getSelectedAddressIcon()}
-              <span>{getSelectedAddressLabel()}</span>
+              {translateText(getSelectedAddressIcon())}
+              <span>{translateText(getSelectedAddressLabel())}</span>
             </div>
             <ChevronDown
               size={16}
@@ -604,13 +607,13 @@ export default function DeliveryForm({
                     }`}
                     onClick={() => selectAddress(addr)}
                   >
-                    {getAddressIcon(addr)}
+                    {translateText(getAddressIcon(addr))}
                     <div className="flex flex-col">
                       <span className="font-bold text-sm text-[var(--color-text)]">
-                        {addr.label || 'Adresa'}
+                        {translateText(addr.label || 'Adresa')}
                       </span>
                       <span className="text-xs opacity-70">
-                        {addr.address}, {addr.city}
+                        {translateText(addr.address)}, {translateText(addr.city)}
                       </span>
                     </div>
                     {selectedAddressId === addr.id && (
@@ -629,9 +632,7 @@ export default function DeliveryForm({
                   onClick={() => selectAddress(null)}
                 >
                   <Plus size={16} />
-                  <span className="font-bold text-sm">
-                    Nova adresa (Ručni unos)
-                  </span>
+                  <span className="font-bold text-sm">{translateText("Nova adresa (Ručni unos)")}</span>
                   {selectedAddressId === 'new' && (
                     <Check
                       size={16}
@@ -653,7 +654,7 @@ export default function DeliveryForm({
             <input
               type="text"
               name="name"
-              placeholder="Ime"
+              placeholder={translateText("Ime")}
               value={formData.name}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -670,7 +671,7 @@ export default function DeliveryForm({
             <input
               type="text"
               name="surname"
-              placeholder="Prezime"
+              placeholder={translateText("Prezime")}
               value={formData.surname}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -688,12 +689,11 @@ export default function DeliveryForm({
             className={`input-group ghost-container ${getInputClass('email')}`}
           >
             <div className="ghost-overlay" style={{ paddingLeft: '42px' }}>
-              <span className="invisible-text">{formData.email}</span>
-              <span className="prediction-text">{prediction}</span>
+              <span className="invisible-text">{translateText(formData.email)}</span>
+              <span className="prediction-text">{translateText(prediction)}</span>
               {prediction && (
                 <span className="tab-hint-inline">
-                  <ArrowRightToLine size={10} /> Tab
-                </span>
+                  <ArrowRightToLine size={10} />{translateText(" Tab")}</span>
               )}
             </div>
             <Mail className="input-icon z-index-fix" size={18} />
@@ -701,7 +701,7 @@ export default function DeliveryForm({
               ref={emailInputRef}
               type="email"
               name="email"
-              placeholder="E-mail adresa"
+              placeholder={translateText("E-mail adresa")}
               value={formData.email}
               onChange={handleEmailInput}
               onKeyDown={handleKeyDown}
@@ -720,8 +720,8 @@ export default function DeliveryForm({
                       selectEmail(s);
                     }}
                   >
-                    {s.split('@')[0]}
-                    <span className="domain">@{s.split('@')[1]}</span>
+                    {translateText(s.split('@')[0])}
+                    <span className="domain">@{translateText(s.split('@')[1])}</span>
                   </li>
                 ))}
               </ul>
@@ -746,8 +746,8 @@ export default function DeliveryForm({
                   onClick={toggle}
                 >
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <img src={getFlagUrl(selectedCountry.code)} alt={selectedCountry.code} className="w-5 h-auto rounded-[2px]" />
-                    <span className="text-sm font-medium text-[var(--color-text)]">{selectedCountry.dial}</span>
+                    <img src={getFlagUrl(selectedCountry.code)} alt={translateText(selectedCountry.code)} className="w-5 h-auto rounded-[2px]" />
+                    <span className="text-sm font-medium text-[var(--color-text)]">{translateText(selectedCountry.dial)}</span>
                   </div>
                   <ChevronDown size={14} className={`text-[var(--color-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -799,14 +799,13 @@ export default function DeliveryForm({
                   )}`}
                 >
                   <div className="ghost-overlay" style={{ paddingLeft: '42px' }}>
-                    <span className="invisible-text">{formData.address}</span>
+                    <span className="invisible-text">{translateText(formData.address)}</span>
                     <span className="prediction-text">
-                      {addressPrediction}
+                      {translateText(addressPrediction)}
                     </span>
                     {addressPrediction && (
                       <span className="tab-hint-inline">
-                        <ArrowRightToLine size={10} /> Tab
-                      </span>
+                        <ArrowRightToLine size={10} />{translateText(" Tab")}</span>
                     )}
                   </div>
                   <MapPin
@@ -819,13 +818,13 @@ export default function DeliveryForm({
                     type="text"
                     name="address"
                     placeholder={
-                      !googleAllowed
+                      translateText(!googleAllowed
                         ? 'Unesite adresu ručno ili uključite predloge'
                         : mapsReady
                         ? 'Počnite da kucate ulicu...'
                         : mapsLoadError
                           ? 'Unesite adresu ručno'
-                          : 'Učitavanje predloga adrese...'
+                          : 'Učitavanje predloga adrese...')
                     }
                     value={formData.address}
                     onChange={handleAddressInput}
@@ -855,7 +854,7 @@ export default function DeliveryForm({
                       </div>
                     )}
                   {googleAddressSuggestions.length > 0 && (
-                    <ul className="checkout-google-address-suggestions" role="listbox" aria-label="Predlozi adrese">
+                    <ul className="checkout-google-address-suggestions" role="listbox" aria-label={translateText("Predlozi adrese")}>
                       {googleAddressSuggestions.map((suggestion) => (
                         <li key={suggestion.placeId}>
                           <button
@@ -863,8 +862,8 @@ export default function DeliveryForm({
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => void selectGoogleAddress(suggestion)}
                           >
-                            <strong>{addressPredictionPrimaryText(suggestion)}</strong>
-                            <small>{addressPredictionSecondaryText(suggestion) || addressPredictionLabel(suggestion)}</small>
+                            <strong>{translateText(addressPredictionPrimaryText(suggestion))}</strong>
+                            <small>{translateText(addressPredictionSecondaryText(suggestion) || addressPredictionLabel(suggestion))}</small>
                           </button>
                         </li>
                       ))}
@@ -880,7 +879,7 @@ export default function DeliveryForm({
                   <input
                     type="text"
                     name="city"
-                    placeholder="Grad"
+                    placeholder={translateText("Grad")}
                     value={formData.city}
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -897,7 +896,7 @@ export default function DeliveryForm({
                   <input
                     type="text"
                     name="postalCode"
-                    placeholder="Poštanski broj"
+                    placeholder={translateText("Poštanski broj")}
                     value={formData.postalCode}
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -922,19 +921,15 @@ export default function DeliveryForm({
           >
             <div className="save-address-card">
               <div>
-                <p className="save-title">Sačuvaj ovu adresu</p>
-                <p className="save-subtitle">
-                  Spremaj je za sledeću porudžbinu i popuni automatski.
-                </p>
+                <p className="save-title">{translateText("Sačuvaj ovu adresu")}</p>
+                <p className="save-subtitle">{translateText("Spremaj je za sledeću porudžbinu i popuni automatski.")}</p>
               </div>
               <button
                 type="button"
                 className="save-address-btn"
                 onClick={handleOpenSaveModal}
               >
-                <Plus size={16} />
-                Sačuvaj adresu
-              </button>
+                <Plus size={16} />{translateText("Sačuvaj adresu")}</button>
             </div>
           </div>
         )}
@@ -953,12 +948,8 @@ export default function DeliveryForm({
               <div className="reg-popover-header">
                 <div>
                   <div className="reg-popover-title">
-                    <UserPlus size={18} className="text-primary mr-2" /> Novi
-                    kupac? Kreirajte nalog odmah.
-                  </div>
-                  <span className="reg-popover-desc">
-                    Unesite lozinku i registrujte se za bržu kupovinu.
-                  </span>
+                    <UserPlus size={18} className="text-primary mr-2" />{translateText(" Novi kupac? Kreirajte nalog odmah.")}</div>
+                  <span className="reg-popover-desc">{translateText("Unesite lozinku i registrujte se za bržu kupovinu.")}</span>
                 </div>
                 <button
                   type="button"
@@ -979,7 +970,7 @@ export default function DeliveryForm({
                 />
                 <input
                   type="password"
-                  placeholder="Lozinka (min. 8, veliko slovo i broj)"
+                  placeholder={translateText("Lozinka (min. 8, veliko slovo i broj)")}
                   value={password}
                   onChange={(e) => onPasswordChange(e.target.value)}
                   autoComplete="new-password"
@@ -994,11 +985,11 @@ export default function DeliveryForm({
                 onClick={handleConfirmReg}
                 disabled={isRegistering}
               >
-                {isRegistering ? (
+                {translateText(isRegistering ? (
                   <Loader2 className="animate-spin" size={18} />
                 ) : (
                   'Potvrdi i Registruj se'
-                )}
+                ))}
                 {!isRegistering && <ArrowRight size={16} />}
               </button>
             </motion.div>
@@ -1026,10 +1017,8 @@ export default function DeliveryForm({
             >
               <div className="save-modal-header">
                 <div>
-                  <p className="save-modal-title">Sačuvaj adresu</p>
-                  <p className="save-modal-desc">
-                    Daj naziv i odaberi ikonicu da je brže pronađeš.
-                  </p>
+                  <p className="save-modal-title">{translateText("Sačuvaj adresu")}</p>
+                  <p className="save-modal-desc">{translateText("Daj naziv i odaberi ikonicu da je brže pronađeš.")}</p>
                 </div>
                 <button
                   type="button"
@@ -1040,9 +1029,7 @@ export default function DeliveryForm({
                 </button>
               </div>
 
-              <label className="save-input-label">
-                Naziv adrese
-                <div className="save-input-wrapper">
+              <label className="save-input-label">{translateText("Naziv adrese")}<div className="save-input-wrapper">
                   <Edit2 size={16} className="save-input-icon" />
                   <input
                     type="text"
@@ -1051,7 +1038,7 @@ export default function DeliveryForm({
                       setNewAddressLabel(e.target.value);
                       setManualLabelEdited(true);
                     }}
-                    placeholder="Kuća, Posao..."
+                    placeholder={translateText("Kuća, Posao...")}
                   />
                 </div>
               </label>
@@ -1077,10 +1064,10 @@ export default function DeliveryForm({
                             setNewAddressLabel(val.label);
                           }
                         }}
-                        title={val.label}
+                        title={translateText(val.label)}
                       >
                         <IconComp size={18} />
-                        <span>{val.label}</span>
+                        <span>{translateText(val.label)}</span>
                       </button>
                     );
                   })}
@@ -1092,14 +1079,12 @@ export default function DeliveryForm({
                 onClick={handleSaveAddress}
                 disabled={isSavingAddress}
               >
-                {isSavingAddress ? (
+                {translateText(isSavingAddress ? (
                   <>
-                    <Loader2 className="animate-spin" size={16} />
-                    ČUVANJE...
-                  </>
+                    <Loader2 className="animate-spin" size={16} />{translateText("ČUVANJE...")}</>
                 ) : (
                   'Sačuvaj'
-                )}
+                ))}
               </button>
             </motion.div>
           </motion.div>

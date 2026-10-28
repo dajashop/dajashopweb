@@ -1,9 +1,12 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import "./HeroBgSlider.css";
 
 export default function HeroBgSlider({ slides = [], interval = 5000 }) {
+  const { t: translateText } = useStorefront();
+
   const [i, setI] = useState(0);
   const [loadedSlides, setLoadedSlides] = useState(() => new Set([0]));
   const t = useRef(null);
@@ -89,7 +92,7 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
       onTouchMove={onMove}
       onTouchEnd={onUp}
       role="region"
-      aria-label="Pozadinski slajder"
+      aria-label={translateText("Pozadinski slajder")}
     >
       {/* Slojevi slika */}
       {slides.map((s, idx) => {
@@ -106,7 +109,7 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
             onDragStart={(e) => e.preventDefault()}
             tabIndex={idx === i ? undefined : -1}
             aria-hidden={idx !== i}
-            aria-label={s.alt ?? "Otvori"}
+            aria-label={translateText(s.alt ?? "Otvori")}
           >
             {(idx === i || loadedSlides.has(idx)) && (
               <img
@@ -115,30 +118,30 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
                 sizes={s.srcSet ? '(max-width: 1280px) 100vw, 1280px' : undefined}
                 width={s.width}
                 height={s.height}
-                alt={s.alt ?? ""}
+                alt={translateText(s.alt ?? "")}
                 loading="eager"
                 fetchPriority={idx === i ? 'high' : 'low'}
                 decoding="async"
                 draggable="false"
               />
             )}
-            {s.overlay && <div className="heroBg__overlay">{s.overlay}</div>}
+            {s.overlay && <div className="heroBg__overlay">{translateText(s.overlay)}</div>}
           </Slide>
         );
       })}
 
       {/* Kontrole */}
       <div className="heroBg__controls">
-        <button className="heroBg__btn prev" aria-label="Prethodni" onClick={() => go(-1)}>
+        <button className="heroBg__btn prev" aria-label={translateText("Prethodni")} onClick={() => go(-1)}>
           <ChevronLeft className="heroBg__btnIcon" size={18} strokeWidth={2.6} />
         </button>
-        <button className="heroBg__btn next" aria-label="Sledeci" onClick={() => go(1)}>
+        <button className="heroBg__btn next" aria-label={translateText("Sledeci")} onClick={() => go(1)}>
           <ChevronRight className="heroBg__btnIcon" size={18} strokeWidth={2.6} />
         </button>
       </div>
 
       {/* Tačkice */}
-      <div className="heroBg__dots" role="tablist" aria-label="Navigacija slajdova">
+      <div className="heroBg__dots" role="tablist" aria-label={translateText("Navigacija slajdova")}>
         {slides.map((_, idx) => (
           <button
             key={idx}

@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // src/components/account/ProfileSection.jsx
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -34,6 +35,8 @@ import PhoneCountryPicker from '../ui/PhoneCountryPicker.jsx';
 import ErrorMessage from '../ui/ErrorMessage.jsx';
 
 function ProfileSection({ user }) {
+  const { t: translateText } = useStorefront();
+
   const { flash } = useFlash();
   const { refreshUser } = useAuth();
   const [isEditingName, setIsEditingName] = useState(false);
@@ -219,15 +222,15 @@ function ProfileSection({ user }) {
             ref={fileInputRef}
             onChange={handleAvatarChange}
           />
-          {user.photoURL ? (
+          {translateText(user.photoURL ? (
             <img
               src={user.photoURL}
-              alt={user.displayName || 'Avatar'}
+              alt={translateText(user.displayName || 'Avatar')}
               className="w-full h-full object-cover"
             />
           ) : (
             getInitials(user)
-          )}
+          ))}
 
           <div
             className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -247,12 +250,10 @@ function ProfileSection({ user }) {
                   marginBottom: '8px',
                   color: 'var(--color-text)',
                 }}
-              >
-                Izmeni ime:
-              </h2>
+              >{translateText("Izmeni ime:")}</h2>
             </div>
           ) : (
-            <h2>{user.displayName || 'Korisnik'}</h2>
+            <h2>{translateText(user.displayName || 'Korisnik')}</h2>
           )}
           <p className="muted">{user.email}</p>
         </div>
@@ -271,13 +272,8 @@ function ProfileSection({ user }) {
             <div className="flex items-center gap-3">
               <AlertCircle size={24} className="text-yellow-500" />
               <div>
-                <p className="font-bold text-[var(--color-text)]">
-                  Status E-maila
-                </p>
-                <p className="text-sm muted">
-                  Vaša e-mail adresa nije verifikovana. Pošaljite verifikacioni
-                  link.
-                </p>
+                <p className="font-bold text-[var(--color-text)]">{translateText("Status E-maila")}</p>
+                <p className="text-sm muted">{translateText("Vaša e-mail adresa nije verifikovana. Pošaljite verifikacioni link.")}</p>
               </div>
             </div>
             <button
@@ -289,11 +285,11 @@ function ProfileSection({ user }) {
                 color: 'var(--color-on-primary)',
               }}
             >
-              {loading ? (
+              {translateText(loading ? (
                 <Loader2 className="animate-spin text-white" size={16} />
               ) : (
                 'Pošalji link'
-              )}
+              ))}
             </button>
           </motion.div>
         </AnimatePresence>
@@ -303,7 +299,7 @@ function ProfileSection({ user }) {
       <div className="info-grid">
         <div className="card glass info-card relative overflow-hidden group">
           <div className="flex justify-between items-start">
-            <div className="info-label">Ime i prezime</div>
+            <div className="info-label">{translateText("Ime i prezime")}</div>
             {!isEditingName && (
               <button
                 className="text-[var(--color-muted)] hover:text-[var(--color-text)] transition p-1 rounded-md hover:bg-[var(--color-surface)]"
@@ -328,7 +324,7 @@ function ProfileSection({ user }) {
                   onChange={(e) => setNewName(e.target.value)}
                   className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900  focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 transition-all outline-none placeholder:text-gray-400"
                   autoFocus
-                  placeholder="Vaše ime"
+                  placeholder={translateText("Vaše ime")}
                 />
                 <div className="flex gap-2 mt-3 justify-end">
                   <button
@@ -337,9 +333,7 @@ function ProfileSection({ user }) {
                       setNewName(user.displayName || '');
                     }}
                     className="text-xs font-bold px-3 py-1.5 rounded-md bg-[var(--color-surface)] text-[var(--color-text)] hover:opacity-80 transition"
-                  >
-                    Otkaži
-                  </button>
+                  >{translateText("Otkaži")}</button>
                   <button
                     onClick={handleSaveName}
                     disabled={loading}
@@ -352,8 +346,7 @@ function ProfileSection({ user }) {
                       />
                     ) : (
                       <>
-                        <Save size={12} /> Sačuvaj
-                      </>
+                        <Save size={12} />{translateText(" Sačuvaj")}</>
                     )}
                   </button>
                 </div>
@@ -366,7 +359,7 @@ function ProfileSection({ user }) {
                 exit={{ opacity: 0 }}
                 className="info-value mt-1 truncate"
               >
-                {user.displayName || 'Nije uneto'}
+                {translateText(user.displayName || 'Nije uneto')}
               </motion.div>
             )}
           </AnimatePresence>
@@ -375,16 +368,16 @@ function ProfileSection({ user }) {
         {/* --- KARTICA: EMAIL SA BADŽOM --- */}
         <div className="card glass info-card">
           <div className="flex justify-between items-start mb-1">
-            <div className="info-label">Email adresa</div>
+            <div className="info-label">{translateText("Email adresa")}</div>
             {user.emailVerified ? (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-bold uppercase tracking-wider cursor-default select-none">
                 <CheckCircle2 size={12} />
-                <span>Verifikovan</span>
+                <span>{translateText("Verifikovan")}</span>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-bold uppercase tracking-wider cursor-default select-none">
                 <AlertCircle size={12} />
-                <span>Nije verif.</span>
+                <span>{translateText("Nije verif.")}</span>
               </div>
             )}
           </div>
@@ -398,11 +391,11 @@ function ProfileSection({ user }) {
           data-lenis-prevent
         >
           <div className="flex justify-between items-start">
-            <div className="info-label">Telefon</div>
-            {user.phoneNumber && user.phoneVerified ? (
+            <div className="info-label">{translateText("Telefon")}</div>
+            {translateText(user.phoneNumber && user.phoneVerified ? (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-bold uppercase tracking-wider cursor-default select-none">
                 <ShieldCheck size={12} />
-                <span>Verifikovan</span>
+                <span>{translateText("Verifikovan")}</span>
               </div>
             ) : (
               !isEditingPhone && (
@@ -413,7 +406,7 @@ function ProfileSection({ user }) {
                   <Plus size={14} />
                 </button>
               )
-            )}
+            ))}
           </div>
 
           <AnimatePresence mode="wait">
@@ -439,8 +432,8 @@ function ProfileSection({ user }) {
                             className="min-h-[42px] min-w-[108px] justify-between rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-900 outline-none transition-colors hover:bg-gray-50 flex items-center gap-2"
                           >
                             <span className="flex items-center gap-2">
-                              <img src={getFlagUrl(selectedCountry.code)} alt={selectedCountry.code} className="h-auto w-6 shrink-0 rounded-[2px] object-contain" />
-                              <span className="text-xs font-bold text-gray-600">{selectedCountry.dial}</span>
+                              <img src={getFlagUrl(selectedCountry.code)} alt={translateText(selectedCountry.code)} className="h-auto w-6 shrink-0 rounded-[2px] object-contain" />
+                              <span className="text-xs font-bold text-gray-600">{translateText(selectedCountry.dial)}</span>
                             </span>
                             <motion.span
                               aria-hidden="true"
@@ -470,29 +463,26 @@ function ProfileSection({ user }) {
                       <button
                         onClick={cancelPhoneEdit}
                         className="text-xs font-bold px-3 py-1.5 rounded-md bg-[var(--color-surface)] text-[var(--color-text)] hover:opacity-80 transition"
-                      >
-                        Otkaži
-                      </button>
+                      >{translateText("Otkaži")}</button>
                       <button
                         onClick={handleSendCode}
                         disabled={loading}
                         className="text-xs font-bold px-3 py-1.5 rounded-md bg-[var(--color-primary)] text-[var(--color-bg)] hover:opacity-90 transition flex items-center gap-1"
                       >
-                        {loading ? (
+                        {translateText(loading ? (
                           <Loader2
                             size={16}
                             className="animate-spin text-[var(--color-bg)]"
                           />
                         ) : (
                           'Pošalji kod'
-                        )}
+                        ))}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    <p className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider">
-                      Kod poslat na {selectedCountry.dial} {localPhone}
+                    <p className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider">{translateText("Kod poslat na ")}{translateText(selectedCountry.dial)} {translateText(localPhone)}
                     </p>
                     <div className="relative">
                       <MessageSquare
@@ -513,22 +503,20 @@ function ProfileSection({ user }) {
                       <button
                         onClick={cancelPhoneEdit}
                         className="text-xs font-bold px-3 py-1.5 rounded-md bg-[var(--color-surface)] text-[var(--color-text)] hover:opacity-80 transition"
-                      >
-                        Otkaži
-                      </button>
+                      >{translateText("Otkaži")}</button>
                       <button
                         onClick={handleVerifyCode}
                         disabled={loading}
                         className="text-xs font-bold px-3 py-1.5 rounded-md bg-green-600 text-white hover:bg-green-500 transition flex items-center gap-1"
                       >
-                        {loading ? (
+                        {translateText(loading ? (
                           <Loader2
                             className="animate-spin text-white"
                             size={16}
                           />
                         ) : (
                           'Potvrdi'
-                        )}
+                        ))}
                       </button>
                     </div>
                   </div>
@@ -542,7 +530,7 @@ function ProfileSection({ user }) {
                 exit={{ opacity: 0 }}
                 className="info-value mt-1 truncate"
               >
-                {user.phoneNumber || 'Nije uneto'}
+                {translateText(user.phoneNumber || 'Nije uneto')}
               </motion.div>
             )}
           </AnimatePresence>

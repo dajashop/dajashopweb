@@ -5,6 +5,13 @@
 - Novu verziju Android aplikacije instalirati ako je uređaj povezan; ako nije, preskočiti.
 - Ne proveravati da li je deploy završen.
 
+## Jezici i valute prodavnice
+
+- Svaki novi ili izmenjeni tekst namenjen kupcima odmah pripremiti na srpskom i engleskom. Koristiti `useStorefront().t(...)` i dopuniti `src/localization/en.json` u istom commitu. Prevod pripremiti tokom rada na funkciji, bez posebnog korisnikovog zahteva.
+- Cene za kupce prikazivati kroz `useStorefront().money(...)`. Osnovne cene, filter parametri i obračuni porudžbina ostaju u RSD; EUR je informativni prikaz po kursu sa javnog API-ja.
+- Ne prevoditi vrednosti koje služe kao identifikatori, API parametri, korisnički unosi, tekst gravure ili recenzije. Za preveden opis artikla koristiti `attributes._translations.en.description`; bez prevoda prikazati original sa oznakom jezika.
+- Detalji i primeri: [docs/LOCALIZATION.md](docs/LOCALIZATION.md).
+
 ## Mapa projekata i infrastrukture
 
 Ovaj repozitorijum sadrži prodavnicu, web admin i Pages SSR. Zajednički backend je u projektu `daja-platform`, a desktop/Android klijenti su u `RFIDDaja`.

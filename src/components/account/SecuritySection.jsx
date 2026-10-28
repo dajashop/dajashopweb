@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFlash } from '../../hooks/useFlash.js';
@@ -41,6 +42,8 @@ const GoogleIcon = () => (
 );
 
 export default function SecuritySection({ user }) {
+  const { t: translateText } = useStorefront();
+
   const { flash } = useFlash();
   const [loading, setLoading] = useState(false);
 
@@ -140,7 +143,7 @@ export default function SecuritySection({ user }) {
       className="section-content"
     >
       <div className="section-header-row mb-6">
-        <h3>Bezbednost i prijava</h3>
+        <h3>{translateText("Bezbednost i prijava")}</h3>
       </div>
 
       {/* GRID SISTEM */}
@@ -154,13 +157,11 @@ export default function SecuritySection({ user }) {
                   <Lock size={24} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[var(--color-text)] m-0">
-                    Lozinka
-                  </h4>
+                  <h4 className="font-bold text-[var(--color-text)] m-0">{translateText("Lozinka")}</h4>
                   <p className="text-xs text-[var(--color-muted)]">
-                    {hasPassword
+                    {translateText(hasPassword
                       ? 'Prijava emailom i lozinkom'
-                      : 'Dodajte alternativni način prijave'}
+                      : 'Dodajte alternativni način prijave')}
                   </p>
                 </div>
               </div>
@@ -170,7 +171,7 @@ export default function SecuritySection({ user }) {
                   onClick={() => setIsEditingPassword(true)}
                   className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-bg-subtle)] text-xs font-bold text-[var(--color-text)] transition shadow-sm"
                 >
-                  {hasPassword ? 'Promeni lozinku' : 'Dodaj lozinku'}
+                  {translateText(hasPassword ? 'Promeni lozinku' : 'Dodaj lozinku')}
                 </button>
               )}
             </div>
@@ -185,13 +186,13 @@ export default function SecuritySection({ user }) {
                     className="h-full flex flex-col justify-between"
                   >
                     <p className="text-sm text-[var(--color-muted)] leading-relaxed">
-                      {hasPassword
+                      {translateText(hasPassword
                         ? 'Koristite jaku lozinku koju ne koristite na drugim sajtovima. Preporučujemo kombinaciju slova, brojeva i simbola.'
-                        : 'Prijavljeni ste preko Google naloga. Dodajte lozinku ako želite da se ubuduće prijavite i emailom, kada vam Google prijava nije praktična.'}
+                        : 'Prijavljeni ste preko Google naloga. Dodajte lozinku ako želite da se ubuduće prijavite i emailom, kada vam Google prijava nije praktična.')}
                     </p>
                     <div className="mt-4 flex items-center gap-2 text-xs font-medium text-green-500 bg-green-500/10 px-3 py-1.5 rounded-lg w-fit">
                       <CheckCircle2 size={14} />
-                      <span>{hasPassword ? 'Lozinka je aktivna' : 'Google prijava je aktivna'}</span>
+                      <span>{translateText(hasPassword ? 'Lozinka je aktivna' : 'Google prijava je aktivna')}</span>
                     </div>
                   </motion.div>
                 ) : (
@@ -207,7 +208,7 @@ export default function SecuritySection({ user }) {
                         <input
                           type="password"
                           name="current"
-                          placeholder="Trenutna lozinka"
+                          placeholder={translateText("Trenutna lozinka")}
                           value={passForm.current}
                           onChange={handlePassChange}
                           required
@@ -219,7 +220,7 @@ export default function SecuritySection({ user }) {
                       <input
                         type="password"
                         name="new"
-                        placeholder="Nova lozinka (min. 8)"
+                        placeholder={translateText("Nova lozinka (min. 8)")}
                         value={passForm.new}
                         onChange={handlePassChange}
                         required
@@ -230,7 +231,7 @@ export default function SecuritySection({ user }) {
                       <input
                         type="password"
                         name="confirm"
-                        placeholder="Potvrdite novu lozinku"
+                        placeholder={translateText("Potvrdite novu lozinku")}
                         value={passForm.confirm}
                         onChange={handlePassChange}
                         required
@@ -246,9 +247,7 @@ export default function SecuritySection({ user }) {
                           setPassForm({ current: '', new: '', confirm: '' });
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-bg-subtle)] transition"
-                      >
-                        Otkaži
-                      </button>
+                      >{translateText("Otkaži")}</button>
                       <button
                         type="submit"
                         disabled={loading}
@@ -258,9 +257,7 @@ export default function SecuritySection({ user }) {
                           <Loader2 size={14} className="animate-spin" />
                         ) : (
                           <Save size={14} />
-                        )}
-                        Sačuvaj
-                      </button>
+                        )}{translateText("Sačuvaj")}</button>
                     </div>
                   </motion.form>
                 )}
@@ -278,12 +275,8 @@ export default function SecuritySection({ user }) {
                   <Fingerprint size={24} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[var(--color-text)] m-0">
-                    Biometrija
-                  </h4>
-                  <p className="text-xs text-[var(--color-muted)]">
-                    Passkeys & Touch ID
-                  </p>
+                  <h4 className="font-bold text-[var(--color-text)] m-0">{translateText("Biometrija")}</h4>
+                  <p className="text-xs text-[var(--color-muted)]">{translateText("Passkeys & Touch ID")}</p>
                 </div>
               </div>
               <div className="flex items-center">
@@ -297,13 +290,10 @@ export default function SecuritySection({ user }) {
 
             <div className="flex-1 flex flex-col justify-between">
               <div>
-                <p className="text-sm text-[var(--color-muted)] leading-relaxed mb-4">
-                  Prijavite se bez lozinke koristeći otisak prsta, prepoznavanje
-                  lica ili PIN uređaja. Brže i sigurnije od klasične lozinke.
-                </p>
+                <p className="text-sm text-[var(--color-muted)] leading-relaxed mb-4">{translateText("Prijavite se bez lozinke koristeći otisak prsta, prepoznavanje lica ili PIN uređaja. Brže i sigurnije od klasične lozinke.")}</p>
                 {pkError && (
                   <div className="mb-3 p-2 bg-red-500/10 border border-red-500/20 rounded-lg flex gap-2 items-center text-xs text-red-500">
-                    <AlertTriangle size={14} /> {pkError}
+                    <AlertTriangle size={14} /> {translateText(pkError)}
                   </div>
                 )}
               </div>
@@ -316,12 +306,8 @@ export default function SecuritySection({ user }) {
                       className="text-purple-500 shrink-0"
                     />
                     <div className="text-xs">
-                      <span className="block font-bold text-[var(--color-text)]">
-                        Zaštićeno
-                      </span>
-                      <span className="text-[var(--color-muted)]">
-                        Uređaj je registrovan.
-                      </span>
+                      <span className="block font-bold text-[var(--color-text)]">{translateText("Zaštićeno")}</span>
+                      <span className="text-[var(--color-muted)]">{translateText("Uređaj je registrovan.")}</span>
                     </div>
                   </div>
                 ) : (
@@ -335,7 +321,7 @@ export default function SecuritySection({ user }) {
                     ) : (
                       <KeyRound size={16} />
                     )}
-                    {pkLoading ? 'Dodavanje...' : 'Dodaj Passkey'}
+                    {translateText(pkLoading ? 'Dodavanje...' : 'Dodaj Passkey')}
                   </button>
                 )}
               </div>
@@ -351,13 +337,11 @@ export default function SecuritySection({ user }) {
             <GoogleIcon />
           </div>
           <div>
-            <h4 className="font-bold text-[var(--color-text)] text-sm mb-0.5">
-              Google Nalog
-            </h4>
+            <h4 className="font-bold text-[var(--color-text)] text-sm mb-0.5">{translateText("Google Nalog")}</h4>
             <p className="text-xs text-[var(--color-muted)]">
-              {isGoogleLinked
+              {translateText(isGoogleLinked
                 ? 'Google nalog je povezan za brzu prijavu jednim klikom.'
-                : 'Povežite Google nalog za brzu prijavu jednim klikom.'}
+                : 'Povežite Google nalog za brzu prijavu jednim klikom.')}
             </p>
           </div>
         </div>
@@ -367,15 +351,13 @@ export default function SecuritySection({ user }) {
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
               <Check size={12} strokeWidth={3} />
             </span>
-            <span>Google je povezan</span>
+            <span>{translateText("Google je povezan")}</span>
           </div>
         ) : (
           <button
             onClick={handleGoogleLink}
             className="px-4 py-2 bg-white text-gray-800 text-xs font-bold rounded-lg border border-gray-300 hover:bg-gray-50 transition shadow-sm whitespace-nowrap"
-          >
-            Poveži nalog
-          </button>
+          >{translateText("Poveži nalog")}</button>
         )}
       </div>
 
@@ -383,13 +365,8 @@ export default function SecuritySection({ user }) {
       <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 flex items-start gap-3">
         <AlertCircle size={20} className="text-blue-400 shrink-0 mt-0.5" />
         <div>
-          <h5 className="font-bold text-[var(--color-text)] text-sm mb-1">
-            Aktivne sesije
-          </h5>
-          <p className="text-xs text-[var(--color-muted)]">
-            Trenutno ste prijavljeni na ovom uređaju. Ako primetite sumnjivu
-            aktivnost, promenite lozinku odmah.
-          </p>
+          <h5 className="font-bold text-[var(--color-text)] text-sm mb-1">{translateText("Aktivne sesije")}</h5>
+          <p className="text-xs text-[var(--color-muted)]">{translateText("Trenutno ste prijavljeni na ovom uređaju. Ako primetite sumnjivu aktivnost, promenite lozinku odmah.")}</p>
         </div>
       </div>
     </motion.div>

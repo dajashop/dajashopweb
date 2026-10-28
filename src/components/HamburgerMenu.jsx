@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 /**
  * @file src/components/HamburgerMenu.jsx
  * @description Hamburger Menu sa Admin Notifikacijama
@@ -163,6 +164,8 @@ function DesktopDropdown({
   isStaff,
   unreadOrders,
 }) {
+  const { t: translateText } = useStorefront();
+
   const ddRef = useRef(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
 
@@ -234,11 +237,11 @@ function DesktopDropdown({
           variants={variants}
         >
           <nav className="hm__ddNav">
-            <DDItem to="/about" label="O nama" onClose={onClose} />
-            <DDItem to="/catalog" label="Prodavnica" onClose={onClose} />
-            <DDItem to="/usluge" label="Usluge" onClose={onClose} />
-            <DDItem to="/contact" label="Kontakt" onClose={onClose} />
-            <DDItem to="/faq" label="Pomoć / FAQ" onClose={onClose} />
+            <DDItem to="/about" label={translateText("O nama")} onClose={onClose} />
+            <DDItem to="/catalog" label={translateText("Prodavnica")} onClose={onClose} />
+            <DDItem to="/usluge" label={translateText("Usluge")} onClose={onClose} />
+            <DDItem to="/contact" label={translateText("Kontakt")} onClose={onClose} />
+            <DDItem to="/faq" label={translateText("Pomoć / FAQ")} onClose={onClose} />
 
             {/* ADMIN SEKCIJA */}
             {isAdmin && (
@@ -246,7 +249,7 @@ function DesktopDropdown({
                 <div className="border-t border-white/10 my-1"></div>
                 <DDItem
                   to="/admin"
-                  label="Admin Dashboard"
+                  label={translateText("Admin Dashboard")}
                   onClose={onClose}
                   style={{ color: '#facc15' }}
                 />
@@ -263,11 +266,9 @@ function DesktopDropdown({
                     justifyContent: 'space-between',
                     alignItems: 'center',
                   }}
-                >
-                  Admin Porudžbine
-                  {unreadOrders > 0 && (
+                >{translateText("Admin Porudžbine")}{unreadOrders > 0 && (
                     <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-2 shadow-sm">
-                      {unreadOrders}
+                      {translateText(unreadOrders)}
                     </span>
                   )}
                 </Link>
@@ -279,7 +280,7 @@ function DesktopDropdown({
             {isStaff && !isAdmin && (
               <>
                 <div className="border-t border-white/10 my-1"></div>
-                <DDItem to="/admin" label="Katalog proizvoda" onClose={onClose} style={{ color: '#0f9f78' }} />
+                <DDItem to="/admin" label={translateText("Katalog proizvoda")} onClose={onClose} style={{ color: '#0f9f78' }} />
               </>
             )}
 
@@ -287,7 +288,7 @@ function DesktopDropdown({
               <>
                 <DDItem
                   to="/account/profile"
-                  label="Moj nalog"
+                  label={translateText("Moj nalog")}
                   onClose={onClose}
                 />
                 <button
@@ -299,8 +300,7 @@ function DesktopDropdown({
                     void logout();
                   }}
                 >
-                  <LogOut size={16} /> Odjavi me
-                </button>
+                  <LogOut size={16} />{translateText(" Odjavi me")}</button>
               </>
             ) : (
               <button
@@ -311,14 +311,12 @@ function DesktopDropdown({
                   showAuth('login');
                   onClose();
                 }}
-              >
-                Prijava / Registracija
-              </button>
+              >{translateText("Prijava / Registracija")}</button>
             )}
 
             <DDItem
               to="/cart"
-              label={`Korpa (${count})`}
+              label={translateText(`Korpa (${count})`)}
               onClose={onClose}
               strong
             />
@@ -330,6 +328,8 @@ function DesktopDropdown({
 }
 
 function DDItem({ to, label, strong, onClose, style }) {
+  const { t: translateText } = useStorefront();
+
   return (
     <Link
       to={to}
@@ -338,13 +338,15 @@ function DDItem({ to, label, strong, onClose, style }) {
       onClick={onClose}
       style={style}
     >
-      {label}
+      {translateText(label)}
     </Link>
   );
 }
 
 /* ----- MOBILE: slide-over panel ----- */
 function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, unreadOrders }) {
+  const { t: translateText } = useStorefront();
+
   const panelRef = useRef(null);
   const firstFocusableRef = useRef(null);
   const { items, count } = useCart();
@@ -421,13 +423,11 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
           >
             {/* HEADER */}
             <div className="hm__head">
-              <h2 id="hm-title" className="hm__title">
-                Meni
-              </h2>
+              <h2 id="hm-title" className="hm__title">{translateText("Meni")}</h2>
               <button
                 ref={firstFocusableRef}
                 className="hm__close"
-                aria-label="Zatvori meni"
+                aria-label={translateText("Zatvori meni")}
                 onClick={onClose}
               >
                 <X size={24} />
@@ -437,17 +437,13 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
             {/* NAVIGACIJA */}
             <nav className="hm__nav">
               <Link className="hm__link" to="/" onClick={onClose}>
-                <Home size={18} style={{ marginRight: 10 }} /> Početna
-              </Link>
+                <Home size={18} style={{ marginRight: 10 }} />{translateText(" Početna")}</Link>
               <Link className="hm__link" to="/catalog" onClick={onClose}>
-                <ShoppingBag size={18} style={{ marginRight: 10 }} /> Prodavnica
-              </Link>
+                <ShoppingBag size={18} style={{ marginRight: 10 }} />{translateText(" Prodavnica")}</Link>
               <Link className="hm__link" to="/usluge" onClick={onClose}>
-                <Briefcase size={18} style={{ marginRight: 10 }} /> Usluge
-              </Link>
+                <Briefcase size={18} style={{ marginRight: 10 }} />{translateText(" Usluge")}</Link>
               <Link className="hm__link" to="/about" onClick={onClose}>
-                <Info size={18} style={{ marginRight: 10 }} /> O nama
-              </Link>
+                <Info size={18} style={{ marginRight: 10 }} />{translateText(" O nama")}</Link>
 
               {user ? (
                 <>
@@ -456,8 +452,7 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
                     to="/account/profile"
                     onClick={onClose}
                   >
-                    <User size={18} style={{ marginRight: 10 }} /> Moj nalog
-                  </Link>
+                    <User size={18} style={{ marginRight: 10 }} />{translateText(" Moj nalog")}</Link>
                   <button
                     type="button"
                     className="hm__link hm__logout"
@@ -466,14 +461,11 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
                       void logout();
                     }}
                   >
-                    <LogOut size={18} style={{ marginRight: 10 }} /> Odjavi me
-                  </button>
+                    <LogOut size={18} style={{ marginRight: 10 }} />{translateText(" Odjavi me")}</button>
 
                   {isAdmin && (
                     <div className="mt-2 border-t border-white/10 pt-2">
-                      <div className="text-xs font-bold text-neutral-500 uppercase px-4 mb-1">
-                        Admin Zona
-                      </div>
+                      <div className="text-xs font-bold text-neutral-500 uppercase px-4 mb-1">{translateText("Admin Zona")}</div>
 
                       <Link
                         className="hm__link"
@@ -481,9 +473,7 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
                         onClick={onClose}
                         style={{ color: '#facc15' }}
                       >
-                        <ShieldCheck size={18} style={{ marginRight: 10 }} />
-                        Dashboard
-                      </Link>
+                        <ShieldCheck size={18} style={{ marginRight: 10 }} />{translateText("Dashboard")}</Link>
 
                       {/* MOBILE ADMIN PORUDŽBINE SA NOTIFIKACIJOM */}
                       <Link
@@ -498,12 +488,10 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
                         }}
                       >
                         <div className="flex items-center">
-                          <Package size={18} style={{ marginRight: 10 }} />
-                          Porudžbine
-                        </div>
+                          <Package size={18} style={{ marginRight: 10 }} />{translateText("Porudžbine")}</div>
                         {unreadOrders > 0 && (
                           <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full mr-4 shadow-sm">
-                            {unreadOrders}
+                            {translateText(unreadOrders)}
                           </span>
                         )}
                       </Link>
@@ -511,10 +499,9 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
                   )}
                   {isStaff && !isAdmin && (
                     <div className="mt-2 border-t border-white/10 pt-2">
-                      <div className="text-xs font-bold text-neutral-500 uppercase px-4 mb-1">Katalog</div>
+                      <div className="text-xs font-bold text-neutral-500 uppercase px-4 mb-1">{translateText("Katalog")}</div>
                       <Link className="hm__link" to="/admin" onClick={onClose} style={{ color: '#0f9f78' }}>
-                        <Package size={18} style={{ marginRight: 10 }} /> Katalog proizvoda
-                      </Link>
+                        <Package size={18} style={{ marginRight: 10 }} />{translateText(" Katalog proizvoda")}</Link>
                     </div>
                   )}
                 </>
@@ -527,17 +514,15 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
                     onClose();
                   }}
                 >
-                  <User size={18} style={{ marginRight: 10 }} /> Prijava /
-                  Registracija
-                </button>
+                  <User size={18} style={{ marginRight: 10 }} />{translateText(" Prijava / Registracija")}</button>
               )}
 
               <Link className="hm__link hm__cart" to="/cart" onClick={onClose}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span>🛒</span>
-                  <span>Korpa</span>
+                  <span>{translateText("Korpa")}</span>
                 </div>
-                <span className="hm__badge">{count}</span>
+                <span className="hm__badge">{translateText(count)}</span>
               </Link>
 
               {/* Mini Cart Items */}
@@ -547,13 +532,13 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
                     <div key={item.id} className="hm__miniItem">
                       <img
                         src={item.image}
-                        alt={item.name}
+                        alt={translateText(item.name)}
                         className="hm__miniImg"
                         loading="lazy"
                       />
                       <div className="hm__miniInfo">
-                        <div className="hm__miniName">{item.name}</div>
-                        <div className="hm__miniQty">{item.qty} kom.</div>
+                        <div className="hm__miniName">{translateText(item.name)}</div>
+                        <div className="hm__miniQty">{translateText(item.qty)}{translateText(" kom.")}</div>
                       </div>
                     </div>
                   ))}
@@ -565,20 +550,16 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
             <div className="hm__footer">
               <div className="hm__f-info">
                 <Link to="/contact" className="hm__f-btn" onClick={onClose}>
-                  <Phone size={16} /> Kontakt
-                </Link>
+                  <Phone size={16} />{translateText(" Kontakt")}</Link>
                 <Link to="/faq" className="hm__f-btn" onClick={onClose}>
-                  <HelpCircle size={16} /> Pomoć
-                </Link>
+                  <HelpCircle size={16} />{translateText(" Pomoć")}</Link>
                 <Link to="/contact" className="hm__f-btn" onClick={onClose}>
-                  <MapPin size={16} /> Lokacija
-                </Link>
+                  <MapPin size={16} />{translateText(" Lokacija")}</Link>
               </div>
 
               <div className="hm__f-bottom">
                 <SocialLinks className="hm__f-socials" size={18} />
-                <div className="hm__f-copy">
-                  Daja Shop © {new Date().getFullYear()}
+                <div className="hm__f-copy">{translateText("Daja Shop © ")}{translateText(new Date().getFullYear())}
                 </div>
               </div>
             </div>

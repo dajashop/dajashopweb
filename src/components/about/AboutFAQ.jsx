@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // ==============================
 // File: src/components/about/AboutFAQ.jsx
 // FAQ sekcija sa animiranim Accordionom
@@ -32,6 +33,8 @@ const itemVariants = {
 };
 
 function FAQItem({ question, answer }) {
+  const { t: translateText } = useStorefront();
+
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -42,14 +45,14 @@ function FAQItem({ question, answer }) {
         style={{ color: 'var(--color-text)', fontWeight: 600 }}
       >
         <span className="h3" style={{ fontSize: '18px' }}>
-          {question}
+          {translateText(question)}
         </span>
         <motion.span
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.3 }}
           style={{ fontSize: '24px' }}
         >
-          {isOpen ? '−' : '+'}
+          {translateText(isOpen ? '−' : '+')}
         </motion.span>
       </button>
 
@@ -67,7 +70,7 @@ function FAQItem({ question, answer }) {
               className="lead"
               style={{ padding: '10px 0 20px', color: 'var(--color-muted)' }}
             >
-              {answer}
+              {translateText(answer)}
             </p>
           </motion.div>
         )}
@@ -77,6 +80,8 @@ function FAQItem({ question, answer }) {
 }
 
 export default function AboutFAQ() {
+  const { t: translateText } = useStorefront();
+
   return (
     <section className="section" style={{ background: 'var(--color-surface)' }}>
       <div
@@ -90,9 +95,7 @@ export default function AboutFAQ() {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
           style={{ marginBottom: '40px' }}
-        >
-          Često Postavljana Pitanja
-        </motion.h2>
+        >{translateText("Često Postavljana Pitanja")}</motion.h2>
 
         <motion.div
           initial={false}

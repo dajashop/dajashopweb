@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // ==============================
 // File: src/components/about/AboutStats.jsx
 // Animacija ključnih pokazatelja
@@ -45,6 +46,8 @@ const itemVariants = {
 
 // GLAVNA KOMPONENTA ZA STATISTIKU
 export default function AboutStats() {
+  const { t: translateText } = useStorefront();
+
   const statsData = [
     { label: 'Godina Iskustva', value: 18, suffix: '+' },
     {
@@ -61,7 +64,7 @@ export default function AboutStats() {
   return (
     <section className="section" style={{ background: 'var(--color-surface)' }}>
       <div className="container">
-        <h2 className="sr-only">DajaShop u brojkama</h2>
+        <h2 className="sr-only">{translateText("DajaShop u brojkama")}</h2>
         <motion.div
           className="grid-3"
           variants={containerVariants}
@@ -81,6 +84,8 @@ export default function AboutStats() {
 }
 
 function StatItem({ label, value: endValue, suffix }) {
+  const { t: translateText } = useStorefront();
+
   const { value: animatedValue, ref } = useAnimatedNumber(endValue);
 
   const finalValue = animatedValue.toLocaleString('sr-RS');
@@ -96,7 +101,7 @@ function StatItem({ label, value: endValue, suffix }) {
         className="h1"
         style={{ color: 'var(--color-primary)', lineHeight: 1 }}
       >
-        {finalValue}
+        {translateText(finalValue)}
         <span
           style={{
             fontSize: '0.5em',
@@ -105,7 +110,7 @@ function StatItem({ label, value: endValue, suffix }) {
             marginLeft: '2px',
           }}
         >
-          {suffix}
+          {translateText(suffix)}
         </span>
       </p>
       <p
@@ -116,7 +121,7 @@ function StatItem({ label, value: endValue, suffix }) {
           fontWeight: 500,
         }}
       >
-        {label}
+        {translateText(label)}
       </p>
     </motion.div>
   );

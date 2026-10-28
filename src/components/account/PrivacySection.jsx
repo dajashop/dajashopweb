@@ -1,8 +1,9 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { useCallback, useEffect, useState } from 'react';
 import { BellOff, Check, Cookie, Loader2, Mail, Settings2, X } from 'lucide-react';
 import { privacyApi, novostiApi } from '../../services/dajaPlatform.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
-import { money } from '../../utils/currency.js';
+
 import './PrivacySection.css';
 
 const alertLabel = {
@@ -11,6 +12,8 @@ const alertLabel = {
 };
 
 export default function PrivacySection({ user }) {
+  const { t: translateText, money } = useStorefront();
+
   const { categories, openSettings, policy } = useConsent();
   const [snapshot, setSnapshot] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -94,7 +97,7 @@ export default function PrivacySection({ user }) {
   };
 
   if (loading) {
-    return <div className="privacy-section__loading"><Loader2 className="animate-spin" size={22} /> Učitavanje podešavanja…</div>;
+    return <div className="privacy-section__loading"><Loader2 className="animate-spin" size={22} />{translateText(" Učitavanje podešavanja…")}</div>;
   }
 
   const newsletterActive = snapshot?.newsletter?.active === true;
@@ -105,58 +108,57 @@ export default function PrivacySection({ user }) {
     <section className="privacy-section section-content">
       <header className="privacy-section__header section-header-row">
         <div>
-          <h3>Privatnost i obaveštenja</h3>
-          <p>Ovde menjate izbor kolačića i upravljate email obaveštenjima.</p>
+          <h3>{translateText("Privatnost i obaveštenja")}</h3>
+          <p>{translateText("Ovde menjate izbor kolačića i upravljate email obaveštenjima.")}</p>
         </div>
         <button type="button" className="privacy-section__settings" onClick={openSettings}>
-          <Settings2 size={17} /> Podesi kolačiće
-        </button>
+          <Settings2 size={17} />{translateText(" Podesi kolačiće")}</button>
       </header>
 
-      {error && <p className="privacy-section__error">{error}</p>}
-      {notice && <p role="status">{notice}</p>}
+      {error && <p className="privacy-section__error">{translateText(error)}</p>}
+      {notice && <p role="status">{translateText(notice)}</p>}
 
       <article className="privacy-section__card card glass">
-        <div className="privacy-section__title"><span className="privacy-section__icon"><Cookie size={24} /></span><h4>Kolačići i lokalna memorija</h4></div>
+        <div className="privacy-section__title"><span className="privacy-section__icon"><Cookie size={24} /></span><h4>{translateText("Kolačići i lokalna memorija")}</h4></div>
         <dl className="privacy-section__choices">
-          <div><dt>Neophodno</dt><dd><Check size={16} /> Uključeno</dd></div>
-          <div><dt>Funkcionalni</dt><dd>{categories.preferences && categories.externalGoogle ? <><Check size={16} /> Uključeno</> : 'Isključeno'}</dd></div>
-          <div><dt>Analitika</dt><dd>{categories.analytics ? <><Check size={16} /> Uključeno</> : 'Isključeno'}</dd></div>
-          <div><dt>Marketing</dt><dd>Trenutno nema kolačića</dd></div>
-          <div><dt>Neklasifikovani</dt><dd>Trenutno nema kolačića</dd></div>
+          <div><dt>{translateText("Neophodno")}</dt><dd><Check size={16} />{translateText(" Uključeno")}</dd></div>
+          <div><dt>{translateText("Funkcionalni")}</dt><dd>{translateText(categories.preferences && categories.externalGoogle ? <><Check size={16} />{translateText(" Uključeno")}</> : 'Isključeno')}</dd></div>
+          <div><dt>{translateText("Analitika")}</dt><dd>{translateText(categories.analytics ? <><Check size={16} />{translateText(" Uključeno")}</> : 'Isključeno')}</dd></div>
+          <div><dt>{translateText("Marketing")}</dt><dd>{translateText("Trenutno nema kolačića")}</dd></div>
+          <div><dt>{translateText("Neklasifikovani")}</dt><dd>{translateText("Trenutno nema kolačića")}</dd></div>
         </dl>
       </article>
 
       <div className="privacy-section__grid">
       <article className="privacy-section__card card glass">
-        <div className="privacy-section__title"><span className="privacy-section__icon"><Mail size={24} /></span><h4>Novosti emailom</h4></div>
-        {!hasEmail ? (
-          <p>Dodajte email adresu u profilu da biste mogli da upravljate novostima emailom.</p>
+        <div className="privacy-section__title"><span className="privacy-section__icon"><Mail size={24} /></span><h4>{translateText("Novosti emailom")}</h4></div>
+        {translateText(!hasEmail ? (
+          <p>{translateText("Dodajte email adresu u profilu da biste mogli da upravljate novostima emailom.")}</p>
         ) : newsletterActive ? (
           <>
-            <p>Prijavljeni ste na novosti za adresu {user.email}.</p>
+            <p>{translateText("Prijavljeni ste na novosti za adresu ")}{user.email}.</p>
             <button type="button" className="privacy-section__danger" onClick={() => void odjaviNovosti()} disabled={busy === 'newsletter'}>
-              {busy === 'newsletter' ? 'Odjavljujemo…' : 'Odjavi me sa novosti'}
+              {translateText(busy === 'newsletter' ? 'Odjavljujemo…' : 'Odjavi me sa novosti')}
             </button>
           </>
         ) : (
           <>
-            <p>Niste prijavljeni na novosti.</p>
+            <p>{translateText("Niste prijavljeni na novosti.")}</p>
             <label className="privacy-section__check">
               <input type="checkbox" checked={marketingOptIn} onChange={(event) => setMarketingOptIn(event.target.checked)} disabled={busy === 'newsletter'} />
-              <span>Želim da primam novosti, ponude i savete emailom.</span>
+              <span>{translateText("Želim da primam novosti, ponude i savete emailom.")}</span>
             </label>
             <button type="button" className="privacy-section__primary" onClick={() => void prijaviNaNovosti()} disabled={busy === 'newsletter'}>
-              {busy === 'newsletter' ? 'Prijavljujemo…' : 'Prijavi me na novosti'}
+              {translateText(busy === 'newsletter' ? 'Prijavljujemo…' : 'Prijavi me na novosti')}
             </button>
           </>
-        )}
+        ))}
       </article>
 
       <article className="privacy-section__card card glass">
-        <div className="privacy-section__title"><span className="privacy-section__icon"><BellOff size={24} /></span><h4>Obaveštenja o artiklima</h4></div>
+        <div className="privacy-section__title"><span className="privacy-section__icon"><BellOff size={24} /></span><h4>{translateText("Obaveštenja o artiklima")}</h4></div>
         {alerts.length === 0 ? (
-          <p>Nemate aktivna obaveštenja o artiklima.</p>
+          <p>{translateText("Nemate aktivna obaveštenja o artiklima.")}</p>
         ) : (
           <ul className="privacy-section__alerts">
             {alerts.map((alert) => {
@@ -169,7 +171,7 @@ export default function PrivacySection({ user }) {
                     <button
                       type="button"
                       className="privacy-section__image-button"
-                      aria-label={`Uvećaj sliku: ${name}`}
+                      aria-label={translateText(`Uvećaj sliku: ${name}`)}
                       onClick={() => setPreview({ src: imageSrc, name })}
                     >
                       <img
@@ -182,13 +184,13 @@ export default function PrivacySection({ user }) {
                       />
                     </button>
                     <div className="privacy-section__alert-details">
-                      <strong>{name}</strong>
-                      <span>{alertLabel[alert.type] || 'Obaveštenje'}</span>
+                      <strong>{translateText(name)}</strong>
+                      <span>{translateText(alertLabel[alert.type] || 'Obaveštenje')}</span>
                       {hasPrice && <b>{money(Number(alert.price))}</b>}
                     </div>
                   </div>
                   <button type="button" onClick={() => void unsubscribeAlert(alert.id)} disabled={busy === `alert:${alert.id}`}>
-                    {busy === `alert:${alert.id}` ? 'Odjavljujemo…' : 'Isključi'}
+                    {translateText(busy === `alert:${alert.id}` ? 'Odjavljujemo…' : 'Isključi')}
                   </button>
                 </li>
               );
@@ -199,11 +201,11 @@ export default function PrivacySection({ user }) {
 
       </div>
       {preview && (
-        <div className="privacy-section__image-modal" role="dialog" aria-modal="true" aria-label={`Slika artikla: ${preview.name}`} onClick={() => setPreview(null)}>
+        <div className="privacy-section__image-modal" role="dialog" aria-modal="true" aria-label={translateText(`Slika artikla: ${preview.name}`)} onClick={() => setPreview(null)}>
           <div className="privacy-section__image-modal-content" onClick={(event) => event.stopPropagation()}>
-            <button type="button" className="privacy-section__image-modal-close" aria-label="Zatvori sliku" onClick={() => setPreview(null)}><X size={21} /></button>
-            <img src={preview.src} alt={preview.name} onError={(event) => { event.currentTarget.src = '/images/product-placeholder.svg'; }} />
-            <strong>{preview.name}</strong>
+            <button type="button" className="privacy-section__image-modal-close" aria-label={translateText("Zatvori sliku")} onClick={() => setPreview(null)}><X size={21} /></button>
+            <img src={preview.src} alt={translateText(preview.name)} onError={(event) => { event.currentTarget.src = '/images/product-placeholder.svg'; }} />
+            <strong>{translateText(preview.name)}</strong>
           </div>
         </div>
       )}

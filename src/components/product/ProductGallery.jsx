@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { lazy, useState, useMemo, useEffect } from 'react';
 import { Box, Maximize2, Image as ImageIcon } from 'lucide-react';
 import ClientOnly from '../ClientOnly.jsx';
@@ -6,6 +7,8 @@ import ImageGalleryModal from '../modals/ImageGalleryModal.jsx';
 import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import './ProductGallery.css';
 export default function ProductGallery({ product }) {
+  const { t: translateText } = useStorefront();
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [totalTabs, setTotalTabs] = useState(4); // default: 4 taba za manje ekrane
@@ -117,7 +120,7 @@ export default function ProductGallery({ product }) {
               loading="eager"
               fetchPriority="high"
               thumbSrc={activeItem?.thumb}
-              alt={mainImageAlt}
+              alt={translateText(mainImageAlt)}
               className="product__img-full"
             />
             <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-sm text-white p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none transform translate-y-2 group-hover:translate-y-0">
@@ -141,14 +144,14 @@ export default function ProductGallery({ product }) {
                 {item.type === '3d' ? (
                   <div className="thumb-icon">
                     <Box size={20} strokeWidth={1.5} />
-                    <span>3D</span>
+                    <span>{translateText("3D")}</span>
                   </div>
                 ) : (
                   <img
                     src={item.thumb || item.src}
                     alt={
-                      item.altText ||
-                      `${defaultAlt || product.name} - slika ${(item.imageIndex || 0) + 1}`
+                      translateText(item.altText ||
+                      `${defaultAlt || product.name} - slika ${(item.imageIndex || 0) + 1}`)
                     }
                     className="thumb-img" loading="lazy" decoding="async"
                   />
@@ -169,7 +172,7 @@ export default function ProductGallery({ product }) {
             >
               <div className="more-thumb__overlay">
                 <ImageIcon size={18} strokeWidth={1.5} />
-                <span>+{hiddenImages.length}</span>
+                <span>+{translateText(hiddenImages.length)}</span>
               </div>
             </button>
           )}

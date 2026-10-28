@@ -1,7 +1,8 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import './ProductCard.css';
 import Link from './ProductLink.jsx';
-import { money } from '../utils/currency.js';
+
 import { useCart } from '../hooks/useCart.js';
 import { useFlash } from '../hooks/useFlash.js';
 import { useWishlist } from '../context/WishlistProvider.jsx';
@@ -27,6 +28,8 @@ const swipeConfidenceThreshold = 10000;
 const swipePower = (offset, velocity) => Math.abs(offset) * velocity;
 
 function ProductCard({ p, priority = false, blankImage = false }) {
+  const { t: translateText, money } = useStorefront();
+
   const isEyewear = p.department === 'naocare';
   const { dispatch } = useCart();
   const { flash } = useFlash();
@@ -90,7 +93,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
       openEditor({ product: fullProduct });
     } catch (error) {
       console.error('Učitavanje artikla za izmenu nije uspelo:', error);
-      alert('Artikal nije moguće učitati za izmenu. Pokušajte ponovo.');
+      alert(translateText('Artikal nije moguće učitati za izmenu. Pokušajte ponovo.'));
     } finally {
       setIsLoadingEditor(false);
     }
@@ -269,27 +272,21 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                 initial={false}
                 animate={{ scale: 1, opacity: 1 }}
                 className="rounded-full bg-red-600 px-3 py-1 text-xs font-bold tracking-wide text-white shadow-sm"
-              >
-                NOVO
-              </motion.span>
+              >{translateText("NOVO")}</motion.span>
             )}
             {marketingFlags.includes('popular') && (
               <motion.span
                 initial={false}
                 animate={{ scale: 1, opacity: 1 }}
                 className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-zinc-800 shadow-sm"
-              >
-                POPULARNO
-              </motion.span>
+              >{translateText("POPULARNO")}</motion.span>
             )}
             {marketingFlags.includes('recommended') && (
               <motion.span
                 initial={false}
                 animate={{ scale: 1, opacity: 1 }}
                 className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-zinc-800 shadow-sm"
-              >
-                PREPORUČENO
-              </motion.span>
+              >{translateText("PREPORUČENO")}</motion.span>
             )}
           </div>
         )}
@@ -302,7 +299,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
               animate={{ scale: 1, opacity: 1 }}
               className="rounded-full p-2 backdrop-blur-xl 
               bg-black/60 text-white border border-white/20 shadow-sm"
-              title="Proizvod je sakriven"
+              title={translateText("Proizvod je sakriven")}
             >
               <EyeOff size={14} />
             </motion.div>
@@ -344,7 +341,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                     ? p.thumbnailUrl || imgs[imageIndex]?.thumb
                     : imgs[imageIndex]?.thumb
                 }
-                alt={imageAlt}
+                alt={translateText(imageAlt)}
                 draggable={false}
                 className={`w-full h-full pointer-events-none ${isEyewear ? 'object-contain p-3' : 'object-cover'}`}
               />}
@@ -366,7 +363,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                     onPointerLeave={leaveGallery}
                     onPointerCancel={resetHover}
                     role="tablist"
-                    aria-label={`Galerija slika proizvoda ${p.name}`}
+                    aria-label={translateText(`Galerija slika proizvoda ${p.name}`)}
                   >
                     {imgs.map((_, idx) => {
                       const active = idx === imageIndex;
@@ -389,7 +386,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                             setIndex(idx);
                           }}
                           className={`catalog-image-dot${active ? ' is-active' : ''}`}
-                          aria-label={`Prikaži sliku ${idx + 1} od ${imgs.length}`}
+                          aria-label={translateText(`Prikaži sliku ${idx + 1} od ${imgs.length}`)}
                           aria-selected={active}
                           role="tab"
                         >
@@ -414,7 +411,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
         <div className="product-card__body relative bg-zinc-100 z-10 p-4">
           <div className="flex justify-between items-start mb-1 gap-2">
             <div className="product-card__brand text-xs uppercase tracking-wider text-zinc-500 flex-1 min-w-0 truncate pt-1">
-              {p.brand}
+              {translateText(p.brand)}
             </div>
             <button
               onClick={(e) => {
@@ -435,7 +432,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                 });
               }}
               className="p-1.5 rounded-full hover:bg-zinc-200 transition-colors text-zinc-400 hover:text-zinc-600 -mr-1"
-              title={isLiked ? 'Ukloni iz želja' : 'Dodaj u želje'}
+              title={translateText(isLiked ? 'Ukloni iz želja' : 'Dodaj u želje')}
             >
               <Heart
                 size={18}
@@ -449,21 +446,19 @@ function ProductCard({ p, priority = false, blankImage = false }) {
               to={`/product/${p.slug}`}
               className="hover:text-blue-600 transition-colors"
             >
-              {p.name}
+              {translateText(p.name)}
             </Link>
           </div>
 
           <div className="product-card__footer">
             <div className="product-card__price text-zinc-900 dark:text-white font-medium">
-              {p.salePrice ? <><span className="line-through text-zinc-400 mr-2">{money(p.price)}</span><span className="text-red-600">{money(p.salePrice)}</span></> : money(p.price)}
+              {translateText(p.salePrice ? <><span className="line-through text-zinc-400 mr-2">{money(p.price)}</span><span className="text-red-600">{money(p.salePrice)}</span></> : money(p.price))}
             </div>
 
             <button
               className="product-card__btn w-full py-2 bg-neutral-300 text-neutral-900 rounded-lg font-medium text-sm hover:bg-neutral-400 transition-all hover:shadow-md active:scale-95"
               onClick={addToCart}
-            >
-              Dodaj u korpu
-            </button>
+            >{translateText("Dodaj u korpu")}</button>
           </div>
 
           {/* --- ADMIN KONTROLE NA KARTICI --- */}
@@ -482,9 +477,9 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                             : 'bg-zinc-800 text-white'
                           : 'border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
                       }`}
-                      title={`${marketingFlags.includes(flag) ? 'Ukloni' : 'Dodaj'} oznaku ${label}`}
+                      title={translateText(`${marketingFlags.includes(flag) ? 'Ukloni' : 'Dodaj'} oznaku ${label}`)}
                     >
-                      {label}
+                      {translateText(label)}
                     </button>
                   ))}
                 </>
@@ -500,7 +495,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                     ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
                     : 'bg-zinc-100 text-zinc-500 border border-zinc-200 hover:bg-yellow-50 hover:text-yellow-600'
                 }`}
-                title="Označi kao Novo"
+                title={translateText("Označi kao Novo")}
               >
                 <Star size={16} fill={marketingFlags.length ? 'currentColor' : 'none'} />
               </button>
@@ -514,7 +509,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                     : 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100' // Stil kad je vidljiv
                 }`}
                 title={
-                  p.isVisible === false ? 'Prikaži proizvod' : 'Sakrij proizvod'
+                  translateText(p.isVisible === false ? 'Prikaži proizvod' : 'Sakrij proizvod')
                 }
               >
                 {p.isVisible === false ? (
@@ -529,7 +524,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                 onClick={() => void openAdminEditor()}
                 disabled={isLoadingEditor}
                 className="flex items-center justify-center p-2 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
-                title={isLoadingEditor ? 'Učitavanje artikla…' : 'Izmeni'}
+                title={translateText(isLoadingEditor ? 'Učitavanje artikla…' : 'Izmeni')}
               >
                 <Edit3 size={16} />
               </button>
@@ -539,7 +534,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
                 <button
                   onClick={() => setDeleteId(p.id)}
                   className="flex items-center justify-center p-2 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
-                  title="Obriši"
+                  title={translateText("Obriši")}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -551,14 +546,14 @@ function ProductCard({ p, priority = false, blankImage = false }) {
         </div>
       </motion.div>
       {/* Modali */}
-      {editors}
+      {translateText(editors)}
 
       <ConfirmModal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={handleDelete}
-        title="Obriši proizvod?"
-        description="Ova akcija je nepovratna."
+        title={translateText("Obriši proizvod?")}
+        description={translateText("Ova akcija je nepovratna.")}
         confirmText="Obriši"
         isDanger={true}
       />

@@ -1,15 +1,16 @@
 /* ===== Vars ===== */
 :root {
+  --header-preferences-h: 36px;
   --header-bar-h: 64px;
   --header-search-h: 56px;
-  --header-sticky-offset: calc(var(--header-bar-h) + 48px);
+  --header-sticky-offset: calc(var(--header-preferences-h) + var(--header-bar-h) + 48px);
 }
 
 @media (max-width: 768px) {
   :root {
     --header-bar-h: 56px;
     --header-search-h: 52px;
-    --header-sticky-offset: calc(var(--header-bar-h) + var(--header-search-h));
+    --header-sticky-offset: calc(var(--header-preferences-h) + var(--header-bar-h) + var(--header-search-h));
   }
 }
 

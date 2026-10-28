@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 // src/pages/Account.jsx
 
 import React, { useEffect } from 'react'; // Dodat useEffect
@@ -21,6 +22,8 @@ const allowedTabs = ['profile', 'orders', 'security', 'addresses', 'wishlist', '
 const defaultTab = 'profile';
 
 export default function Account() {
+  const { t: translateText } = useStorefront();
+
   const { user, logout, showAuth } = useAuth();
   const navigate = useNavigate();
   const { section } = useParams();
@@ -36,7 +39,7 @@ export default function Account() {
   if (!user) {
     return (
       <div className="container account-page centered">
-        <SEOHead title="Moj nalog" noIndex={true} />
+        <SEOHead title={translateText("Moj nalog")} noIndex={true} />
         <motion.div
           className="glass account-empty-card"
           initial={{ opacity: 0, scale: 0.95 }}
@@ -47,25 +50,18 @@ export default function Account() {
             <User size={64} />
           </div>
 
-          <h1>Dobrodošli u Daja Shop Nalog</h1>
-          <p className="lead">
-            Prijavom dobijate pristup praćenju statusa porudžbina, čuvanju adresa
-            i kreiranju liste želja.
-          </p>
+          <h1>{translateText("Dobrodošli u Daja Shop Nalog")}</h1>
+          <p className="lead">{translateText("Prijavom dobijate pristup praćenju statusa porudžbina, čuvanju adresa i kreiranju liste želja.")}</p>
 
           <div className="auth-actions">
             <button
               className="btn-primary large"
               onClick={() => showAuth('login')}
-            >
-              Prijavi se odmah
-            </button>
+            >{translateText("Prijavi se odmah")}</button>
             <button
               className="btn-link-primary"
               onClick={() => showAuth('register')}
-            >
-              Novi korisnik? Registruj se
-            </button>
+            >{translateText("Novi korisnik? Registruj se")}</button>
           </div>
         </motion.div>
       </div>
@@ -74,7 +70,7 @@ export default function Account() {
 
   return (
     <div className="container account-dashboard">
-      <SEOHead title="Moj nalog" noIndex={true} />
+      <SEOHead title={translateText("Moj nalog")} noIndex={true} />
       <AccountNav
         activeTab={activeTab}
         logout={logout}

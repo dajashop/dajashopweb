@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 // ==============================
 // File: src/pages/About.jsx
 // Sastavlja sve sekcije "O nama" sa AnimatePresence
@@ -19,6 +20,8 @@ import AboutCTA from '../components/about/AboutCTA.jsx';
 import SEOHead from '../components/seo/SEOHead.jsx';
 
 export default function About() {
+  const { t: translateText } = useStorefront();
+
   return (
     <AnimatePresence mode="wait">
       <motion.main
@@ -29,8 +32,8 @@ export default function About() {
         transition={{ duration: 0.4 }}
       >
         <SEOHead
-          title="O nama"
-          description="DajaShop je prodavnica satova u Nišu, u Podzemnom prolazu, lokal C31. Upoznajte našu ponudu i kontaktirajte nas za pomoć pri izboru sata."
+          title={translateText("O nama")}
+          description={translateText("DajaShop je prodavnica satova u Nišu, u Podzemnom prolazu, lokal C31. Upoznajte našu ponudu i kontaktirajte nas za pomoć pri izboru sata.")}
         />
         <AboutHero />
         <AboutStats />

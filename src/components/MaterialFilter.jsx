@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React from 'react';
 import leather from '../assets/filter-materials/leather.webp';
 import steel from '../assets/filter-materials/steel.webp';
@@ -25,8 +26,10 @@ function materialImage(value) {
 }
 
 export default function MaterialFilter({ values, selected, onToggle, label, showCounts = true }) {
+  const { t: translateText } = useStorefront();
+
   return (
-    <div className="material-filter-list" role="group" aria-label={label}>
+    <div className="material-filter-list" role="group" aria-label={translateText(label)}>
       {values.map(({ value, label: name = value, count, image: customImage }) => {
         const image = customImage || materialImage(name);
         return (
@@ -34,8 +37,8 @@ export default function MaterialFilter({ values, selected, onToggle, label, show
             aria-pressed={selected.includes(value)} onClick={() => onToggle(value)}>
             {image ? <img className="material-filter-image" src={image} alt="" width="42" height="42" loading="lazy" />
               : <span className="material-filter-image material-filter-placeholder" aria-hidden="true">◇</span>}
-            <span className="material-filter-name">{name}</span>
-            {showCounts && <span className="material-filter-count">{count}</span>}
+            <span className="material-filter-name">{translateText(name)}</span>
+            {showCounts && <span className="material-filter-count">{translateText(count)}</span>}
           </button>
         );
       })}

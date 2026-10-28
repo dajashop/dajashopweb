@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapPinned, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
@@ -32,6 +33,8 @@ function normalizeCategories(value) {
 }
 
 export function ConsentProvider({ children }) {
+  const { t: translateText } = useStorefront();
+
   const { pathname } = useLocation();
   const [policy, setPolicy] = useState(FALLBACK_POLICY);
   const [decision, setDecision] = useState(null);
@@ -205,7 +208,7 @@ export function ConsentProvider({ children }) {
 
   return (
     <ConsentContext.Provider value={value}>
-      {children}
+      {translateText(children)}
       <CookieConsentModal
         open={showConsentModal}
         policy={policy}
@@ -227,16 +230,18 @@ export function ConsentProvider({ children }) {
 }
 
 function GooglePermissionDialog({ onAccept, onDecline, saving }) {
+  const { t: translateText } = useStorefront();
+
   return (
     <div className="google-consent" role="presentation">
       <section className="google-consent__dialog" role="dialog" aria-modal="true" aria-labelledby="google-consent-title">
-        <button type="button" className="google-consent__close" onClick={onDecline} disabled={saving} aria-label="Zatvori"><X size={19} /></button>
+        <button type="button" className="google-consent__close" onClick={onDecline} disabled={saving} aria-label={translateText("Zatvori")}><X size={19} /></button>
         <div className="google-consent__icon"><MapPinned size={23} /></div>
-        <h2 id="google-consent-title">Uključi funkcionalne usluge?</h2>
-        <p>Ovim izborom uključujete pamćenje funkcionalnih podešavanja, Google mapu naše lokacije, predlog adrese i prikaz Google ocene prodavnice. Google pri tome može obraditi tehničke podatke pregledača i adresu koju unesete. Sajt i kupovina dostupni su i bez ovih Google usluga.</p>
+        <h2 id="google-consent-title">{translateText("Uključi funkcionalne usluge?")}</h2>
+        <p>{translateText("Ovim izborom uključujete pamćenje funkcionalnih podešavanja, Google mapu naše lokacije, predlog adrese i prikaz Google ocene prodavnice. Google pri tome može obraditi tehničke podatke pregledača i adresu koju unesete. Sajt i kupovina dostupni su i bez ovih Google usluga.")}</p>
         <div className="google-consent__actions">
-          <button type="button" className="google-consent__secondary" onClick={onDecline} disabled={saving}>Nastavi bez Google usluga</button>
-          <button type="button" className="google-consent__primary" onClick={onAccept} disabled={saving}>{saving ? 'Čuvamo…' : 'Dozvoli funkcionalne usluge'}</button>
+          <button type="button" className="google-consent__secondary" onClick={onDecline} disabled={saving}>{translateText("Nastavi bez Google usluga")}</button>
+          <button type="button" className="google-consent__primary" onClick={onAccept} disabled={saving}>{translateText(saving ? 'Čuvamo…' : 'Dozvoli funkcionalne usluge')}</button>
         </div>
       </section>
     </div>

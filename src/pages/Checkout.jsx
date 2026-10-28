@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useState, useEffect, useRef } from 'react';
 import './Checkout.css';
 import { useCart } from '../hooks/useCart.js';
@@ -6,7 +7,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import { useFlash } from '../hooks/useFlash.js';
 import { usePromo } from '../hooks/usePromo.js';
 import { CHECKOUT_UNAVAILABLE_MESSAGE, useCheckoutAvailability } from '../hooks/useCheckoutAvailability.js';
-import { money } from '../utils/currency.js';
+
 import { PASSWORD_RULE } from '../data/validationRules.js';
 import { AnimatePresence } from 'framer-motion';
 import { customerApi, ordersApi } from '../services/dajaPlatform.js';
@@ -21,6 +22,8 @@ import SEOHead from '../components/seo/SEOHead.jsx';
 import { commerceSeoConfig } from '../config/seo.js';
 
 export default function Checkout() {
+  const { t: translateText, money } = useStorefront();
+
   const { items, total, dispatch } = useCart();
   const { user, authReady, register } = useAuth();
   const { flash } = useFlash();
@@ -258,8 +261,8 @@ export default function Checkout() {
 
   return (
     <div className="container checkout-page">
-      <SEOHead title="Plaćanje" noIndex={true} />
-      <h1 className="checkout-title">Naplata i Isporuka</h1>
+      <SEOHead title={translateText("Plaćanje")} noIndex={true} />
+      <h1 className="checkout-title">{translateText("Naplata i Isporuka")}</h1>
       <form className="checkout-layout" onSubmit={preventFormSubmit} noValidate>
         <div className="checkout-left">
           <DeliveryForm

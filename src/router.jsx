@@ -1,8 +1,14 @@
 import React, { lazy } from 'react';
 import ClientOnly from './components/ClientOnly.jsx';
 import { AdminDashboardSkeleton } from './components/AdminSkeleton.jsx';
+import { useStorefront } from './localization/StorefrontContext.jsx';
 
-function browserPage(loader, fallback = <p role="status">Učitavanje…</p>) {
+function LoadingMessage() {
+  const { t } = useStorefront();
+  return <p role="status">{t('Učitavanje…')}</p>;
+}
+
+function browserPage(loader, fallback = <LoadingMessage />) {
   const Component = lazy(loader);
   return function BrowserPage(props) {
     return <ClientOnly fallback={fallback}><Component {...props} /></ClientOnly>;

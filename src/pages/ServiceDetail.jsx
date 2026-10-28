@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowDown, ArrowUpRight, ChevronRight, Mail, MapPin, Plus } from 'lucide-react';
 import SEOHead from '../components/seo/SEOHead.jsx';
@@ -12,6 +13,8 @@ import PageStatus from './PageStatus.jsx';
 import './Usluge.css';
 
 export default function ServiceDetail() {
+  const { t: translateText } = useStorefront();
+
   const { serviceSlug } = useParams();
   const service = getService(serviceSlug);
   if (!service) return <PageStatus status={404} />;
@@ -22,7 +25,7 @@ export default function ServiceDetail() {
   const subject = encodeURIComponent(`Upit: ${service.title}`);
 
   return <div className="services-page services-page--detail" key={service.slug}>
-    <SEOHead title={title} description={service.description} keywords={service.keywords} image={service.image} url={service.path} defer={false}>
+    <SEOHead title={translateText(title)} description={translateText(service.description)} keywords={service.keywords} image={service.image} url={service.path} defer={false}>
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:image:alt" content={title} />
@@ -49,12 +52,12 @@ export default function ServiceDetail() {
     <header className={`services-hero services-hero--${service.kind}`}>
       <ServiceVisual kind={service.kind} />
       <div className="services-hero__copy">
-        <span className="services-hero__location"><MapPin size={19} aria-hidden="true" />U našoj radnji u Nišu</span>
-        <h1>{service.title}</h1>
-        <p>{service.summary}</p>
+        <span className="services-hero__location"><MapPin size={19} aria-hidden="true" />{translateText("U našoj radnji u Nišu")}</span>
+        <h1>{translateText(service.title)}</h1>
+        <p>{translateText(service.summary)}</p>
         <div className="services-actions">
-          <a className="services-button services-button--light" href={`mailto:${seoConfig.business.email}?subject=${subject}`}><Mail size={20} aria-hidden="true" />Pošaljite upit</a>
-          <a className="services-hero__link" href="#o-usluzi" onClick={scrollToServiceSection}>Pogledajte detalje <ArrowDown size={20} aria-hidden="true" /></a>
+          <a className="services-button services-button--light" href={`mailto:${seoConfig.business.email}?subject=${subject}`}><Mail size={20} aria-hidden="true" />{translateText("Pošaljite upit")}</a>
+          <a className="services-hero__link" href="#o-usluzi" onClick={scrollToServiceSection}>{translateText("Pogledajte detalje ")}<ArrowDown size={20} aria-hidden="true" /></a>
         </div>
       </div>
     </header>
@@ -62,34 +65,34 @@ export default function ServiceDetail() {
 
     <section className="services-about services-section" id="o-usluzi" aria-labelledby="services-about-title">
       <div className="services-about__copy">
-        <h2 id="services-about-title">{service.tagline}</h2>
-        {service.paragraphs.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
-        <Link className="services-service-action" to={service.action.path}>{service.action.label}<ArrowUpRight size={23} aria-hidden="true" /></Link>
+        <h2 id="services-about-title">{translateText(service.tagline)}</h2>
+        {service.paragraphs.map(paragraph => <p key={paragraph}>{translateText(paragraph)}</p>)}
+        <Link className="services-service-action" to={service.action.path}>{translateText(service.action.label)}<ArrowUpRight size={23} aria-hidden="true" /></Link>
       </div>
       <aside className="services-preparation" aria-labelledby="services-prepare-title">
         <span className="services-preparation__icon"><ServiceIcon kind={service.kind} size={32} /></span>
-        <h2 id="services-prepare-title">Šta da ponesete?</h2>
-        <ul>{service.bring.map(item => <li key={item}>{item}</li>)}</ul>
-        <p className="services-preparation__note">{service.note}</p>
+        <h2 id="services-prepare-title">{translateText("Šta da ponesete?")}</h2>
+        <ul>{service.bring.map(item => <li key={item}>{translateText(item)}</li>)}</ul>
+        <p className="services-preparation__note">{translateText(service.note)}</p>
       </aside>
     </section>
 
     <section className="services-faq" aria-labelledby="services-faq-title">
       <div className="services-section-heading">
-        <h2 id="services-faq-title">Odgovori pre dolaska.</h2>
-        <p>Niste pronašli odgovor? <Link className="services-inline-link" to="/contact">Javite nam se <ArrowUpRight size={20} aria-hidden="true" /></Link></p>
+        <h2 id="services-faq-title">{translateText("Odgovori pre dolaska.")}</h2>
+        <p>{translateText("Niste pronašli odgovor? ")}<Link className="services-inline-link" to="/contact">{translateText("Javite nam se ")}<ArrowUpRight size={20} aria-hidden="true" /></Link></p>
       </div>
       <div className="services-faq__items">{service.faqs.map(faq => <details key={faq.question}>
-        <summary>{faq.question}<Plus size={24} aria-hidden="true" /></summary><p>{faq.answer}</p>
+        <summary>{translateText(faq.question)}<Plus size={24} aria-hidden="true" /></summary><p>{translateText(faq.answer)}</p>
       </details>)}</div>
     </section>
     <ServiceVisit service={service} />
 
     <section className="services-section services-more" aria-labelledby="services-related-title">
-      <div className="services-section-heading"><h2 id="services-related-title">Još usluga u našoj radnji.</h2><Link className="services-inline-link" to="/usluge">Sve usluge <ArrowUpRight size={21} aria-hidden="true" /></Link></div>
+      <div className="services-section-heading"><h2 id="services-related-title">{translateText("Još usluga u našoj radnji.")}</h2><Link className="services-inline-link" to="/usluge">{translateText("Sve usluge ")}<ArrowUpRight size={21} aria-hidden="true" /></Link></div>
       <div className="services-related">{serviceCatalog.filter(item => item.slug !== service.slug).map(item => <Link key={item.slug} to={item.path}>
         <ServiceVisual kind={item.kind} variant="related" />
-        <h3>{item.title}</h3><ChevronRight size={23} aria-hidden="true" />
+        <h3>{translateText(item.title)}</h3><ChevronRight size={23} aria-hidden="true" />
       </Link>)}</div>
     </section>
   </div>;

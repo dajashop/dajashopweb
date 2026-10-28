@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // ==============================
 // File: src/components/about/AboutHero.jsx
 // Upečatljiv Hero deo sa animacijom
@@ -19,6 +20,8 @@ const itemVariants = {
 };
 
 export default function AboutHero() {
+  const { t: translateText } = useStorefront();
+
   return (
     <section className="hero-about section">
       <motion.div
@@ -27,27 +30,14 @@ export default function AboutHero() {
         initial={false}
         animate="visible"
       >
-        <motion.p className="pill" variants={itemVariants}>
-          DAJA SHOP | VREME JE DA ZABLISTAŠ
-        </motion.p>
-        <motion.h1 className="h1" variants={itemVariants}>
-          DajaShop — prodavnica satova u Nišu.
-          <br />
-          Podzemni prolaz, lokal C31.
-        </motion.h1>
-        <motion.p className="lead" variants={itemVariants}>
-          Nalazimo se u Podzemnom prolazu, lokal C31, u Nišu. Satove iz naše
-          ponude možete pogledati u prodavnici ili na dajashop.rs. Za pomoć
-          pri izboru sata i pitanja o porudžbini dostupni smo telefonom,
-          preko Vibera i emaila.
-        </motion.p>
+        <motion.p className="pill" variants={itemVariants}>{translateText("DAJA SHOP | VREME JE DA ZABLISTAŠ")}</motion.p>
+        <motion.h1 className="h1" variants={itemVariants}>{translateText("DajaShop — prodavnica satova u Nišu.")}<br />{translateText("Podzemni prolaz, lokal C31.")}</motion.h1>
+        <motion.p className="lead" variants={itemVariants}>{translateText("Nalazimo se u Podzemnom prolazu, lokal C31, u Nišu. Satove iz naše ponude možete pogledati u prodavnici ili na dajashop.rs. Za pomoć pri izboru sata i pitanja o porudžbini dostupni smo telefonom, preko Vibera i emaila.")}</motion.p>
         <motion.button
           className="btn-primary"
           variants={itemVariants}
           style={{ marginTop: '24px' }}
-        >
-          Istražite Našu Priču
-        </motion.button>
+        >{translateText("Istražite Našu Priču")}</motion.button>
       </motion.div>
     </section>
   );

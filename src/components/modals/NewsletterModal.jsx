@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
@@ -7,6 +8,8 @@ import { useConsent } from '../../context/ConsentContext.jsx';
 import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
 
 export default function NewsletterModal() {
+  const { t: translateText } = useStorefront();
+
   const { preferencesAllowed, policy } = useConsent();
   const [isVisible, setIsVisible] = useState(false);
   const [email, setEmail] = useState('');
@@ -85,7 +88,7 @@ export default function NewsletterModal() {
             <button
               className="newsletter-close-btn"
               onClick={handleClose}
-              aria-label="Zatvori"
+              aria-label={translateText("Zatvori")}
             >
               <X size={24} />
             </button>
@@ -93,63 +96,62 @@ export default function NewsletterModal() {
             {status === 'dobrodoslica-sa-kodom' && (
               <div className="newsletter-success">
                 <div className="success-icon"><Check size={32} /></div>
-                <h2>Uspešno!</h2>
-                <p>Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i kod dobrodošlice.</p>
+                <h2>{translateText("Uspešno!")}</h2>
+                <p>{translateText("Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i kod dobrodošlice.")}</p>
               </div>
             )}
 
-            {status === 'confirmation' && <div className="newsletter-success"><div className="success-icon"><Check size={32} /></div><h2>Proverite email</h2><p>Otvorite poruku za potvrdu prijave. Novosti ćete primati tek kada potvrdite svoju email adresu. Proverite i spam folder.</p></div>}
+            {status === 'confirmation' && <div className="newsletter-success"><div className="success-icon"><Check size={32} /></div><h2>{translateText("Proverite email")}</h2><p>{translateText("Otvorite poruku za potvrdu prijave. Novosti ćete primati tek kada potvrdite svoju email adresu. Proverite i spam folder.")}</p></div>}
 
             {status === 'dobrodoslica' && (
               <div className="newsletter-success">
                 <div className="success-icon"><Check size={32} /></div>
-                <h2>Dobro došli!</h2>
-                <p>Proverite inbox i spam folder za poruku dobrodošlice.</p>
+                <h2>{translateText("Dobro došli!")}</h2>
+                <p>{translateText("Proverite inbox i spam folder za poruku dobrodošlice.")}</p>
               </div>
             )}
 
             {status === 'success' && (
               <div className="newsletter-success">
                 <div className="success-icon"><Check size={32} /></div>
-                <h2>Uspešno!</h2>
-                <p>Prijavljeni ste na DajaShop novosti. Uskoro ćete dobijati novitete i savete.</p>
+                <h2>{translateText("Uspešno!")}</h2>
+                <p>{translateText("Prijavljeni ste na DajaShop novosti. Uskoro ćete dobijati novitete i savete.")}</p>
               </div>
             )}
 
             {status === 'duplicate' && (
               <div className="newsletter-error duplicate">
                 <div className="success-icon"><Check size={32} /></div>
-                <h2>Već ste prijavljeni!</h2>
-                <p>Ova email adresa je već prijavljena na DajaShop novosti.</p>
+                <h2>{translateText("Već ste prijavljeni!")}</h2>
+                <p>{translateText("Ova email adresa je već prijavljena na DajaShop novosti.")}</p>
               </div>
             )}
 
             {(status === 'idle' || status === 'loading' || status === 'error') && (
               <div className="newsletter-content">
-                <h2>Budite u toku</h2>
-                <p>Prijavite se na DajaShop novosti i primajte informacije o dostupnosti, novitetima i savetima o satovima.</p>
+                <h2>{translateText("Budite u toku")}</h2>
+                <p>{translateText("Prijavite se na DajaShop novosti i primajte informacije o dostupnosti, novitetima i savetima o satovima.")}</p>
                 <form className="newsletter-form" onSubmit={handleSubmit}>
                   <input
                     type="email"
-                    placeholder="Vaša email adresa"
+                    placeholder={translateText("Vaša email adresa")}
                     className="newsletter-input"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     disabled={status === 'loading'}
                   />
-                  <p className="newsletter-consent-notice">
-                    Klikom na „Prijavi me” saglasni ste da vam DajaShop šalje email obaveštenja o akcijama i ponudama. Više u <a href="/privacy">Politici privatnosti</a>.
+                  <p className="newsletter-consent-notice">{translateText("Klikom na „Prijavi me” saglasni ste da vam DajaShop šalje email obaveštenja o akcijama i ponudama. Više u ")}<a href="/privacy">{translateText("Politici privatnosti")}</a>.
                   </p>
                   {(errorMsg || status === 'error') && (
                     <span className="newsletter-message error-message">
-                      {errorMsg || 'Greška pri slanju. Pokušajte ponovo.'}
+                      {translateText(errorMsg || 'Greška pri slanju. Pokušajte ponovo.')}
                     </span>
                   )}
                   <button type="submit" className="newsletter-submit" disabled={status === 'loading'}>
-                    {status === 'loading' ? 'Slanje...' : 'Prijavi me'}
+                    {translateText(status === 'loading' ? 'Slanje...' : 'Prijavi me')}
                   </button>
                 </form>
-                <p className="newsletter-disclaimer">Odjava je moguća u bilo kom trenutku.</p>
+                <p className="newsletter-disclaimer">{translateText("Odjava je moguća u bilo kom trenutku.")}</p>
               </div>
             )}
           </motion.div>

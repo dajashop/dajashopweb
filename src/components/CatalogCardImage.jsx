@@ -1,9 +1,12 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect, useRef, useState } from 'react';
 import ProgressiveImage from './ui/ProgressiveImage.jsx';
 
 // Keep the displayed DOM image until the requested DOM image has decoded.
 // Only explicit gallery changes crossfade; first-load photos paint natively.
 export default function CatalogCardImage({ src, thumbSrc, alt, className, priority }) {
+  const { t: translateText } = useStorefront();
+
   const [shown, setShown] = useState(src);
   const [previous, setPrevious] = useState(null);
   const latest = useRef(src);
@@ -28,7 +31,7 @@ export default function CatalogCardImage({ src, thumbSrc, alt, className, priori
   return <span className="catalog-card-gallery" aria-busy={src !== shown}>
     {sources.map(url => <ProgressiveImage key={url} src={url}
       thumbSrc={url === src ? thumbSrc : undefined}
-      alt={url === shown ? alt : ''} aria-hidden={url !== shown || undefined}
+      alt={translateText(url === shown ? alt : '')} aria-hidden={url !== shown || undefined}
       loading={url !== shown || priority ? 'eager' : 'lazy'}
       fetchPriority={url !== shown || priority ? 'high' : 'auto'} draggable={false}
       className={`${className} catalog-card-gallery__layer ${url === shown ? previous ? 'is-revealing' : 'is-shown' : url === previous ? 'is-previous' : 'is-pending'}`}

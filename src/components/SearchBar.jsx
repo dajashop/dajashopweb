@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { Search, ArrowRight, ArrowLeft, X } from 'lucide-react';
@@ -8,6 +9,8 @@ import './SearchBar.css';
 import './search/LiveSearch.css';
 
 export default function SearchBar() {
+  const { t: translateText } = useStorefront();
+
   const [q, setQ] = useState('');
   const [literal, setLiteral] = useState(false);
   const [open, setOpen] = useState(false);
@@ -113,21 +116,21 @@ export default function SearchBar() {
     recommendations={data?.recommendations||[]}
     onNavigate={go} onCorrect={correct} onLiteral={()=>setLiteral(true)} literal={literal} active={active} onActive={setActive} idPrefix={id} />;
   return <>
-    <div ref={anchor} className={`searchNeo ${open ? 'is-focused' : ''} ${hasValue ? 'has-value' : ''}`} role="search" aria-label="Pretraga" tabIndex={-1}>
+    <div ref={anchor} className={`searchNeo ${open ? 'is-focused' : ''} ${hasValue ? 'has-value' : ''}`} role="search" aria-label={translateText("Pretraga")} tabIndex={-1}>
       <Search className="s2__leading" size={18} aria-hidden="true" />
       <input ref={inputRef} className="s2__input" value={q} maxLength={120} onChange={(event) => { setLiteral(false); setQ(event.target.value); }} onKeyDown={onKeyDown} onFocus={show}
-        placeholder="Pretraži modele, brendove…" inputMode="search" autoComplete="off" {...accessibility} aria-hidden={mobile && open ? 'true' : undefined} tabIndex={mobile && open ? -1 : 0} />
-      <button type="button" className="s2__clear" onClick={clear} aria-label="Obriši pretragu" tabIndex={hasValue ? 0 : -1}><X size={14} /></button>
-      <button type="button" className="s2__submit" onClick={submit} disabled={q.trim().length < 2} aria-label="Prikaži sve rezultate" tabIndex={hasValue ? 0 : -1}><ArrowRight size={18} /></button>
+        placeholder={translateText("Pretraži modele, brendove…")} inputMode="search" autoComplete="off" {...accessibility} aria-hidden={mobile && open ? 'true' : undefined} tabIndex={mobile && open ? -1 : 0} />
+      <button type="button" className="s2__clear" onClick={clear} aria-label={translateText("Obriši pretragu")} tabIndex={hasValue ? 0 : -1}><X size={14} /></button>
+      <button type="button" className="s2__submit" onClick={submit} disabled={q.trim().length < 2} aria-label={translateText("Prikaži sve rezultate")} tabIndex={hasValue ? 0 : -1}><ArrowRight size={18} /></button>
     </div>
-    {open && createPortal(<div ref={panel} style={position} className={`live-search ${mobile ? 'live-search--mobile' : 'live-search--desktop'}`} data-lenis-prevent
-      role={mobile ? 'dialog' : undefined} aria-modal={mobile ? 'true' : undefined} aria-label="Pretraga kataloga" onKeyDown={mobile ? onKeyDown : undefined}>
+    {translateText(open && createPortal(<div ref={panel} style={position} className={`live-search ${mobile ? 'live-search--mobile' : 'live-search--desktop'}`} data-lenis-prevent
+      role={mobile ? 'dialog' : undefined} aria-modal={mobile ? 'true' : undefined} aria-label={translateText("Pretraga kataloga")} onKeyDown={mobile ? onKeyDown : undefined}>
       {mobile && <div className="live-search__mobile-header">
-        <button type="button" onClick={dismiss} aria-label="Zatvori pretragu"><ArrowLeft size={22} /></button>
-        <div className="live-search__mobile-field"><Search size={19} aria-hidden="true" /><input ref={mobileInput} value={q} maxLength={120} onChange={(event) => { setLiteral(false); setQ(event.target.value); }} placeholder="Model, brend, kolekcija…" inputMode="search" enterKeyHint="search" autoComplete="off" {...accessibility} />
-          {hasValue && <button type="button" onClick={clear} aria-label="Obriši pretragu"><X size={18} /></button>}</div>
+        <button type="button" onClick={dismiss} aria-label={translateText("Zatvori pretragu")}><ArrowLeft size={22} /></button>
+        <div className="live-search__mobile-field"><Search size={19} aria-hidden="true" /><input ref={mobileInput} value={q} maxLength={120} onChange={(event) => { setLiteral(false); setQ(event.target.value); }} placeholder={translateText("Model, brend, kolekcija…")} inputMode="search" enterKeyHint="search" autoComplete="off" {...accessibility} />
+          {hasValue && <button type="button" onClick={clear} aria-label={translateText("Obriši pretragu")}><X size={18} /></button>}</div>
       </div>}
-      <div className="live-search__scroll" data-lenis-prevent id={`${id}-list`} role="listbox" aria-label="Predlozi pretrage" aria-busy={loading}>{content}</div>
-    </div>, document.body)}
+      <div className="live-search__scroll" data-lenis-prevent id={`${id}-list`} role="listbox" aria-label={translateText("Predlozi pretrage")} aria-busy={loading}>{translateText(content)}</div>
+    </div>, document.body))}
   </>;
 }

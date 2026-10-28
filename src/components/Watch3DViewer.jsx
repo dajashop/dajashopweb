@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 // src/components/Watch3DViewer.jsx
 import React, { Suspense, useRef, useState, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
@@ -56,6 +57,8 @@ function Model({ modelPath, quality, ...props }) {
 
 // Komponenta za odabir kvaliteta
 function QualitySelector({ quality, setQuality }) {
+  const { t: translateText } = useStorefront();
+
   return (
     <div
       style={{
@@ -96,7 +99,7 @@ function QualitySelector({ quality, setQuality }) {
               transition: "background 0.2s",
             }}
           >
-            {QUALITY_LEVELS[key].label}
+            {translateText(QUALITY_LEVELS[key].label)}
           </button>
         ))}
       </div>
@@ -105,6 +108,8 @@ function QualitySelector({ quality, setQuality }) {
 }
 
 export default function Watch3DViewer({ modelUrl }) {
+  const { t: translateText } = useStorefront();
+
   const [quality, setQuality] = useState("HD"); // Podrazumevani HD
   const { multiplier } = QUALITY_LEVELS[quality];
 
@@ -170,9 +175,7 @@ export default function Watch3DViewer({ modelUrl }) {
                   borderRadius: "8px",
                   opacity: 0.7,
                 }}
-              >
-                Učitavanje 3D modela... ⏳
-              </div>
+              >{translateText("Učitavanje 3D modela... ⏳")}</div>
             </Html>
           }
         >

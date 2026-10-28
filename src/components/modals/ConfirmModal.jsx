@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React from "react";
 // eslint-disable-next-line no-unused-vars
 import { AnimatePresence, motion } from "framer-motion";
@@ -13,6 +14,8 @@ export default function ConfirmModal({
   cancelText = "Odustani",
   isDanger = false,
 }) {
+  const { t: translateText } = useStorefront();
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -46,10 +49,10 @@ export default function ConfirmModal({
               {/* Tekst */}
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-neutral-900 leading-tight">
-                  {title}
+                  {translateText(title)}
                 </h3>
                 <p className="text-sm text-neutral-600 leading-relaxed">
-                  {description}
+                  {translateText(description)}
                 </p>
               </div>
 
@@ -59,7 +62,7 @@ export default function ConfirmModal({
                   onClick={onClose}
                   className="px-4 py-3 rounded-xl font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors"
                 >
-                  {cancelText}
+                  {translateText(cancelText)}
                 </button>
                 <button
                   onClick={() => {
@@ -72,7 +75,7 @@ export default function ConfirmModal({
                       : "bg-neutral-900 hover:bg-neutral-800" // Tamno dugme
                   }`}
                 >
-                  {confirmText}
+                  {translateText(confirmText)}
                 </button>
               </div>
             </div>

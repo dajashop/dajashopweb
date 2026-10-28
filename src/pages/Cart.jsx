@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useState, useEffect, useRef } from 'react';
 import './Cart.css';
 import { Link } from 'react-router-dom';
@@ -10,7 +11,7 @@ import EngravingSummary from '../components/engraving/EngravingSummary';
 import { useUndo } from '../hooks/useUndo.js';
 import { usePromo } from '../hooks/usePromo.js';
 import { useAuth } from '../hooks/useAuth.js'; // NOVO: Importujemo Auth
-import { money } from '../utils/currency.js';
+
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import ConfirmModal from '../components/modals/ConfirmModal.jsx';
@@ -33,6 +34,8 @@ import SEOHead from '../components/seo/SEOHead.jsx';
 import { commerceSeoConfig } from '../config/seo.js';
 
 function QtyInput({ value, id, dispatch }) {
+  const { t: translateText } = useStorefront();
+
   const [localVal, setLocalVal] = useState(value);
   const clampQty = (n) => Math.max(1, Math.min(99, n));
 
@@ -62,7 +65,7 @@ function QtyInput({ value, id, dispatch }) {
       onChange={(e) => setLocalVal(e.target.value)}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
-      aria-label="Količina proizvoda"
+      aria-label={translateText("Količina proizvoda")}
       inputMode="numeric"
     />
   );
@@ -77,6 +80,8 @@ function PromoCodeSection({
   success,
   loading,
 }) {
+  const { t: translateText } = useStorefront();
+
   const [code, setCode] = useState('');
 
   const handleSubmit = async (e) => {
@@ -98,9 +103,7 @@ function PromoCodeSection({
             }}
           >
             <Ticket size={18} className="icon" style={{ color: '#4ade80' }} />
-            <span className="applied-text">
-              Kod <strong>{activeCode}</strong> aktivan
-            </span>
+            <span className="applied-text">{translateText("Kod ")}<strong>{translateText(activeCode)}</strong>{translateText(" aktivan")}</span>
           </div>
           <button type="button" onClick={onRemove} className="btn-remove-code">
             <X size={16} />
@@ -117,7 +120,7 @@ function PromoCodeSection({
           <Ticket size={18} className={`icon ${error ? 'text-red-500' : ''}`} />
           <input
             type="text"
-            placeholder="Kod"
+            placeholder={translateText("Kod")}
             value={code}
             onChange={(e) => setCode(e.target.value)}
             disabled={loading} // Onemogućeno dok se učitava
@@ -128,7 +131,7 @@ function PromoCodeSection({
           className="btn btn-primary promo-btn"
           disabled={code.length < 3 || loading}
         >
-          {loading ? 'Provera...' : 'Potvrdi'}
+          {translateText(loading ? 'Provera...' : 'Potvrdi')}
         </button>
       </form>
       {error && (
@@ -141,7 +144,7 @@ function PromoCodeSection({
             paddingLeft: '4px',
           }}
         >
-          {error}
+          {translateText(error)}
         </p>
       )}
       {success && (
@@ -154,7 +157,7 @@ function PromoCodeSection({
             paddingLeft: '4px',
           }}
         >
-          {success}
+          {translateText(success)}
         </p>
       )}
     </div>
@@ -162,6 +165,8 @@ function PromoCodeSection({
 }
 
 export default function Cart() {
+  const { t: translateText, money } = useStorefront();
+
   const [previewItem, setPreviewItem] = useState(null);
   const reduceMotion = useReducedMotion();
   const { items, total, dispatch } = useCart();
@@ -276,26 +281,26 @@ export default function Cart() {
 
   return (
     <div className="cart container">
-      <SEOHead title="Korpa" noIndex={true} />
+      <SEOHead title={translateText("Korpa")} noIndex={true} />
       {previewItem && <CartImagePreview key={previewItem.lineId || previewItem.id} item={previewItem} onClose={() => setPreviewItem(null)} />}
 
       <ConfirmModal
         isOpen={showClearModal}
         onClose={() => setShowClearModal(false)}
         onConfirm={performClear}
-        title="Isprazni korpu?"
-        description="Da li ste sigurni da želite da uklonite sve proizvode? Sve stavke biće uklonjene iz korpe."
+        title={translateText("Isprazni korpu?")}
+        description={translateText("Da li ste sigurni da želite da uklonite sve proizvode? Sve stavke biće uklonjene iz korpe.")}
         isDanger={true}
       />
 
       <div className="cart__header">
         <div className="cart__title">
-          <ShoppingBag aria-hidden /> <h1>Vaša korpa</h1>
+          <ShoppingBag aria-hidden /> <h1>{translateText("Vaša korpa")}</h1>
         </div>
         <div className="header-actions">
           {items.length > 0 && (
-            <div className="cart__badge" aria-label={`${items.length} stavki`}>
-              {items.length}
+            <div className="cart__badge" aria-label={translateText(`${items.length} stavki`)}>
+              {translateText(items.length)}
             </div>
           )}
         </div>
@@ -310,12 +315,9 @@ export default function Cart() {
           <div className="empty__iconWrap">
             <ShoppingBag className="empty__icon" aria-hidden />
           </div>
-          <h2>Korpa je prazna</h2>
-          <p className="muted">
-            Pogledaj našu kolekciju satova i pronađi onaj pravi.
-          </p>
-          <Link to="/catalog" className="btn btn-primary">
-            U katalog <ArrowRight size={18} aria-hidden />
+          <h2>{translateText("Korpa je prazna")}</h2>
+          <p className="muted">{translateText("Pogledaj našu kolekciju satova i pronađi onaj pravi.")}</p>
+          <Link to="/catalog" className="btn btn-primary">{translateText("U katalog ")}<ArrowRight size={18} aria-hidden />
           </Link>
         </motion.div>
       )}
@@ -327,7 +329,7 @@ export default function Cart() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="cart__rows" role="region" aria-label="Proizvodi u korpi">
+            <div className="cart__rows" role="region" aria-label={translateText("Proizvodi u korpi")}>
               <AnimatePresence initial={false} mode="popLayout">
                 {items.map((it) => (
                   <motion.div
@@ -339,30 +341,29 @@ export default function Cart() {
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={{ duration: reduceMotion ? 0 : 0.18 }}
                   >
-                    <button type="button" className="cart__image-button" onClick={() => setPreviewItem(it)} aria-label={`Uvećaj slike: ${it.name}`}>
+                    <button type="button" className="cart__image-button" onClick={() => setPreviewItem(it)} aria-label={translateText(`Uvećaj slike: ${it.name}`)}>
                       <ShoppingBag className="cart__image-fallback" size={28} aria-hidden="true" />
-                      {(it.image || it.thumb) && <img key={it.image || it.thumb} className="cart__thumb" src={it.image || it.thumb} alt={it.name} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
+                      {(it.image || it.thumb) && <img key={it.image || it.thumb} className="cart__thumb" src={it.image || it.thumb} alt={translateText(it.name)} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
                       <span className="cart__zoom"><ZoomIn size={16} aria-hidden="true" /></span>
                     </button>
 
                     <div className="cart__meta">
                       <Link to={`/product/${it.slug}`} className="cart__name">
-                        {it.name}
+                        {translateText(it.name)}
                       </Link>
-                      <div className="cart__brand">{it.brand}</div>
+                      <div className="cart__brand">{translateText(it.brand)}</div>
                       {it.engraving && <div className="cart__engraving">
                         <EngravingSummary item={it} editable />
                       </div>}
                       <button type="button" className="cart__save-later" onClick={() => void saveForLater(it)} disabled={!saved.ready || loading || restoring !== null}>
-                        <Bookmark size={13} aria-hidden="true" /> Sačuvaj za kasnije
-                      </button>
+                        <Bookmark size={13} aria-hidden="true" />{translateText(" Sačuvaj za kasnije")}</button>
                     </div>
 
                     <div className="cart__qtyWrap">
                       <button
                         className="qty__btn"
                         type="button"
-                        aria-label={it.qty === 1 ? `Ukloni ${it.name}` : `Smanji količinu: ${it.name}`}
+                        aria-label={translateText(it.qty === 1 ? `Ukloni ${it.name}` : `Smanji količinu: ${it.name}`)}
                         onClick={() => handleDecrease(it)}
                       >
                         <Minus size={14} />
@@ -373,7 +374,7 @@ export default function Cart() {
                       <button
                         className="qty__btn"
                         type="button"
-                        aria-label={`Povećaj količinu: ${it.name}`}
+                        aria-label={translateText(`Povećaj količinu: ${it.name}`)}
                         disabled={it.qty >= 99}
                         onClick={() =>
                           dispatch({
@@ -394,9 +395,9 @@ export default function Cart() {
                     <button
                       className="cart__remove"
                       type="button"
-                      aria-label={`Ukloni iz korpe: ${it.name}`}
+                      aria-label={translateText(`Ukloni iz korpe: ${it.name}`)}
                       onClick={() => performRemove(it)}
-                      title="Ukloni"
+                      title={translateText("Ukloni")}
                     >
                       <XCircle size={18} />
                     </button>
@@ -410,8 +411,7 @@ export default function Cart() {
                 className="btn btn-ghost btn-clear-all"
                 onClick={() => setShowClearModal(true)}
               >
-                <Trash2 size={16} /> Isprazni celu korpu
-              </button>
+                <Trash2 size={16} />{translateText(" Isprazni celu korpu")}</button>
             </div>
           </motion.div>
 
@@ -421,7 +421,7 @@ export default function Cart() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h3 className="summary-title">Pregled porudžbine</h3>
+            <h3 className="summary-title">{translateText("Pregled porudžbine")}</h3>
 
             <div className="shipping-progress">
               <div
@@ -442,19 +442,15 @@ export default function Cart() {
                       gap: 6,
                     }}
                   >
-                    <Truck size={14} color="#40a840" /> Imate besplatnu dostavu!
-                  </span>
+                    <Truck size={14} color="#40a840" />{translateText(" Imate besplatnu dostavu!")}</span>
                 ) : (
-                  <span style={{ color: 'var(--color-text)' }}>
-                    Još{' '}
+                  <span style={{ color: 'var(--color-text)' }}>{translateText("Još")}{translateText(' ')}
                     <strong style={{ color: '#40a840', fontWeight: 700 }}>
                       {money(missingForFree)}
-                    </strong>{' '}
-                    do besplatne dostave
-                  </span>
+                    </strong>{translateText(' ')}{translateText("do besplatne dostave")}</span>
                 )}
                 <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>
-                  {progressPct.toFixed(0)}%
+                  {translateText(progressPct.toFixed(0))}%
                 </span>
               </div>
 
@@ -491,7 +487,7 @@ export default function Cart() {
 
             <div className="summary-details">
               <div className="summary-row subtotal">
-                <span className="muted">Međuzbir:</span>
+                <span className="muted">{translateText("Međuzbir:")}</span>
                 <span>{money(total)}</span>
               </div>
 
@@ -500,19 +496,16 @@ export default function Cart() {
                   className="summary-row discount"
                   style={{ color: '#ef4444' }}
                 >
-                  <span className="muted" style={{ color: '#ef4444' }}>
-                    Popust ({appliedPromo.code}):
+                  <span className="muted" style={{ color: '#ef4444' }}>{translateText("Popust (")}{translateText(appliedPromo.code)}):
                   </span>
                   <span>-{money(discountAmount)}</span>
                 </div>
               )}
 
               <div className="summary-row shipping">
-                <span className="muted">Isporuka:</span>
+                <span className="muted">{translateText("Isporuka:")}</span>
                 {isFreeShipping ? (
-                  <span style={{ color: '#40a840', fontWeight: 700 }}>
-                    Besplatna
-                  </span>
+                  <span style={{ color: '#40a840', fontWeight: 700 }}>{translateText("Besplatna")}</span>
                 ) : (
                   <span>{money(SHIPPING_COST)}</span>
                 )}
@@ -520,37 +513,35 @@ export default function Cart() {
             </div>
 
             <div className="cart__total">
-              <span>Ukupno za plaćanje</span>
+              <span>{translateText("Ukupno za plaćanje")}</span>
               <span className="cart__totalPrice">{money(finalTotal)}</span>
             </div>
 
-            <Link to="/checkout" className="btn btn-primary checkout-btn" aria-disabled={loading || restoring !== null} onClick={event => { if (loading || restoring !== null) event.preventDefault(); }}>
-              Nastavi na plaćanje <ArrowRight size={18} aria-hidden />
+            <Link to="/checkout" className="btn btn-primary checkout-btn" aria-disabled={loading || restoring !== null} onClick={event => { if (loading || restoring !== null) event.preventDefault(); }}>{translateText("Nastavi na plaćanje ")}<ArrowRight size={18} aria-hidden />
             </Link>
 
             <div className="cart__note">
-              <ShieldCheck size={16} aria-hidden /> Sigurna kupovina i garancija
-            </div>
+              <ShieldCheck size={16} aria-hidden />{translateText(" Sigurna kupovina i garancija")}</div>
           </motion.div>
         </div>
       )}
       {saved.items.length > 0 && <section className="cart__saved" aria-labelledby="saved-cart-title">
-        <div className="cart__saved-heading"><h2 id="saved-cart-title"><Bookmark size={20} aria-hidden="true" /> Sačuvano za kasnije <span>{saved.items.length}</span></h2>
-          <p>Proizvodi sačuvani za kasnije nisu deo trenutne porudžbine. Vratite ih u korpu kada budete želeli da ih kupite.</p>
+        <div className="cart__saved-heading"><h2 id="saved-cart-title"><Bookmark size={20} aria-hidden="true" />{translateText(" Sačuvano za kasnije ")}<span>{translateText(saved.items.length)}</span></h2>
+          <p>{translateText("Proizvodi sačuvani za kasnije nisu deo trenutne porudžbine. Vratite ih u korpu kada budete želeli da ih kupite.")}</p>
         </div>
-        <div className="cart__saved-list" role="region" aria-label="Proizvodi sačuvani za kasnije">
+        <div className="cart__saved-list" role="region" aria-label={translateText("Proizvodi sačuvani za kasnije")}>
           {saved.items.map(item => <article key={item.lineId || item.id} className="cart__saved-item">
-            <button type="button" className="cart__image-button" onClick={() => setPreviewItem(item)} aria-label={`Uvećaj slike: ${item.name}`}>
+            <button type="button" className="cart__image-button" onClick={() => setPreviewItem(item)} aria-label={translateText(`Uvećaj slike: ${item.name}`)}>
               <ShoppingBag className="cart__image-fallback" size={24} aria-hidden="true" />
-              {(item.image || item.thumb) && <img src={item.image || item.thumb} className="cart__thumb" alt={item.name} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
+              {(item.image || item.thumb) && <img src={item.image || item.thumb} className="cart__thumb" alt={translateText(item.name)} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
               <span className="cart__zoom"><ZoomIn size={14} aria-hidden="true" /></span>
             </button>
-            <div className="cart__saved-meta"><Link to={`/product/${item.slug}`} className="cart__name">{item.name}</Link><div className="cart__brand">{item.brand}</div>
-              <p>{money(item.price)}{item.qty > 1 && <span> · {item.qty} kom.</span>}</p>
-              {item.engraving && <span className="cart__saved-engraving">Sa sačuvanom gravurom</span>}
+            <div className="cart__saved-meta"><Link to={`/product/${item.slug}`} className="cart__name">{translateText(item.name)}</Link><div className="cart__brand">{translateText(item.brand)}</div>
+              <p>{money(item.price)}{item.qty > 1 && <span> · {translateText(item.qty)}{translateText(" kom.")}</span>}</p>
+              {item.engraving && <span className="cart__saved-engraving">{translateText("Sa sačuvanom gravurom")}</span>}
             </div>
-            <div className="cart__saved-actions"><button type="button" className="cart__restore" disabled={restoring !== null || loading || !saved.ready} onClick={() => void restoreSaved(item)}><RotateCcw size={15} aria-hidden="true" />{restoring === (item.lineId || item.id) ? 'Vraćanje…' : 'Vrati u korpu'}</button>
-              <button type="button" className="cart__saved-remove" disabled={restoring !== null} onClick={() => saved.remove(item)} aria-label={`Ukloni sačuvani proizvod: ${item.name}`}>Ukloni</button>
+            <div className="cart__saved-actions"><button type="button" className="cart__restore" disabled={restoring !== null || loading || !saved.ready} onClick={() => void restoreSaved(item)}><RotateCcw size={15} aria-hidden="true" />{translateText(restoring === (item.lineId || item.id) ? 'Vraćanje…' : 'Vrati u korpu')}</button>
+              <button type="button" className="cart__saved-remove" disabled={restoring !== null} onClick={() => saved.remove(item)} aria-label={translateText(`Ukloni sačuvani proizvod: ${item.name}`)}>{translateText("Ukloni")}</button>
             </div>
           </article>)}
         </div>

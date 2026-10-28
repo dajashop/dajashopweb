@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // ==============================
 // File: src/components/about/AboutCTA.jsx
 // Poziv na akciju sa ispravnom navigacijom
@@ -21,6 +22,8 @@ const sectionVariants = {
 };
 
 export default function AboutCTA() {
+  const { t: translateText } = useStorefront();
+
   return (
     <motion.section
       className="section"
@@ -30,21 +33,15 @@ export default function AboutCTA() {
       variants={sectionVariants}
     >
       <div className="container card shadow about-cta">
-        <h2 className="h2 about-cta__title">
-          Pronađite sat koji prati vaš stil.
-        </h2>
-        <p className="about-cta__description">
-          Istražite pažljivo odabrane modele i pronađite detalj koji ćete rado
-          nositi svakog dana.
-        </p>
+        <h2 className="h2 about-cta__title">{translateText("Pronađite sat koji prati vaš stil.")}</h2>
+        <p className="about-cta__description">{translateText("Istražite pažljivo odabrane modele i pronađite detalj koji ćete rado nositi svakog dana.")}</p>
 
         <MotionLink
           to="/catalog"
           className="btn-secondary about-cta__button"
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.95 }}
-        >
-          Pronađite svoj sat <ArrowUpRight size={18} aria-hidden="true" />
+        >{translateText("Pronađite svoj sat ")}<ArrowUpRight size={18} aria-hidden="true" />
         </MotionLink>
       </div>
     </motion.section>

@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
 import { fetchProductBySlug } from '../services/products';
@@ -9,6 +10,8 @@ function productImages(product) {
 }
 
 export default function CartImagePreview({ item, onClose }) {
+  const { t: translateText } = useStorefront();
+
   const dialog = useRef(null);
   const touch = useRef(null);
   const titleId = useId();
@@ -78,8 +81,8 @@ export default function CartImagePreview({ item, onClose }) {
       }}>
       <div className="cart-preview__panel" data-lenis-prevent>
         <header className="cart-preview__header">
-          <div className="cart-preview__title"><p>{item.brand}</p><h2 id={titleId}>{item.name}</h2></div>
-          <button type="button" className="cart-preview__button" aria-label="Zatvori pregled slike" onClick={onClose}><X size={22} /></button>
+          <div className="cart-preview__title"><p>{translateText(item.brand)}</p><h2 id={titleId}>{translateText(item.name)}</h2></div>
+          <button type="button" className="cart-preview__button" aria-label={translateText("Zatvori pregled slike")} onClick={onClose}><X size={22} /></button>
         </header>
         <div className="cart-preview__stage"
           onTouchStart={event => { touch.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; }}
@@ -91,22 +94,22 @@ export default function CartImagePreview({ item, onClose }) {
             touch.current = null;
             if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) move(dx < 0 ? 1 : -1);
           }}>
-          {source && !failed && <img key={source} src={source} alt={`${item.name} — slika ${index + 1}`} draggable="false"
+          {source && !failed && <img key={source} src={source} alt={translateText(`${item.name} — slika ${index + 1}`)} draggable="false"
             className={loaded ? 'is-loaded' : ''} onLoad={() => setLoadedSource(source)} onError={() => setFailedSource(source)} />}
-          {source && !loaded && !failed && <Loader2 className="cart-preview__loading" size={28} aria-label="Učitavanje slike" />}
-          {(!source || failed) && <p role="status">Slika trenutno nije dostupna.</p>}
+          {source && !loaded && !failed && <Loader2 className="cart-preview__loading" size={28} aria-label={translateText("Učitavanje slike")} />}
+          {(!source || failed) && <p role="status">{translateText("Slika trenutno nije dostupna.")}</p>}
           {images.length > 1 && <>
-            <button type="button" className="cart-preview__button cart-preview__previous" aria-label="Prethodna slika" onClick={() => move(-1)}><ChevronLeft /></button>
-            <button type="button" className="cart-preview__button cart-preview__next" aria-label="Sledeća slika" onClick={() => move(1)}><ChevronRight /></button>
+            <button type="button" className="cart-preview__button cart-preview__previous" aria-label={translateText("Prethodna slika")} onClick={() => move(-1)}><ChevronLeft /></button>
+            <button type="button" className="cart-preview__button cart-preview__next" aria-label={translateText("Sledeća slika")} onClick={() => move(1)}><ChevronRight /></button>
           </>}
         </div>
         <footer className="cart-preview__footer">
-          {images.length > 1 && <div className="cart-preview__thumbnails" aria-label="Slike proizvoda">
-            {images.map((url, position) => <button key={url} type="button" aria-label={`Prikaži sliku ${position + 1}`} aria-pressed={position === index} onClick={() => setIndex(position)}>
+          {images.length > 1 && <div className="cart-preview__thumbnails" aria-label={translateText("Slike proizvoda")}>
+            {images.map((url, position) => <button key={url} type="button" aria-label={translateText(`Prikaži sliku ${position + 1}`)} aria-pressed={position === index} onClick={() => setIndex(position)}>
               <img src={url} alt="" loading="lazy" />
             </button>)}
           </div>}
-          <p role="status">{fetching ? 'Učitavanje galerije…' : galleryError ? 'Ostale slike trenutno nisu dostupne.' : `Slika ${index + 1} od ${images.length || 1}`}</p>
+          <p role="status">{translateText(fetching ? 'Učitavanje galerije…' : galleryError ? 'Ostale slike trenutno nisu dostupne.' : `Slika ${index + 1} od ${images.length || 1}`)}</p>
         </footer>
       </div>
     </dialog>

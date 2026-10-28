@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -74,11 +75,12 @@ function saveLastLogin(provider, email) {
   }
 }
 
-const ErrorMessage = ({ message }) => (
-  <div className="auth-field-feedback" aria-live="polite">
-    {message && <><AlertCircle size={13} aria-hidden="true" /><span>{message}</span></>}
-  </div>
-);
+const ErrorMessage = ({ message }) => {
+  const { t: translateText } = useStorefront();
+  return (<div className="auth-field-feedback" aria-live="polite">
+    {message && <><AlertCircle size={13} aria-hidden="true" /><span>{translateText(message)}</span></>}
+  </div>);
+};
 
 function PasswordResetRequest({
   email,
@@ -88,24 +90,26 @@ function PasswordResetRequest({
   onSubmit,
   onCancel,
 }) {
+  const { t: translateText } = useStorefront();
+
   const isSending = status === 'sending';
   const isSent = status === 'sent';
 
   return (
     <form className="form auth-password-reset-request" onSubmit={onSubmit} noValidate>
       <div className="auth-password-reset-request__intro">
-        <h2>Zaboravili ste lozinku?</h2>
-        <p>Unesite email adresu i poslaćemo vam link za postavljanje nove lozinke.</p>
+        <h2>{translateText("Zaboravili ste lozinku?")}</h2>
+        <p>{translateText("Unesite email adresu i poslaćemo vam link za postavljanje nove lozinke.")}</p>
       </div>
       <label className="field">
-        <span>Email adresa</span>
+        <span>{translateText("Email adresa")}</span>
         <div className={`input ${error ? 'input-error' : ''}`}>
           <Mail className="ico" size={18} />
           <input
             type="email"
             value={email}
             onChange={(event) => onEmailChange(event.target.value)}
-            placeholder="ime@email.com"
+            placeholder={translateText("ime@email.com")}
             autoComplete="email"
             autoCapitalize="none"
             autoCorrect="off"
@@ -118,25 +122,23 @@ function PasswordResetRequest({
         </AnimatePresence>
       </label>
       {isSent && (
-        <p className="auth-password-reset-request__notice" role="status">
-          Ako postoji nalog sa adresom {email}, stići će poruka za promenu lozinke. Proverite i spam folder.
-        </p>
+        <p className="auth-password-reset-request__notice" role="status">{translateText("Ako postoji nalog sa adresom ")}{translateText(email)}{translateText(", stići će poruka za promenu lozinke. Proverite i spam folder.")}</p>
       )}
       <motion.button
         className="btn-primary w-full"
         disabled={isSending || isSent}
         whileTap={{ scale: 0.97 }}
       >
-        {isSending ? 'Šaljemo link...' : isSent ? 'Link je poslat' : 'Pošalji link za promenu'}
+        {translateText(isSending ? 'Šaljemo link...' : isSent ? 'Link je poslat' : 'Pošalji link za promenu')}
       </motion.button>
-      <button type="button" className="auth-forgot-password" onClick={onCancel}>
-        Nazad na prijavu
-      </button>
+      <button type="button" className="auth-forgot-password" onClick={onCancel}>{translateText("Nazad na prijavu")}</button>
     </form>
   );
 }
 
 export default function AuthModal() {
+  const { t: translateText } = useStorefront();
+
   const {
     user,
     authOpen,
@@ -624,7 +626,7 @@ export default function AuthModal() {
         newErrors.identity = 'Ovaj email je već registrovan.';
       else if (err.code === 'auth/user-not-found')
         newErrors.identity = 'Korisnik nije pronađen.';
-      else alert(err.message || 'Došlo je do greške.');
+      else alert(translateText(err.message || 'Došlo je do greške.'));
       setErrors(newErrors);
     } finally {
       setLoading(false);
@@ -642,7 +644,7 @@ export default function AuthModal() {
         'Broj telefona verifikovan ✅'
       );
     } catch (err) {
-      alert('Nevažeći kod.');
+      alert(translateText('Nevažeći kod.'));
     } finally {
       setLoading(false);
     }
@@ -663,7 +665,7 @@ export default function AuthModal() {
       setOauthWaking(true);
       await oauth(provider, ({ attempt }) => setOauthWakeupAttempt(attempt));
     } catch (err) {
-      alert(err?.message || 'Greška pri OAuth prijavi.');
+      alert(translateText(err?.message || 'Greška pri OAuth prijavi.'));
     } finally {
       setLoading(false);
       setOauthWaking(false);
@@ -684,7 +686,7 @@ export default function AuthModal() {
       } else {
         // Za registraciju nam treba ime. Ako je polje prazno, tražimo ga.
         if (!name && idType !== 'username') {
-          alert('Molimo unesite ime pre kreiranja Passkey-a.');
+          alert(translateText('Molimo unesite ime pre kreiranja Passkey-a.'));
           setLoading(false);
           return;
         }
@@ -693,7 +695,7 @@ export default function AuthModal() {
         openFlash('Uspeh', 'Passkey kreiran! 🛡️');
       }
     } catch (err) {
-      alert(err.message);
+      alert(translateText(err.message));
     } finally {
       setLoading(false);
     }
@@ -703,7 +705,7 @@ export default function AuthModal() {
     <>
       <FlashModal
         open={flashOpen}
-        title={flashTitle}
+        title={translateText(flashTitle)}
         subtitle={flashSub}
         onClose={() => setFlashOpen(false)}
         duration={2000}
@@ -731,7 +733,7 @@ export default function AuthModal() {
               <button
                 className="icon-btn close"
                 onClick={hideAuth}
-                aria-label="Zatvori"
+                aria-label={translateText("Zatvori")}
                 disabled={oauthWaking}
               >
                 <X size={20} />
@@ -748,15 +750,10 @@ export default function AuthModal() {
                     exit={{ opacity: 0 }}
                   >
                     <div className="oauth-wakeup-spinner" aria-hidden="true" />
-                    <h2>
-                      Pripremamo {oauthProvider === 'google' ? 'Google' : 'Facebook'} prijavu
-                    </h2>
-                    <p>
-                      DajaShop bezbedno uspostavlja vezu. Samo trenutak, zatim
-                      nastavljate na prijavu.
-                    </p>
+                    <h2>{translateText("Pripremamo ")}{translateText(oauthProvider === 'google' ? 'Google' : 'Facebook')}{translateText(" prijavu")}</h2>
+                    <p>{translateText("DajaShop bezbedno uspostavlja vezu. Samo trenutak, zatim nastavljate na prijavu.")}</p>
                     {oauthWakeupAttempt > 1 && (
-                      <span>Server se pokreće, molimo sačekajte…</span>
+                      <span>{translateText("Server se pokreće, molimo sačekajte…")}</span>
                     )}
                   </motion.div>
                 )}
@@ -768,7 +765,7 @@ export default function AuthModal() {
                   onClick={() => go('login')}
                   whileTap={{ scale: 0.96 }}
                 >
-                  <span className="tab-label">Prijava</span>
+                  <span className="tab-label">{translateText("Prijava")}</span>
                   {isLogin && (
                     <motion.span
                       layoutId="tabPill"
@@ -794,7 +791,7 @@ export default function AuthModal() {
                     mass: 0.35,
                   }}
                 >
-                  <span className="tab-label">Registracija</span>
+                  <span className="tab-label">{translateText("Registracija")}</span>
                   {!isLogin && (
                     <motion.span
                       layoutId="tabPill"
@@ -821,7 +818,7 @@ export default function AuthModal() {
                       inert={isLogin !== loginPane}
                     >
                       <div className="pane-inner">
-                        {loginPane && forgotPassword ? (
+                        {translateText(loginPane && forgotPassword ? (
                           <PasswordResetRequest
                             email={passwordResetEmail}
                             error={passwordResetError}
@@ -838,7 +835,7 @@ export default function AuthModal() {
                           <form className="form" onSubmit={onSubmit} noValidate>
                             {!loginPane && (
                               <label className="field">
-                                <span>Ime i prezime</span>
+                                <span>{translateText("Ime i prezime")}</span>
                                 <div
                                   className={`input ${
                                     errors.name ? 'input-error' : ''
@@ -848,7 +845,7 @@ export default function AuthModal() {
                                   <input
                                     name="name"
                                     type="text"
-                                    placeholder="npr. Marko Marković"
+                                    placeholder={translateText("npr. Marko Marković")}
                                     value={name}
                                     onChange={handleNameChange}
                                     onFocus={handleFieldFocus}
@@ -864,12 +861,8 @@ export default function AuthModal() {
                               className="field"
                               ref={loginPane ? loginWrapperRef : regWrapperRef}
                             >
-                              <span>
-                                Email ili telefon
-                                {loginPane && lastLogin?.provider === 'password' && (
-                                  <small className="last-used-field-note">
-                                    Poslednje korišćeno
-                                  </small>
+                              <span>{translateText("Email ili telefon")}{loginPane && lastLogin?.provider === 'password' && (
+                                  <small className="last-used-field-note">{translateText("Poslednje korišćeno")}</small>
                                 )}
                               </span>
                               <div
@@ -884,15 +877,14 @@ export default function AuthModal() {
                                   }}
                                 >
                                   <span className="invisible-text">
-                                    {identity}
+                                    {translateText(identity)}
                                   </span>
                                   <span className="prediction-text">
-                                    {prediction}
+                                    {translateText(prediction)}
                                   </span>
                                   {prediction && (
                                     <span className="tab-hint-inline">
-                                      <ArrowRightToLine size={10} /> Tab
-                                    </span>
+                                      <ArrowRightToLine size={10} />{translateText(" Tab")}</span>
                                   )}
                                 </div>
 
@@ -905,7 +897,7 @@ export default function AuthModal() {
                                       <button type="button" className="flag-btn" onClick={toggle}>
                                         <img
                                           src={getFlagUrl(currentCountry.code)}
-                                          alt={currentCountry.code}
+                                          alt={translateText(currentCountry.code)}
                                           className="w-5 h-auto rounded-[2px]"
                                         />
                                         <ChevronDown
@@ -924,7 +916,7 @@ export default function AuthModal() {
                                   id={loginPane ? 'auth-login-identity' : 'auth-register-identity'}
                                   name="identity"
                                   type="text"
-                                  placeholder="Email ili Broj telefona"
+                                  placeholder={translateText("Email ili Broj telefona")}
                                   value={identity}
                                   onChange={handleIdentityChange}
                                   onKeyDown={handleKeyDown}
@@ -949,7 +941,7 @@ export default function AuthModal() {
                                   <motion.ul
                                     ref={loginPane ? loginEmailSuggestionsRef : registerEmailSuggestionsRef}
                                     className="auth-dropdown"
-                                    aria-label="Predlozi email adresa"
+                                    aria-label={translateText("Predlozi email adresa")}
                                     onBlur={(e) => {
                                       if (!e.currentTarget.contains(e.relatedTarget) && e.relatedTarget !== identityInputRef.current) setShowSuggestions(false);
                                     }}
@@ -970,9 +962,9 @@ export default function AuthModal() {
                                           onMouseDown={(e) => e.preventDefault()}
                                           onClick={() => { selectSuggestion(s); identityInputRef.current?.focus(); }}
                                         >
-                                          {s.split('@')[0]}
+                                          {translateText(s.split('@')[0])}
                                           <span className="domain">
-                                            @{s.split('@')[1]}
+                                            @{translateText(s.split('@')[1])}
                                           </span>
                                         </button>
                                       </li>
@@ -984,7 +976,7 @@ export default function AuthModal() {
 
                             {showPassword && (
                               <label className="field">
-                                <span>Lozinka</span>
+                                <span>{translateText("Lozinka")}</span>
                                 <div
                                   className={`input auth-password-control ${
                                     errors.password ? 'input-error' : ''
@@ -1014,7 +1006,7 @@ export default function AuthModal() {
                                   <button
                                     type="button"
                                     className="icon-btn"
-                                    aria-label={showPass ? 'Sakrij lozinku' : 'Prikaži lozinku'}
+                                    aria-label={translateText(showPass ? 'Sakrij lozinku' : 'Prikaži lozinku')}
                                     aria-pressed={showPass}
                                     onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => setShowPass((p) => !p)}
@@ -1028,12 +1020,12 @@ export default function AuthModal() {
                                 </div>
                                 {loginPane && <ErrorMessage message={errors.password} />}
                                 {!loginPane && (
-                                  <ul className={`auth-password-requirements ${errors.password ? 'has-error' : ''}`} aria-label="Uslovi za lozinku">
+                                  <ul className={`auth-password-requirements ${errors.password ? 'has-error' : ''}`} aria-label={translateText("Uslovi za lozinku")}>
                                     {passwordRequirements.map(requirement => (
                                       <li key={requirement.label} className={requirement.met ? 'is-met' : ''}>
-                                        <span className="auth-requirement-mark" aria-hidden="true">{requirement.met ? '✓' : '○'}</span>
-                                        {requirement.label}
-                                        <span className="sr-only">{requirement.met ? ' — ispunjeno' : ' — nije ispunjeno'}</span>
+                                        <span className="auth-requirement-mark" aria-hidden="true">{translateText(requirement.met ? '✓' : '○')}</span>
+                                        {translateText(requirement.label)}
+                                        <span className="sr-only">{translateText(requirement.met ? ' — ispunjeno' : ' — nije ispunjeno')}</span>
                                       </li>
                                     ))}
                                   </ul>
@@ -1047,22 +1039,20 @@ export default function AuthModal() {
                                 className="auth-forgot-password"
                                 onClick={openPasswordReset}
                                 disabled={loading}
-                              >
-                                Zaboravili ste lozinku?
-                              </button>
+                              >{translateText("Zaboravili ste lozinku?")}</button>
                             )}
                             <motion.button
                               className="btn-primary w-full"
                               disabled={loading}
                               whileTap={{ scale: 0.97 }}
                             >
-                              {loading
+                              {translateText(loading
                                 ? loginPane
                                   ? 'Prijavljivanje...'
                                   : 'Kreiranje naloga...'
                                 : loginPane
                                 ? 'Prijavi se'
-                                : 'Napravi nalog'}
+                                : 'Napravi nalog')}
                             </motion.button>
                             <div
                               className={`oauth-row ${
@@ -1093,11 +1083,9 @@ export default function AuthModal() {
                                     d="M12 10.2v3.9h5.5c-.2 1.3-1.7 3.9-5.5 3.9-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.6C16.9 3.1 14.7 2 12 2 6.9 2 3 5.9 3 11s3.9 9 9 9c5.2 0 8.6-3.7 8.6-8.9 0-.6-.1-1-.1-1.4H12z"
                                   />
                                 </svg>
-                                <span>Google</span>
+                                <span>{translateText("Google")}</span>
                                 {loginPane && lastLogin?.provider === 'google' && (
-                                  <small className="last-used-badge">
-                                    Poslednje korišćeno
-                                  </small>
+                                  <small className="last-used-badge">{translateText("Poslednje korišćeno")}</small>
                                 )}
                               </button>
                               <button
@@ -1111,11 +1099,9 @@ export default function AuthModal() {
                                 disabled={loading}
                               >
                                 <Facebook size={18} />
-                                <span>Facebook</span>
+                                <span>{translateText("Facebook")}</span>
                                 {loginPane && lastLogin?.provider === 'facebook' && (
-                                  <small className="last-used-badge">
-                                    Poslednje korišćeno
-                                  </small>
+                                  <small className="last-used-badge">{translateText("Poslednje korišćeno")}</small>
                                 )}
                               </button>
                               <button
@@ -1138,31 +1124,26 @@ export default function AuthModal() {
                                   className="text-primary"
                                 />
                                 <span>
-                                  {isLogin
+                                  {translateText(isLogin
                                     ? 'Prijavi se Passkey-om'
-                                    : 'Registruj se Passkey-om'}
+                                    : 'Registruj se Passkey-om')}
                                 </span>
                                 {loginPane && lastLogin?.provider === 'passkey' && (
-                                  <small className="last-used-badge">
-                                    Poslednje korišćeno
-                                  </small>
+                                  <small className="last-used-badge">{translateText("Poslednje korišćeno")}</small>
                                 )}
                               </button>
                             </div>
                           </form>
                         ) : pendingEmailVerify && !loginPane ? (
                           <div className="verify-box">
-                            <h3>Proveri email 📬</h3>
-                            <p>Poslali smo link za verifikaciju.</p>
+                            <h3>{translateText("Proveri email 📬")}</h3>
+                            <p>{translateText("Poslali smo link za verifikaciju.")}</p>
                           </div>
                         ) : (
                           <form className="form" onSubmit={onConfirmCode}>
-                            <div className="verify-box">
-                              Na broj {sentTo || 'telefona'} poslali smo SMS
-                              kod.
-                            </div>
+                            <div className="verify-box">{translateText("Na broj ")}{translateText(sentTo || 'telefona')}{translateText(" poslali smo SMS kod.")}</div>
                             <label className="field">
-                              <span>SMS kod</span>
+                              <span>{translateText("SMS kod")}</span>
                               <div className="input">
                                 <ShieldCheck className="ico" size={18} />
                                 <input
@@ -1181,11 +1162,9 @@ export default function AuthModal() {
                               className="btn-primary w-full"
                               disabled={loading}
                               whileTap={{ scale: 0.97 }}
-                            >
-                              Potvrdi kod
-                            </motion.button>
+                            >{translateText("Potvrdi kod")}</motion.button>
                           </form>
-                        )}
+                        ))}
                       </div>
                     </div>
                   ))}

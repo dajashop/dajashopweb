@@ -1,9 +1,12 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React from 'react';
 import './BrandStrip.css';
 import { Link } from 'react-router-dom';
 import { brandUrl, brandChoiceUrl } from '../utils/catalogUrls.js';
 
 export default function BrandStrip({ brands = [] }) {
+  const { t: translateText } = useStorefront();
+
   // Funkcija koja određuje pravi link za svaku stavku
   const getBrandUrl = (label) => {
     const upper = label.toUpperCase().trim();
@@ -50,9 +53,9 @@ export default function BrandStrip({ brands = [] }) {
                 key={`${b}-${i}`}
                 className="brandstrip__item"
                 to={url}
-                aria-label={`Pogledaj ${b}`}
+                aria-label={translateText(`Pogledaj ${b}`)}
               >
-                {b}
+                {translateText(b)}
               </Link>
             );
           })}

@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, LogIn, LockKeyhole } from 'lucide-react';
@@ -8,6 +9,8 @@ import mobileIllustration from '../assets/logout-door-mobile.svg';
 import './Logout.css';
 
 export default function Logout() {
+  const { t: translateText } = useStorefront();
+
   const { user, showAuth } = useAuth();
   const navigate = useNavigate();
 
@@ -19,7 +22,7 @@ export default function Logout() {
 
   return (
     <section className="logout-page">
-      <SEOHead title="Odjava" noIndex={true} />
+      <SEOHead title={translateText("Odjava")} noIndex={true} />
       <div className="logout-page__waves" aria-hidden="true" />
       <div className="logout-page__dots logout-page__dots--left" aria-hidden="true" />
       <div className="logout-page__dots logout-page__dots--right" aria-hidden="true" />
@@ -34,22 +37,13 @@ export default function Logout() {
 
         <div className="logout-page__message">
           <p className="logout-page__eyebrow">
-            <LockKeyhole size={14} strokeWidth={2.2} />
-            Sesija je završena
-          </p>
-          <h1>Uspešno ste se odjavili</h1>
-          <p className="logout-page__description">
-            Hvala na poseti! <strong>Prijavite se ponovo</strong> da biste
-            nastavili tamo gde ste stali.
-          </p>
+            <LockKeyhole size={14} strokeWidth={2.2} />{translateText("Sesija je završena")}</p>
+          <h1>{translateText("Uspešno ste se odjavili")}</h1>
+          <p className="logout-page__description">{translateText("Hvala na poseti! ")}<strong>{translateText("Prijavite se ponovo")}</strong>{translateText(" da biste nastavili tamo gde ste stali.")}</p>
           <div className="logout-page__actions">
             <button type="button" className="logout-page__login" onClick={() => showAuth('login')}>
-              <LogIn size={18} />
-              Prijavi se
-            </button>
-            <Link to="/catalog" className="logout-page__guest">
-              Nastavi kao gost
-              <ArrowRight size={18} />
+              <LogIn size={18} />{translateText("Prijavi se")}</button>
+            <Link to="/catalog" className="logout-page__guest">{translateText("Nastavi kao gost")}<ArrowRight size={18} />
             </Link>
           </div>
         </div>

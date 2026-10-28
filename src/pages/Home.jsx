@@ -1,4 +1,6 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { catalogApi } from '../services/dajaPlatform.js';
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './Home.css';
 import { Link } from 'react-router-dom';
@@ -108,21 +110,23 @@ function parseRecommendedRank(value) {
 }
 
 function BestProductItem({ product }) {
+  const { t: translateText, money } = useStorefront();
+
   if (!product) return null;
   const primaryImg = getPrimaryImage(product);
 
   return (
     <article className="bestCard">
       <Link to={`/product/${product.slug}`} className="bestCard__img">
-        <img src={primaryImg} alt={product.name} loading="lazy" />
+        <img src={primaryImg} alt={translateText(product.name)} loading="lazy" />
       </Link>
       <div className="bestCard__body">
-        <div className="bestCard__meta">RUČNI SAT</div>
+        <div className="bestCard__meta">{translateText("RUČNI SAT")}</div>
         <Link to={`/product/${product.slug}`} className="bestCard__name">
-          {product.name}
+          {translateText(product.name)}
         </Link>
         <div className="bestCard__price">
-          {Number(product.price || 0).toLocaleString('sr-RS')} RSD
+          {money(product.price)}
         </div>
       </div>
     </article>
@@ -130,6 +134,8 @@ function BestProductItem({ product }) {
 }
 
 function BestEditCard({ onClick }) {
+  const { t: translateText } = useStorefront();
+
   return (
     <article className="bestCard bestCard--edit">
       <button type="button" className="bestEditCard__button" onClick={onClick}>
@@ -137,11 +143,9 @@ function BestEditCard({ onClick }) {
           <PencilLine size={20} aria-hidden="true" />
         </span>
         <div className="bestEditCard__copy">
-          <span className="bestEditCard__label">Admin alat</span>
-          <span className="bestEditCard__title">Uredi preporučeno</span>
-          <span className="bestEditCard__desc">
-            Otvori listu satova i izaberi proizvode za ovu sekciju.
-          </span>
+          <span className="bestEditCard__label">{translateText("Admin alat")}</span>
+          <span className="bestEditCard__title">{translateText("Uredi preporučeno")}</span>
+          <span className="bestEditCard__desc">{translateText("Otvori listu satova i izaberi proizvode za ovu sekciju.")}</span>
         </div>
       </button>
     </article>
@@ -149,6 +153,8 @@ function BestEditCard({ onClick }) {
 }
 
 export default function Home() {
+  const { t: translateText, money } = useStorefront();
+
   const homeListing = usePublicListing('home', 'homeProducts');
   const items = homeListing.data?.items || [];
   const loading = homeListing.loading;
@@ -460,9 +466,9 @@ export default function Home() {
   return (
     <div className="home">
       <SEOHead
-        title="Početna"
-        homeTitle="Daja Shop | Vreme je da zablistaš"
-        description={seoConfig.siteDescription}
+        title={translateText("Početna")}
+        homeTitle={translateText("Daja Shop | Vreme je da zablistaš")}
+        description={translateText(seoConfig.siteDescription)}
         keywords={seoConfig.siteKeywords}
         type="website"
       />
@@ -494,7 +500,7 @@ export default function Home() {
       <section className="section container best">
         <div className="section__head">
           <div className="section__titleRow">
-            <h2 className="section__title">Preporučujemo</h2>
+            <h2 className="section__title">{translateText("Preporučujemo")}</h2>
           </div>
         </div>
         <div className="best-carousel">
@@ -503,7 +509,7 @@ export default function Home() {
               type="button"
               className="best-carousel__arrow best-carousel__arrow--prev"
               onClick={() => moveBestByCard(-1)}
-              aria-label="Prethodni proizvod"
+              aria-label={translateText("Prethodni proizvod")}
             >
               <ChevronLeft size={18} strokeWidth={2.5} aria-hidden="true" />
             </button>
@@ -523,17 +529,17 @@ export default function Home() {
             onPointerLeave={handleBestPointerRelease}
             onScroll={handleBestScroll}
           >
-            {loading &&
+            {translateText(loading &&
               Array.from({ length: BEST_COUNT }).map((_, i) => (
                 <div key={i} className="skeleton-card skeleton-card--best" />
-              ))}
+              )))}
             {!loading && isAdmin && (
               <BestEditCard onClick={openRecommendedModal} />
             )}
-            {!loading &&
+            {translateText(!loading &&
               bestProducts.map((p, idx) => (
                 <BestProductItem key={p.id || p.slug || idx} product={p} />
-              ))}
+              )))}
           </div>
 
           {showDesktopArrows && (
@@ -541,15 +547,14 @@ export default function Home() {
               type="button"
               className="best-carousel__arrow best-carousel__arrow--next"
               onClick={() => moveBestByCard(1)}
-              aria-label="Sledeci proizvod"
+              aria-label={translateText("Sledeci proizvod")}
             >
               <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" />
             </button>
           )}
         </div>
         <div className="best__cta">
-          <Link to="/catalog?sort=popular" className="btn btn--dark">
-            Pogledajte sve <ArrowRight size={16} />
+          <Link to="/catalog?sort=popular" className="btn btn--dark">{translateText("Pogledajte sve ")}<ArrowRight size={16} />
           </Link>
         </div>
       </section>
@@ -568,25 +573,20 @@ export default function Home() {
           >
             <div className="homeAdminModal__head">
               <div>
-                <p className="homeAdminModal__eyebrow">Admin</p>
-                <h3 id="home-admin-recommended-title">
-                  Uredi preporučene proizvode
-                </h3>
+                <p className="homeAdminModal__eyebrow">{translateText("Admin")}</p>
+                <h3 id="home-admin-recommended-title">{translateText("Uredi preporučene proizvode")}</h3>
               </div>
               <button
                 type="button"
                 className="homeAdminModal__close"
                 onClick={() => setIsRecommendedModalOpen(false)}
-                aria-label="Zatvori modal"
+                aria-label={translateText("Zatvori modal")}
               >
                 <X size={18} />
               </button>
             </div>
 
-            <p className="homeAdminModal__desc">
-              Odaberi do {BEST_COUNT} satova. Redosled prati red kojim ih
-              čekiraš.
-            </p>
+            <p className="homeAdminModal__desc">{translateText("Odaberi do ")}{translateText(BEST_COUNT)}{translateText(" satova. Redosled prati red kojim ih čekiraš.")}</p>
 
             <div className="homeAdminModal__toolbar">
               <label className="homeAdminModal__search">
@@ -595,11 +595,11 @@ export default function Home() {
                   type="search"
                   value={recommendedSearch}
                   onChange={(event) => setRecommendedSearch(event.target.value)}
-                  placeholder="Pretraži satove"
+                  placeholder={translateText("Pretraži satove")}
                 />
               </label>
               <span className="homeAdminModal__counter">
-                {recommendedDraftIds.length}/{BEST_COUNT}
+                {translateText(recommendedDraftIds.length)}/{translateText(BEST_COUNT)}
               </span>
             </div>
 
@@ -620,20 +620,20 @@ export default function Home() {
                     <div className="homeAdminModalItem__img">
                       <img
                         src={getPrimaryImage(product)}
-                        alt={product.name}
+                        alt={translateText(product.name)}
                         loading="lazy"
                       />
                     </div>
 
                     <div className="homeAdminModalItem__copy">
                       <span className="homeAdminModalItem__brand">
-                        {product.brand}
+                        {translateText(product.brand)}
                       </span>
                       <span className="homeAdminModalItem__name">
-                        {product.name}
+                        {translateText(product.name)}
                       </span>
                       <span className="homeAdminModalItem__price">
-                        {Number(product.price || 0).toLocaleString('sr-RS')} RSD
+                        {money(product.price)}
                       </span>
                     </div>
                   </label>
@@ -641,9 +641,7 @@ export default function Home() {
               })}
 
               {!recommendedModalProducts.length && (
-                <p className="homeAdminModal__empty">
-                  Nema rezultata za ovu pretragu.
-                </p>
+                <p className="homeAdminModal__empty">{translateText("Nema rezultata za ovu pretragu.")}</p>
               )}
             </div>
 
@@ -652,16 +650,14 @@ export default function Home() {
                 type="button"
                 className="btn btn--ghost"
                 onClick={() => setIsRecommendedModalOpen(false)}
-              >
-                Otkaži
-              </button>
+              >{translateText("Otkaži")}</button>
               <button
                 type="button"
                 className="btn btn--dark"
                 onClick={saveRecommendedSelection}
                 disabled={isSavingRecommended}
               >
-                {isSavingRecommended ? 'Čuvanje...' : 'Sačuvaj izbor'}
+                {translateText(isSavingRecommended ? 'Čuvanje...' : 'Sačuvaj izbor')}
               </button>
             </div>
           </div>
@@ -683,7 +679,7 @@ export default function Home() {
 
       {/* CATEGORIES HERO TILES */}
       <section className="section container categories">
-        <h1 className="section__title">Satovi, naočare i dodatna oprema</h1>
+        <h1 className="section__title">{translateText("Satovi, naočare i dodatna oprema")}</h1>
         <div className="categories-grid">
           {CATEGORY_TILES.map((tile) => (
             <Link
@@ -700,12 +696,12 @@ export default function Home() {
                     : '(max-width: 720px) calc(100vw - 32px), (max-width: 1280px) calc(50vw - 24px), 616px'}
                   width={tile.width}
                   height={tile.height}
-                  alt={tile.title}
+                  alt={translateText(tile.title)}
                   loading="lazy"
                   decoding="async"
                 />
               </div>
-              <h3 className="categoryTile__label">{tile.title}</h3>
+              <h3 className="categoryTile__label">{translateText(tile.title)}</h3>
             </Link>
           ))}
         </div>
@@ -729,14 +725,11 @@ export default function Home() {
             decoding="async"
           />
           <div className="serviceHero__content">
-            <p className="eyebrow">Servis</p>
-            <h2>Podrška za servisiranje sata.</h2>
-            <p className="lede">
-              Za servisiranje sata organizujemo slanje ovlašćenom servisu.
-            </p>
+            <p className="eyebrow">{translateText("Servis")}</p>
+            <h2>{translateText("Podrška za servisiranje sata.")}</h2>
+            <p className="lede">{translateText("Za servisiranje sata organizujemo slanje ovlašćenom servisu.")}</p>
             <div className="serviceHero__cta">
-              <span className="btn btn--ghost serviceHero__btn">
-                Saznaj više <ArrowRight size={16} />
+              <span className="btn btn--ghost serviceHero__btn">{translateText("Saznaj više ")}<ArrowRight size={16} />
               </span>
             </div>
           </div>

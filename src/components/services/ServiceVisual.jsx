@@ -1,6 +1,9 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { serviceMedia } from '../../data/serviceCatalog.js';
 
 export default function ServiceVisual({ kind = 'engraving', variant = 'hero' }) {
+  const { t: translateText } = useStorefront();
+
   const media = serviceMedia[kind];
   const tile = variant !== 'hero';
   const sizes = variant === 'related'
@@ -13,7 +16,7 @@ export default function ServiceVisual({ kind = 'engraving', variant = 'hero' }) 
     <img src={`${prefix}-${tile ? '960' : '1600'}.webp`}
       srcSet={`${prefix}-640.webp 640w, ${prefix}-960.webp 960w, ${prefix}-1600.webp 1600w`}
       sizes={sizes} width="1600" height={media.height}
-      alt={tile ? '' : media.alt} decoding="async"
+      alt={translateText(tile ? '' : media.alt)} decoding="async"
       loading={tile ? 'lazy' : 'eager'} fetchPriority={tile ? 'auto' : 'high'} />
   </picture>;
 }

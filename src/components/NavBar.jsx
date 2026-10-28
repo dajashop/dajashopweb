@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { brandUrl, brandChoiceUrl, urlSlug, isBrandPath } from '../utils/catalogUrls.js';
 import React, { useEffect, useState, useRef } from 'react';
 import './Navbar.css';
@@ -27,6 +28,8 @@ const navSatovi = [
 ];
 
 export default function NavBar() {
+  const { t: translateText } = useStorefront();
+
   const [isMobile, setIsMobile] = useState(false);
   // openIdx može biti broj (index brenda) ili string 'ostalo'
   const [openIdx, setOpenIdx] = useState(null);
@@ -82,7 +85,7 @@ export default function NavBar() {
     (location.pathname === '/catalog' || isBrandPath(location.pathname)) && selectedBrand && urlSlug(selectedBrand) === urlSlug(label);
 
   return (
-    <nav className="navbar" aria-label="Glavna navigacija">
+    <nav className="navbar" aria-label={translateText("Glavna navigacija")}>
       <div className="container navbar__wrap">
         <div className="navbar__row" ref={rowRef}>
           {/* Svi modeli: isti padajući meni kao brendovi, sa brzim izborom pola. */}
@@ -94,9 +97,7 @@ export default function NavBar() {
               {...(isMobile ? { type: 'button' } : { to: '/catalog' })}
               className={`${isActive('/catalog')} navbar__label ${isMobile ? 'navbar__chip' : ''}`}
               onClick={handleAllModelsClick}
-            >
-              SVI MODELI
-              {isMobile && (
+            >{translateText("SVI MODELI")}{isMobile && (
                 <ChevronDown
                   size={14}
                   style={{
@@ -109,9 +110,9 @@ export default function NavBar() {
               )}
             </NavLabel>
             <div className="navbar__dropdown card">
-              <Link to="/catalog" style={{ fontWeight: 'bold' }}>Svi modeli</Link>
-              <Link to="/muski-satovi">MUŠKI</Link>
-              <Link to="/zenski-satovi">ŽENSKI</Link>
+              <Link to="/catalog" style={{ fontWeight: 'bold' }}>{translateText("Svi modeli")}</Link>
+              <Link to="/muski-satovi">{translateText("MUŠKI")}</Link>
+              <Link to="/zenski-satovi">{translateText("ŽENSKI")}</Link>
             </div>
           </div>
 
@@ -129,7 +130,7 @@ export default function NavBar() {
                 }`}
                 onClick={() => handleGroupClick(i)}
               >
-                {g.label}
+                {translateText(g.label)}
                 {/* Chevron samo na mobilnom da sugeriše dropdown */}
                 {isMobile && (
                   <ChevronDown
@@ -150,15 +151,14 @@ export default function NavBar() {
                 <Link
                   to={brandUrl(g.label)}
                   style={{ fontWeight: 'bold' }}
-                >
-                  Svi {g.label}
+                >{translateText("Svi ")}{translateText(g.label)}
                 </Link>
                 {g.children.map((c) => (
                   <Link
                     key={c.label}
                     to={brandChoiceUrl(g.label, c.label)}
                   >
-                    {c.label}
+                    {translateText(c.label)}
                   </Link>
                 ))}
               </div>
@@ -175,9 +175,7 @@ export default function NavBar() {
             <button
               className={`navbar__label ${isMobile ? 'navbar__chip' : ''}`}
               onClick={handleOstaloClick}
-            >
-              Ostalo
-              {/* Ikonica SAMO NA MOBILNOM */}
+            >{translateText("Ostalo")}{/* Ikonica SAMO NA MOBILNOM */}
               {isMobile && (
                 <ChevronDown
                   size={14}
@@ -201,9 +199,9 @@ export default function NavBar() {
                 display: !isMobile && desktopOstaloOpen ? 'grid' : 'none',
               }}
             >
-              <Link to="/daljinski">Daljinski</Link>
-              <Link to="/baterije">Baterije</Link>
-              <Link to="/naocare">Naočare za sunce</Link>
+              <Link to="/daljinski">{translateText("Daljinski")}</Link>
+              <Link to="/baterije">{translateText("Baterije")}</Link>
+              <Link to="/naocare">{translateText("Naočare za sunce")}</Link>
             </div>
           </div>
         </div>
@@ -213,7 +211,7 @@ export default function NavBar() {
           <div className="navbar__sub">
             <div className="navbar__subrow">
               {/* SCENARIO 1: OTVORENO JE "OSTALO" */}
-              {openIdx === 'all-models' ? (
+              {translateText(openIdx === 'all-models' ? (
                 <>
                   <Link
                     className="navbar__pill"
@@ -224,15 +222,9 @@ export default function NavBar() {
                       background: 'var(--color-text)',
                       color: 'var(--color-bg)',
                     }}
-                  >
-                    Svi modeli
-                  </Link>
-                  <Link className="navbar__pill" to="/muski-satovi" onClick={() => setOpenIdx(null)}>
-                    MUŠKI
-                  </Link>
-                  <Link className="navbar__pill" to="/zenski-satovi" onClick={() => setOpenIdx(null)}>
-                    ŽENSKI
-                  </Link>
+                  >{translateText("Svi modeli")}</Link>
+                  <Link className="navbar__pill" to="/muski-satovi" onClick={() => setOpenIdx(null)}>{translateText("MUŠKI")}</Link>
+                  <Link className="navbar__pill" to="/zenski-satovi" onClick={() => setOpenIdx(null)}>{translateText("ŽENSKI")}</Link>
                 </>
               ) : openIdx === 'ostalo' ? (
                 <>
@@ -240,23 +232,17 @@ export default function NavBar() {
                     className="navbar__pill"
                     to="/daljinski"
                     onClick={() => setOpenIdx(null)}
-                  >
-                    Daljinski
-                  </Link>
+                  >{translateText("Daljinski")}</Link>
                   <Link
                     className="navbar__pill"
                     to="/baterije"
                     onClick={() => setOpenIdx(null)}
-                  >
-                    Baterije
-                  </Link>
+                  >{translateText("Baterije")}</Link>
                   <Link
                     className="navbar__pill"
                     to="/naocare"
                     onClick={() => setOpenIdx(null)}
-                  >
-                    Naočare za sunce
-                  </Link>
+                  >{translateText("Naočare za sunce")}</Link>
                 </>
               ) : (
                 /* SCENARIO 2: OTVOREN JE NEKI BREND (Broj) */
@@ -271,8 +257,7 @@ export default function NavBar() {
                         background: 'var(--color-text)',
                         color: 'var(--color-bg)',
                       }}
-                    >
-                      Svi {navSatovi[openIdx].label}
+                    >{translateText("Svi ")}{translateText(navSatovi[openIdx].label)}
                     </Link>
                     {navSatovi[openIdx].children.map((c) => (
                       <Link
@@ -281,12 +266,12 @@ export default function NavBar() {
                         to={brandChoiceUrl(navSatovi[openIdx].label, c.label)}
                         onClick={() => setOpenIdx(null)}
                       >
-                        {c.label}
+                        {translateText(c.label)}
                       </Link>
                     ))}
                   </>
                 )
-              )}
+              ))}
             </div>
           </div>
         )}

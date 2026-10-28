@@ -1,7 +1,8 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bell, BellOff, BellRing, Heart, Trash2, ShoppingCart } from 'lucide-react';
-import { money } from '../../utils/currency.js';
+
 import { useWishlist } from '../../context/WishlistProvider.jsx';
 import { useCart } from '../../hooks/useCart.js';
 import { useFlash } from '../../hooks/useFlash.js';
@@ -18,6 +19,8 @@ import ConfirmModal from '../modals/ConfirmModal.jsx';
 import ProductAlertModal from '../modals/ProductAlertModal.jsx';
 
 function WishlistAlertButton({ item }) {
+  const { t: translateText } = useStorefront();
+
   const { product, loading } = useProduct(item.slug);
   const { user } = useAuth();
   const { flash } = useFlash();
@@ -161,25 +164,25 @@ function WishlistAlertButton({ item }) {
         onClick={subscribed ? unsubscribeAlert : requestAlert}
         disabled={unsubscribing}
         className={`wishlist-alert-btn${subscribed ? ' is-subscribed' : ''}`}
-        title={subscribed ? 'Isključi obaveštenje' : undefined}
+        title={translateText(subscribed ? 'Isključi obaveštenje' : undefined)}
       >
         {subscribed ? (
           <>
             <span className="wishlist-alert-btn__status">
               <BellRing size={15} />
-              {activeType === 'price_change'
+              {translateText(activeType === 'price_change'
                 ? 'Promena cene: uključeno'
-                : 'Stanje: uključeno'}
+                : 'Stanje: uključeno')}
             </span>
             <span className="wishlist-alert-btn__unsubscribe">
               <BellOff size={15} />
-              {unsubscribing ? 'Isključujemo…' : 'Isključi obaveštenje'}
+              {translateText(unsubscribing ? 'Isključujemo…' : 'Isključi obaveštenje')}
             </span>
           </>
         ) : (
           <>
             <Bell size={15} />
-            {label}
+            {translateText(label)}
           </>
         )}
       </button>
@@ -198,6 +201,8 @@ function WishlistAlertButton({ item }) {
 }
 
 function WishlistSection() {
+  const { t: translateText, money } = useStorefront();
+
   const { wishlist, removeFromWishlist, addToWishlist } = useWishlist();
   const { dispatch } = useCart();
   const { flash } = useFlash();
@@ -236,10 +241,9 @@ function WishlistSection() {
       className="section-content"
     >
       <div className="section-header-row mb-6">
-        <h3>
-          Lista želja{' '}
+        <h3>{translateText("Lista želja")}{translateText(' ')}
           <span className="text-muted text-lg font-normal">
-            ({wishlist.length})
+            ({translateText(wishlist.length)})
           </span>
         </h3>
       </div>
@@ -249,17 +253,12 @@ function WishlistSection() {
           <div className="w-20 h-20 bg-surface rounded-full flex items-center justify-center mb-4 text-muted">
             <Heart size={32} />
           </div>
-          <h4 className="text-xl font-bold mb-2">Vaša lista je prazna</h4>
-          <p className="text-muted mb-6 max-w-md">
-            Sačuvajte svoje omiljene modele ovde da biste ih kasnije lakše
-            pronašli.
-          </p>
+          <h4 className="text-xl font-bold mb-2">{translateText("Vaša lista je prazna")}</h4>
+          <p className="text-muted mb-6 max-w-md">{translateText("Sačuvajte svoje omiljene modele ovde da biste ih kasnije lakše pronašli.")}</p>
           <Link
             to="/catalog"
             className="px-6 py-3 bg-neutral-300 text-neutral-900 rounded-xl font-bold hover:bg-neutral-400 transition-colors"
-          >
-            Istraži ponudu
-          </Link>
+          >{translateText("Istraži ponudu")}</Link>
         </div>
       ) : (
         // KORISTIMO GRID UMESTO LISTE
@@ -270,7 +269,7 @@ function WishlistSection() {
               <button
                 onClick={() => setDeleteId(item.id)}
                 className="wishlist-remove-btn"
-                title="Ukloni iz liste"
+                title={translateText("Ukloni iz liste")}
               >
                 <Trash2 size={16} />
               </button>
@@ -287,14 +286,12 @@ function WishlistSection() {
                     item.imageUrl ||
                     placeholderImage
                   }
-                  alt={item.name}
+                  alt={translateText(item.name)}
                   className="wishlist-img"
                 />
                 {/* Overlay na hover */}
                 <div className="wishlist-overlay">
-                  <span className="text-xs font-bold uppercase tracking-wider text-white border border-white/30 px-3 py-1 rounded-full backdrop-blur-md">
-                    Detalji
-                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-white border border-white/30 px-3 py-1 rounded-full backdrop-blur-md">{translateText("Detalji")}</span>
                 </div>
               </Link>
 
@@ -306,14 +303,14 @@ function WishlistSection() {
                       to={`/catalog?brand=${encodeURIComponent(item.brand)}`}
                       className="inline-block text-[10px] font-bold uppercase tracking-widest text-muted mb-1 hover:text-primary transition-colors"
                     >
-                      {item.brand}
+                      {translateText(item.brand)}
                     </Link>
                   )}
                   <Link
                     to={`/product/${item.slug}`}
                     className="block font-bold text-base leading-snug hover:text-primary transition-colors line-clamp-2 min-h-[2.5em]"
                   >
-                    {item.name}
+                    {translateText(item.name)}
                   </Link>
                 </div>
 
@@ -328,8 +325,7 @@ function WishlistSection() {
                     onClick={() => moveToCart(item)}
                     className="w-full py-2.5 rounded-lg bg-neutral-300 text-neutral-900 font-medium text-sm flex items-center justify-center gap-2 hover:bg-neutral-400 transition-all hover:shadow-lg active:scale-95"
                   >
-                    <ShoppingCart size={16} /> Dodaj u korpu
-                  </button>
+                    <ShoppingCart size={16} />{translateText(" Dodaj u korpu")}</button>
                 </div>
               </div>
             </div>
@@ -341,8 +337,8 @@ function WishlistSection() {
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={handleConfirmDelete}
-        title="Ukloni proizvod"
-        description="Da li želite da uklonite ovaj proizvod iz liste želja?"
+        title={translateText("Ukloni proizvod")}
+        description={translateText("Da li želite da uklonite ovaj proizvod iz liste želja?")}
         confirmText="Ukloni"
         isDanger={true}
       />

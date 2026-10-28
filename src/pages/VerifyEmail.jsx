@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { isEmailLinkToken, isInvalidEmailLink } from '../utils/emailErrors.js';
 import { useEmailLinkRequest } from '../hooks/useEmailLinkRequest.js';
 import React, { useEffect, useState } from 'react';
@@ -20,6 +21,8 @@ import expiredMobile from '../assets/verify-expired-mobile.svg';
 import './VerifyEmail.css';
 
 export default function VerifyEmail() {
+  const { t: translateText } = useStorefront();
+
   const [searchParams] = useSearchParams();
   const { user, showAuth } = useAuth();
   const [status, setStatus] = useState('loading');
@@ -87,7 +90,7 @@ export default function VerifyEmail() {
 
   return (
     <section className={`verify-email-page verify-email-page--${status}`} aria-live="polite">
-      <SEOHead title="Potvrda email adrese" noIndex={true} />
+      <SEOHead title={translateText("Potvrda email adrese")} noIndex={true} />
       <div className="verify-email-page__waves" aria-hidden="true" />
       <div className="verify-email-page__dots verify-email-page__dots--left" aria-hidden="true" />
       <div className="verify-email-page__dots verify-email-page__dots--right" aria-hidden="true" />
@@ -100,32 +103,32 @@ export default function VerifyEmail() {
           </picture>
         </div>
         <div className="verify-email-page__message">
-          {isLoading ? (
-            <p className="verify-email-page__eyebrow"><Loader2 size={14} className="animate-spin" /> Proveravamo link</p>
+          {translateText(isLoading ? (
+            <p className="verify-email-page__eyebrow"><Loader2 size={14} className="animate-spin" />{translateText(" Proveravamo link")}</p>
           ) : isSuccess ? (
-            <p className="verify-email-page__eyebrow verify-email-page__eyebrow--success"><CheckCircle2 size={14} /> Verifikacija uspešna</p>
+            <p className="verify-email-page__eyebrow verify-email-page__eyebrow--success"><CheckCircle2 size={14} />{translateText(" Verifikacija uspešna")}</p>
           ) : (
-            <p className="verify-email-page__eyebrow verify-email-page__eyebrow--error"><Hourglass size={14} /> {status === 'retry' ? 'Provera nije uspela' : 'Link je istekao'}</p>
-          )}
-          <h1>{isLoading ? 'Potvrda je u toku' : isSuccess ? 'Vaša email adresa je uspešno verifikovana!' : status === 'retry' ? 'Pokušajte proveru ponovo' : 'Verifikacioni link je istekao'}</h1>
-          <p className="verify-email-page__description">{message}</p>
+            <p className="verify-email-page__eyebrow verify-email-page__eyebrow--error"><Hourglass size={14} /> {translateText(status === 'retry' ? 'Provera nije uspela' : 'Link je istekao')}</p>
+          ))}
+          <h1>{translateText(isLoading ? 'Potvrda je u toku' : isSuccess ? 'Vaša email adresa je uspešno verifikovana!' : status === 'retry' ? 'Pokušajte proveru ponovo' : 'Verifikacioni link je istekao')}</h1>
+          <p className="verify-email-page__description">{translateText(message)}</p>
 
           {!isLoading && (
             <div className="verify-email-page__actions">
-              {isSuccess ? (
-                <Link to="/catalog" className="verify-email-page__primary"><ShoppingBag size={18} /> Pronađi svoj sat <ArrowRight size={17} /></Link>
+              {translateText(isSuccess ? (
+                <Link to="/catalog" className="verify-email-page__primary"><ShoppingBag size={18} />{translateText(" Pronađi svoj sat ")}<ArrowRight size={17} /></Link>
               ) : status === 'retry' ? (
-                <button type="button" className="verify-email-page__primary" onClick={() => setRetry(value => value + 1)}><RefreshCw size={18} /> Pokušaj ponovo</button>
+                <button type="button" className="verify-email-page__primary" onClick={() => setRetry(value => value + 1)}><RefreshCw size={18} />{translateText(" Pokušaj ponovo")}</button>
               ) : (
                 <button type="button" className="verify-email-page__primary" onClick={requestNewLink} disabled={resendState === 'loading' || resendState === 'sent' || resendState === 'verified'}>
-                  {resendState === 'loading' ? <Loader2 size={18} className="animate-spin" /> : resendState === 'sent' || resendState === 'verified' ? <CheckCircle2 size={18} /> : <RefreshCw size={18} />}
-                  {resendState === 'sent' ? 'Proverite email' : resendState === 'verified' ? 'Email je već potvrđen' : 'Pošalji novi link'}
+                  {translateText(resendState === 'loading' ? <Loader2 size={18} className="animate-spin" /> : resendState === 'sent' || resendState === 'verified' ? <CheckCircle2 size={18} /> : <RefreshCw size={18} />)}
+                  {translateText(resendState === 'sent' ? 'Proverite email' : resendState === 'verified' ? 'Email je već potvrđen' : 'Pošalji novi link')}
                 </button>
-              )}
-              <Link to="/" className="verify-email-page__secondary">{isSuccess ? 'Nazad na početnu' : 'Idi na početnu stranu'} <ArrowRight size={17} /></Link>
-              {resendState === 'sent' && <p className="verify-email-page__notice">Proverite prijemno sanduče i neželjenu poštu. Novi link možete zatražiti za pet minuta.</p>}
-              {resendState === 'failed' && <p className="verify-email-page__notice">Slanje nije uspelo. Pokušajte ponovo za trenutak.</p>}
-              {resendState === 'verified' && <p className="verify-email-page__notice">Vaša email adresa je već verifikovana.</p>}
+              ))}
+              <Link to="/" className="verify-email-page__secondary">{translateText(isSuccess ? 'Nazad na početnu' : 'Idi na početnu stranu')} <ArrowRight size={17} /></Link>
+              {resendState === 'sent' && <p className="verify-email-page__notice">{translateText("Proverite prijemno sanduče i neželjenu poštu. Novi link možete zatražiti za pet minuta.")}</p>}
+              {resendState === 'failed' && <p className="verify-email-page__notice">{translateText("Slanje nije uspelo. Pokušajte ponovo za trenutak.")}</p>}
+              {resendState === 'verified' && <p className="verify-email-page__notice">{translateText("Vaša email adresa je već verifikovana.")}</p>}
             </div>
           )}
         </div>

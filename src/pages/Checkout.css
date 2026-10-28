@@ -1372,3 +1372,4 @@
     transition-duration: 0.01ms !important;
   }
 }
+.summary-currency-note { margin: 12px 0; padding: 10px 12px; border: 1px solid var(--color-border, #d2d2d7); border-radius: 8px; color: var(--color-text); font-size: 12px; line-height: 1.7; }

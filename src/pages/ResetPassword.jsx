@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEmailLinkRequest } from '../hooks/useEmailLinkRequest.js';
 import { isEmailLinkToken, isInvalidEmailLink } from '../utils/emailErrors.js';
 import React, { useEffect, useState } from 'react';
@@ -14,6 +15,8 @@ const PASSWORD_REQUIREMENTS = [
 ];
 
 export default function ResetPassword() {
+  const { t: translateText } = useStorefront();
+
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
   const beginRequest = useEmailLinkRequest(token);
@@ -71,35 +74,31 @@ export default function ResetPassword() {
 
   return (
     <section className="reset-password-page" aria-live="polite">
-      <SEOHead title="Promena lozinke" noIndex={true} />
+      <SEOHead title={translateText("Promena lozinke")} noIndex={true} />
       <div className="reset-password-page__card">
         <div className="reset-password-page__icon" aria-hidden="true">
-          {isSuccess ? <CheckCircle2 size={28} /> : isInvalid ? <KeyRound size={28} /> : <ShieldCheck size={28} />}
+          {translateText(isSuccess ? <CheckCircle2 size={28} /> : isInvalid ? <KeyRound size={28} /> : <ShieldCheck size={28} />)}
         </div>
         {isSuccess ? (
           <>
-            <p className="reset-password-page__eyebrow reset-password-page__eyebrow--success">Lozinka je promenjena</p>
-            <h1>Uspešno ste postavili novu lozinku.</h1>
-            <p className="reset-password-page__copy">
-              Sve prethodne prijave na ovom nalogu su završene. Sada možete zatvoriti ovu stranicu i prijaviti se novom lozinkom.
-            </p>
-            <Link className="reset-password-page__button" to="/">
-              Nazad na DajaShop
-            </Link>
+            <p className="reset-password-page__eyebrow reset-password-page__eyebrow--success">{translateText("Lozinka je promenjena")}</p>
+            <h1>{translateText("Uspešno ste postavili novu lozinku.")}</h1>
+            <p className="reset-password-page__copy">{translateText("Sve prethodne prijave na ovom nalogu su završene. Sada možete zatvoriti ovu stranicu i prijaviti se novom lozinkom.")}</p>
+            <Link className="reset-password-page__button" to="/">{translateText("Nazad na DajaShop")}</Link>
           </>
         ) : (
           <>
-            <p className="reset-password-page__eyebrow">DajaShop nalog</p>
-            <h1>{isInvalid ? 'Link više nije važeći.' : 'Postavite novu lozinku.'}</h1>
+            <p className="reset-password-page__eyebrow">{translateText("DajaShop nalog")}</p>
+            <h1>{translateText(isInvalid ? 'Link više nije važeći.' : 'Postavite novu lozinku.')}</h1>
             <p className="reset-password-page__copy">
-              {isInvalid
+              {translateText(isInvalid
                 ? 'Link je možda već iskorišćen ili je istekao. Zatražite novi link sa stranice za prijavu.'
-                : 'Nova lozinka mora imati najmanje 8 karaktera, jedno veliko slovo i jedan broj.'}
+                : 'Nova lozinka mora imati najmanje 8 karaktera, jedno veliko slovo i jedan broj.')}
             </p>
             {!isInvalid && (
               <form className="reset-password-page__form" onSubmit={submit} noValidate>
                 <label>
-                  <span>Nova lozinka</span>
+                  <span>{translateText("Nova lozinka")}</span>
                   <div className={errors.password ? 'reset-password-page__input reset-password-page__input--error' : 'reset-password-page__input'}>
                     <Lock size={18} aria-hidden="true" />
                     <input
@@ -112,21 +111,21 @@ export default function ResetPassword() {
                       autoComplete="new-password"
                       disabled={isSaving}
                     />
-                    <button type="button" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? 'Sakrij lozinke' : 'Prikaži lozinke'}>
+                    <button type="button" onClick={() => setShowPassword((current) => !current)} aria-label={translateText(showPassword ? 'Sakrij lozinke' : 'Prikaži lozinke')}>
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                  <ul className="reset-password-page__requirements" aria-label="Uslovi za lozinku">
+                  <ul className="reset-password-page__requirements" aria-label={translateText("Uslovi za lozinku")}>
                     {passwordRequirements.map((requirement) => (
                       <li key={requirement.key} className={requirement.met ? 'is-met' : ''}>
                         <span aria-hidden="true">✓</span>
-                        {requirement.label}
+                        {translateText(requirement.label)}
                       </li>
                     ))}
                   </ul>
                 </label>
                 <label>
-                  <span>Ponovite novu lozinku</span>
+                  <span>{translateText("Ponovite novu lozinku")}</span>
                   <div className={errors.confirmation || confirmationInvalid ? 'reset-password-page__input reset-password-page__input--error' : 'reset-password-page__input'}>
                     <Lock size={18} aria-hidden="true" />
                     <input
@@ -142,19 +141,18 @@ export default function ResetPassword() {
                   </div>
                   {(confirmation || errors.confirmation) && (
                     <small className={confirmationMatches ? 'reset-password-page__match reset-password-page__match--valid' : 'reset-password-page__error'}>
-                      {confirmationMatches ? 'Lozinke se podudaraju.' : 'Lozinke se ne podudaraju.'}
+                      {translateText(confirmationMatches ? 'Lozinke se podudaraju.' : 'Lozinke se ne podudaraju.')}
                     </small>
                   )}
                 </label>
                 <button className="reset-password-page__button" disabled={isSaving}>
-                  {isSaving ? 'Čuvamo novu lozinku...' : 'Sačuvaj novu lozinku'}
+                  {translateText(isSaving ? 'Čuvamo novu lozinku...' : 'Sačuvaj novu lozinku')}
                 </button>
               </form>
             )}
-            {errors.form && <p className="reset-password-page__error reset-password-page__error--form">{errors.form}</p>}
+            {errors.form && <p className="reset-password-page__error reset-password-page__error--form">{translateText(errors.form)}</p>}
             <Link className="reset-password-page__secondary" to="/">
-              <Mail size={16} /> Nazad na prijavu
-            </Link>
+              <Mail size={16} />{translateText(" Nazad na prijavu")}</Link>
           </>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // src/components/account/OrderCard.jsx
 import React, { useState } from 'react';
 import EngravingSummary from '../engraving/EngravingSummary';
@@ -11,9 +12,11 @@ import {
   Clock,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { money } from '../../utils/currency';
+
 
 export default function OrderCard({ order }) {
+  const { t: translateText, money } = useStorefront();
+
   const [isOpen, setIsOpen] = useState(false);
   const placeholderImage = '/placeholder.png';
 
@@ -49,11 +52,11 @@ export default function OrderCard({ order }) {
           <div>
             {/* [ISPRAVKA]: Uklonjen fiksni '#' jer ID sada ima 'DAJA-' prefiks */}
             <h4 className="text-lg font-bold text-[var(--color-text)] m-0">
-              {order.id}
+              {translateText(order.id)}
             </h4>
             <div className="flex items-center gap-2 text-sm text-[var(--color-muted)] mt-1">
               <Clock size={14} />
-              <span>{order.date}</span>
+              <span>{translateText(order.date)}</span>
             </div>
           </div>
         </div>
@@ -64,12 +67,10 @@ export default function OrderCard({ order }) {
               order.status
             )}`}
           >
-            {order.status}
+            {translateText(order.status)}
           </span>
           <div className="text-right hidden sm:block">
-            <span className="block text-xs text-[var(--color-muted)]">
-              Ukupno
-            </span>
+            <span className="block text-xs text-[var(--color-muted)]">{translateText("Ukupno")}</span>
             <span className="block font-bold text-[var(--color-primary)] text-lg">
               {money(order.finalTotal)}
             </span>
@@ -95,9 +96,7 @@ export default function OrderCard({ order }) {
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* LISTA PROIZVODA */}
               <div>
-                <h5 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-3">
-                  Artikli
-                </h5>
+                <h5 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-3">{translateText("Artikli")}</h5>
                 <div className="space-y-3">
                   {order.items.map((item, idx) => {
                     const lineTotal = money((item.price || 0) * (item.qty || 1));
@@ -112,11 +111,11 @@ export default function OrderCard({ order }) {
                         to={`/product/${item.slug}`}
                         className="text-[var(--color-text)] font-semibold hover:text-[var(--color-primary)] transition-colors line-clamp-2"
                       >
-                        {item.name}
+                        {translateText(item.name)}
                       </Link>
                     ) : (
                       <span className="text-[var(--color-text)] font-semibold line-clamp-2">
-                        {item.name}
+                        {translateText(item.name)}
                       </span>
                     );
 
@@ -124,7 +123,7 @@ export default function OrderCard({ order }) {
                       <div className="relative group w-20 h-20 rounded-lg overflow-hidden border border-[var(--color-border)] bg-white flex-shrink-0">
                         <img
                           src={imageSrc}
-                          alt={item.name}
+                          alt={translateText(item.name)}
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           loading="lazy"
                           onError={(e) => {
@@ -134,9 +133,7 @@ export default function OrderCard({ order }) {
                           }}
                         />
                         <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity duration-200 grid place-items-center">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-white border border-white/30 px-2 py-1 rounded-full backdrop-blur-md">
-                            Detalji
-                          </span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-white border border-white/30 px-2 py-1 rounded-full backdrop-blur-md">{translateText("Detalji")}</span>
                         </div>
                       </div>
                     );
@@ -146,31 +143,30 @@ export default function OrderCard({ order }) {
                         key={idx}
                         className="flex items-center gap-3 p-3 border-b border-[#b8b8b8] last:border-b-0"
                       >
-                        {item.slug ? (
-                          <Link to={`/product/${item.slug}`}>{imageNode}</Link>
+                        {translateText(item.slug ? (
+                          <Link to={`/product/${item.slug}`}>{translateText(imageNode)}</Link>
                         ) : (
                           imageNode
-                        )}
+                        ))}
 
                         <div className="flex-1 min-w-0">
-                          {nameNode}
+                          {translateText(nameNode)}
                           <EngravingSummary item={item} />
                           {item.brand && (
                             <Link
                               to={`/catalog?brand=${encodeURIComponent(item.brand)}`}
                               className="inline-block text-xs text-[var(--color-muted)] mt-1 hover:text-[var(--color-primary)] transition-colors"
                             >
-                              {item.brand}
+                              {translateText(item.brand)}
                             </Link>
                           )}
                         </div>
 
                         <div className="flex flex-col items-end gap-2 text-sm">
                           <span className="text-[var(--color-text)] font-semibold">
-                            {item.qty || 1}x
-                          </span>
+                            {translateText(item.qty || 1)}{translateText("x")}</span>
                           <span className="text-[var(--color-text)] font-bold">
-                            {lineTotal}
+                            {translateText(lineTotal)}
                           </span>
                         </div>
                       </div>
@@ -178,11 +174,11 @@ export default function OrderCard({ order }) {
                   })}
                 </div>
                 <div className="mt-4 pt-3 border-t border-[var(--color-border)] flex justify-between items-center">
-                  <span className="text-[var(--color-muted)]">Dostava:</span>
+                  <span className="text-[var(--color-muted)]">{translateText("Dostava:")}</span>
                   <span className="text-[var(--color-text)]">
-                    {order.shippingCost === 0
+                    {translateText(order.shippingCost === 0
                       ? 'Besplatna'
-                      : money(order.shippingCost)}
+                      : money(order.shippingCost))}
                   </span>
                 </div>
               </div>
@@ -190,9 +186,7 @@ export default function OrderCard({ order }) {
               {/* INFO O DOSTAVI */}
               <div className="space-y-4">
                 <div>
-                  <h5 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                    Podaci za dostavu
-                  </h5>
+                  <h5 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">{translateText("Podaci za dostavu")}</h5>
                   <div className="flex items-start gap-2 text-sm text-[var(--color-text)]">
                     <MapPin
                       size={16}
@@ -203,12 +197,10 @@ export default function OrderCard({ order }) {
                         {order.customer.name} {order.customer.surname}
                       </p>
                       {order.shippingMethod === 'pickup' ? (
-                        <p className="text-[var(--color-muted)]">
-                          Lično preuzimanje u radnji (Niš)
-                        </p>
+                        <p className="text-[var(--color-muted)]">{translateText("Lično preuzimanje u radnji (Niš)")}</p>
                       ) : (
                         <p className="text-[var(--color-muted)]">
-                          {order.customer.address}, {order.customer.postalCode}{' '}
+                          {order.customer.address}, {translateText(order.customer.postalCode)}{translateText(' ')}
                           {order.customer.city}
                         </p>
                       )}
@@ -216,16 +208,14 @@ export default function OrderCard({ order }) {
                   </div>
                 </div>
                 <div>
-                  <h5 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">
-                    Plaćanje & Kontakt
-                  </h5>
+                  <h5 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2">{translateText("Plaćanje & Kontakt")}</h5>
                   <div className="flex items-center gap-2 text-sm text-[var(--color-text)] mb-1">
                     <CreditCard
                       size={16}
                       className="text-[var(--color-primary)]"
                     />
                     <span>
-                      {order.paymentMethod === 'cod' ? 'Pouzećem' : 'Karticom'}
+                      {translateText(order.paymentMethod === 'cod' ? 'Pouzećem' : 'Karticom')}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-[var(--color-text)]">

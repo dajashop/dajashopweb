@@ -7,15 +7,18 @@ import { UndoProvider } from './context/UndoProvider.jsx';
 import { WishlistProvider } from './context/WishlistProvider.jsx';
 import { ConsentProvider } from './context/ConsentProvider.jsx';
 import { PageDataProvider } from './ssr/PageData.jsx';
+import { StorefrontProvider } from './localization/StorefrontContext.jsx';
 
 export default function AppProviders({ children, pageData = null, helmetContext }) {
   return (
     <PageDataProvider data={pageData}>
+      <StorefrontProvider>
       <ConsentProvider><AuthProvider><ThemeProvider><CartProvider>
         <FlashProvider><UndoProvider><WishlistProvider>
           <HelmetProvider context={helmetContext}>{children}</HelmetProvider>
         </WishlistProvider></UndoProvider></FlashProvider>
       </CartProvider></ThemeProvider></AuthProvider></ConsentProvider>
+      </StorefrontProvider>
     </PageDataProvider>
   );
 }

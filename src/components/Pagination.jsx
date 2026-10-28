@@ -1,9 +1,12 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import "./Pagination.css";
 
 export default function Pagination({ page, total, perPage, onChange, getPageUrl }) {
+  const { t: translateText } = useStorefront();
+
   const pages = Math.max(1, Math.ceil(total / perPage));
   const navRef = useRef(null);
   const [pageSlots, setPageSlots] = useState(10);
@@ -40,18 +43,18 @@ export default function Pagination({ page, total, perPage, onChange, getPageUrl 
       'aria-label': label,
       title: label,
     };
-    if (disabled) return <button {...props} type="button" disabled>{content}</button>;
+    if (disabled) return <button {...props} type="button" disabled>{translateText(content)}</button>;
     return getPageUrl
-      ? <Link {...props} to={getPageUrl(target)} rel={rel}>{content}</Link>
-      : <button {...props} type="button" onClick={() => onChange(target)}>{content}</button>;
+      ? <Link {...props} to={getPageUrl(target)} rel={rel}>{translateText(content)}</Link>
+      : <button {...props} type="button" onClick={() => onChange(target)}>{translateText(content)}</button>;
   };
   return (
-    <nav ref={navRef} className="pagination" aria-label="Stranice kataloga">
-      {pageButton(1, <ChevronsLeft size={18} aria-hidden="true" />, 'Prva stranica', { disabled: page <= 1, edge: true })}
-      {pageButton(page - 1, <ChevronLeft size={18} aria-hidden="true" />, 'Prethodna stranica', { disabled: page <= 1, rel: 'prev' })}
+    <nav ref={navRef} className="pagination" aria-label={translateText("Stranice kataloga")}>
+      {translateText(pageButton(1, <ChevronsLeft size={18} aria-hidden="true" />, 'Prva stranica', { disabled: page <= 1, edge: true }))}
+      {translateText(pageButton(page - 1, <ChevronLeft size={18} aria-hidden="true" />, 'Prethodna stranica', { disabled: page <= 1, rel: 'prev' }))}
       {visiblePages.map(number => pageButton(number, number, `Strana ${number}`, { current: page === number }))}
-      {pageButton(page + 1, <ChevronRight size={18} aria-hidden="true" />, 'Sledeća stranica', { disabled: page >= pages, rel: 'next' })}
-      {pageButton(pages, <ChevronsRight size={18} aria-hidden="true" />, 'Poslednja stranica', { disabled: page >= pages, edge: true })}
+      {translateText(pageButton(page + 1, <ChevronRight size={18} aria-hidden="true" />, 'Sledeća stranica', { disabled: page >= pages, rel: 'next' }))}
+      {translateText(pageButton(pages, <ChevronsRight size={18} aria-hidden="true" />, 'Poslednja stranica', { disabled: page >= pages, edge: true }))}
     </nav>
   );
 }

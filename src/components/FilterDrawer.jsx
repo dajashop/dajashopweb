@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useState, useCallback } from 'react';
 import './FilterDrawer.css';
 import { useCatalogParams as useSearchParams } from '../context/CatalogParams.jsx';
@@ -88,6 +89,8 @@ function useHeaderHeight(active) {
 }
 
 export default function FilterDrawer({ className = '', products, fixedGender, configuration, serverFacets, facetsPending = false, configurationLoading, configurationError }) {
+  const { t: translateText } = useStorefront();
+
   const [open, setOpen] = useState(false);
   const activeCount = useActiveCount();
 
@@ -160,10 +163,10 @@ export default function FilterDrawer({ className = '', products, fixedGender, co
             strokeLinecap="round"
           />
         </svg>
-        <span>Filteri</span>
+        <span>{translateText("Filteri")}</span>
         {activeCount > 0 && (
-          <span className="fd-badge" aria-label={`${activeCount} aktivno`}>
-            {activeCount}
+          <span className="fd-badge" aria-label={translateText(`${activeCount} aktivno`)}>
+            {translateText(activeCount)}
           </span>
         )}
       </button>
@@ -173,7 +176,7 @@ export default function FilterDrawer({ className = '', products, fixedGender, co
           type="button"
           className="fd-fab"
           onClick={() => setOpen(true)}
-          aria-label="Otvori filtere"
+          aria-label={translateText("Otvori filtere")}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path
@@ -184,10 +187,10 @@ export default function FilterDrawer({ className = '', products, fixedGender, co
               strokeLinecap="round"
             />
           </svg>
-          <span>Filteri</span>
+          <span>{translateText("Filteri")}</span>
           {activeCount > 0 && (
-            <span className="fd-badge" aria-label={`${activeCount} aktivno`}>
-              {activeCount}
+            <span className="fd-badge" aria-label={translateText(`${activeCount} aktivno`)}>
+              {translateText(activeCount)}
             </span>
           )}
         </button>
@@ -198,7 +201,7 @@ export default function FilterDrawer({ className = '', products, fixedGender, co
           className="fd-overlay"
           role="dialog"
           aria-modal="true"
-          aria-label="Filteri"
+          aria-label={translateText("Filteri")}
           id="filter-drawer"
           onClick={(e) => {
             if (e.target.classList.contains('fd-overlay')) setOpen(false);
@@ -210,7 +213,7 @@ export default function FilterDrawer({ className = '', products, fixedGender, co
                 type="button"
                 className="fd-close"
                 onClick={() => setOpen(false)}
-                aria-label="Zatvori filtere"
+                aria-label={translateText("Zatvori filtere")}
               >
                 <svg
                   width="20"
@@ -226,12 +229,12 @@ export default function FilterDrawer({ className = '', products, fixedGender, co
                     strokeLinecap="round"
                   />
                 </svg>
-                <span>Zatvori</span>
+                <span>{translateText("Zatvori")}</span>
               </button>
               <div className="fd-title">
-                <span>Filteri</span>
+                <span>{translateText("Filteri")}</span>
                 {activeCount > 0 && (
-                  <span className="fd-badge">{activeCount}</span>
+                  <span className="fd-badge">{translateText(activeCount)}</span>
                 )}
               </div>
               <div className="fd-spacer" />

@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 // ==============================
 // File: src/components/TrustBar.jsx
 // Tailwind + lucide-react (desktop + dedicated mobile variants)
@@ -38,6 +39,8 @@ export default function TrustBar({
   stickyMobile = false,
   className = '',
 }) {
+  const { t: translateText } = useStorefront();
+
   const panelBase = 'relative rounded-2xl ring-1 shadow-glass';
   const panelVariants = {
     glass: 'bg-white/70 backdrop-blur-xl ring-white/50',
@@ -62,11 +65,11 @@ export default function TrustBar({
             </span>
             <div className="min-w-0">
               <div className="text-sm sm:text-base font-semibold text-text leading-tight truncate">
-                {title}
+                {translateText(title)}
               </div>
               {desc && (
                 <div className="text-xs sm:text-sm text-muted truncate">
-                  {desc}
+                  {translateText(desc)}
                 </div>
               )}
             </div>
@@ -99,10 +102,10 @@ export default function TrustBar({
             </span>
             <div className="min-w-0">
               <div className="text-sm font-semibold text-text leading-tight line-clamp-1">
-                {title}
+                {translateText(title)}
               </div>
               {desc && (
-                <div className="text-xs text-muted line-clamp-1">{desc}</div>
+                <div className="text-xs text-muted line-clamp-1">{translateText(desc)}</div>
               )}
             </div>
           </li>
@@ -135,9 +138,9 @@ export default function TrustBar({
               </span>
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-text leading-tight">
-                  {title}
+                  {translateText(title)}
                 </div>
-                {desc && <div className="text-xs text-muted">{desc}</div>}
+                {desc && <div className="text-xs text-muted">{translateText(desc)}</div>}
               </div>
             </div>
           </li>
@@ -165,7 +168,7 @@ export default function TrustBar({
             className="flex items-center gap-2 rounded-lg px-2 py-1.5"
           >
             <Icon className="h-4 w-4 text-primary" strokeWidth={2.2} />
-            <span className="text-sm text-text">{title}</span>
+            <span className="text-sm text-text">{translateText(title)}</span>
           </li>
         ))}
       </ul>
@@ -187,12 +190,12 @@ export default function TrustBar({
   return (
     <section
       className={`mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 ${className}`}
-      aria-label="Trust bar"
+      aria-label={translateText("Trust bar")}
     >
       {/* Desktop (>= md) */}
-      <div className="hidden md:block">{DesktopPanel}</div>
+      <div className="hidden md:block">{translateText(DesktopPanel)}</div>
       {/* Mobile (< md) */}
-      <div className="md:hidden">{renderMobile()}</div>
+      <div className="md:hidden">{translateText(renderMobile())}</div>
     </section>
   );
 }

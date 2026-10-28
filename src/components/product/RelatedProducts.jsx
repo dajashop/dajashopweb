@@ -1,9 +1,12 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useMemo, useRef, useState } from 'react';
 import Link from '../ProductLink.jsx';
-import { money } from '../../utils/currency';
+
 import './RelatedProducts.css';
 
 export default function RelatedProducts({ currentProduct, allProducts }) {
+  const { t: translateText, money } = useStorefront();
+
   const sliderRef = useRef(null);
 
   // State za drag funkcionalnost
@@ -58,7 +61,7 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
 
   return (
     <div className="related-products-container">
-      <h2 className="related-title">Možda će vas zanimati</h2>
+      <h2 className="related-title">{translateText("Možda će vas zanimati")}</h2>
 
       <div
         className={`related-scroll-container ${isDown ? 'active' : ''}`}
@@ -87,15 +90,15 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
                   item.images?.[0]?.url ||
                   item.image
                 }
-                alt={item.name}
+                alt={translateText(item.name)}
                 className="related-img"
                 draggable="false" // Bitno: Da se slika ne vuče kao fajl
               />
             </div>
 
             <div className="related-info">
-              <span className="related-brand">{item.brand}</span>
-              <h3 className="related-name">{item.name}</h3>
+              <span className="related-brand">{translateText(item.brand)}</span>
+              <h3 className="related-name">{translateText(item.name)}</h3>
               <div className="related-price">{money(item.price)}</div>
             </div>
           </Link>

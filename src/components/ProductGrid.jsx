@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useState } from 'react';
 import ProductCard from './ProductCard.jsx';
 import ProductModal from './modals/ProductModal.jsx';
@@ -11,19 +12,18 @@ export default function ProductGrid({ items, blankImages = false }) {
 }
 
 function FetchedProductGrid() {
+  const { t: translateText } = useStorefront();
+
   const { items, loading, err } = useProducts();
   // Loading / Error stanja
   if (loading) {
     return (
-      <div className="py-12 text-center font-medium text-neutral-500 animate-pulse">
-        Učitavanje kataloga...
-      </div>
+      <div className="py-12 text-center font-medium text-neutral-500 animate-pulse">{translateText("Učitavanje kataloga...")}</div>
     );
   }
   if (err) {
     return (
-      <div className="py-12 text-center font-bold text-red-500">
-        Greška: {String(err)}
+      <div className="py-12 text-center font-bold text-red-500">{translateText("Greška: ")}{translateText(String(err))}
       </div>
     );
   }

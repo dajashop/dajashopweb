@@ -1,8 +1,11 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React from 'react';
 import './ProductFeatures.css';
 import { visibleProductFeatures } from '../../utils/catalogPresentation.js';
 
 const ProductFeatures = ({ product }) => {
+  const { t: translateText } = useStorefront();
+
   if (
     !product ||
     !product.features ||
@@ -18,13 +21,13 @@ const ProductFeatures = ({ product }) => {
 
   return (
     <div className="product-features">
-      <h2 className="features-heading">Napredne Funkcije</h2>
+      <h2 className="features-heading">{translateText("Napredne Funkcije")}</h2>
 
       <div className="features-list">
         {validFeatures.map((feature, index) => (
           <div className="feature-row" key={index}>
-            <span className="feature-title">{feature.title}</span>
-            <span className="feature-subtitle">{feature.subtitle}</span>
+            <span className="feature-title">{translateText(feature.title)}</span>
+            <span className="feature-subtitle">{translateText(feature.subtitle)}</span>
           </div>
         ))}
       </div>

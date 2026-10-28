@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './Filters.css';
 import { useCatalogParams as useSearchParams } from '../context/CatalogParams.jsx';
@@ -37,15 +38,21 @@ function countBy(products, getValue) {
 }
 
 function FilterCount({ count }) {
-  return <span className="filter-count" aria-label={`${count} artikala`}>{count}</span>;
+  const { t: translateText } = useStorefront();
+
+  return <span className="filter-count" aria-label={translateText(`${count} artikala`)}>{translateText(count)}</span>;
 }
 
 export default function Filters(props) {
-  if (props.configurationLoading || props.configurationError) return <aside className="filters card glass"><p>{props.configurationError ? 'Filteri trenutno nisu dostupni. Osveži stranicu.' : 'Učitavanje filtera…'}</p></aside>;
+  const { t: translateText } = useStorefront();
+
+  if (props.configurationLoading || props.configurationError) return <aside className="filters card glass"><p>{translateText(props.configurationError ? 'Filteri trenutno nisu dostupni. Osveži stranicu.' : 'Učitavanje filtera…')}</p></aside>;
   return props.configuration ? <ConfiguredFilters {...props} /> : <LegacyFilters {...props} />;
 }
 
 function LegacyFilters({ products, fixedGender, onClose }) {
+  const { t: translateText, money } = useStorefront();
+
   // <--- Dodat onClose prop
   const [sp, setSp] = useSearchParams();
   const filterAnchor = useFilterAnchor(sp.toString());
@@ -243,9 +250,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
 
   if (baseData.length === 0) {
     return (
-      <aside className="filters card glass p-4 text-center text-muted text-sm">
-        Nema filtera za ovu kolekciju.
-      </aside>
+      <aside className="filters card glass p-4 text-center text-muted text-sm">{translateText("Nema filtera za ovu kolekciju.")}</aside>
     );
   }
 
@@ -254,17 +259,15 @@ function LegacyFilters({ products, fixedGender, onClose }) {
       ref={filterAnchor.container}
       {...filterAnchor.events}
       className="filters card glass"
-      aria-label="Filteri kataloga"
+      aria-label={translateText("Filteri kataloga")}
       data-lenis-prevent
     >
       <div className="f-top">
-        <h3 className="f-top-title">Filteri</h3>
+        <h3 className="f-top-title">{translateText("Filteri")}</h3>
         <div className="f-top-actions">
-          {activeTotal > 0 && <span className="f-badge">{activeTotal}</span>}
+          {activeTotal > 0 && <span className="f-badge">{translateText(activeTotal)}</span>}
           {activeTotal > 0 && (
-            <button type="button" className="f-clear" onClick={clearAll}>
-              Očisti sve
-            </button>
+            <button type="button" className="f-clear" onClick={clearAll}>{translateText("Očisti sve")}</button>
           )}
         </div>
       </div>
@@ -273,7 +276,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
         {!fixedGender && (
           <div className={`f-section ${openSections.gender ? 'is-open' : ''}`}>
             <SectionHeader
-              title="Pol"
+              title={translateText("Pol")}
               count={countSelected('gender')}
               onClear={() => clearKey('gender')}
               isOpen={openSections.gender}
@@ -302,7 +305,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
                             onChange={() => toggleParam('gender', gender)}
                             className="filter-input-hidden"
                           />
-                          <span className="filter-text">{gender}</span>
+                          <span className="filter-text">{translateText(gender)}</span>
                           <FilterCount count={genderCounts.get(gender) || 0} />
                           {checked('gender', gender) && (
                             <div className="filter-check">
@@ -324,7 +327,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
         {brands.length > 0 && (
           <div className={`f-section ${openSections.brand ? 'is-open' : ''}`}>
             <SectionHeader
-              title="Brend"
+              title={translateText("Brend")}
               count={countSelected('brand')}
               onClear={() => clearKey('brand')}
               isOpen={openSections.brand}
@@ -353,7 +356,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
                             onChange={() => toggleParam('brand', b)}
                             className="filter-input-hidden"
                           />
-                          <span className="filter-text">{b}</span>
+                          <span className="filter-text">{translateText(b)}</span>
                           <FilterCount count={brandCounts.get(b) || 0} />
                           {checked('brand', b) && (
                             <div className="filter-check">
@@ -384,7 +387,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
             className={`f-section ${openSections.category ? 'is-open' : ''}`}
           >
             <SectionHeader
-              title="Kolekcija"
+              title={translateText("Kolekcija")}
               count={countSelected('category')}
               onClear={() => clearKey('category')}
               isOpen={openSections.category}
@@ -413,7 +416,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
                             onChange={() => toggleCategory(c)}
                             className="filter-input-hidden"
                           />
-                          <span className="filter-text">{c}</span>
+                          <span className="filter-text">{translateText(c)}</span>
                           <FilterCount count={categoryCounts.get(c) || 0} />
                           {checked('category', c) && (
                             <div className="filter-check">
@@ -445,7 +448,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
             className={`f-section ${openSections[section.key] ? 'is-open' : ''}`}
           >
             <SectionHeader
-              title={section.title}
+              title={translateText(section.title)}
               count={section.specs.reduce((total, spec) => total + (spec.diameterValues?.length ? Number(countSelected(`spec_${spec.key}`) > 0) : countSelected(`spec_${spec.key}`)), 0)}
               onClear={() => setParams((params) => section.specs.forEach((spec) => params.delete(`spec_${spec.key}`)))}
               isOpen={!!openSections[section.key]}
@@ -462,8 +465,8 @@ function LegacyFilters({ products, fixedGender, onClose }) {
                   <div className="f-content-inner">
                     {section.specs.map((spec) => (
                     <div key={spec.key} className={section.specs.length > 1 ? 'filter-subsection' : undefined}>
-                    {section.specs.length > 1 && <h4 className="filter-subsection-title">{isColorSpec(spec.key) ? 'Boja' : 'Materijal'}</h4>}
-                    {spec.diameterValues?.length ? (
+                    {section.specs.length > 1 && <h4 className="filter-subsection-title">{translateText(isColorSpec(spec.key) ? 'Boja' : 'Materijal')}</h4>}
+                    {translateText(spec.diameterValues?.length ? (
                       <DiameterFilter values={spec.diameterValues} selected={sp.getAll(`spec_${spec.key}`)}
                         onChange={(values) => setParams((params) => {
                           params.delete(`spec_${spec.key}`);
@@ -471,10 +474,10 @@ function LegacyFilters({ products, fixedGender, onClose }) {
                         })} />
                     ) : isColorSpec(spec.key) ? (
                       <ColorFilter values={spec.values} selected={sp.getAll(`spec_${spec.key}`)}
-                        label={formatProductSpecLabel(spec.key)} onToggle={(value) => toggleParam(`spec_${spec.key}`, value)} />
+                        label={translateText(formatProductSpecLabel(spec.key))} onToggle={(value) => toggleParam(`spec_${spec.key}`, value)} />
                     ) : isBraceletMaterialSpec(spec.key) ? (
                       <MaterialFilter values={spec.values} selected={sp.getAll(`spec_${spec.key}`)}
-                        label={formatProductSpecLabel(spec.key)} onToggle={(value) => toggleParam(`spec_${spec.key}`, value)} />
+                        label={translateText(formatProductSpecLabel(spec.key))} onToggle={(value) => toggleParam(`spec_${spec.key}`, value)} />
                     ) : (
                     <div className="filter-list" role="group">
                       {spec.values.map(({ value, count }) => (
@@ -492,7 +495,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
                             }
                             className="filter-input-hidden"
                           />
-                          <span className="filter-text">{value}</span>
+                          <span className="filter-text">{translateText(value)}</span>
                           <FilterCount count={count} />
                           {checked(`spec_${spec.key}`, value) && (
                             <div className="filter-check">
@@ -511,7 +514,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
                         </label>
                       ))}
                     </div>
-                    )}
+                    ))}
                     </div>
                     ))}
                   </div>
@@ -523,7 +526,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
 
         <div className={`f-section ${openSections.price ? 'is-open' : ''}`}>
           <SectionHeader
-            title="Cena"
+            title={translateText("Cena")}
             count={sp.get('min') || sp.get('max') ? 1 : 0}
             onClear={() => {
               setParams((p) => {
@@ -547,9 +550,9 @@ function LegacyFilters({ products, fixedGender, onClose }) {
                 <div className="f-content-inner">
                   <div className="price-wrapper">
                     <div className="price-values">
-                      <span>{Number(min || 0).toLocaleString()} RSD</span>
+                      <span>{money(min || 0)}</span>
                       <span>
-                        {Number(max || maxPriceLimit).toLocaleString()} RSD
+                        {money(max || maxPriceLimit)}
                       </span>
                     </div>
                     <div className="slider-container">
@@ -603,19 +606,16 @@ function LegacyFilters({ products, fixedGender, onClose }) {
               type="button"
               className="btn-large-reset"
               onClick={clearAll}
-            >
-              Ukloni sve filtere
-            </button>
+            >{translateText("Ukloni sve filtere")}</button>
           )}
 
           {/* NOVO DUGME ZA ZATVARANJE (Samo na mobilnom) */}
           {onClose && (
-            <button type="button" className="btn-large-close" onClick={onClose}>
-              Zatvori filtere
-            </button>
+            <button type="button" className="btn-large-close" onClick={onClose}>{translateText("Zatvori filtere")}</button>
           )}
         </div>
       </div>
     </aside>
   );
 }
+

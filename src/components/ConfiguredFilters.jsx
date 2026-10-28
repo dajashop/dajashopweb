@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useCatalogPreparation } from '../context/CatalogPreparation.jsx';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useCatalogParams as useSearchParams } from '../context/CatalogParams.jsx';
@@ -13,6 +14,8 @@ import './Filters.css';
 import useFilterAnchor from '../hooks/useFilterAnchor.js';
 
 export default function ConfiguredFilters({ products, configuration, serverFacets, facetsPending = false, fixedGender, onClose, params: previewParams, onParams, expandIds = [], showUnavailableOptions = false, focusId = '' }) {
+  const { t: translateText } = useStorefront();
+
   const [urlParams, setUrlParams] = useSearchParams();
   const params = configuredFilterParams(previewParams || urlParams, configuration, fixedGender);
   const [open, setOpen] = useState({});
@@ -118,15 +121,15 @@ export default function ConfiguredFilters({ products, configuration, serverFacet
   const chips = configuredFilterChips(params, configuration);
   const content = (node) => {
     if (node.mode === 'group') return orderedNodes(node.children).filter(available).map((child) => (
-      <div className="filter-subsection" data-filter-id={child.id} key={child.id}><h4 className="filter-subsection-title">{child.title}</h4>{child.description && <p className="configured-filter-description">{child.description}</p>}{content(child)}</div>
+      <div className="filter-subsection" data-filter-id={child.id} key={child.id}><h4 className="filter-subsection-title">{translateText(child.title)}</h4>{child.description && <p className="configured-filter-description">{translateText(child.description)}</p>}{translateText(content(child))}</div>
     ));
     const { values, numbers } = facets.get(node.id) || { values: [], numbers: [] };
     const selected = params.getAll(selectionKey(node));
     const optionLimit = node.sources.includes('brand') ? Infinity : 3;
-    if (node.style === 'color') return <FilterOptions values={values} selected={selected} limit={node.sources.includes('brand') ? Infinity : (node.columns || 5) * 3}>{(visible) => <ColorFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} columns={node.columns || 5} showCounts={node.showCounts} />}</FilterOptions>;
-    if (node.style === 'material') return <FilterOptions values={values} selected={selected} limit={optionLimit}>{(visible) => <MaterialFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={node.title} showCounts={node.showCounts} />}</FilterOptions>;
+    if (node.style === 'color') return <FilterOptions values={values} selected={selected} limit={node.sources.includes('brand') ? Infinity : (node.columns || 5) * 3}>{(visible) => <ColorFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={translateText(node.title)} columns={node.columns || 5} showCounts={node.showCounts} />}</FilterOptions>;
+    if (node.style === 'material') return <FilterOptions values={values} selected={selected} limit={optionLimit}>{(visible) => <MaterialFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={translateText(node.title)} showCounts={node.showCounts} />}</FilterOptions>;
     if (node.style === 'range') {
-      if (!numbers.length) return <p className="configured-filter-description">Nema dostupnih vrednosti.</p>;
+      if (!numbers.length) return <p className="configured-filter-description">{translateText("Nema dostupnih vrednosti.")}</p>;
       const minKey = rangeKey(node, 'min'); const maxKey = rangeKey(node, 'max');
       const min = params.has(minKey) ? Number(params.get(minKey)) : numbers[0];
       const max = params.has(maxKey) ? Number(params.get(maxKey)) : numbers.at(-1);
@@ -144,28 +147,28 @@ export default function ConfiguredFilters({ products, configuration, serverFacet
       const from = params.has(minKey) ? min : lower;
       return <RangeFilterSlider node={node} lower={lower} upper={upper} from={from} to={max} onChange={setRange} />;
     }
-    return <FilterOptions values={values} selected={selected} limit={optionLimit}>{(visible) => <div className="filter-list" role="group" aria-label={node.title} style={node.columns > 1 ? { display: 'grid', gridTemplateColumns: `repeat(${node.columns}, minmax(0, 1fr))` } : undefined}>{visible.map((value) => <label key={value.value} className={`filter-row ${selected.includes(value.value) ? 'is-active' : ''}`}>
+    return <FilterOptions values={values} selected={selected} limit={optionLimit}>{(visible) => <div className="filter-list" role="group" aria-label={translateText(node.title)} style={node.columns > 1 ? { display: 'grid', gridTemplateColumns: `repeat(${node.columns}, minmax(0, 1fr))` } : undefined}>{visible.map((value) => <label key={value.value} className={`filter-row ${selected.includes(value.value) ? 'is-active' : ''}`}>
       <input className="filter-input-hidden" type="checkbox" checked={selected.includes(value.value)} onChange={() => toggle(node, value.value)} />
-      <span className="filter-text">{value.label}</span>{node.showCounts && <span className="filter-count">{value.count}</span>}
+      <span className="filter-text">{translateText(value.label)}</span>{node.showCounts && <span className="filter-count">{translateText(value.count)}</span>}
       {selected.includes(value.value) && <div className="filter-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg></div>}
     </label>)}</div>}</FilterOptions>;
   };
-  return <aside ref={container} {...filterAnchor.events} className="filters card glass configured-filters" aria-label="Filteri kataloga" aria-busy={facetsPending} data-lenis-prevent>
-    <div className="f-top"><h3 className="f-top-title">Filteri</h3><div className="f-top-actions">{chips.length > 0 && <><span className="f-badge">{chips.length}</span><button type="button" className="f-clear" onClick={clearAll}>Očisti sve</button></>}</div></div>
+  return <aside ref={container} {...filterAnchor.events} className="filters card glass configured-filters" aria-label={translateText("Filteri kataloga")} aria-busy={facetsPending} data-lenis-prevent>
+    <div className="f-top"><h3 className="f-top-title">{translateText("Filteri")}</h3><div className="f-top-actions">{chips.length > 0 && <><span className="f-badge">{translateText(chips.length)}</span><button type="button" className="f-clear" onClick={clearAll}>{translateText("Očisti sve")}</button></>}</div></div>
     <div className="f-scroll-container">
     {orderedNodes(configuration.filters).filter(available).map((node) => {
       const expanded = open[node.id] ?? (expandIds.includes(node.id) || node.open);
       const active = chips.filter((chip) => filterLeaves({ filters: [node] }).some((leaf) => [selectionKey(leaf), `range:${leaf.id}`].includes(chip.key))).length;
       return <div className={`f-section ${expanded ? 'is-open' : ''}`} data-filter-id={node.id} key={node.id}>
-        <SectionHeader title={node.title} count={active} onClear={() => clearNode(node)} isOpen={expanded} onToggle={() => setOpen((previous) => ({ ...previous, [node.id]: !expanded }))} />
+        <SectionHeader title={translateText(node.title)} count={active} onClear={() => clearNode(node)} isOpen={expanded} onToggle={() => setOpen((previous) => ({ ...previous, [node.id]: !expanded }))} />
         <AnimatePresence initial={false}>
-          {expanded && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }} className="f-content-wrapper"><div className="f-content-inner">{node.description && <p className="configured-filter-description">{node.description}</p>}{content(node)}</div></motion.div>}
+          {expanded && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }} className="f-content-wrapper"><div className="f-content-inner">{node.description && <p className="configured-filter-description">{translateText(node.description)}</p>}{translateText(content(node))}</div></motion.div>}
         </AnimatePresence>
       </div>;
     })}
     <div className="f-bottom-actions">
-      {chips.length > 0 && <button type="button" className="btn-large-reset" onClick={clearAll}>Ukloni sve filtere</button>}
-      {onClose && <button type="button" className="btn-large-close" onClick={onClose}>Zatvori filtere</button>}
+      {chips.length > 0 && <button type="button" className="btn-large-reset" onClick={clearAll}>{translateText("Ukloni sve filtere")}</button>}
+      {onClose && <button type="button" className="btn-large-close" onClick={onClose}>{translateText("Zatvori filtere")}</button>}
     </div>
     </div>
   </aside>;

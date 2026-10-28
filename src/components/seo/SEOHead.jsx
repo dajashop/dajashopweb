@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
@@ -24,6 +25,8 @@ export default function SEOHead({
   defer = true,
   children,
 }) {
+  const { t: translateText, language } = useStorefront();
+
   const location = useLocation();
   const siteName = seoConfig.siteName || 'DajaShop';
   const baseUrl = seoConfig.siteUrl?.replace(/\/$/, '') || '';
@@ -31,7 +34,8 @@ export default function SEOHead({
   const canonicalUrl = ensureAbsoluteUrl(url || `${baseUrl}${currentPath}`);
   const imageUrl = ensureAbsoluteUrl(image);
   const isHome = currentPath === '/' || title === 'Početna';
-  const fullTitle = homeTitle || (isHome ? siteName : `${title} | ${siteName}`);
+  const fullTitle = homeTitle ? translateText(homeTitle) : isHome ? siteName : `${translateText(title)} | ${siteName}`;
+  const translatedDescription = translateText(description);
   const sensitiveEmailLink = isEmailLinkPath(currentPath);
   const robotsValue = sensitiveEmailLink ? 'noindex,nofollow,noarchive' : noIndex
     ? 'noindex,follow,max-image-preview:large'
@@ -44,25 +48,25 @@ export default function SEOHead({
 
   return (
     <Helmet defer={defer}>
-      <html lang="sr" />
+      <html lang={language} />
       <title>{fullTitle}</title>
-      <meta name="description" content={description} />
+      <meta name="description" content={translatedDescription} />
       <meta name="keywords" content={keywords} />
       <meta name="robots" content={robotsValue} />
       {sensitiveEmailLink && <meta name="referrer" content="no-referrer" />}
       <link rel="canonical" href={canonicalUrl} />
 
       <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
+      <meta property="og:description" content={translatedDescription} />
       <meta property="og:image" content={imageUrl} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:type" content={type} />
       <meta property="og:site_name" content={siteName} />
-      <meta property="og:locale" content={seoConfig.siteLocale} />
+      <meta property="og:locale" content={language === 'en' ? 'en_GB' : seoConfig.siteLocale} />
 
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
+      <meta name="twitter:description" content={translatedDescription} />
       <meta name="twitter:image" content={imageUrl} />
       {twitterSite && <meta name="twitter:site" content={twitterSite} />}
 
@@ -76,7 +80,7 @@ export default function SEOHead({
         />
       )}
 
-      {children}
+      {translateText(children)}
     </Helmet>
   );
 }

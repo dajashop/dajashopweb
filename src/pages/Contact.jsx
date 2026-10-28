@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useRef, useState } from 'react';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
 import './Contact.css';
@@ -19,6 +20,8 @@ const MAP_EMBED_URL = `https://www.google.com/maps/embed/v1/place?key=${
 // NAPOMENA: Za produkciju, MAP_API_KEY se obično čita iz import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
 export default function Contact() {
+  const { t: translateText } = useStorefront();
+
   const [status, setStatus] = useState('idle');
   const requestId = useRef(null);
   const handleSubmit = async (e) => {
@@ -43,36 +46,28 @@ export default function Contact() {
   return (
     <div className="contact-page page-container">
       <SEOHead
-        title="Kontakt"
-        description="Kontaktirajte DajaShop tim za pitanja, porudžbine i korisničku podršku."
+        title={translateText("Kontakt")}
+        description={translateText("Kontaktirajte DajaShop tim za pitanja, porudžbine i korisničku podršku.")}
       />
 
       {/* HERO SECTION - Minimalistički naslov */}
       <section className="contact-hero">
-        <h1>Kontaktirajte nas</h1>
-        <p>
-          Naš tim Vam stoji na raspolaganju za sva pitanja, savete i podršku.
-          Bilo da se radi o porudžbini, proizvodu ili poslovnoj saradnji,
-          obratite nam se sa punim poverenjem.
-        </p>
+        <h1>{translateText("Kontaktirajte nas")}</h1>
+        <p>{translateText("Naš tim Vam stoji na raspolaganju za sva pitanja, savete i podršku. Bilo da se radi o porudžbini, proizvodu ili poslovnoj saradnji, obratite nam se sa punim poverenjem.")}</p>
       </section>
 
       <div className="contact-content">
         {/* DETAJLI ZA KONTAKT */}
         <div className="contact-details">
-          <h2>Naši detalji</h2>
+          <h2>{translateText("Naši detalji")}</h2>
 
           <div className="detail-item">
             <div className="icon-box">
               <MapPin size={20} />
             </div>
             <div>
-              <h3>Adresa i lokacija</h3>
-              <address>
-                Podzemni prolaz lokal C31,
-                <br />
-                18000 Niš, Srbija
-              </address>
+              <h3>{translateText("Adresa i lokacija")}</h3>
+              <address>{translateText("Podzemni prolaz lokal C31,")}<br />{translateText("18000 Niš, Srbija")}</address>
               <p>
                 {/* Link za Google Maps navigaciju (koristi dinamičku adresu) */}
               </p>
@@ -84,12 +79,10 @@ export default function Contact() {
               <Phone size={20} />
             </div>
             <div>
-              <h3>Telefonski kontakt</h3>
-              <p>Pozovite nas radnim danima za brzu asistenciju.</p>
+              <h3>{translateText("Telefonski kontakt")}</h3>
+              <p>{translateText("Pozovite nas radnim danima za brzu asistenciju.")}</p>
               <p>
-                <a href="tel:+381641262425">+381 (64) 126 24 25</a>{' '}
-                (Mobilni/Viber)
-              </p>
+                <a href="tel:+381641262425">+381 (64) 126 24 25</a>{translateText(' ')}{translateText("(Mobilni/Viber)")}</p>
             </div>
           </div>
 
@@ -98,12 +91,10 @@ export default function Contact() {
               <Mail size={20} />
             </div>
             <div>
-              <h3>Elektronska pošta</h3>
-              <p>Za upite van radnog vremena ili detaljnu dokumentaciju.</p>
+              <h3>{translateText("Elektronska pošta")}</h3>
+              <p>{translateText("Za upite van radnog vremena ili detaljnu dokumentaciju.")}</p>
               <p>
-                <a href="mailto:cvelenis42@yahoo.com">cvelenis42@yahoo.com</a>{' '}
-                (Upiti i korisnička podrška)
-              </p>
+                <a href="mailto:cvelenis42@yahoo.com">{translateText("cvelenis42@yahoo.com")}</a>{translateText(' ')}{translateText("(Upiti i korisnička podrška)")}</p>
             </div>
           </div>
 
@@ -112,25 +103,19 @@ export default function Contact() {
               <Clock size={20} />
             </div>
             <div>
-              <h3>Radno vreme</h3>
-              <p>
-                Ponedeljak - Petak: 10:00 - 20:00
-                <br />
-                Subota: 10:00 - 15:00
-                <br />
-                Nedelja: Zatvoreno
-              </p>
+              <h3>{translateText("Radno vreme")}</h3>
+              <p>{translateText("Ponedeljak - Petak: 10:00 - 20:00")}<br />{translateText("Subota: 10:00 - 15:00")}<br />{translateText("Nedelja: Zatvoreno")}</p>
             </div>
           </div>
         </div>
 
         {/* GOOGLE MAPS EMBED - Korišćen je princip iz ShippingSection.jsx */}
         <div className="contact-map">
-          <h2>Naša lokacija</h2>
+          <h2>{translateText("Naša lokacija")}</h2>
           <div className="map-embed-container">
             <GoogleMapEmbed
               className="map-iframe"
-              title="Daja Shop Lokacija"
+              title={translateText("Daja Shop Lokacija")}
               width="100%"
               height="100%"
               loading="lazy"
@@ -145,28 +130,22 @@ export default function Contact() {
               fontSize: '0.9rem',
               color: 'var(--color-muted)',
             }}
-          >
-            Posetite nas u Podzemnom prolazu, u srcu Niša. Lako nas možete
-            pronaći. Naš lokal je C31. Radujemo se Vašoj poseti!
-          </p>
+          >{translateText("Posetite nas u Podzemnom prolazu, u srcu Niša. Lako nas možete pronaći. Naš lokal je C31. Radujemo se Vašoj poseti!")}</p>
         </div>
       </div>
 
       {/* KONTAKT FORMA */}
       <section className="contact-form-section">
-        <h2>Pošaljite nam poruku</h2>
-        <p>
-          Popunite kratak formular, a mi ćemo Vam odgovoriti u najkraćem mogućem
-          roku, najčešće u roku od 24 časa.
-        </p>
+        <h2>{translateText("Pošaljite nam poruku")}</h2>
+        <p>{translateText("Popunite kratak formular, a mi ćemo Vam odgovoriti u najkraćem mogućem roku, najčešće u roku od 24 časa.")}</p>
         <form className="contact-form" onSubmit={handleSubmit} onChange={() => { if (status !== 'sending') { requestId.current = null; setStatus('idle'); } }}>
           <fieldset className="contact-fields" disabled={status === 'sending'}>
           <div className="contact-honeypot" aria-hidden="true">
-            <label htmlFor="contact-website">Website</label>
+            <label htmlFor="contact-website">{translateText("Website")}</label>
             <input id="contact-website" name="website" tabIndex={-1} autoComplete="off" />
           </div>
           <div className="form-group">
-            <label htmlFor="name">Vaše puno ime i prezime*</label>
+            <label htmlFor="name">{translateText("Vaše puno ime i prezime*")}</label>
             <input
               type="text"
               id="name"
@@ -174,35 +153,35 @@ export default function Contact() {
               minLength={2}
               maxLength={160}
               required
-              placeholder="Npr. Petar Petrović"
+              placeholder={translateText("Npr. Petar Petrović")}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">Vaša e-mail adresa*</label>
+            <label htmlFor="email">{translateText("Vaša e-mail adresa*")}</label>
             <input
               type="email"
               id="email"
               name="email"
               maxLength={240}
               required
-              placeholder="npr. email@domen.com"
+              placeholder={translateText("npr. email@domen.com")}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="phone">Broj telefona (opciono)</label>
+            <label htmlFor="phone">{translateText("Broj telefona (opciono)")}</label>
             <input
               type="tel"
               id="phone"
               name="phone"
               maxLength={60}
-              placeholder="Npr. +381 6x xxx xxxx"
+              placeholder={translateText("Npr. +381 6x xxx xxxx")}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="message">Tekst poruke*</label>
+            <label htmlFor="message">{translateText("Tekst poruke*")}</label>
             <textarea
               id="message"
               name="message"
@@ -210,16 +189,16 @@ export default function Contact() {
               minLength={10}
               maxLength={5000}
               required
-              placeholder="Molimo Vas da detaljno opišete Vaš upit..."
+              placeholder={translateText("Molimo Vas da detaljno opišete Vaš upit...")}
             ></textarea>
           </div>
 
           <button type="submit" className="btn--primary">
-            {status === 'sending' ? 'Šaljemo poruku…' : 'Pošalji poruku'}
+            {translateText(status === 'sending' ? 'Šaljemo poruku…' : 'Pošalji poruku')}
           </button>
           </fieldset>
-          {status === 'success' && <p className="contact-notice contact-notice--success" role="status">Vaša poruka je primljena. Hvala vam na javljanju! Odgovorićemo na navedenu email adresu.</p>}
-          {status === 'error' && <p className="contact-notice contact-notice--error" role="alert">Poruka nije primljena. Pokušajte ponovo ili nam pišite na <a href="mailto:cvelenis42@yahoo.com">cvelenis42@yahoo.com</a>. Vaš unos je sačuvan u formularu.</p>}
+          {status === 'success' && <p className="contact-notice contact-notice--success" role="status">{translateText("Vaša poruka je primljena. Hvala vam na javljanju! Odgovorićemo na navedenu email adresu.")}</p>}
+          {status === 'error' && <p className="contact-notice contact-notice--error" role="alert">{translateText("Poruka nije primljena. Pokušajte ponovo ili nam pišite na ")}<a href="mailto:cvelenis42@yahoo.com">{translateText("cvelenis42@yahoo.com")}</a>{translateText(". Vaš unos je sačuvan u formularu.")}</p>}
         </form>
       </section>
     </div>

@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // ==============================
 // File: src/components/about/AboutValues.jsx
 // Vrednosti u minimalističkom Gridu sa ikonicama
@@ -105,6 +106,8 @@ const itemVariants = {
 };
 
 export default function AboutValues() {
+  const { t: translateText } = useStorefront();
+
   // Prikazujemo 4 vrednosti u 2x2 gridu na velikim ekranima, inače 1 kolona
   const isGrid4 = valuesData.length === 4;
   const gridClass = isGrid4 ? 'grid-2' : 'grid-3';
@@ -121,9 +124,7 @@ export default function AboutValues() {
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-        >
-          Naš Kodeks: Vrednosti Koje Živimo
-        </motion.h2>
+        >{translateText("Naš Kodeks: Vrednosti Koje Živimo")}</motion.h2>
         <motion.div
           className={gridClass}
           variants={containerVariants}
@@ -144,13 +145,13 @@ export default function AboutValues() {
                 style={{ color: 'var(--color-primary)', marginBottom: '16px' }}
               />
               <h3 className="h3" style={{ color: 'var(--color-text)' }}>
-                {item.title}
+                {translateText(item.title)}
               </h3>
               <p
                 className="lead"
                 style={{ fontSize: '15px', marginTop: '10px' }}
               >
-                {item.description}
+                {translateText(item.description)}
               </p>
             </motion.div>
           ))}

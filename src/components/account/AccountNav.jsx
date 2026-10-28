@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // src/components/account/AccountNav.jsx
 
 import React, { useState } from 'react';
@@ -18,6 +19,8 @@ import {
 
 // --- NAVIGATION ---
 function AccountNav({ activeTab, logout }) {
+  const { t: translateText } = useStorefront();
+
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const navItems = [
@@ -37,7 +40,7 @@ function AccountNav({ activeTab, logout }) {
     <>
       <nav className="account-nav desktop-nav card glass">
         <div className="nav-header">
-          <span className="nav-title">Moj Nalog</span>
+          <span className="nav-title">{translateText("Moj Nalog")}</span>
         </div>
         <ul className="nav-list">
           {navItems.map((item) => {
@@ -52,7 +55,7 @@ function AccountNav({ activeTab, logout }) {
                   className={`nav-btn ${isActive ? 'active' : ''}`}
                 >
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                  <span>{item.label}</span>
+                  <span>{translateText(item.label)}</span>
                   {isActive && (
                     <motion.div
                       layoutId="activeIndicator"
@@ -66,7 +69,7 @@ function AccountNav({ activeTab, logout }) {
           <li className="nav-item-logout">
             <button className="nav-btn logout-btn" onClick={logout}>
               <LogOut size={20} />
-              <span>Odjavi se</span>
+              <span>{translateText("Odjavi se")}</span>
             </button>
           </li>
         </ul>
@@ -80,7 +83,7 @@ function AccountNav({ activeTab, logout }) {
         >
           <div className="trigger-content">
             <ActiveIcon size={20} style={{ color: 'var(--color-primary)' }} />
-            <span className="trigger-label">{activeItem.label}</span>
+            <span className="trigger-label">{translateText(activeItem.label)}</span>
           </div>
           <ChevronDown
             size={20}
@@ -109,7 +112,7 @@ function AccountNav({ activeTab, logout }) {
                     onClick={() => setIsMobileOpen(false)}
                   >
                     <Icon size={18} />
-                    <span>{item.label}</span>
+                    <span>{translateText(item.label)}</span>
                     {isActive && (
                       <Check
                         size={16}
@@ -123,7 +126,7 @@ function AccountNav({ activeTab, logout }) {
               <div className="mobile-menu-divider"></div>
               <button className="mobile-menu-item logout" onClick={logout}>
                 <LogOut size={18} />
-                <span>Odjavi se</span>
+                <span>{translateText("Odjavi se")}</span>
               </button>
             </motion.div>
           )}

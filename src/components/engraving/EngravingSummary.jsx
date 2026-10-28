@@ -1,10 +1,13 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { downloadFile } from '../../engraving/design';
 import '../../pages/Engraving.css';
 export default function EngravingSummary({ item, editable = false, admin = false }) {
+  const { t: translateText } = useStorefront();
+
   const [error, setError] = useState(''); const engraving = item.engraving;
-  if (!engraving) return editable ? <Link to={`/graviranje?slug=${encodeURIComponent(item.slug)}&line=${encodeURIComponent(item.lineId || item.id)}`} style={{ display: 'inline-block', marginTop: 8, fontSize: 12 }}>Dodaj gravuru</Link> : null;
+  if (!engraving) return editable ? <Link to={`/graviranje?slug=${encodeURIComponent(item.slug)}&line=${encodeURIComponent(item.lineId || item.id)}`} style={{ display: 'inline-block', marginTop: 8, fontSize: 12 }}>{translateText("Dodaj gravuru")}</Link> : null;
   const exportFile = (format) => {
     try {
       const name = `gravura-${item.slug || item.id}-${engraving.draftId}`;
@@ -19,5 +22,5 @@ export default function EngravingSummary({ item, editable = false, admin = false
       }
     } catch { setError('Preuzimanje nije uspelo.'); }
   };
-  return <div className="engrave-summary">{engraving.preview && <img src={engraving.preview} alt="Gravura na poklopcu sata" />}<div><b>{engraving.confirmedAt ? 'Potvrđena gravura' : 'Gravura bez doplate'}</b><p>Isti dizajn na {item.qty || 1} kom.</p>{editable && <Link to={`/graviranje?slug=${encodeURIComponent(item.slug)}&draft=${engraving.draftId}&line=${encodeURIComponent(item.lineId || item.id)}`}>Uredi gravuru</Link>}{engraving.design && <details><summary>Tekst i podešavanja</summary>{engraving.design.layers.map((layer) => <div key={layer.id}><p>{layer.type === 'text' ? layer.text : 'Slika / logo'}</p>{admin && <pre>{JSON.stringify(layer, null, 2)}</pre>}</div>)}<p>Poklopac Ø {engraving.design.diameter} mm · približan pregled</p></details>}{admin && engraving.artwork && <div><button onClick={() => exportFile('png')}>PNG</button><button onClick={() => exportFile('svg')}>SVG</button><button onClick={() => exportFile('json')}>JSON</button><small>SVG sadrži tačan jednobojni prikaz, a JSON raspored elemenata.</small></div>}{error && <p role="alert">{error}</p>}</div></div>;
+  return <div className="engrave-summary">{engraving.preview && <img src={engraving.preview} alt={translateText("Gravura na poklopcu sata")} />}<div><b>{translateText(engraving.confirmedAt ? 'Potvrđena gravura' : 'Gravura bez doplate')}</b><p>{translateText("Isti dizajn na ")}{translateText(item.qty || 1)}{translateText(" kom.")}</p>{editable && <Link to={`/graviranje?slug=${encodeURIComponent(item.slug)}&draft=${engraving.draftId}&line=${encodeURIComponent(item.lineId || item.id)}`}>{translateText("Uredi gravuru")}</Link>}{engraving.design && <details><summary>{translateText("Tekst i podešavanja")}</summary>{engraving.design.layers.map((layer) => <div key={layer.id}><p>{layer.type === 'text' ? layer.text : translateText('Slika / logo')}</p>{admin && <pre>{JSON.stringify(layer, null, 2)}</pre>}</div>)}<p>{translateText("Poklopac Ø ")}{translateText(engraving.design.diameter)}{translateText(" mm · približan pregled")}</p></details>}{admin && engraving.artwork && <div><button onClick={() => exportFile('png')}>{translateText("PNG")}</button><button onClick={() => exportFile('svg')}>{translateText("SVG")}</button><button onClick={() => exportFile('json')}>{translateText("JSON")}</button><small>{translateText("SVG sadrži tačan jednobojni prikaz, a JSON raspored elemenata.")}</small></div>}{error && <p role="alert">{translateText(error)}</p>}</div></div>;
 }

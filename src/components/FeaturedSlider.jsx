@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 // eslint-disable-next-line no-unused-vars
@@ -5,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCart } from "../hooks/useCart.js";
 import { useFlash } from "../hooks/useFlash.js"; // 👈 Import
 import "./FeaturedSlider.css";
+
 
 const FEATURED_CONFIG = [
   {
@@ -43,9 +45,6 @@ const FEATURED_CONFIG = [
   },
 ];
 
-const fmtPrice = (n) =>
-  new Intl.NumberFormat("sr-RS", { maximumFractionDigits: 0 }).format(n);
-
 const variants = {
   enter: (dir) => ({ x: dir > 0 ? 220 : -220, opacity: 0 }),
   center: { x: 0, opacity: 1 },
@@ -61,6 +60,8 @@ export default function FeaturedSlider({
   autoMs = 4500,
   imageFit = "contain",
 }) {
+  const { t: translateText, money } = useStorefront();
+
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [paused, setPaused] = useState(false);
@@ -113,11 +114,9 @@ export default function FeaturedSlider({
   return (
     <section
       className="relative mx-auto w-full px-4 sm:px-6 lg:px-8 py-8"
-      aria-label="Izdvojeno"
+      aria-label={translateText("Izdvojeno")}
     >
-      <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 mb-6">
-        Izdvojeno
-      </h2>
+      <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 mb-6">{translateText("Izdvojeno")}</h2>
 
       <div
         className="relative overflow-hidden rounded-3xl bg-white/70 backdrop-blur-xl ring-1 ring-white/50 shadow-2xl"
@@ -125,7 +124,7 @@ export default function FeaturedSlider({
         onPointerLeave={() => setPaused(false)}
       >
         <button
-          aria-label="Prethodno"
+          aria-label={translateText("Prethodno")}
           onClick={() => paginate(-1)}
           className="hidden md:grid place-items-center absolute left-4 top-1/2 -translate-y-1/2 z-20 h-11 w-11 rounded-full bg-white/60 backdrop-blur-md ring-1 ring-black/10 shadow hover:bg-white/80 active:scale-95"
         >
@@ -144,7 +143,7 @@ export default function FeaturedSlider({
           </svg>
         </button>
         <button
-          aria-label="Sledeće"
+          aria-label={translateText("Sledeće")}
           onClick={() => paginate(1)}
           className="hidden md:grid place-items-center absolute right-4 top-1/2 -translate-y-1/2 z-20 h-11 w-11 rounded-full bg-white/60 backdrop-blur-md ring-1 ring-black/10 shadow hover:bg-white/80 active:scale-95"
         >
@@ -181,33 +180,27 @@ export default function FeaturedSlider({
               }}
             >
               <h3 className="text-3xl md:text-5xl font-extrabold text-neutral-900">
-                {active.title}
+                {translateText(active.title)}
               </h3>
               <p className="text-neutral-600 text-base md:text-lg leading-relaxed max-w-[52ch]">
-                {active.description}
+                {translateText(active.description)}
               </p>
               <div className="flex flex-wrap items-center gap-4 text-neutral-900">
-                <span className="uppercase tracking-widest text-xs font-semibold text-neutral-500">
-                  MODEL {active.model}
+                <span className="uppercase tracking-widest text-xs font-semibold text-neutral-500">{translateText("MODEL ")}{translateText(active.model)}
                 </span>
               </div>
               <div className="text-2xl md:text-3xl font-extrabold">
-                {fmtPrice(active.price)}{" "}
-                <span className="text-base font-bold">{active.currency}</span>
+                {money(active.price)}
               </div>
               <div className="flex flex-wrap gap-3 pt-2">
                 <Link
                   to={`/product/${active.slug}`}
                   className="inline-flex h-11 items-center justify-center rounded-xl bg-[#9b9b9bff] px-5 text-white font-semibold shadow hover:opacity-70 active:scale-95 transition-all duration-200 ease-in"
-                >
-                  Detalji
-                </Link>
+                >{translateText("Detalji")}</Link>
                 <button
                   onClick={handleAdd} // 👈 Ažurirano
                   className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 font-semibold text-neutral-900 ring-1 ring-black/10 shadow hover:bg-white/90 active:scale-95"
-                >
-                  Dodaj
-                </button>
+                >{translateText("Dodaj")}</button>
               </div>
             </motion.div>
 
@@ -237,7 +230,7 @@ export default function FeaturedSlider({
                 <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/40 via-transparent to-white/60" />
                 <img
                   src={active.image}
-                  alt={`${active.brand} ${active.model}`}
+                  alt={translateText(`${active.brand} ${active.model}`)}
                   className={`absolute inset-0 w-full h-full ${
                     imageFit === "contain"
                       ? "object-contain p-2 md:p-4"
@@ -253,7 +246,7 @@ export default function FeaturedSlider({
           {safeItems.map((_, i) => (
             <button
               key={i}
-              aria-label={`Idi na slajd ${i + 1}`}
+              aria-label={translateText(`Idi na slajd ${i + 1}`)}
               onClick={() => {
                 setDirection(i > index ? 1 : -1);
                 setIndex(i);

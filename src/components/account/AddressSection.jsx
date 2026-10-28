@@ -1,3 +1,4 @@
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useFlash } from '../../hooks/useFlash.js';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,6 +39,8 @@ import {
 const COUNTRY_CODES = PHONE_COUNTRIES;
 
 function AddressSection({ user }) {
+  const { t: translateText } = useStorefront();
+
   const { flash } = useFlash();
   const { googleAllowed, requestGooglePermission } = useConsent();
   const [addresses, setAddresses] = useState([]);
@@ -270,7 +273,7 @@ function AddressSection({ user }) {
       className="section-content"
     >
       <div className="section-header-row">
-        <h3>Moje adrese</h3>
+        <h3>{translateText("Moje adrese")}</h3>
         {!isAdding && (
           <button
             className="btn-primary small"
@@ -282,8 +285,7 @@ function AddressSection({ user }) {
               setIsAdding(true);
             }}
           >
-            <Plus size={16} /> Dodaj novu
-          </button>
+            <Plus size={16} />{translateText(" Dodaj novu")}</button>
         )}
       </div>
       <AnimatePresence mode="popLayout">
@@ -298,10 +300,10 @@ function AddressSection({ user }) {
             autoComplete="off"
             style={{ position: 'relative', zIndex: 20 }}
           >
-            <h4>{editingId ? 'Izmeni adresu' : 'Nova adresa'}</h4>
+            <h4>{translateText(editingId ? 'Izmeni adresu' : 'Nova adresa')}</h4>
             <div className="form-grid">
               <label className="full">
-                <span>Tip adrese</span>
+                <span>{translateText("Tip adrese")}</span>
                 <div className="radio-group">
                   {['Kuća', 'Posao'].map((type) => (
                     <button
@@ -312,7 +314,7 @@ function AddressSection({ user }) {
                     >
                       {type === 'Kuća' && <Home size={14} />}
                       {type === 'Posao' && <Briefcase size={14} />}
-                      {type}
+                      {translateText(type)}
                     </button>
                   ))}
                   <button
@@ -320,8 +322,7 @@ function AddressSection({ user }) {
                     className={`chip ${!isStandardLabel ? 'active' : ''}`}
                     onClick={() => handleTypeSelect('Custom')}
                   >
-                    <PenTool size={14} /> Custom
-                  </button>
+                    <PenTool size={14} />{translateText(" Custom")}</button>
                 </div>
                 {!isStandardLabel && (
                   <motion.div
@@ -331,7 +332,7 @@ function AddressSection({ user }) {
                   >
                     <input
                       type="text"
-                      placeholder="Unesite naziv..."
+                      placeholder={translateText("Unesite naziv...")}
                       value={form.label}
                       onChange={(e) =>
                         setForm({ ...form, label: e.target.value })
@@ -344,14 +345,14 @@ function AddressSection({ user }) {
                       spellCheck={false}
                       required
                     />
-                    <span>Izaberi ikonicu:</span>
+                    <span>{translateText("Izaberi ikonicu:")}</span>
                     <div className="flex gap-2 flex-wrap mt-2">
                       {Object.entries(ADDRESS_ICONS).map(([key, val]) => (
                         <button
                           key={key}
                           type="button"
                           onClick={() => setForm({ ...form, icon: key })}
-                          title={val.label}
+                          title={translateText(val.label)}
                           className={`p-2 rounded-lg border transition-all ${
                             form.icon === key
                               ? 'bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-primary)]'
@@ -366,13 +367,13 @@ function AddressSection({ user }) {
                 )}
               </label>
               <label>
-                <span>Ime i prezime</span>
+                <span>{translateText("Ime i prezime")}</span>
                 <input
                   name="name"
                   value={form.name}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  placeholder="Ime i prezime"
+                  placeholder={translateText("Ime i prezime")}
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="words"
@@ -389,7 +390,7 @@ function AddressSection({ user }) {
                 </AnimatePresence>
               </label>
               <label className="full">
-                <span>Ulica i broj</span>
+                <span>{translateText("Ulica i broj")}</span>
                 <div className="input-with-icon">
                   <MapPin
                     size={16}
@@ -408,7 +409,7 @@ function AddressSection({ user }) {
                   onFocus={() => {
                     if (!googleAllowed) void requestGooglePermission();
                   }}
-                  placeholder="Počnite da kucate adresu..."
+                  placeholder={translateText("Počnite da kucate adresu...")}
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="none"
@@ -420,7 +421,7 @@ function AddressSection({ user }) {
                     <Loader2 className="google-address-loading animate-spin" size={16} />
                   )}
                   {googleAddressSuggestions.length > 0 && (
-                    <ul className="google-address-suggestions" role="listbox" aria-label="Predlozi adrese">
+                    <ul className="google-address-suggestions" role="listbox" aria-label={translateText("Predlozi adrese")}>
                       {googleAddressSuggestions.map((suggestion) => (
                         <li key={suggestion.placeId}>
                           <button
@@ -428,8 +429,8 @@ function AddressSection({ user }) {
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => void selectGoogleAddress(suggestion)}
                           >
-                            <strong>{addressPredictionPrimaryText(suggestion)}</strong>
-                            <small>{addressPredictionSecondaryText(suggestion) || addressPredictionLabel(suggestion)}</small>
+                            <strong>{translateText(addressPredictionPrimaryText(suggestion))}</strong>
+                            <small>{translateText(addressPredictionSecondaryText(suggestion) || addressPredictionLabel(suggestion))}</small>
                           </button>
                         </li>
                       ))}
@@ -446,13 +447,13 @@ function AddressSection({ user }) {
                 </AnimatePresence>
               </label>
               <label>
-                <span>Grad</span>
+                <span>{translateText("Grad")}</span>
                 <input
                   name="city"
                   value={form.city}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  placeholder="Niš"
+                  placeholder={translateText("Niš")}
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="words"
@@ -469,7 +470,7 @@ function AddressSection({ user }) {
                 </AnimatePresence>
               </label>
               <label>
-                <span>Poštanski broj</span>
+                <span>{translateText("Poštanski broj")}</span>
                 <input
                   name="zip"
                   value={form.zip}
@@ -495,7 +496,7 @@ function AddressSection({ user }) {
 
               {/* CUSTOM DROPDOWN */}
               <label className="full">
-                <span>Telefon</span>
+                <span>{translateText("Telefon")}</span>
                 <div className="flex gap-2">
                   <PhoneCountryPicker
                     className="relative w-[110px] shrink-0"
@@ -510,8 +511,8 @@ function AddressSection({ user }) {
                           className="flex w-full items-center justify-between gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition-colors hover:bg-[var(--color-bg-subtle)] focus:outline-none focus:border-[var(--color-primary)]"
                         >
                           <div className="flex items-center gap-2 overflow-hidden">
-                            <img src={getFlagUrl(selectedCountry.code)} alt={selectedCountry.code} className="w-5 h-auto rounded-sm object-cover" />
-                            <span className="text-sm font-medium text-[var(--color-text)]">{phonePrefix}</span>
+                            <img src={getFlagUrl(selectedCountry.code)} alt={translateText(selectedCountry.code)} className="w-5 h-auto rounded-sm object-cover" />
+                            <span className="text-sm font-medium text-[var(--color-text)]">{translateText(phonePrefix)}</span>
                           </div>
                           <span className={`text-[var(--color-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`}>⌄</span>
                         </button>
@@ -560,26 +561,24 @@ function AddressSection({ user }) {
                 type="button"
                 className="btn-ghost"
                 onClick={handleCancel}
-              >
-                Otkaži
-              </button>
+              >{translateText("Otkaži")}</button>
               <button type="submit" className="btn-primary">
-                {editingId ? 'Izmeni' : 'Sačuvaj'}
+                {translateText(editingId ? 'Izmeni' : 'Sačuvaj')}
               </button>
             </div>
           </motion.form>
         )}
       </AnimatePresence>
       <div className="addresses-grid" style={{ zIndex: 0 }}>
-        {loading ? (
+        {translateText(loading ? (
           <div className="loading-state">
             <Loader2 className="animate-spin" size={32} />
-            <p>Učitavanje...</p>
+            <p>{translateText("Učitavanje...")}</p>
           </div>
         ) : addresses.length === 0 && !isAdding ? (
           <div className="empty-state">
             <MapPin size={48} className="text-muted" style={{ opacity: 0.3 }} />
-            <p>Nemate sačuvanih adresa.</p>
+            <p>{translateText("Nemate sačuvanih adresa.")}</p>
           </div>
         ) : (
           addresses.map((addr) => (
@@ -590,7 +589,7 @@ function AddressSection({ user }) {
             >
               <div className="addr-header">
                 <span className="addr-label">
-                  {addr.icon ? (
+                  {translateText(addr.icon ? (
                     renderIcon(addr.icon, 14)
                   ) : addr.label === 'Kuća' ? (
                     <Home size={14} />
@@ -598,14 +597,14 @@ function AddressSection({ user }) {
                     <Briefcase size={14} />
                   ) : (
                     <MapPin size={14} />
-                  )}
-                  {addr.label}
+                  ))}
+                  {translateText(addr.label)}
                 </span>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     className="btn-icon-danger"
                     onClick={() => handleEdit(addr)}
-                    title="Izmeni"
+                    title={translateText("Izmeni")}
                     style={{ color: 'var(--color-text)' }}
                   >
                     <Edit2 size={16} />
@@ -613,30 +612,30 @@ function AddressSection({ user }) {
                   <button
                     className="btn-icon-danger"
                     onClick={() => setDeleteId(addr.id)}
-                    title="Obriši"
+                    title={translateText("Obriši")}
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
               </div>
               <div className="addr-body">
-                <strong>{addr.name}</strong>
-                <p>{addr.address}</p>
+                <strong>{translateText(addr.name)}</strong>
+                <p>{translateText(addr.address)}</p>
                 <p>
-                  {addr.zip} {addr.city}
+                  {translateText(addr.zip)} {translateText(addr.city)}
                 </p>
-                <p className="addr-phone">{addr.phone}</p>
+                <p className="addr-phone">{translateText(addr.phone)}</p>
               </div>
             </motion.div>
           ))
-        )}
+        ))}
       </div>
       <ConfirmModal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={handleConfirmDelete}
-        title="Obriši adresu?"
-        description="Ova adresa će biti trajno uklonjena. Da li ste sigurni?"
+        title={translateText("Obriši adresu?")}
+        description={translateText("Ova adresa će biti trajno uklonjena. Da li ste sigurni?")}
         confirmText="Obriši"
         isDanger={true}
       />

@@ -1,3 +1,4 @@
+import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect, useState } from 'react';
 import { useEmailLinkRequest } from '../hooks/useEmailLinkRequest.js';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -8,6 +9,8 @@ import SEOHead from '../components/seo/SEOHead.jsx';
 import './ResetPassword.css';
 
 export default function NewsletterConfirm({ productAlert = false }) {
+  const { t: translateText } = useStorefront();
+
   const [params] = useSearchParams();
   const token = params.get('token') || '';
   const validToken = isEmailLinkToken(token);
@@ -47,17 +50,17 @@ export default function NewsletterConfirm({ productAlert = false }) {
   }
   const label = productAlert ? 'obaveštenje za artikal' : 'prijavu na novosti';
   return <section className="reset-password-page" aria-live="polite" aria-busy={status === 'saving'}>
-    <SEOHead title={productAlert ? 'Potvrda obaveštenja' : 'Potvrda prijave na novosti'} noIndex={true} />
+    <SEOHead title={translateText(productAlert ? 'Potvrda obaveštenja' : 'Potvrda prijave na novosti')} noIndex={true} />
     <div className="reset-password-page__card">
       <div className="reset-password-page__icon" aria-hidden="true">{status === 'success' ? <CheckCircle2 size={28} /> : <Mail size={28} />}</div>
-      <p className="reset-password-page__eyebrow">DajaShop {productAlert ? 'obaveštenja' : 'novosti'}</p>
-      <h1>{status === 'success' ? 'Vaša potvrda je sačuvana.' : status === 'error' ? 'Link nije važeći.' : `Potvrdite ${label}.`}</h1>
-      <p className="reset-password-page__copy">{status === 'success'
+      <p className="reset-password-page__eyebrow">{translateText("DajaShop ")}{translateText(productAlert ? 'obaveštenja' : 'novosti')}</p>
+      <h1>{translateText(status === 'success' ? 'Vaša potvrda je sačuvana.' : status === 'error' ? 'Link nije važeći.' : `Potvrdite ${label}.`)}</h1>
+      <p className="reset-password-page__copy">{translateText(status === 'success'
         ? productAlert ? active ? 'Obaveštenje je uključeno. Odjava je dostupna u svakoj poruci.' : 'Obaveštenje je već isključeno ili više nije potrebno. Nova prijava je dostupna na stranici artikla.'
           : 'Dobro došli! Sada možete da primate naše novosti i ponude. Odjava je dostupna u svakoj poruci.'
-        : ['error', 'retry'].includes(status) ? error : productAlert ? 'Klikom na dugme aktivirate traženo obaveštenje za artikal na ovoj email adresi.' : 'Klikom na dugme potvrđujete da želite da primate naše novosti i ponude na ovoj email adresi.'}</p>
-      {['ready', 'retry', 'saving'].includes(status) && <button className="reset-password-page__button" onClick={confirm} disabled={status === 'saving'}>{status === 'saving' ? <><Loader2 size={18} /> Potvrđujemo…</> : status === 'retry' ? 'Pokušaj ponovo' : 'Potvrdi prijavu'}</button>}
-      <Link className="reset-password-page__secondary" to="/">Nazad na DajaShop</Link>
+        : ['error', 'retry'].includes(status) ? error : productAlert ? 'Klikom na dugme aktivirate traženo obaveštenje za artikal na ovoj email adresi.' : 'Klikom na dugme potvrđujete da želite da primate naše novosti i ponude na ovoj email adresi.')}</p>
+      {['ready', 'retry', 'saving'].includes(status) && <button className="reset-password-page__button" onClick={confirm} disabled={status === 'saving'}>{translateText(status === 'saving' ? <><Loader2 size={18} />{translateText(" Potvrđujemo…")}</> : status === 'retry' ? 'Pokušaj ponovo' : 'Potvrdi prijavu')}</button>}
+      <Link className="reset-password-page__secondary" to="/">{translateText("Nazad na DajaShop")}</Link>
     </div>
   </section>;
 }
