@@ -230,19 +230,24 @@
 /* ==============================
    Desktop dropdown (Right Aligned)
    ============================== */
-.hm__ddItem.is-strong {
-  font-weight: 700;
-  border-top: 1px solid var(--color-border, #e5e7eb);
-  margin-top: 4px;
-  padding-top: 12px;
+.header-dropdown__item.hm__ddItem.is-strong {
+  margin-top: 8px;
+  border: 0;
+  background: var(--color-text, #111);
+  color: var(--color-bg, #fff);
+  font-weight: 600;
 }
+.header-dropdown__item.hm__ddItem.is-strong:hover { background: color-mix(in srgb, var(--color-text, #111) 88%, var(--color-bg, #fff)); }
+.hm__ddItem.is-strong :is(.header-dropdown__icon, .header-dropdown__chevron) { color: inherit; opacity: 1; }
 
 .hm__ddItem.hm__logout {
   display: flex;
   align-items: center;
   gap: 8px;
   color: #b42318;
+  background: transparent;
 }
+.hm__ddItem.hm__logout .header-dropdown__icon { color: inherit; }
 
 .hm__ddItem.hm__logout:hover {
   background: #fff1f0;

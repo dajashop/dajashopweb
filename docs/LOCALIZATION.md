@@ -2,7 +2,7 @@
 
 U redu sa ikonama zaglavlja postoji samo zastavica izabranog jezika i mala strelica desno, bez vidljivog okvira, podrazumevano Srbija. Otvara zajednički meni za jezik i valutu. Izbori ostaju nezavisni; valuta se pamti kroz postojeći sloj neophodne memorije nakon inicijalizacije saglasnosti.
 
-Ponuda valuta je RSD, EUR, USD, BAM (KM), MKD i CHF. Meniji jezika/valuta i desktop hamburgera dele `HeaderDropdown.jsx` i `HeaderDropdown.css`: širinu do 272 px, poravnanje uz desnu ivicu dugmeta, razmak od 8 px, tipografiju, stavke, senku i animaciju. Paneli su u portalu i prilagođavaju položaj/visinu ekranu. Mobilni hamburger zadržava postojeći prikaz preko celog ekrana.
+Ponuda valuta je RSD, EUR, USD, BAM (KM), MKD i CHF. Meniji jezika/valuta i desktop hamburgera dele `HeaderDropdown.jsx` i `HeaderDropdown.css`: širinu do 304 px, poravnanje uz desnu ivicu dugmeta, razmak od 8 px, tipografiju, stavke, senku i animaciju. Jezik i valute su u dve kolone sa jasnim izborom; kurs i datum liste izdvojeni su u dnu. Hamburger koristi ikonice, oznaku trenutne stranice i istaknutu korpu. Paneli su u portalu i prilagođavaju položaj/visinu ekranu. Mobilni hamburger zadržava postojeći prikaz preko celog ekrana.
 
 Srpski koristi putanje bez prefiksa, a engleski `/en`, npr. `/en`, `/en/catalog` i `/en/product/model`. URL određuje jezik u SSR-u i prvom klijentskom renderu. Zapamćeni jezik nikada ne nadjačava adresu. Promena jezika vodi na odgovarajuću adresu iste stranice uz očuvanje query/hash dela. React Router basename čuva prefiks za navigaciju, filtere i Link komponente. Za obične `href` veze koristiti `localizePath` iz `useStorefront()`.
 

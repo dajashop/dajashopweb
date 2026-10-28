@@ -34,8 +34,15 @@ import {
   Briefcase,
   User,
   LogOut,
+  ChevronRight,
 } from 'lucide-react';
 import './HamburgerMenu.css';
+
+const MENU_ICONS = {
+  '/about': Info, '/catalog': ShoppingBag, '/usluge': Briefcase,
+  '/contact': Phone, '/faq': HelpCircle, '/admin': ShieldCheck,
+  '/account/profile': User, '/cart': ShoppingBag,
+};
 
 export default function HamburgerMenu({
   open,
@@ -161,6 +168,7 @@ function DesktopDropdown({
   unreadOrders,
 }) {
   const { t: translateText } = useStorefront();
+  const { pathname } = useLocation();
 
   const ddRef = useRef(null);
 
@@ -198,7 +206,6 @@ function DesktopDropdown({
                   to="/admin"
                   label={translateText("Admin Dashboard")}
                   onClose={onClose}
-                  style={{ color: '#facc15' }}
                 />
 
                 {/* Link ka Porudžbinama sa brojačem */}
@@ -206,18 +213,15 @@ function DesktopDropdown({
                   to="/admin/orders"
                   className="header-dropdown__item hm__ddItem"
                   role="menuitem"
+                  aria-current={pathname === '/admin/orders' ? 'page' : undefined}
                   onClick={onClose}
-                  style={{
-                    color: '#facc15',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >{translateText("Admin Porudžbine")}{unreadOrders > 0 && (
+                ><Package className="header-dropdown__icon" size={18} strokeWidth={1.7} aria-hidden="true" />
+                  <span className="header-dropdown__label">{translateText("Admin Porudžbine")}</span>{unreadOrders > 0 && (
                     <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-2 shadow-sm">
                       {translateText(unreadOrders)}
                     </span>
                   )}
+                  <ChevronRight className="header-dropdown__chevron" size={14} aria-hidden="true" />
                 </Link>
 
                 <div className="header-dropdown__separator" role="separator" />
@@ -227,7 +231,7 @@ function DesktopDropdown({
             {isStaff && !isAdmin && (
               <>
                 <div className="header-dropdown__separator" role="separator" />
-                <DDItem to="/admin" label={translateText("Katalog proizvoda")} onClose={onClose} style={{ color: '#0f9f78' }} />
+                <DDItem to="/admin" label={translateText("Katalog proizvoda")} onClose={onClose} />
               </>
             )}
 
@@ -247,7 +251,7 @@ function DesktopDropdown({
                     void logout();
                   }}
                 >
-                  <LogOut size={16} />{translateText(" Odjavi me")}</button>
+                  <LogOut className="header-dropdown__icon" size={18} strokeWidth={1.7} aria-hidden="true" /><span className="header-dropdown__label">{translateText("Odjavi me")}</span></button>
               </>
             ) : (
               <button
@@ -258,7 +262,7 @@ function DesktopDropdown({
                   showAuth('login');
                   onClose();
                 }}
-              >{translateText("Prijava / Registracija")}</button>
+              ><User className="header-dropdown__icon" size={18} strokeWidth={1.7} aria-hidden="true" /><span className="header-dropdown__label">{translateText("Prijava / Registracija")}</span></button>
             )}
 
             <DDItem
@@ -274,16 +278,21 @@ function DesktopDropdown({
 
 function DDItem({ to, label, strong, onClose, style }) {
   const { t: translateText } = useStorefront();
+  const { pathname } = useLocation();
+  const Icon = MENU_ICONS[to] || Info;
 
   return (
     <Link
       to={to}
       className={`header-dropdown__item hm__ddItem${strong ? ' is-strong' : ''}`}
       role="menuitem"
+      aria-current={pathname === to ? 'page' : undefined}
       onClick={onClose}
       style={style}
     >
-      {translateText(label)}
+      <Icon className="header-dropdown__icon" size={18} strokeWidth={1.7} aria-hidden="true" />
+      <span className="header-dropdown__label">{translateText(label)}</span>
+      <ChevronRight className="header-dropdown__chevron" size={14} aria-hidden="true" />
     </Link>
   );
 }

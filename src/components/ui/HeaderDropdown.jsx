@@ -6,7 +6,7 @@ import './HeaderDropdown.css';
 const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 export default function HeaderDropdown({ open, anchorRef, panelRef, id, label, className = '', children }) {
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 272 });
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 304 });
   const reduceMotion = useReducedMotion();
 
   useBrowserLayoutEffect(() => {
@@ -15,7 +15,7 @@ export default function HeaderDropdown({ open, anchorRef, panelRef, id, label, c
       const anchor = anchorRef?.current;
       if (!anchor) return;
       const rect = anchor.getBoundingClientRect();
-      const width = Math.min(272, window.innerWidth - 24);
+      const width = Math.min(304, window.innerWidth - 24);
       const left = Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12));
       const top = Math.max(12, Math.round(rect.bottom + 8));
       setPosition({ top, left, width, maxHeight: Math.max(0, window.innerHeight - top - 12) });

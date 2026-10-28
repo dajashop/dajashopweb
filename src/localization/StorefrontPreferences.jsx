@@ -33,11 +33,11 @@ export default function StorefrontPreferences() {
     if (!root.current?.contains(event.relatedTarget) && !panel.current?.contains(event.relatedTarget)) setOpen(false);
   }} onKeyDown={event => {
     if (event.key === 'Escape') { event.preventDefault(); close(); return; }
-    if (!open || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    if (!open || !['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     const options = [...(panel.current?.querySelectorAll('[role="menuitemradio"]:not(:disabled)') || [])];
     const index = options.indexOf(document.activeElement);
-    const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : (index + (event.key === 'ArrowUp' ? -1 : 1) + options.length) % options.length;
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : (index + (['ArrowUp', 'ArrowLeft'].includes(event.key) ? -1 : 1) + options.length) % options.length;
     options[next]?.focus();
   }}>
     <button ref={trigger} type="button" className="storefront-preference__trigger" title={t('Jezik i valuta')}
@@ -51,32 +51,39 @@ export default function StorefrontPreferences() {
     <HeaderDropdown open={open} anchorRef={trigger} panelRef={panel} id={id} label={t('Jezik i valuta')}>
       <div role="group" aria-labelledby={`${id}-language`} className="header-dropdown__group">
         <p id={`${id}-language`} className="header-dropdown__heading">{t('Jezik')}</p>
+        <div className="storefront-preference__languages">
         {LANGUAGES.map(option => <a key={option.code} role="menuitemradio" aria-checked={option.code === language} lang={option.code} hrefLang={option.code}
-          href={localizedPath(`${location.pathname}${location.search}${location.hash}`, option.code)} className="header-dropdown__item"
+          href={localizedPath(`${location.pathname}${location.search}${location.hash}`, option.code)} className="header-dropdown__item storefront-preference__language"
           onClick={event => {
             if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
             event.preventDefault(); close(); setLanguage(option.code);
           }}>
           <img className="storefront-flag" src={`/flags/${option.flag}.svg`} alt="" width="24" height="16" />
-          <span>{option.label}</span><span className="storefront-preference__code">{option.short}</span>
-          {option.code === language && <Check size={14} aria-hidden="true" />}
+          <span>{option.label}</span>
+          <span className="storefront-preference__check" aria-hidden="true">{option.code === language && <Check size={10} strokeWidth={3} />}</span>
         </a>)}
+        </div>
       </div>
       <div className="header-dropdown__separator" role="separator" />
       <div role="group" aria-labelledby={`${id}-currency`} className="header-dropdown__group">
         <p id={`${id}-currency`} className="header-dropdown__heading">{t('Valuta')}</p>
+        <div className="storefront-preference__currencies">
         {CURRENCIES.map(option => <button key={option.code} type="button" role="menuitemradio" aria-checked={option.code === displayCurrency}
-          disabled={!rates[option.code]} className="header-dropdown__item" onClick={() => setCurrency(option.code)}>
-          <span>{t(option.label)}</span><span className="storefront-preference__code">{option.code}</span>
-          {option.code === displayCurrency && <Check size={14} aria-hidden="true" />}
+          disabled={!rates[option.code]} className="header-dropdown__item storefront-preference__currency" onClick={() => setCurrency(option.code)}>
+          <span className="storefront-preference__currency-code">{option.code}</span>
+          <span className="storefront-preference__check" aria-hidden="true">{option.code === displayCurrency && <Check size={10} strokeWidth={3} />}</span>
+          <span className="storefront-preference__currency-name">{t(option.label)}</span>
         </button>)}
+        </div>
       </div>
-      {quoteRate && <p className="storefront-preference__rate">
-        <span>1 {quoteCurrency} = {new Intl.NumberFormat(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(quoteRate)} RSD</span>
-        <a href="https://webappcenter.nbs.rs/ExchangeRateWebApp/ExchangeRate/CurrentMiddleRate" target="_blank" rel="noopener noreferrer">{t('Zvanični srednji kurs NBS')}{formattedDate ? ` · ${formattedDate}` : ''}</a>
-      </p>}
+      <div className="storefront-preference__footer">
+      {quoteRate && <a className="storefront-preference__rate" href="https://webappcenter.nbs.rs/ExchangeRateWebApp/ExchangeRate/CurrentMiddleRate" target="_blank" rel="noopener noreferrer">
+        <strong>1 {quoteCurrency} = {new Intl.NumberFormat(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(quoteRate)} RSD</strong>
+        <span className="storefront-preference__rate-meta"><span>{t('Zvanični srednji kurs NBS')}</span>{formattedDate && <time dateTime={rateDate}>{formattedDate}</time>}</span>
+      </a>}
       <p className="storefront-preference__note" role="status">{t(rateStatus === 'loading' ? 'Učitavanje kursa…' : rateStatus === 'error' ? 'Kursevi trenutno nisu dostupni. Cene su prikazane u RSD.' : 'Cene u stranoj valuti su informativne. Plaćanje je u RSD.')}</p>
       {rateStatus === 'error' && <button type="button" className="storefront-preference__retry" onClick={retryRate}>{t('Pokušaj ponovo')}</button>}
+      </div>
     </HeaderDropdown>
   </div>;
 }
