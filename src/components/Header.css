@@ -121,6 +121,9 @@
 }
 
 /* ===== MOBILE tweaks ===== */
+@media (max-width: 1023px) {
+  .header__actions > .storefront-preference { display: none; }
+}
 @media (max-width: 768px) {
   .header__brand {
     font-size: 1.1rem;

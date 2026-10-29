@@ -23,10 +23,17 @@ export default function StorefrontPreferences() {
 
   useEffect(() => {
     if (!open) return;
+    const desktop = window.matchMedia('(min-width:1024px)');
+    if (!desktop.matches) { setOpen(false); return; }
+    const closeOnMobile = () => { if (!desktop.matches) setOpen(false); };
     panel.current?.querySelector('[role="menuitemradio"][aria-checked="true"]')?.focus();
     const outside = event => { if (!root.current?.contains(event.target) && !panel.current?.contains(event.target)) setOpen(false); };
     document.addEventListener('pointerdown', outside);
-    return () => document.removeEventListener('pointerdown', outside);
+    desktop.addEventListener('change', closeOnMobile);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      desktop.removeEventListener('change', closeOnMobile);
+    };
   }, [open]);
 
   return <div ref={root} className="storefront-preference" onBlur={event => {

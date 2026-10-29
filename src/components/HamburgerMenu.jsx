@@ -11,7 +11,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCart } from '../hooks/useCart.js';
 import { useAuth } from '../hooks/useAuth.js';
 
@@ -19,6 +19,7 @@ import { isAdminEmail, ordersApi, subscribeRealtime } from '../services/dajaPlat
 import { getStaffAccessToken } from '../services/apiClient.js';
 import SocialLinks from './SocialLinks.jsx';
 import HeaderDropdown from './ui/HeaderDropdown.jsx';
+import MobileStorefrontPreferences from '../localization/MobileStorefrontPreferences.jsx';
 
 // Ikonice
 import {
@@ -300,6 +301,7 @@ function DDItem({ to, label, strong, onClose, style }) {
 /* ----- MOBILE: slide-over panel ----- */
 function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, unreadOrders }) {
   const { t: translateText } = useStorefront();
+  const reduceMotion = useReducedMotion();
 
   const panelRef = useRef(null);
   const firstFocusableRef = useRef(null);
@@ -314,7 +316,14 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose?.();
+      if (e.key === 'Escape') { e.preventDefault(); onClose?.(); }
+      if (e.key !== 'Tab') return;
+      const focusable = [...(panelRef.current?.querySelectorAll('a[href], button:not(:disabled), summary, [tabindex="0"]') || [])]
+        .filter(element => element.getClientRects().length && !element.closest('details:not([open]) > :not(summary)'));
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -322,8 +331,12 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
 
   useEffect(() => {
     if (!open) return;
+    const previouslyFocused = document.activeElement;
     const t = setTimeout(() => firstFocusableRef.current?.focus(), 60);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      if (panelRef.current?.contains(document.activeElement) && previouslyFocused?.isConnected) previouslyFocused.focus();
+    };
   }, [open]);
 
   const onBackdropClick = useCallback(
@@ -335,16 +348,16 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
 
   const backdrop = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.18 } },
-    exit: { opacity: 0, transition: { duration: 0.16 } },
+    visible: { opacity: 1, transition: { duration: reduceMotion ? 0 : 0.18 } },
+    exit: { opacity: 0, transition: { duration: reduceMotion ? 0 : 0.16 } },
   };
   const panel = {
-    hidden: { x: '100%' },
+    hidden: { x: reduceMotion ? 0 : '100%' },
     visible: {
       x: 0,
-      transition: { type: 'spring', stiffness: 420, damping: 36 },
+      transition: reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 38 },
     },
-    exit: { x: '100%', transition: { duration: 0.18 } },
+    exit: { x: reduceMotion ? 0 : '100%', transition: { duration: reduceMotion ? 0 : 0.18 } },
   };
 
   return (
@@ -388,25 +401,22 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
               </button>
             </div>
 
-            {/* NAVIGACIJA */}
-            <nav className="hm__nav">
-              <Link className="hm__link" to="/" onClick={onClose}>
-                <Home size={18} style={{ marginRight: 10 }} />{translateText(" Početna")}</Link>
-              <Link className="hm__link" to="/catalog" onClick={onClose}>
-                <ShoppingBag size={18} style={{ marginRight: 10 }} />{translateText(" Prodavnica")}</Link>
-              <Link className="hm__link" to="/usluge" onClick={onClose}>
-                <Briefcase size={18} style={{ marginRight: 10 }} />{translateText(" Usluge")}</Link>
-              <Link className="hm__link" to="/about" onClick={onClose}>
-                <Info size={18} style={{ marginRight: 10 }} />{translateText(" O nama")}</Link>
+            <div className="hm__body">
+            <MobileStorefrontPreferences />
 
+            {/* NAVIGACIJA */}
+            <nav className="hm__nav" aria-label={translateText('Meni')}>
+              <div className="hm__navGroup">
+                <MobileMenuLink to="/" icon={Home} label={translateText('Početna')} onClose={onClose} />
+                <MobileMenuLink to="/catalog" icon={ShoppingBag} label={translateText('Prodavnica')} onClose={onClose} />
+                <MobileMenuLink to="/usluge" icon={Briefcase} label={translateText('Usluge')} onClose={onClose} />
+                <MobileMenuLink to="/about" icon={Info} label={translateText('O nama')} onClose={onClose} />
+              </div>
+
+              <div className="hm__navGroup">
               {user ? (
                 <>
-                  <Link
-                    className="hm__link"
-                    to="/account/profile"
-                    onClick={onClose}
-                  >
-                    <User size={18} style={{ marginRight: 10 }} />{translateText(" Moj nalog")}</Link>
+                  <MobileMenuLink to="/account/profile" icon={User} label={translateText('Moj nalog')} onClose={onClose} />
                   <button
                     type="button"
                     className="hm__link hm__logout"
@@ -415,47 +425,27 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
                       void logout();
                     }}
                   >
-                    <LogOut size={18} style={{ marginRight: 10 }} />{translateText(" Odjavi me")}</button>
+                    <LogOut className="hm__icon" size={20} strokeWidth={1.7} aria-hidden="true" />
+                    <span className="hm__label">{translateText('Odjavi me')}</span>
+                  </button>
 
                   {isAdmin && (
-                    <div className="mt-2 border-t border-white/10 pt-2">
-                      <div className="text-xs font-bold text-neutral-500 uppercase px-4 mb-1">{translateText("Admin Zona")}</div>
-
-                      <Link
-                        className="hm__link"
-                        to="/admin"
-                        onClick={onClose}
-                        style={{ color: '#facc15' }}
-                      >
-                        <ShieldCheck size={18} style={{ marginRight: 10 }} />{translateText("Dashboard")}</Link>
-
-                      {/* MOBILE ADMIN PORUDŽBINE SA NOTIFIKACIJOM */}
-                      <Link
-                        className="hm__link"
-                        to="/admin/orders"
-                        onClick={onClose}
-                        style={{
-                          color: '#facc15',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <div className="flex items-center">
-                          <Package size={18} style={{ marginRight: 10 }} />{translateText("Porudžbine")}</div>
+                    <div className="hm__staffGroup">
+                      <p className="hm__groupTitle">{translateText('Admin Zona')}</p>
+                      <MobileMenuLink to="/admin" icon={ShieldCheck} label={translateText('Admin Dashboard')} onClose={onClose} />
+                      <MobileMenuLink to="/admin/orders" icon={Package} label={translateText('Porudžbine')} onClose={onClose}>
                         {unreadOrders > 0 && (
-                          <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full mr-4 shadow-sm">
+                          <span className="hm__orderBadge">
                             {translateText(unreadOrders)}
                           </span>
                         )}
-                      </Link>
+                      </MobileMenuLink>
                     </div>
                   )}
                   {isStaff && !isAdmin && (
-                    <div className="mt-2 border-t border-white/10 pt-2">
-                      <div className="text-xs font-bold text-neutral-500 uppercase px-4 mb-1">{translateText("Katalog")}</div>
-                      <Link className="hm__link" to="/admin" onClick={onClose} style={{ color: '#0f9f78' }}>
-                        <Package size={18} style={{ marginRight: 10 }} />{translateText(" Katalog proizvoda")}</Link>
+                    <div className="hm__staffGroup">
+                      <p className="hm__groupTitle">{translateText('Katalog')}</p>
+                      <MobileMenuLink to="/admin" icon={Package} label={translateText('Katalog proizvoda')} onClose={onClose} />
                     </div>
                   )}
                 </>
@@ -468,16 +458,15 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
                     onClose();
                   }}
                 >
-                  <User size={18} style={{ marginRight: 10 }} />{translateText(" Prijava / Registracija")}</button>
+                  <User className="hm__icon" size={20} strokeWidth={1.7} aria-hidden="true" />
+                  <span className="hm__label">{translateText('Prijava / Registracija')}</span>
+                  <ChevronRight className="hm__arrow" size={16} aria-hidden="true" />
+                </button>
               )}
 
-              <Link className="hm__link hm__cart" to="/cart" onClick={onClose}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>🛒</span>
-                  <span>{translateText("Korpa")}</span>
-                </div>
+              <MobileMenuLink className="hm__cart" to="/cart" icon={ShoppingBag} label={translateText('Korpa')} onClose={onClose}>
                 <span className="hm__badge">{translateText(count)}</span>
-              </Link>
+              </MobileMenuLink>
 
               {/* Mini Cart Items */}
               {items.length > 0 && (
@@ -498,17 +487,18 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
                   ))}
                 </div>
               )}
+              </div>
             </nav>
 
             {/* FOOTER */}
             <div className="hm__footer">
               <div className="hm__f-info">
                 <Link to="/contact" className="hm__f-btn" onClick={onClose}>
-                  <Phone size={16} />{translateText(" Kontakt")}</Link>
+                  <Phone size={18} strokeWidth={1.7} aria-hidden="true" />{translateText('Kontakt')}</Link>
                 <Link to="/faq" className="hm__f-btn" onClick={onClose}>
-                  <HelpCircle size={16} />{translateText(" Pomoć")}</Link>
+                  <HelpCircle size={18} strokeWidth={1.7} aria-hidden="true" />{translateText('Pomoć')}</Link>
                 <Link to="/contact" className="hm__f-btn" onClick={onClose}>
-                  <MapPin size={16} />{translateText(" Lokacija")}</Link>
+                  <MapPin size={18} strokeWidth={1.7} aria-hidden="true" />{translateText('Lokacija')}</Link>
               </div>
 
               <div className="hm__f-bottom">
@@ -517,9 +507,21 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
                 </div>
               </div>
             </div>
+            </div>
           </motion.aside>
         </motion.div>
       )}
     </AnimatePresence>
   );
+}
+
+function MobileMenuLink({ to, icon: Icon, label, onClose, className = '', children }) {
+  const { pathname } = useLocation();
+  return <Link to={to} className={`hm__link ${className}`} onClick={onClose}
+    aria-current={pathname === to ? 'page' : undefined}>
+    <Icon className="hm__icon" size={20} strokeWidth={1.7} aria-hidden="true" />
+    <span className="hm__label">{label}</span>
+    {children}
+    <ChevronRight className="hm__arrow" size={16} aria-hidden="true" />
+  </Link>;
 }
