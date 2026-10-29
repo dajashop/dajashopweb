@@ -1950,5 +1950,6 @@
   "Izaberite manju količinu baterija.": "Choose fewer batteries.",
   "1 ili 5": "1 or 5",
   "Po komadu ili 5 komada": "Single battery or 5 batteries",
-  "Već u korpi: {count} kom.": "Already in your cart: {count} pcs."
+  "Već u korpi: {count} kom.": "Already in your cart: {count} pcs.",
+  "Kapacitet potvrditi pre kupovine": "Confirm capacity before buying"
 }

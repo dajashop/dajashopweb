@@ -44,6 +44,10 @@ export default function ProductVariants({ product, relatedVariants, onSelect, pe
               alt={translateText(variant.name)} className="variant-img" loading="lazy" decoding="async" />
             {packs && batteryPackaging(variant) && <span className="battery-pack-option-copy">
               <strong>{translateText(batteryPackaging(variant).box ? 'Cela kutija — {count} komada' : '{count} komada', { count: batteryPackaging(variant).quantity })}</strong>
+              {variant.attributes?.hemijski_sastav_baterije === 'Ni-MH' && <span>
+                {variant.attributes.format_baterije}
+                {' · '}{variant.attributes.kapacitet_baterije || translateText('Kapacitet potvrditi pre kupovine')}
+              </span>}
               <span>{money(batteryPackaging(variant).price)}</span>
               {batteryPackaging(variant).discountPercent > 0 && <small>{translateText('Popust {percent}%', { percent: batteryPackaging(variant).discountPercent })}</small>}
             </span>}
