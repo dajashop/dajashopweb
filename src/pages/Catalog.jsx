@@ -91,7 +91,7 @@ function brandDescription(name) {
 }
 
 export default function Catalog({ department = 'satovi', seo }) {
-  const { t: translateText, money } = useStorefront();
+  const { t: translateText, money, locale } = useStorefront();
 
   const { user, staffReady } = useAuth();
   const includeHiddenForAdmin = Boolean(staffReady && isAdminEmail(user?.email));
@@ -313,6 +313,12 @@ export default function Catalog({ department = 'satovi', seo }) {
   }, [loading, filterConfigurationLoading, scrollKey]);
 
   const itemsToShow = departmentItems;
+  // Describe the loaded cards, including while another page is being fetched.
+  const displayedPage = listing.data?.page || 1;
+  const displayedPerPage = listing.data?.perPage || PER_PAGE;
+  const firstDisplayed = itemsToShow.length ? (displayedPage - 1) * displayedPerPage + 1 : 0;
+  const lastDisplayed = itemsToShow.length ? firstDisplayed + itemsToShow.length - 1 : 0;
+  const countFormatter = new Intl.NumberFormat(locale);
 
   const renderContent = () => {
     if (!err && !listing.data && (loading || filterConfigurationLoading)) return <CatalogSkeleton square={department === 'naocare'} />;
@@ -358,7 +364,12 @@ export default function Catalog({ department = 'satovi', seo }) {
               getPageUrl={getPageUrl}
             />
           </div>
-          <p className="catalog__page-count">{translateText("Prikazano ")}{translateText(itemsToShow.length)}{translateText(" od ukupno ")}{translateText(totalCount)}{translateText(" proizvoda")}</p>
+          <p className="catalog__page-count">{translateText('Prikazano {from}–{to} od ukupno {total} proizvoda · {count} na stranici', {
+            from: countFormatter.format(firstDisplayed),
+            to: countFormatter.format(lastDisplayed),
+            total: countFormatter.format(totalCount),
+            count: countFormatter.format(itemsToShow.length),
+          })}</p>
         </div>
       </>
     );
