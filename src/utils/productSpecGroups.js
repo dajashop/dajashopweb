@@ -1,3 +1,4 @@
+import { batteryGroups, batteryLabels } from './batteryCatalog.js';
 import { formatProductSpecLabel, visibleProductSpecs } from './catalogPresentation.js';
 import { eyewearDisplayValue, eyewearSpecLabels, isEyewearDepartment } from './eyewearCatalog.js';
 
@@ -64,14 +65,15 @@ export function productSpecGroups(product) {
   const eyewear = isEyewearDepartment(department);
   const watch = !department || department === 'satovi';
   const remote = department === 'daljinski';
-  const layout = eyewear ? eyewearGroups : watch ? watchGroups : remote ? remoteGroups : [];
-  const labels = eyewear ? eyewearSpecLabels : watch ? watchLabels : remote ? remoteLabels : {};
+  const battery = department === 'baterije';
+  const layout = eyewear ? eyewearGroups : watch ? watchGroups : remote ? remoteGroups : battery ? batteryGroups : [];
+  const labels = eyewear ? eyewearSpecLabels : watch ? watchLabels : remote ? remoteLabels : battery ? batteryLabels : {};
   const groups = layout.map(([id, title, keys]) => ({ id, title, keys, entries: [] }));
   const other = { id: 'other', title: layout.length ? 'Ostali detalji' : 'Detalji proizvoda', entries: [] };
 
   for (const [key, raw] of Object.entries(visibleProductSpecs(product?.specs, department))) {
     const normalized = normalizeKey(key);
-    const value = displayValue(raw, remote);
+    const value = displayValue(raw, remote || battery);
     if (!value) continue;
     const fallback = formatProductSpecLabel(key, department).replace(/-/g, ' ');
     const label = labels[normalized] || fallback.charAt(0).toLocaleUpperCase('sr-Latn') + fallback.slice(1);

@@ -2338,6 +2338,7 @@ export default function AdminProductModal({
                   showPreview={false}
                   eyewear={isEyewearDepartment}
                   remote={form.department === 'daljinski'}
+                  battery={form.department === 'baterije'}
                   api={specificationEditorApi}
                   departmentId={departments.find(d => d.slug === form.department)?.id || ''}
                   brand={form.brand || ''}
@@ -2355,6 +2356,7 @@ export default function AdminProductModal({
                 <SpecificationPreview
                   eyewear={isEyewearDepartment}
                   remote={form.department === 'daljinski'}
+                  battery={form.department === 'baterije'}
                   images={(form.images || []).map(image => image.url).filter(Boolean)}
                   onPreview={setGalleryIndex}
                   onAddImage={() => document.getElementById('product-image-manager')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
