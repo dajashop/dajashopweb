@@ -3,8 +3,9 @@ import React from 'react';
 import { Award, ShieldCheck, RefreshCw, Lock } from 'lucide-react';
 import './ProductTrust.css';
 
-export default function ProductTrust() {
+export default function ProductTrust({ department }) {
   const { t: translateText } = useStorefront();
+  const isBattery = (department?.slug || department) === 'baterije';
 
   return (
     <div className="product-trust">
@@ -25,8 +26,8 @@ export default function ProductTrust() {
           <ShieldCheck size={20} strokeWidth={1.5} />
         </div>
         <div className="trust-content">
-          <span className="trust-title">{translateText("Garancija 24 meseca ")}</span>
-          <span className="trust-subtitle">{translateText("Garancija na mehanizam i bateriju")}</span>
+          <span className="trust-title">{translateText(isBattery ? 'Izbor baterije' : 'Garancija 24 meseca ')}</span>
+          <span className="trust-subtitle">{translateText(isBattery ? 'Proverite oznaku i napon' : 'Garancija na mehanizam i bateriju')}</span>
         </div>
       </div>
 

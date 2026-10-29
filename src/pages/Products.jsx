@@ -215,7 +215,7 @@ export default function Product() {
           />
 
           <div className="mobile-trust">
-            <ProductTrust />
+            <ProductTrust department={p.department} />
           </div>
           {/* Tabovi (Mobilni) */}
           <div className="mobile-only-tabs">
@@ -238,7 +238,7 @@ export default function Product() {
         <div className="product__gallery-container">
           <ProductGallery key={p.id} product={p} />
           <div className="desktop-trust">
-            <ProductTrust />
+            <ProductTrust department={p.department} />
           </div>
           <div className="desktop-only-tabs">
             <ProductTabs product={p} hideSpecs={!hasFeatures} />
