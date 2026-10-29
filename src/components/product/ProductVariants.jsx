@@ -3,13 +3,15 @@ import React, { useEffect } from 'react';
 import { Layers } from 'lucide-react';
 import Link from '../ProductLink.jsx';
 import { prepareProductVariant } from '../../services/products.js';
+import { batteryPackaging } from '../../utils/batteryPackaging.js';
 import './ProductVariants.css';
 
 export default function ProductVariants({ product, relatedVariants, onSelect, pendingSlug }) {
-  const { t: translateText } = useStorefront();
+  const { t: translateText, money } = useStorefront();
+  const packs = Boolean(batteryPackaging(product));
 
   const members = [product, ...(relatedVariants || [])]
-    .sort((a, b) => String(a.name).localeCompare(String(b.name), 'sr') || String(a.id).localeCompare(String(b.id)));
+    .sort((a, b) => (packs ? (batteryPackaging(a)?.quantity ?? 0) - (batteryPackaging(b)?.quantity ?? 0) : 0) || String(a.name).localeCompare(String(b.name), 'sr') || String(a.id).localeCompare(String(b.id)));
   const preloadSlugs = members.filter(item => item.slug !== product.slug).slice(0, 4).map(item => item.slug).join('|');
   useEffect(() => {
     const connection = navigator.connection;
@@ -27,8 +29,8 @@ export default function ProductVariants({ product, relatedVariants, onSelect, pe
   if (!relatedVariants?.length) return null;
   return (
     <div className="product__variants" aria-busy={Boolean(pendingSlug)}>
-      <h2 className="variants-title"><Layers size={16} /><span>{translateText("Dostupne varijante")}</span></h2>
-      <div className="variants-grid">
+      <h2 className="variants-title"><Layers size={16} /><span>{translateText(packs ? 'Izaberite pakovanje' : 'Dostupne varijante')}</span></h2>
+      <div className={`variants-grid${packs ? ' battery-pack-options' : ''}`}>
         {members.map(variant => (
           <Link key={variant.id} to={`/product/${variant.slug}`} replace prefetchImage
             className={`variant-card${variant.id === product.id ? ' active' : ''}${pendingSlug === variant.slug ? ' is-loading' : ''}`}
@@ -40,6 +42,11 @@ export default function ProductVariants({ product, relatedVariants, onSelect, pe
             }}>
             <img src={variant.thumbnailUrl || variant.images?.[0]?.thumb || variant.images?.[0]?.url || variant.image}
               alt={translateText(variant.name)} className="variant-img" loading="lazy" decoding="async" />
+            {packs && batteryPackaging(variant) && <span className="battery-pack-option-copy">
+              <strong>{translateText(batteryPackaging(variant).box ? 'Cela kutija — {count} komada' : '{count} komada', { count: batteryPackaging(variant).quantity })}</strong>
+              <span>{money(batteryPackaging(variant).price, { precision: 2 })}</span>
+              {batteryPackaging(variant).discountPercent > 0 && <small>{translateText('Popust {percent}%', { percent: batteryPackaging(variant).discountPercent })}</small>}
+            </span>}
           </Link>
         ))}
       </div>

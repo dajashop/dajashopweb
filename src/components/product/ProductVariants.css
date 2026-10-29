@@ -57,3 +57,9 @@
   .variants-grid { gap: 10px; }
   .variant-card { width: 76px; height: 76px; border-radius: 10px; }
 }
+.battery-pack-options .variant-card { display: flex; align-items: center; gap: 10px; width: 210px; height: auto; min-height: 88px; padding: 10px; }
+.battery-pack-options .variant-img { width: 52px; height: 64px; flex: 0 0 52px; }
+.battery-pack-option-copy { display: grid; gap: 3px; font-size: .8125rem; line-height: 1.4; }
+.battery-pack-option-copy small { color: #166534; font-weight: 600; }
+@media (max-width: 600px) { .battery-pack-options .variant-card { width: min(100%, 210px); height: auto; } }
+

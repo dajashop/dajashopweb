@@ -1,6 +1,7 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React from 'react';
 import Breadcrumbs from '../Breadcrumbs.jsx';
+import { batteryPackaging } from '../../utils/batteryPackaging.js';
 
 import { storefrontFeatures } from '../../config/storefrontFeatures.js';
 import './ProductHeader.css'; // OBAVEZNO: Uvozi svoj CSS
@@ -30,6 +31,7 @@ export default function ProductHeader({ product, adminTools }) {
   const showStock =
     !adminTools && storefrontFeatures.customerStockVisibility;
   const articleCode = product.sku || product.mpn;
+  const pack = batteryPackaging(product);
   const hasPublicIdentifiers = articleCode || product.barcode;
 
   return (
@@ -54,14 +56,29 @@ export default function ProductHeader({ product, adminTools }) {
         {translateText(hasSale ? (
           <>
             <span className="product-regular-price">
-              {money(legacyRegularPrice)}
+              {money(legacyRegularPrice, pack ? { precision: 2 } : undefined)}
             </span>
-            <span className="product-sale-price">{money(currentPrice)}</span>
+            <span className="product-sale-price">{money(currentPrice, pack ? { precision: 2 } : undefined)}</span>
           </>
         ) : (
-          money(currentPrice)
+          money(currentPrice, pack ? { precision: 2 } : undefined)
         ))}
       </div>
+
+      {pack && (
+        <div className="battery-pack-price">
+          <p>{translateText(pack.quantity === 1 ? 'Cena za jednu bateriju' : pack.box ? 'Cena za celu kutiju od {count} komada' : 'Cena za pakovanje od {count} komada', { count: pack.quantity })}</p>
+          {pack.quantity > 1 && <p className="battery-pack-calculation">
+            {pack.quantity} × {money(pack.listUnitPrice, { precision: 2 })}
+            {' = '}{money(pack.regularPrice ?? pack.price, { precision: 2 })}
+          </p>}
+          {pack.discountPercent > 0 && <p className="battery-pack-discount">
+            {translateText('Popust za celu kutiju: {percent}%', { percent: pack.discountPercent })}
+            {' · '}{money(pack.price, { precision: 2 })}
+          </p>}
+          {pack.quantity > 1 && <small>{translateText('Cena po bateriji: {price}', { price: money(pack.unitPrice, { precision: 2 }) })}</small>}
+        </div>
+      )}
 
       {showStock && (
         <p

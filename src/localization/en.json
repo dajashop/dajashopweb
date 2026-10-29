@@ -1928,5 +1928,18 @@
   "180 mAh": "180 mAh",
   "630 mAh": "630 mAh",
   "300 mAh": "300 mAh",
-  "100 mAh": "100 mAh"
+  "100 mAh": "100 mAh",
+  "Cena za jednu bateriju": "Price for one battery",
+  "Cena za celu kutiju od {count} komada": "Price for a complete box of {count} batteries",
+  "Cena za pakovanje od {count} komada": "Price for a pack of {count} batteries",
+  "Popust za celu kutiju: {percent}%": "Full box discount: {percent}%",
+  "Cena po bateriji: {price}": "Price per battery: {price}",
+  "Izaberite pakovanje": "Choose a pack",
+  "Cela kutija — {count} komada": "Full box — {count} batteries",
+  "{count} komada": "{count} batteries",
+  "Popust {percent}%": "Save {percent}%",
+  "Broj baterija u pakovanju": "Batteries per pack",
+  "Prodajno pakovanje": "Selling unit",
+  "Kutija": "Box",
+  "Jedan komad": "Single battery"
 }

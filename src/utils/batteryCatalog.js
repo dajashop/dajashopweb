@@ -6,7 +6,9 @@ export const batteryGroups = [
     [
       "model_baterije",
       "format_baterije",
-      "pakovanje_na_fotografiji"
+      "pakovanje_na_fotografiji",
+      "broj_baterija_u_pakovanju",
+      "prodajno_pakovanje"
     ]
   ],
   [
@@ -50,6 +52,8 @@ export const batteryGroups = [
 ];
 
 export const batteryLabels = {
+  "broj_baterija_u_pakovanju": "Broj baterija u pakovanju",
+  "prodajno_pakovanje": "Prodajno pakovanje",
   "model_baterije": "Model baterije",
   "format_baterije": "Format baterije",
   "hemijski_sastav_baterije": "Hemijski sastav baterije",

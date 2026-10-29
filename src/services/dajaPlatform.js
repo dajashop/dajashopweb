@@ -156,7 +156,12 @@ export function normalizeProduct(product) {
     firstVariant?.currentPriceAmount ??
     firstVariant?.current_price_amount;
   const salePriceMinor = product.salePrice ?? product.sale_price;
-  const regularPriceMinor = product.regularPrice ?? product.regular_price;
+  const packaging = rawAttributes._catalog_import?.packaging;
+  const packReference = packaging?.schemaVersion === 1 && packaging?.quantity === 40 &&
+    packaging?.discountPercent === 20 && Number(priceMinor) === packaging.priceAmount &&
+    Math.round(packaging.regularPriceAmount * 0.8) === packaging.priceAmount && salePriceMinor == null
+      ? packaging.regularPriceAmount : undefined;
+  const regularPriceMinor = packReference ?? product.regularPrice ?? product.regular_price;
   // Platform stores money in minor units. Legacy Firestore-shaped objects
   // already carry dinars, so retain that representation when no Platform
   // money field/currency is present.

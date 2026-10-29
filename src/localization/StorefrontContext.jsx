@@ -97,7 +97,7 @@ export function StorefrontProvider({ children, initialLanguage = 'sr' }) {
   }, [rateAttempt]);
 
   const t = useCallback((value, parameters) => translate(value, language, parameters), [language]);
-  const money = useCallback(amount => formatMoney(amount, { locale, currency: displayCurrency, rates }), [locale, displayCurrency, rates]);
+  const money = useCallback((amount, options = {}) => formatMoney(amount, { locale, currency: displayCurrency, rates, precision: options.precision }), [locale, displayCurrency, rates]);
   const moneyRsd = useCallback(amount => formatMoney(amount, { locale, currency: 'RSD' }), [locale]);
   const retryRate = useCallback(() => setRateAttempt(value => value + 1), []);
   useEffect(() => { document.documentElement.lang = language; }, [language]);

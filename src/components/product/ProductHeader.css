@@ -195,3 +195,8 @@
     overflow-wrap: anywhere;
   }
 }
+.battery-pack-price { margin: 8px 0 16px; color: var(--color-muted, #666); font-size: .875rem; line-height: 1.6; }
+.battery-pack-price p { margin: 2px 0; }
+.battery-pack-price .battery-pack-calculation { color: var(--color-text, #111); font-variant-numeric: tabular-nums; }
+.battery-pack-price .battery-pack-discount { color: #166534; font-weight: 600; }
+

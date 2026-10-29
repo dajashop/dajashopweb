@@ -53,7 +53,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
             {description ? (
               <div>
                 {language === 'en' && !translatedDescription && <p className="muted">{translateText('Ovaj opis je dostupan na srpskom jeziku.')}</p>}
-                <div className="rich-description" lang={language === 'en' && !translatedDescription ? 'sr' : language} dangerouslySetInnerHTML={{ __html: descriptionHtml(description) }} />
+                <div className={`rich-description${product.department === 'baterije' ? ' battery-description' : ''}`} lang={language === 'en' && !translatedDescription ? 'sr' : language} dangerouslySetInnerHTML={{ __html: descriptionHtml(description) }} />
               </div>
             ) : (
               <p className="empty-text">{translateText("Nema opisa.")}</p>
