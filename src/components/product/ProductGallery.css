@@ -37,7 +37,9 @@
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  /* Keep hover movement and thumbnail shadows inside the scroll viewport. */
+  padding: 8px 12px 20px;
+  margin: -8px -12px -16px;
   scrollbar-width: none; /* Firefox */
 }
 .product__thumbs::-webkit-scrollbar {
@@ -127,7 +129,6 @@
 @media (max-width: 768px) {
   .product__thumbs {
     gap: 8px;
-    padding: 8px 6px;
   }
   .thumb-btn {
     flex-basis: clamp(64px, 20vw, 80px);
