@@ -44,7 +44,7 @@ export default function ProductVariants({ product, relatedVariants, onSelect, pe
               alt={translateText(variant.name)} className="variant-img" loading="lazy" decoding="async" />
             {packs && batteryPackaging(variant) && <span className="battery-pack-option-copy">
               <strong>{translateText(batteryPackaging(variant).box ? 'Cela kutija — {count} komada' : '{count} komada', { count: batteryPackaging(variant).quantity })}</strong>
-              <span>{money(batteryPackaging(variant).price, { precision: 2 })}</span>
+              <span>{money(batteryPackaging(variant).price)}</span>
               {batteryPackaging(variant).discountPercent > 0 && <small>{translateText('Popust {percent}%', { percent: batteryPackaging(variant).discountPercent })}</small>}
             </span>}
           </Link>

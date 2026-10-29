@@ -18,6 +18,8 @@ import ClientOnly from '../components/ClientOnly.jsx';
 const ProductAdminTools = import.meta.env.SSR ? () => null : lazy(() => import('../components/product/ProductAdminTools.jsx'));
 import { useAuth } from '../hooks/useAuth.js';
 import ProductVariants from '../components/product/ProductVariants.jsx';
+import BatteryQuantityChoice from '../components/product/BatteryQuantityChoice.jsx';
+import { batteryQuantityOptions, batteryPurchaseView } from '../utils/batteryPackaging.js';
 import ProductActions from '../components/product/ProductActions.jsx';
 import ProductFeatures from '../components/product/ProductFeatures.jsx';
 import ProductTabs from '../components/product/ProductTabs.jsx';
@@ -56,12 +58,14 @@ export default function Product() {
   const { product: p, loading, error, updateProduct } = useProduct(slug);
   const { staffReady } = useAuth();
   const relatedProducts = useRelatedProducts(slug, Boolean(p?.id));
-  const { dispatch } = useCart();
+  const { items: cartItems = [], dispatch } = useCart();
   const { flash } = useFlash();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const isLiked = p ? isInWishlist(p.id) : false;
   const selection = useRef(null);
   const [pendingSlug, setPendingSlug] = useState(null);
+  const [batteryQuantity, setBatteryQuantity] = useState(1);
+  useEffect(() => setBatteryQuantity(1), [p?.id]);
 
   // Cancel an unfinished selection on navigation or catalog/group changes.
   useEffect(() => {
@@ -139,10 +143,20 @@ export default function Product() {
   const department = p.department || 'satovi';
   const departmentPath = DEPARTMENT_PATHS[department] || '/catalog';
   const departmentName = DEPARTMENT_LABELS[department] || 'Katalog';
+  const batteryChoices = batteryQuantityOptions(p);
+  const purchaseQuantity = batteryChoices.includes(batteryQuantity) ? batteryQuantity : 1;
+  const purchaseView = batteryPurchaseView(p, purchaseQuantity);
+  const batteryQuantityInCart = batteryChoices.length ? cartItems.filter(item => item.variantId === p.variantId || (item.productId || item.id) === p.id).reduce((sum, item) => sum + (Number(item.qty) || 0), 0) : 0;
+  const insufficientBatteries = batteryChoices.length > 0 && Number(p.availability?.availableQuantity ?? p.availableQuantity ?? 0) < purchaseQuantity + batteryQuantityInCart;
 
   const handleAdd = () => {
+    if (insufficientBatteries) {
+      flash('Nedovoljna količina', 'Izaberite manju količinu baterija.', 'error');
+      return;
+    }
     dispatch({
       type: 'ADD',
+      qty: purchaseQuantity,
       item: {
         id: p.id,
         productId: p.productId || p.id,
@@ -198,17 +212,19 @@ export default function Product() {
       <div className="product product-layout">
         {/* DESNA KOLONA */}
         <div className="product__info">
-          <ProductHeader product={p} adminTools={staffReady ? <ClientOnly><ProductAdminTools key={p.id} product={p}
+          <ProductHeader product={purchaseView} adminTools={staffReady ? <ClientOnly><ProductAdminTools key={p.id} product={p}
             onUpdated={(patch) => {
               updateProduct(patch);
               if (patch.slug && patch.slug !== slug) navigate(`/product/${patch.slug}`, { replace: true });
             }}
             onDeleted={() => navigate(departmentPath, { replace: true })} /></ClientOnly> : null} />
           <ProductVariants product={p} relatedVariants={relatedVariants} onSelect={selectVariant} pendingSlug={pendingSlug} />
+          <BatteryQuantityChoice product={p} quantity={purchaseQuantity} quantityInCart={batteryQuantityInCart} onChange={setBatteryQuantity} />
 
           <ProductActions
             key={p.id}
-            product={p}
+            product={purchaseView}
+            disabled={insufficientBatteries}
             onAdd={handleAdd}
             onWishlist={handleWishlist}
             isLiked={isLiked}

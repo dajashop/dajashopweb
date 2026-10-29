@@ -1941,5 +1941,14 @@
   "Broj baterija u pakovanju": "Batteries per pack",
   "Prodajno pakovanje": "Selling unit",
   "Kutija": "Box",
-  "Jedan komad": "Single battery"
+  "Jedan komad": "Single battery",
+  "Izaberite količinu baterija": "Choose the number of batteries",
+  "1 komad": "1 battery",
+  "5 komada": "5 batteries",
+  "Trenutno nije dostupna ova količina": "This quantity is currently unavailable",
+  "Nedovoljna količina": "Insufficient quantity",
+  "Izaberite manju količinu baterija.": "Choose fewer batteries.",
+  "1 ili 5": "1 or 5",
+  "Po komadu ili 5 komada": "Single battery or 5 batteries",
+  "Već u korpi: {count} kom.": "Already in your cart: {count} pcs."
 }

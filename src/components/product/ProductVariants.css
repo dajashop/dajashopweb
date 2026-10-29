@@ -63,3 +63,6 @@
 .battery-pack-option-copy small { color: #166534; font-weight: 600; }
 @media (max-width: 600px) { .battery-pack-options .variant-card { width: min(100%, 210px); height: auto; } }
 
+.battery-quantity-choice { border: 0; padding: 0; margin: 16px 0; min-width: 0; }
+.battery-pack-options .battery-quantity-button { text-align: left; }
+.battery-pack-options .battery-quantity-button:disabled { opacity: .5; cursor: not-allowed; }

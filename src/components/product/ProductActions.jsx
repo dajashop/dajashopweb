@@ -11,7 +11,7 @@ import { storefrontFeatures } from '../../config/storefrontFeatures.js';
 import ProductAlertModal from '../modals/ProductAlertModal.jsx';
 import './ProductActions.css';
 
-export default function ProductActions({ product, onAdd, onWishlist, isLiked }) {
+export default function ProductActions({ product, onAdd, onWishlist, isLiked, disabled = false }) {
   const { t: translateText } = useStorefront();
 
   const { user } = useAuth();
@@ -122,7 +122,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked }) 
               : 'Obavesti me kada bude na stanju')}
           </button>
         ) : (
-          <button className="cta-button" onClick={onAdd}>{translateText("Dodaj u korpu")}</button>
+          <button className="cta-button" disabled={disabled} onClick={onAdd}>{translateText("Dodaj u korpu")}</button>
         )}
 
         <button

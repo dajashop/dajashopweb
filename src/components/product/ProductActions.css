@@ -209,3 +209,4 @@
     min-height: 42px;
   }
 }
+.product-actions .cta-button:disabled { opacity: .5; cursor: not-allowed; }

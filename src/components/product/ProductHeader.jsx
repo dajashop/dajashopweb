@@ -56,12 +56,12 @@ export default function ProductHeader({ product, adminTools }) {
         {translateText(hasSale ? (
           <>
             <span className="product-regular-price">
-              {money(legacyRegularPrice, pack ? { precision: 2 } : undefined)}
+              {money(legacyRegularPrice)}
             </span>
-            <span className="product-sale-price">{money(currentPrice, pack ? { precision: 2 } : undefined)}</span>
+            <span className="product-sale-price">{money(currentPrice)}</span>
           </>
         ) : (
-          money(currentPrice, pack ? { precision: 2 } : undefined)
+          money(currentPrice)
         ))}
       </div>
 
@@ -69,14 +69,14 @@ export default function ProductHeader({ product, adminTools }) {
         <div className="battery-pack-price">
           <p>{translateText(pack.quantity === 1 ? 'Cena za jednu bateriju' : pack.box ? 'Cena za celu kutiju od {count} komada' : 'Cena za pakovanje od {count} komada', { count: pack.quantity })}</p>
           {pack.quantity > 1 && <p className="battery-pack-calculation">
-            {pack.quantity} × {money(pack.listUnitPrice, { precision: 2 })}
-            {' = '}{money(pack.regularPrice ?? pack.price, { precision: 2 })}
+            {pack.quantity} × {money(pack.listUnitPrice)}
+            {' = '}{money(pack.regularPrice ?? pack.price)}
           </p>}
           {pack.discountPercent > 0 && <p className="battery-pack-discount">
             {translateText('Popust za celu kutiju: {percent}%', { percent: pack.discountPercent })}
-            {' · '}{money(pack.price, { precision: 2 })}
+            {' · '}{money(pack.price)}
           </p>}
-          {pack.quantity > 1 && <small>{translateText('Cena po bateriji: {price}', { price: money(pack.unitPrice, { precision: 2 }) })}</small>}
+          {pack.quantity > 1 && <small>{translateText('Cena po bateriji: {price}', { price: money(pack.unitPrice) })}</small>}
         </div>
       )}
 
