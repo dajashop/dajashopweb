@@ -50,6 +50,9 @@
 .header__search {
   grid-area: search;
 }
+@media (min-width: 769px) {
+  .header__search { margin-inline-start: -8px; }
+}
 .header__actions {
   grid-area: actions;
 }
