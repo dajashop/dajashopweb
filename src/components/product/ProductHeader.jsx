@@ -29,7 +29,8 @@ export default function ProductHeader({ product, adminTools }) {
     product.availability?.availableQuantity ?? product.availableQuantity;
   const showStock =
     !adminTools && storefrontFeatures.customerStockVisibility;
-  const hasPublicIdentifiers = product.barcode || product.mpn;
+  const articleCode = product.sku || product.mpn;
+  const hasPublicIdentifiers = articleCode || product.barcode;
 
   return (
     <div className="product-header">
@@ -74,16 +75,22 @@ export default function ProductHeader({ product, adminTools }) {
 
       {hasPublicIdentifiers && !adminTools && (
         <dl className="product-identifiers">
+          {articleCode ? (
+            <>
+              <dt><span className="product-code-full">{translateText('Šifra artikla')}</span><span className="product-code-short">{translateText('Šifra')}</span></dt>
+              <dd>{articleCode}</dd>
+            </>
+          ) : null}
           {product.barcode ? (
             <>
               <dt>{translateText("GTIN/EAN")}</dt>
-              <dd>{translateText(product.barcode)}</dd>
+              <dd>{product.barcode}</dd>
             </>
           ) : null}
-          {product.mpn ? (
+          {product.mpn && product.mpn !== articleCode ? (
             <>
               <dt>{translateText("MPN")}</dt>
-              <dd>{translateText(product.mpn)}</dd>
+              <dd>{product.mpn}</dd>
             </>
           ) : null}
         </dl>

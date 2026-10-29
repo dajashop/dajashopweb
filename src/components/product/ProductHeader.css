@@ -78,6 +78,8 @@
   overflow-wrap: anywhere;
 }
 
+.product-code-short { display: none; }
+
 .product-header-summary.has-admin-tools {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -178,6 +180,8 @@
 .product-admin-loading { margin-top: 8px; color: var(--color-muted, #666); font-size: 12px; }
 
 @media (max-width: 479px) {
+  .product-code-full { display: none; }
+  .product-code-short { display: inline; }
   .product-header-summary.has-admin-tools { gap: 12px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .product-admin-tools { padding-left: 10px; }
   .product-admin-identifiers { grid-template-columns: 1fr; gap: 2px; }

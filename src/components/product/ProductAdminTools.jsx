@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { useFlash } from '../../hooks/useFlash.js';
 import useProductEditors from '../../pages/Admin/components/useProductEditors.jsx';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 
 const flags = { new: 'Novo', popular: 'Popularno', recommended: 'Preporučeno' };
 const suppliers = [['supplierUrl', 'Ekka'], ['bultimeUrl', 'Bultime'], ['linkelUrl', 'Linkel'], ['milanoUrl', 'Milano'], ['timezoneUrl', 'Timezone'], ['qandqUrl', 'Q&Q']];
@@ -38,6 +39,7 @@ function supplierPrice(amount, currency, rate) {
 }
 
 export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
+  const { t } = useStorefront();
   const { user } = useAuth();
   const { flash } = useFlash();
   const [record, setRecord] = useState(null);
@@ -106,8 +108,8 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
     {record && <>
       <p className={`product-stock ${inStock ? 'is-in-stock' : 'is-out-of-stock'}`}>{inStock ? `Na stanju: ${quantity ?? 0} kom` : 'Trenutno nije na stanju'}</p>
       <dl className="product-identifiers product-admin-identifiers">
-        <dt>SKU</dt><dd>{variant?.sku || record.sku || '—'}</dd>
-        {record.mpn && <><dt>MPN</dt><dd>{record.mpn}</dd></>}
+        <dt><span className="product-code-full">{t('Šifra artikla')}</span><span className="product-code-short">{t('Šifra')}</span></dt><dd>{variant?.sku || record.sku || '—'}</dd>
+        {record.mpn && record.mpn !== (variant?.sku || record.sku) && <><dt>MPN</dt><dd>{record.mpn}</dd></>}
         <dt>Naziv u kasi</dt><dd>{variant?.name || record.variantName || '—'}</dd>
       </dl>
       <div className="product-admin-links">{suppliers.filter(([field]) => record[field]).map(([field, label]) => {

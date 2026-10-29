@@ -7,6 +7,7 @@ import './ProductSpecs.css';
 const groupIcons = {
   general: Info, mechanism: Settings2, design: Palette, case: ShieldCheck,
   strap: Watch, functions: Clock3, frame: Glasses, lenses: ShieldCheck, dimensions: Ruler,
+  compatibility: Settings2, controls: Clock3, power: Settings2,
 };
 
 export default function ProductSpecs({ product, embedded = false }) {

@@ -20,6 +20,25 @@ const eyewearGroups = [
   ['dimensions', 'Dimenzije', ['sirina_sociva', 'sirina_mosta', 'duzina_drske']],
 ];
 
+const remoteGroups = [
+  ['general', 'Opšti podaci', ['model_daljinskog', 'namena_daljinskog', 'vrsta_daljinskog', 'garancija_daljinskog', 'boja_na_fotografiji']],
+  ['compatibility', 'Kompatibilnost', ['primena_daljinskog', 'zamenski_modeli', 'uparivanje_daljinskog']],
+  ['controls', 'Tasteri i funkcije', ['tasteri_za_aplikacije', 'numericki_tasteri', 'taster_za_meni', 'taster_za_izbor_izvora', 'taster_za_teletekst', 'taster_za_tajmer', 'tastatura_daljinskog', 'ekran_na_daljinskom', 'glasovne_komande', 'funkcija_misa', 'funkcija_ucenja', 'grejanje_klima_uredjaja']],
+  ['power', 'Povezivanje i napajanje', ['tip_veze_daljinskog', 'frekvencija_daljinskog', 'tip_koda_daljinskog', 'napajanje_daljinskog', 'usb_punjenje_daljinskog']],
+];
+
+const remoteLabels = {
+  model_daljinskog: 'Model / oznaka', namena_daljinskog: 'Namena', vrsta_daljinskog: 'Tip daljinskog',
+  garancija_daljinskog: 'Garancija', boja_na_fotografiji: 'Boja na fotografiji',
+  primena_daljinskog: 'Primena / kompatibilnost', zamenski_modeli: 'Moguće zamene', uparivanje_daljinskog: 'Uparivanje',
+  tasteri_za_aplikacije: 'Tasteri za aplikacije', numericki_tasteri: 'Numerički tasteri', taster_za_meni: 'Taster za meni',
+  taster_za_izbor_izvora: 'Taster za izbor izvora', taster_za_teletekst: 'Taster za teletekst', taster_za_tajmer: 'Taster za tajmer',
+  tastatura_daljinskog: 'Tastatura', ekran_na_daljinskom: 'Ekran na daljinskom', glasovne_komande: 'Glasovne komande',
+  funkcija_misa: 'Funkcija miša', funkcija_ucenja: 'Funkcija učenja', grejanje_klima_uredjaja: 'Podrška za grejanje',
+  tip_veze_daljinskog: 'Tip veze', frekvencija_daljinskog: 'Frekvencija', tip_koda_daljinskog: 'Tip koda',
+  napajanje_daljinskog: 'Napajanje', usb_punjenje_daljinskog: 'USB punjenje',
+};
+
 const watchLabels = {
   serija: 'Serija', proizvodjac: 'Proizvođač', proizvo_ac: 'Proizvođač', uzrasna_grupa: 'Uzrasna grupa', garancija: 'Garancija',
   tip_mehanizma: 'Tip mehanizma', mehanizam: 'Mehanizam', rezerva_snage: 'Rezerva snage',
@@ -30,10 +49,11 @@ const watchLabels = {
   svetsko_vreme: 'Svetsko vreme', dvojno_vreme: 'Dvojno vreme', '12_24_casovni_format': '12/24-časovni format', satni_zvucni_signal: 'Satni zvučni signal', osvetljenje_displeja: 'Osvetljenje displeja',
 };
 
-function displayValue(raw) {
-  if (Array.isArray(raw)) return raw.map(displayValue).filter(Boolean).join(', ');
+function displayValue(raw, keepNegative = false) {
+  if (Array.isArray(raw)) return raw.map(value => displayValue(value, keepNegative)).filter(Boolean).join(', ');
   if (!['string', 'number', 'boolean'].includes(typeof raw)) return '';
   const value = String(raw).trim();
+  if (keepNegative && /^(ne|false|no)$/i.test(value)) return 'Ne';
   if (!value || /^(ne|false|no|n\/a|null|undefined|[-–—]|bez luminescencije)$/i.test(value)) return '';
   return /^(da|true)$/i.test(value) ? 'Da' : value;
 }
@@ -43,14 +63,15 @@ export function productSpecGroups(product) {
   const department = product?.department?.slug || product?.department;
   const eyewear = isEyewearDepartment(department);
   const watch = !department || department === 'satovi';
-  const layout = eyewear ? eyewearGroups : watch ? watchGroups : [];
-  const labels = eyewear ? eyewearSpecLabels : watch ? watchLabels : {};
+  const remote = department === 'daljinski';
+  const layout = eyewear ? eyewearGroups : watch ? watchGroups : remote ? remoteGroups : [];
+  const labels = eyewear ? eyewearSpecLabels : watch ? watchLabels : remote ? remoteLabels : {};
   const groups = layout.map(([id, title, keys]) => ({ id, title, keys, entries: [] }));
   const other = { id: 'other', title: layout.length ? 'Ostali detalji' : 'Detalji proizvoda', entries: [] };
 
   for (const [key, raw] of Object.entries(visibleProductSpecs(product?.specs, department))) {
     const normalized = normalizeKey(key);
-    const value = displayValue(raw);
+    const value = displayValue(raw, remote);
     if (!value) continue;
     const fallback = formatProductSpecLabel(key, department).replace(/-/g, ' ');
     const label = labels[normalized] || fallback.charAt(0).toLocaleUpperCase('sr-Latn') + fallback.slice(1);
