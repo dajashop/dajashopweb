@@ -711,3 +711,13 @@
   font-weight: 700;
 }
 .configured-filter-description { margin: 0 4px 10px; color: var(--color-muted, #6e6e73); font-size: 12px; }
+.filter-options-scroll {
+  max-height: 308px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-muted, #6e6e73) transparent;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.filter-options-scroll:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }

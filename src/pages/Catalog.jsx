@@ -399,12 +399,12 @@ export default function Catalog({ department = 'satovi', seo }) {
       />
 
       <div className="catalog-mobile-trigger lg:hidden mb-4">
-        <FilterDrawer products={departmentItems} configuration={filterConfiguration} serverFacets={facets} facetsPending={listing.displayingPrevious || loading} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
+        <FilterDrawer department={department} products={departmentItems} configuration={filterConfiguration} serverFacets={facets} facetsPending={listing.displayingPrevious || loading} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
       </div>
 
       <div className="catalog-layout lg:grid lg:grid-cols-[260px_1fr] lg:gap-8 items-start">
         <aside className="sidebar-filters hidden lg:block sticky top-24">
-          <Filters products={departmentItems} configuration={filterConfiguration} serverFacets={facets} facetsPending={listing.displayingPrevious || loading} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
+          <Filters department={department} products={departmentItems} configuration={filterConfiguration} serverFacets={facets} facetsPending={listing.displayingPrevious || loading} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />
         </aside>
 
         <main className="catalog-main min-w-0">

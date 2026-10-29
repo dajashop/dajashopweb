@@ -50,7 +50,7 @@ export default function Filters(props) {
   return props.configuration ? <ConfiguredFilters {...props} /> : <LegacyFilters {...props} />;
 }
 
-function LegacyFilters({ products, fixedGender, onClose }) {
+function LegacyFilters({ products, department, fixedGender, onClose }) {
   const { t: translateText, money } = useStorefront();
 
   // <--- Dodat onClose prop
@@ -342,7 +342,7 @@ function LegacyFilters({ products, fixedGender, onClose }) {
                   className="f-content-wrapper"
                 >
                   <div className="f-content-inner">
-                    <div className="filter-list" role="group">
+                    <div className={`filter-list${department === 'daljinski' ? ' filter-options-scroll' : ''}`} role="group" aria-label={translateText('Brend')} tabIndex={department === 'daljinski' ? 0 : undefined} data-lenis-prevent={department === 'daljinski' ? true : undefined}>
                       {brands.map((b) => (
                         <label
                           key={b}

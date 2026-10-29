@@ -88,7 +88,7 @@ function useHeaderHeight(active) {
   }, [active]);
 }
 
-export default function FilterDrawer({ className = '', products, fixedGender, configuration, serverFacets, facetsPending = false, configurationLoading, configurationError }) {
+export default function FilterDrawer({ className = '', products, department, fixedGender, configuration, serverFacets, facetsPending = false, configurationLoading, configurationError }) {
   const { t: translateText } = useStorefront();
 
   const [open, setOpen] = useState(false);
@@ -242,7 +242,7 @@ export default function FilterDrawer({ className = '', products, fixedGender, co
 
             <div className="fd-content">
               {/* PROSLEĐUJEMO onClose funkciju */}
-              <Filters products={products} fixedGender={fixedGender} configuration={configuration} serverFacets={serverFacets} facetsPending={facetsPending} configurationLoading={configurationLoading} configurationError={configurationError} onClose={() => setOpen(false)} />
+              <Filters department={department} products={products} fixedGender={fixedGender} configuration={configuration} serverFacets={serverFacets} facetsPending={facetsPending} configurationLoading={configurationLoading} configurationError={configurationError} onClose={() => setOpen(false)} />
             </div>
           </div>
         </div>

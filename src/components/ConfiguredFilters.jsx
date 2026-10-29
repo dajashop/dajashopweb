@@ -13,7 +13,7 @@ import { configuredFilterParams, configuredFilterChips, filterConfiguredProducts
 import './Filters.css';
 import useFilterAnchor from '../hooks/useFilterAnchor.js';
 
-export default function ConfiguredFilters({ products, configuration, serverFacets, facetsPending = false, fixedGender, onClose, params: previewParams, onParams, expandIds = [], showUnavailableOptions = false, focusId = '' }) {
+export default function ConfiguredFilters({ products, configuration, department, serverFacets, facetsPending = false, fixedGender, onClose, params: previewParams, onParams, expandIds = [], showUnavailableOptions = false, focusId = '' }) {
   const { t: translateText } = useStorefront();
 
   const [urlParams, setUrlParams] = useSearchParams();
@@ -125,9 +125,12 @@ export default function ConfiguredFilters({ products, configuration, serverFacet
     ));
     const { values, numbers } = facets.get(node.id) || { values: [], numbers: [] };
     const selected = params.getAll(selectionKey(node));
-    const optionLimit = node.sources.includes('brand') ? Infinity : 3;
-    if (node.style === 'color') return <FilterOptions values={values} selected={selected} limit={node.sources.includes('brand') ? Infinity : (node.columns || 5) * 3}>{(visible) => <ColorFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={translateText(node.title)} columns={node.columns || 5} showCounts={node.showCounts} />}</FilterOptions>;
-    if (node.style === 'material') return <FilterOptions values={values} selected={selected} limit={optionLimit}>{(visible) => <MaterialFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={translateText(node.title)} showCounts={node.showCounts} />}</FilterOptions>;
+    const remoteBrands = department === 'daljinski' && node.sources.includes('brand');
+    const remoteCategories = department === 'daljinski' && node.sources.includes('category');
+    const optionLimit = node.sources.includes('brand') || remoteCategories ? Infinity : 3;
+    const scrollProps = { scrollable: remoteBrands, scrollLabel: translateText(node.title) };
+    if (node.style === 'color') return <FilterOptions {...scrollProps} values={values} selected={selected} limit={node.sources.includes('brand') || remoteCategories ? Infinity : (node.columns || 5) * 3}>{(visible) => <ColorFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={translateText(node.title)} columns={node.columns || 5} showCounts={node.showCounts} />}</FilterOptions>;
+    if (node.style === 'material') return <FilterOptions {...scrollProps} values={values} selected={selected} limit={optionLimit}>{(visible) => <MaterialFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={translateText(node.title)} showCounts={node.showCounts} />}</FilterOptions>;
     if (node.style === 'range') {
       if (!numbers.length) return <p className="configured-filter-description">{translateText("Nema dostupnih vrednosti.")}</p>;
       const minKey = rangeKey(node, 'min'); const maxKey = rangeKey(node, 'max');
@@ -147,7 +150,7 @@ export default function ConfiguredFilters({ products, configuration, serverFacet
       const from = params.has(minKey) ? min : lower;
       return <RangeFilterSlider node={node} lower={lower} upper={upper} from={from} to={max} onChange={setRange} />;
     }
-    return <FilterOptions values={values} selected={selected} limit={optionLimit}>{(visible) => <div className="filter-list" role="group" aria-label={translateText(node.title)} style={node.columns > 1 ? { display: 'grid', gridTemplateColumns: `repeat(${node.columns}, minmax(0, 1fr))` } : undefined}>{visible.map((value) => <label key={value.value} className={`filter-row ${selected.includes(value.value) ? 'is-active' : ''}`}>
+    return <FilterOptions {...scrollProps} values={values} selected={selected} limit={optionLimit}>{(visible) => <div className="filter-list" role="group" aria-label={translateText(node.title)} style={node.columns > 1 ? { display: 'grid', gridTemplateColumns: `repeat(${node.columns}, minmax(0, 1fr))` } : undefined}>{visible.map((value) => <label key={value.value} className={`filter-row ${selected.includes(value.value) ? 'is-active' : ''}`}>
       <input className="filter-input-hidden" type="checkbox" checked={selected.includes(value.value)} onChange={() => toggle(node, value.value)} />
       <span className="filter-text">{translateText(value.label)}</span>{node.showCounts && <span className="filter-count">{translateText(value.count)}</span>}
       {selected.includes(value.value) && <div className="filter-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg></div>}
