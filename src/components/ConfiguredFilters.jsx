@@ -12,6 +12,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { configuredFilterParams, configuredFilterChips, filterConfiguredProducts, filterLeaves, movementFilterRole, numericFilterValue, optionMatches, orderedNodes, rangeKey, selectionKey, sourceValues } from '../utils/filterConfiguration.js';
 import './Filters.css';
 import useFilterAnchor from '../hooks/useFilterAnchor.js';
+import useRemoteFilterLayout from '../hooks/useRemoteFilterLayout.js';
 
 export default function ConfiguredFilters({ products, configuration, department, serverFacets, facetsPending = false, fixedGender, onClose, params: previewParams, onParams, expandIds = [], showUnavailableOptions = false, focusId = '' }) {
   const { t: translateText } = useStorefront();
@@ -21,6 +22,7 @@ export default function ConfiguredFilters({ products, configuration, department,
   const [open, setOpen] = useState({});
   const prepareFilter = useCatalogPreparation();
   const container = useRef(null);
+  useRemoteFilterLayout(container, department === 'daljinski');
   const reduceMotion = useReducedMotion();
   const brandSelection = JSON.stringify(filterLeaves(configuration)
     .filter(node => node.sources.includes('brand'))
@@ -128,7 +130,7 @@ export default function ConfiguredFilters({ products, configuration, department,
     const remoteBrands = department === 'daljinski' && node.sources.includes('brand');
     const remoteCategories = department === 'daljinski' && node.sources.includes('category');
     const optionLimit = node.sources.includes('brand') || remoteCategories ? Infinity : 3;
-    const scrollProps = { scrollable: remoteBrands, scrollLabel: translateText(node.title) };
+    const scrollProps = { scrollable: remoteBrands || remoteCategories, scrollLabel: translateText(node.title), scrollKind: remoteCategories ? 'category' : remoteBrands ? 'brand' : undefined };
     if (node.style === 'color') return <FilterOptions {...scrollProps} values={values} selected={selected} limit={node.sources.includes('brand') || remoteCategories ? Infinity : (node.columns || 5) * 3}>{(visible) => <ColorFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={translateText(node.title)} columns={node.columns || 5} showCounts={node.showCounts} />}</FilterOptions>;
     if (node.style === 'material') return <FilterOptions {...scrollProps} values={values} selected={selected} limit={optionLimit}>{(visible) => <MaterialFilter values={visible} selected={selected} onToggle={(id) => toggle(node, id)} label={translateText(node.title)} showCounts={node.showCounts} />}</FilterOptions>;
     if (node.style === 'range') {
@@ -156,7 +158,7 @@ export default function ConfiguredFilters({ products, configuration, department,
       {selected.includes(value.value) && <div className="filter-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg></div>}
     </label>)}</div>}</FilterOptions>;
   };
-  return <aside ref={container} {...filterAnchor.events} className="filters card glass configured-filters" aria-label={translateText("Filteri kataloga")} aria-busy={facetsPending} data-lenis-prevent>
+  return <aside ref={container} {...filterAnchor.events} className={`filters card glass configured-filters${department === 'daljinski' ? ' filters--remote' : ''}`} aria-label={translateText("Filteri kataloga")} aria-busy={facetsPending} data-lenis-prevent>
     <div className="f-top"><h3 className="f-top-title">{translateText("Filteri")}</h3><div className="f-top-actions">{chips.length > 0 && <><span className="f-badge">{translateText(chips.length)}</span><button type="button" className="f-clear" onClick={clearAll}>{translateText("Očisti sve")}</button></>}</div></div>
     <div className="f-scroll-container">
     {orderedNodes(configuration.filters).filter(available).map((node) => {
@@ -165,7 +167,7 @@ export default function ConfiguredFilters({ products, configuration, department,
       return <div className={`f-section ${expanded ? 'is-open' : ''}`} data-filter-id={node.id} key={node.id}>
         <SectionHeader title={translateText(node.title)} count={active} onClear={() => clearNode(node)} isOpen={expanded} onToggle={() => setOpen((previous) => ({ ...previous, [node.id]: !expanded }))} />
         <AnimatePresence initial={false}>
-          {expanded && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }} className="f-content-wrapper"><div className="f-content-inner">{node.description && <p className="configured-filter-description">{translateText(node.description)}</p>}{translateText(content(node))}</div></motion.div>}
+          {expanded && <motion.div initial={department === 'daljinski' ? false : { height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: reduceMotion || department === 'daljinski' ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }} className="f-content-wrapper"><div className="f-content-inner">{node.description && <p className="configured-filter-description">{translateText(node.description)}</p>}{translateText(content(node))}</div></motion.div>}
         </AnimatePresence>
       </div>;
     })}

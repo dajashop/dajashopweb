@@ -12,6 +12,7 @@ import MaterialFilter, { isBraceletMaterialSpec } from './MaterialFilter.jsx';
 import ConfiguredFilters from './ConfiguredFilters.jsx';
 import SectionHeader from './FilterSectionHeader.jsx';
 import useFilterAnchor from '../hooks/useFilterAnchor.js';
+import useRemoteFilterLayout from '../hooks/useRemoteFilterLayout.js';
 
 function specificationOrder(key) {
   const label = formatProductSpecLabel(key)
@@ -56,6 +57,7 @@ function LegacyFilters({ products, department, fixedGender, onClose }) {
   // <--- Dodat onClose prop
   const [sp, setSp] = useSearchParams();
   const filterAnchor = useFilterAnchor(sp.toString());
+  useRemoteFilterLayout(filterAnchor.container, department === 'daljinski');
 
   const baseData = useMemo(() => {
     if (Array.isArray(products)) return products;
@@ -258,7 +260,7 @@ function LegacyFilters({ products, department, fixedGender, onClose }) {
     <aside
       ref={filterAnchor.container}
       {...filterAnchor.events}
-      className="filters card glass"
+      className={`filters card glass${department === 'daljinski' ? ' filters--remote' : ''}`}
       aria-label={translateText("Filteri kataloga")}
       data-lenis-prevent
     >
@@ -285,9 +287,9 @@ function LegacyFilters({ products, department, fixedGender, onClose }) {
             <AnimatePresence initial={false}>
               {openSections.gender && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
+                  initial={department === 'daljinski' ? false : { height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
+                  exit={{ height: 0, opacity: 0 }} transition={department === 'daljinski' ? { duration: 0 } : undefined}
                   className="f-content-wrapper"
                 >
                   <div className="f-content-inner">
@@ -336,13 +338,13 @@ function LegacyFilters({ products, department, fixedGender, onClose }) {
             <AnimatePresence initial={false}>
               {openSections.brand && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
+                  initial={department === 'daljinski' ? false : { height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
+                  exit={{ height: 0, opacity: 0 }} transition={department === 'daljinski' ? { duration: 0 } : undefined}
                   className="f-content-wrapper"
                 >
                   <div className="f-content-inner">
-                    <div className={`filter-list${department === 'daljinski' ? ' filter-options-scroll' : ''}`} role="group" aria-label={translateText('Brend')} tabIndex={department === 'daljinski' ? 0 : undefined} data-lenis-prevent={department === 'daljinski' ? true : undefined}>
+                    <div className={`filter-list${department === 'daljinski' ? ' filter-options-scroll' : ''}`} role="group" aria-label={translateText('Brend')} tabIndex={department === 'daljinski' ? 0 : undefined} data-lenis-prevent={department === 'daljinski' ? true : undefined} data-remote-filter-list={department === 'daljinski' ? 'brand' : undefined}>
                       {brands.map((b) => (
                         <label
                           key={b}
@@ -396,13 +398,13 @@ function LegacyFilters({ products, department, fixedGender, onClose }) {
             <AnimatePresence initial={false}>
               {openSections.category && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
+                  initial={department === 'daljinski' ? false : { height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
+                  exit={{ height: 0, opacity: 0 }} transition={department === 'daljinski' ? { duration: 0 } : undefined}
                   className="f-content-wrapper"
                 >
                   <div className="f-content-inner">
-                    <div className="filter-list" role="group">
+                    <div className={`filter-list${department === 'daljinski' ? ' filter-options-scroll' : ''}`} role="group" aria-label={translateText('Kolekcija')} tabIndex={department === 'daljinski' ? 0 : undefined} data-lenis-prevent={department === 'daljinski' ? true : undefined} data-remote-filter-list={department === 'daljinski' ? 'category' : undefined}>
                       {categories.map((c) => (
                         <label
                           key={c}
@@ -457,9 +459,9 @@ function LegacyFilters({ products, department, fixedGender, onClose }) {
             <AnimatePresence initial={false}>
               {openSections[section.key] && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
+                  initial={department === 'daljinski' ? false : { height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
+                  exit={{ height: 0, opacity: 0 }} transition={department === 'daljinski' ? { duration: 0 } : undefined}
                   className="f-content-wrapper"
                 >
                   <div className="f-content-inner">
@@ -542,9 +544,9 @@ function LegacyFilters({ products, department, fixedGender, onClose }) {
           <AnimatePresence initial={false}>
             {openSections.price && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
+                initial={department === 'daljinski' ? false : { height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
+                exit={{ height: 0, opacity: 0 }} transition={department === 'daljinski' ? { duration: 0 } : undefined}
                 className="f-content-wrapper"
               >
                 <div className="f-content-inner">

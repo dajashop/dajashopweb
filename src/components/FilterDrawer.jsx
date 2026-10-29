@@ -240,7 +240,7 @@ export default function FilterDrawer({ className = '', products, department, fix
               <div className="fd-spacer" />
             </div>
 
-            <div className="fd-content">
+            <div className={`fd-content${department === 'daljinski' ? ' fd-content--remote' : ''}`}>
               {/* PROSLEĐUJEMO onClose funkciju */}
               <Filters department={department} products={products} fixedGender={fixedGender} configuration={configuration} serverFacets={serverFacets} facetsPending={facetsPending} configurationLoading={configurationLoading} configurationError={configurationError} onClose={() => setOpen(false)} />
             </div>

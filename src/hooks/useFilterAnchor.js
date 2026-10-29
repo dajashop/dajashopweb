@@ -30,11 +30,13 @@ export default function useFilterAnchor(paramsKey, suppliedContainer) {
     const panel = container.current;
     if (!saved?.pending || !panel) return;
     saved.pending = false;
-    let viewport = panel;
+    const remote = panel.classList.contains('filters--remote');
+    let viewport = remote ? saved.control.parentElement : panel;
     while (viewport && !['auto', 'scroll'].includes(window.getComputedStyle(viewport).overflowY)) {
       viewport = viewport.parentElement;
     }
     if (!viewport) return;
+    if (remote && !panel.contains(viewport)) return;
     const sidebar = panel.closest('.sidebar-filters');
     const layout = sidebar?.closest('.catalog-layout');
 
@@ -43,6 +45,7 @@ export default function useFilterAnchor(paramsKey, suppliedContainer) {
       const delta = saved.control.getBoundingClientRect().top - saved.top;
       if (Math.abs(delta) < 0.25) return;
       viewport.scrollTop += delta;
+      if (remote) return;
       const remaining = saved.control.getBoundingClientRect().top - saved.top;
       if (Math.abs(remaining) < 0.25 || !sidebar || !layout) return;
 

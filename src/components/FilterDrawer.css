@@ -197,3 +197,5 @@
     display: none;
   }
 }
+.fd-content.fd-content--remote { min-height: 0; overflow: hidden; }
+.fd-content--remote .filters.filters--remote { overflow: clip !important; }

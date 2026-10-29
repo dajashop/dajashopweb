@@ -721,3 +721,17 @@
   -webkit-overflow-scrolling: touch;
 }
 .filter-options-scroll:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+.filters.filters--remote { overflow: clip; }
+.filters--remote .filter-options-scroll {
+  max-height: var(--remote-list-height, clamp(44px, calc((100dvh - 300px) / 2), 308px));
+  min-height: 0;
+  overflow-anchor: none;
+  scrollbar-gutter: stable;
+}
+.filters--remote .filter-options-scroll .filter-list { display: flex !important; flex-direction: column; }
+/* Reset and close remain available in the fixed top controls. */
+.filters--remote .f-bottom-actions { display: none; }
+@media (max-height: 500px) {
+  .filters--remote .f-content-inner { padding-bottom: 6px; }
+  .filters--remote .f-section { margin-bottom: 0; }
+}

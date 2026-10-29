@@ -1,14 +1,14 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useId, useState } from 'react';
 
-export default function FilterOptions({ values, selected = [], limit = 3, scrollable = false, scrollLabel, children }) {
+export default function FilterOptions({ values, selected = [], limit = 3, scrollable = false, scrollLabel, scrollKind, children }) {
   const { t: translateText } = useStorefront();
 
   const [expanded, setExpanded] = useState(false);
   const id = useId();
   const visible = expanded ? values : values.filter((value, index) => index < limit || selected.includes(value.value));
   const hidden = values.length - visible.length;
-  return <div className={`filter-options${scrollable ? ' filter-options-scroll' : ''}`} tabIndex={scrollable ? 0 : undefined} role={scrollable ? 'region' : undefined} aria-label={scrollable ? scrollLabel : undefined} data-lenis-prevent={scrollable ? true : undefined}>
+  return <div className={`filter-options${scrollable ? ' filter-options-scroll' : ''}`} tabIndex={scrollable ? 0 : undefined} role={scrollable ? 'region' : undefined} aria-label={scrollable ? scrollLabel : undefined} data-lenis-prevent={scrollable ? true : undefined} data-remote-filter-list={scrollKind}>
     <div id={id} className={hidden > 0 ? 'filter-options-faded' : undefined}>{translateText(children(visible))}</div>
     {hidden > 0 && <div className="filter-options-reveal">
       <button type="button" className="filter-show-more filter-show-more-overlay"
