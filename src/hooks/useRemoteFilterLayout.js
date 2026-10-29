@@ -27,18 +27,24 @@ export default function useRemoteFilterLayout(container, enabled) {
     const chrome = panel.scrollHeight + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth)
       - lists.reduce((sum, list) => sum + list.element.getBoundingClientRect().height, 0);
     const budget = Math.max(0, available - chrome - 2);
+    const minimum = lists.reduce((sum, list) => sum + list.heights[Math.min(3, list.count)], 0);
+    const outerScroll = minimum > budget;
+    const wasOuterScroll = panel.classList.contains('filters--remote-outer-scroll');
+    panel.classList.toggle('filters--remote-outer-scroll', outerScroll);
+    panel.style.setProperty('--remote-panel-height', `${Math.floor(available)}px`);
+    if (wasOuterScroll && !outerScroll) panel.scrollTop = 0;
     const order = [...lists].sort((a, b) => Number(a.element.dataset.remoteFilterList !== 'category') - Number(b.element.dataset.remoteFilterList !== 'category'));
     const total = () => lists.reduce((sum, list) => sum + list.heights[list.count], 0);
     let cursor = 0;
-    while (total() > budget && order.some(list => list.count > 1)) {
+    if (outerScroll) for (const list of lists) list.count = Math.min(5, list.count);
+    while (!outerScroll && total() > budget && order.some(list => list.count > 3)) {
       const list = order[cursor++ % order.length];
-      if (list.count > 1) list.count--;
+      if (list.count > 3) list.count--;
     }
-    // On very short landscape screens keep scrolling inside the lists, even
-    // when only part of one row fits, rather than creating a panel scrollbar.
-    const remaining = total();
+    // Three is the adaptive minimum. If that cannot fit, the whole panel
+    // scrolls instead and each inner list shows up to five complete rows.
     for (const list of lists) {
-      const height = Math.max(0, Math.floor(list.heights[list.count] * (remaining > budget ? budget / remaining : 1)));
+      const height = Math.max(0, Math.floor(list.heights[list.count]));
       const value = `${height}px`;
       if (list.element.style.getPropertyValue('--remote-list-height') !== value) list.element.style.setProperty('--remote-list-height', value);
     }

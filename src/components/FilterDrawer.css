@@ -198,4 +198,8 @@
   }
 }
 .fd-content.fd-content--remote { min-height: 0; overflow: hidden; }
-.fd-content--remote .filters.filters--remote { overflow: clip !important; }
+.fd-content--remote .filters.filters--remote { overflow: hidden !important; }
+.fd-content--remote .filters.filters--remote.filters--remote-outer-scroll {
+  max-height: var(--remote-panel-height) !important;
+  overflow-y: auto !important;
+}
