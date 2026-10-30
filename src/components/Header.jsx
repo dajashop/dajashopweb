@@ -39,14 +39,11 @@ export default function Header() {
         </div>
 
         <div className="header__actions">
-          {/* KORPA: Ima 'ShoppingBag' ikonicu za desktop i klasu 'desktop-only' da se sakrije na mobilnom */}
-          <Link className="header__cart desktop-only" to="/cart">
+          <Link className="header__cart" to="/cart" aria-label={`${translateText('Korpa')} (${count})`}>
             <ShoppingBag size={22} />
-            {/* <span>Korpa</span> */}
-            <span className="badge">{translateText(count)}</span>
+            <span className="badge" aria-hidden="true">{count > 99 ? '99+' : count}</span>
           </Link>
 
-          {/* LISTA ŽELJA: Klasa 'header__wishlist' (nema korpu na mobilnom) */}
           <Link
             className="header__wishlist"
             to="/account/wishlist"
@@ -54,7 +51,7 @@ export default function Header() {
           >
             <Heart size={22} />
             {wishlistCount > 0 && (
-              <span className="badge">{translateText(wishlistCount)}</span>
+              <span className="badge">{wishlistCount > 99 ? '99+' : wishlistCount}</span>
             )}
           </Link>
 

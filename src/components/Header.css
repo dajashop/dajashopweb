@@ -139,39 +139,35 @@
     transform: translateZ(0);
   }
 
-  /* Korpa - specifično za mobilni (dodaje ikonicu 🛒) */
-  /* NAPOMENA: Ovo se sada neće ni videti jer je korpa sakrivena sa .desktop-only */
-  .header__cart {
-    padding: 8px 1px;
-    border-radius: 12px;
-    font-size: 0;
-  }
-
-  .header__cart .badge {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    font-size: 11px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-  }
-
-  /* Lista želja - BEZ ::before ikonice */
+  .header__cart,
   .header__wishlist {
-    padding: 8px 10px;
+    justify-content: center;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
     border-radius: 12px;
+    color: var(--color-text);
   }
+
+  .header__cart > svg,
+  .header__wishlist > svg { flex-shrink: 0; }
+
+  .header__cart .badge,
   .header__wishlist .badge {
     position: absolute;
-    top: -6px;
-    right: -6px;
+    top: 0;
+    right: 0;
     min-width: 18px;
     height: 18px;
-    padding: 0 5px;
-    font-size: 11px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    padding: 0 4px;
+    border: 2px solid var(--color-bg, #fff);
+    background: var(--color-text, #111);
+    color: var(--color-bg, #fff);
+    font-size: 10px;
+    line-height: 1;
+    box-shadow: none;
+    pointer-events: none;
   }
 
   /* Nalog kao ikonica */
