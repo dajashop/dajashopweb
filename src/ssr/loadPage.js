@@ -8,7 +8,7 @@ import { stripLanguagePrefix } from '../localization/paths.js';
 
 export const PUBLIC_PATHS = new Set([
   '/', '/catalog', '/muski-satovi', '/zenski-satovi', '/naocare',
-  '/baterije', '/daljinski', '/about', '/contact', '/faq', '/usluge', '/graviranje',
+  '/baterije', '/daljinski', '/ostalo', '/about', '/contact', '/faq', '/usluge', '/graviranje',
   ...serviceCatalog.map(service => service.path),
 ]);
 export const CATALOG_DEPARTMENTS = {

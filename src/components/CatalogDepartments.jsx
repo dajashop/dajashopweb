@@ -1,26 +1,19 @@
 import { Link } from 'react-router-dom';
-import { Watch, Battery, Radio, Glasses } from 'lucide-react';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import './CatalogDepartments.css';
 
 const departments = [
-  { id: 'satovi', path: '/catalog', title: 'Satovi', detail: 'Pronađite svoj model', Icon: Watch },
-  { id: 'baterije', path: '/baterije', title: 'Baterije', detail: 'Za satove i uređaje', Icon: Battery },
-  { id: 'daljinski', path: '/daljinski', title: 'Daljinski upravljači', detail: 'Izaberite prema uređaju', Icon: Radio },
-  { id: 'naocare', path: '/naocare', title: 'Naočare za sunce', detail: 'Izaberite svoj stil', Icon: Glasses },
+  { path: '/naocare', title: 'Naočare za sunce', image: '/images/departments/sunglasses.webp' },
+  { path: '/daljinski', title: 'Daljinski upravljači', image: '/images/departments/remote.avif' },
+  { path: '/baterije', title: 'Baterije', image: '/images/departments/battery.avif' },
 ];
 
-export default function CatalogDepartments({ department }) {
+export default function CatalogDepartments() {
   const { t } = useStorefront();
-  return <nav className="catalog-departments" aria-label={t('Izaberite odeljenje')}>
-    <p className="catalog-departments__heading">{t('Šta tražite?')}</p>
-    <div className="catalog-departments__choices">
-      {departments.map(({ id, path, title, detail, Icon }) => <Link key={id} to={path}
-        className={`catalog-departments__choice${department === id ? ' is-current' : ''}`}
-        aria-current={department === id ? 'location' : undefined}>
-        <Icon size={25} strokeWidth={1.5} aria-hidden="true" />
-        <span><strong>{t(title)}</strong><small>{t(detail)}</small></span>
-      </Link>)}
-    </div>
+  return <nav className="other-categories" aria-label={t('Izaberite kategoriju')}>
+    {departments.map(({ path, title, image }) => <Link key={path} to={path} className="other-categories__item">
+      <div className="other-categories__image"><img src={image} width="512" height="512" alt="" decoding="async" /></div>
+      <h2>{t(title)}</h2>
+    </Link>)}
   </nav>;
 }

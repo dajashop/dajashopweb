@@ -17,6 +17,7 @@ function browserPage(loader, fallback = <LoadingMessage />) {
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home.jsx';
 import Catalog from './pages/Catalog.jsx';
+import OtherCatalog from './pages/OtherCatalog.jsx';
 const SearchResults = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/SearchResults.jsx'));
 import Product from './pages/Products.jsx';
 const Cart = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Cart.jsx'));
@@ -47,6 +48,7 @@ export default function AppRoutes() {
       {/* --- RUTE ZA ODELJENJA --- */}
       {/* Glavni katalog (Satovi) */}
       <Route path="/catalog" element={<Catalog department="satovi" />} />
+      <Route path="/ostalo" element={<OtherCatalog />} />
       <Route path="/brend/:brandSlug" element={<Catalog department="satovi" />} />
       <Route path="/search" element={<SearchResults />} />
       <Route path="/muski-satovi" element={<Catalog department="satovi" seo={{ title: 'Muški satovi', description: 'Muški ručni satovi brendova Casio, Orient, Daniel Klein i Q&Q. Pronađite model za svaki stil u DajaShop-u.', keywords: 'muski satovi,rucni satovi za muskarce,Casio,Orient,Daniel Klein', path: '/muski-satovi' }} />} />

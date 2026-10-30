@@ -155,7 +155,14 @@ export default function NavBar() {
             </div>
           ))}
 
-          <Link to="/catalog" className={`navbar__label ${isMobile ? 'navbar__chip' : ''}`} onClick={() => setOpenIdx(null)}>{translateText("Ostalo")}</Link>
+          <div className="navbar__group">
+            <Link to="/ostalo" className={`navbar__label ${isMobile ? 'navbar__chip' : ''}`} onClick={() => setOpenIdx(null)}>{translateText("Ostalo")}</Link>
+            <div className="navbar__dropdown card">
+              <Link to="/naocare">{translateText("Naočare za sunce")}</Link>
+              <Link to="/daljinski">{translateText("Daljinski")}</Link>
+              <Link to="/baterije">{translateText("Baterije")}</Link>
+            </div>
+          </div>
         </div>
 
         {/* --- MOBILNI SUB-MENI (ZA SVE) --- */}
