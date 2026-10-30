@@ -111,7 +111,8 @@
 .services-visit__copy > p { max-width: 55ch; margin-top: 23px; color: var(--services-muted); font-size: 19px; line-height: 1.75; }
 .services-visit__address { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 32px; border-radius: 18px; background: var(--services-paper); }
 .services-visit__address h3 { margin-top: 20px; margin-bottom: 12px; font-size: 29px; line-height: 1.2; letter-spacing: -.03em; }
-.services-visit__address address { margin-bottom: 20px; color: var(--services-muted); font-size: 19px; font-style: normal; line-height: 1.65; }
+.services-visit__address address { margin-bottom: 20px; color: var(--services-muted); font-size: 19px; font-style: normal; line-height: 1.65; overflow-wrap: anywhere; }
+.services-visit__copy, .services-visit__address { min-width: 0; }
 .services-visit__address > .services-inline-link { font-size: 17px; }
 
 .services-more { padding-bottom: 0; }
@@ -202,7 +203,7 @@
   .services-hero__location { margin-bottom: 18px; font-size: 15px; }
   .services-hero h1 { max-width: 16ch; font-size: clamp(37px, 7vw, 54px); line-height: 1.1; }
   .services-hero__copy > p { max-width: 55ch; margin-top: 20px; font-size: 18px; }
-  .services-about, .services-faq, .services-visit { grid-template-columns: 1fr; }
+  .services-about, .services-faq, .services-visit { grid-template-columns: minmax(0, 1fr); }
   .services-preparation { padding: 32px; }
   .services-about__copy > p { font-size: 19px; }
   .services-facts { grid-template-columns: 1fr; gap: 18px; }

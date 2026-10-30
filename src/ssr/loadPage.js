@@ -19,7 +19,7 @@ export const isProductPath = path => /^\/product\/[^/]+\/?$/.test(path);
 export const catalogDepartment = path => CATALOG_DEPARTMENTS[path] || (isBrandPath(path) ? 'satovi' : null);
 
 export function publicCacheSeconds(data, maximum = 60) {
-  const sales = [data.product, ...(data.catalog || []), ...(data.catalogPage?.items || []), ...(data.homeProducts?.items || []), ...(data.relatedVariants || []), ...(data.relatedProducts || [])].filter(item => item?.saleValidUntil);
+  const sales = [data.product, ...(data.catalog || []), ...(data.catalogPage?.items || []), ...(data.homeProducts?.items || []), ...(data.engravingProducts?.items || []), ...(data.relatedVariants || []), ...(data.relatedProducts || [])].filter(item => item?.saleValidUntil);
   return sales.reduce((seconds, item) => Math.min(seconds,
     Math.max(0, Math.floor((new Date(item.saleValidUntil).getTime() - Date.now()) / 1000) || 0)), maximum);
 }
@@ -52,7 +52,8 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
     return items;
   };
   const data = { catalog: null, product: null, filters: {}, filterVersions: {}, relatedVariants: [], relatedProducts: [] };
-  const needsCatalog = path === '/graviranje';
+  const engravingRequest = path === '/graviranje' && !url.searchParams.get('slug')
+    ? catalogPageRequest('satovi', new URLSearchParams()) : null;
   const department = catalogDepartment(path);
   const productLoader = async () => {
     const slug = path.split('/')[2];
@@ -77,20 +78,22 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
     try { return await api(`/public/catalog/${route}${route.startsWith('page?') && filters?.version ? `&configurationVersion=${encodeURIComponent(filters.version)}` : ''}`); }
     catch (error) {
       if (error.status !== 404) throw error;
-      return legacyListing(await catalogLoader(),route,configuration);
+      return legacyListing(await (readCatalog ? readCatalog(catalogLoader) : catalogLoader()),route,configuration);
     }
   };
-  const [catalog, product, listing, variants, related] = await Promise.all([
-    needsCatalog ? (readCatalog ? readCatalog(catalogLoader) : catalogLoader()) : null,
+  const [product, listing, variants, related] = await Promise.all([
     isProductPath(path) ? (readProduct ? readProduct(productLoader) : productLoader()) : null,
-    requestKey ? listingLoader(requestKey) : path === '/' ? listingLoader('home') : null,
+    requestKey ? listingLoader(requestKey) : engravingRequest ? listingLoader(engravingRequest) : path === '/' ? listingLoader('home') : null,
     isProductPath(path) ? api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/variants`, true) : null,
     isProductPath(path) ? (readRelated ? readRelated(relatedLoader) : relatedLoader()) : [],
   ]);
   if (product?.missing) return { missing: true };
   if (product?.redirectTo) return { redirectTo: product.redirectTo };
-  data.catalog = catalog;
   data.product = product?.product || product;
+  if (engravingRequest) {
+    const { configuration: _configuration, ...listingData } = listing;
+    data.engravingProducts = { ...listingData, requestKey: engravingRequest };
+  }
   if (department) {
     data.filters[department] = listing?.configuration ?? configuration;
     data.filterVersions[department] = listing?.configurationVersion ?? filters?.version;

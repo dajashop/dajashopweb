@@ -302,6 +302,9 @@
 }
 .footer__links {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-width: 0;
   gap: 24px;
 }
 .footer__links a {

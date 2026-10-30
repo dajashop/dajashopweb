@@ -114,6 +114,8 @@ function BestProductItem({ product }) {
 
   if (!product) return null;
   const primaryImg = getPrimaryImage(product);
+  const department = product.department?.slug || product.department || 'satovi';
+  const productType = { satovi: 'RUČNI SAT', baterije: 'BATERIJA', daljinski: 'DALJINSKI UPRAVLJAČ', naocare: 'NAOČARE ZA SUNCE' }[department] || 'PROIZVOD';
 
   return (
     <article className="bestCard">
@@ -121,7 +123,7 @@ function BestProductItem({ product }) {
         <img src={primaryImg} alt={translateText(product.name)} loading="lazy" />
       </Link>
       <div className="bestCard__body">
-        <div className="bestCard__meta">{translateText("RUČNI SAT")}</div>
+        <div className="bestCard__meta">{translateText(productType)}</div>
         <Link to={`/product/${product.slug}`} className="bestCard__name">
           {translateText(product.name)}
         </Link>

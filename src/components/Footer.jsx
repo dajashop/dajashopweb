@@ -196,14 +196,14 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <Link
-                  to="/contact"
+                <a
+                  href="mailto:cvelenis42@yahoo.com"
                   className="footer__contact-link"
                   aria-label={translateText("Email adresa")}
                 >
                   <Mail size={18} />
                   <span>{translateText("cvelenis42@yahoo.com")}</span>
-                </Link>
+                </a>
               </li>
             </ul>
           </div>

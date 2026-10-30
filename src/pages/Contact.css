@@ -28,13 +28,14 @@
 
 .contact-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 40px;
   padding: 0 20px;
 }
 
 .contact-details {
   display: grid;
+  min-width: 0;
   gap: 20px;
   padding: 24px;
   border-radius: 16px;
@@ -45,6 +46,11 @@
   display: flex;
   align-items: flex-start;
   gap: 15px;
+}
+
+.detail-item > div:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .detail-item .icon-box {
@@ -83,6 +89,7 @@
 
 /* MAP SECTION */
 .contact-map {
+  min-width: 0;
   padding: 24px;
   border-radius: 16px;
   background: var(--color-surface);
@@ -116,6 +123,8 @@
 
 /* FORM SECTION */
 .contact-form-section {
+  min-width: 0;
+  width: 100%;
   grid-column: 1 / -1;
   padding: 40px 20px;
   max-width: 800px;
@@ -139,6 +148,7 @@
 }
 .form-group {
   display: grid;
+  min-width: 0;
   gap: 6px;
 }
 .form-group label {
@@ -198,7 +208,7 @@
 
 @media (max-width: 768px) {
   .contact-content {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 20px;
     padding: 0 15px;
   }

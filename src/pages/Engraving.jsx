@@ -4,7 +4,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeftRight, RotateCcw, Eye, Scan, Mouse, Search, Undo2, Redo2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
-import useProducts from '../hooks/useProducts';
+import usePublicListing from '../hooks/usePublicListing';
+import { catalogPageRequest } from '../utils/catalogPageRequest.js';
 import useProduct from '../hooks/useProduct';
 import SEOHead from '../components/seo/SEOHead';
 import ClientOnly from '../components/ClientOnly.jsx';
@@ -24,9 +25,20 @@ export default function Engraving() {
 
   const [params, setParams] = useSearchParams(); const slug = params.get('slug'); const navigate = useNavigate();
   const { user } = useAuth(); const userId = user?.id || user?.uid; const { items, dispatch } = useCart();
-  const { items: products, loading: catalogLoading, err: catalogError } = useProducts({ department: 'satovi', all: true });
   const { product, loading, error: productError } = useProduct(slug);
   const [saved, setSaved] = useState([]); const [query, setQuery] = useState(''); const [ready, setReady] = useState(false);
+  const [catalogQuery, setCatalogQuery] = useState('');
+  const [catalogPage, setCatalogPage] = useState(1);
+  useEffect(() => {
+    const timer = setTimeout(() => { setCatalogQuery(query.trim()); setCatalogPage(1); }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+  const catalogRoute = catalogPageRequest('satovi', new URLSearchParams({ page: String(catalogPage), ...(catalogQuery ? { q: catalogQuery } : {}) }));
+  const catalogListing = usePublicListing(catalogRoute, 'engravingProducts', !slug);
+  const products = catalogListing.data?.items || [];
+  const catalogLoading = catalogListing.loading;
+  const catalogError = !slug ? catalogListing.error : null;
+  const catalogPages = Math.max(1, Math.ceil((catalogListing.data?.total || 0) / (catalogListing.data?.perPage || 32)));
   const [design, setDesign] = useState(EMPTY); const [assets, setAssets] = useState([]); const [selected, setSelected] = useState(null);
   const [canvas, setCanvas] = useState(null); const [rotate, setRotate] = useState(false); const [flat, setFlat] = useState(false); const [reset, setReset] = useState(0); const [zoom, setZoom] = useState(1.1); const [view, setView] = useState('back'); const [review, setReview] = useState(false);
   const [status, setStatus] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [conflict, setConflict] = useState(false);
@@ -36,7 +48,7 @@ export default function Engraving() {
   const layer = design.layers.find((item) => item.id === selected); const invalid = design.layers.some(outsideZone);
   const reloadSaved = async () => {
     const local = await localDrafts.list(); const remote = userId ? await engravingApi.list() : [];
-    setSaved([...remote, ...local.filter((d) => (!d.ownerId || d.ownerId === userId) && !remote.some((r) => r.id === d.serverId))]);
+    setSaved([...remote.map(draft => ({ ...local.find(item => item.serverId === draft.id || item.id === draft.id), ...draft })), ...local.filter((d) => (!d.ownerId || d.ownerId === userId) && !remote.some((r) => r.id === d.serverId || r.id === d.id))]);
   };
   useEffect(() => { reloadSaved().catch((e) => setError(e.message)); }, [userId]);
   useEffect(() => {
@@ -56,6 +68,7 @@ export default function Engraving() {
       }
       if (generation !== opening.current) return;
       if (draft.productId !== (product.productId || product.id) || draft.variantId !== (product.variantId || product.variants?.[0]?.id)) throw new Error('Ovaj nacrt pripada drugom satu ili varijanti.');
+      draft = { ...draft, slug, name: product.name };
       draft.assets = draft.assets || [];
       if (!draft.design.layers.length) draft.design = { ...draft.design, layers: [newText('')] };
       metadata.current = draft; setDesign(normalizeDesign(draft.design)); setAssets(draft.assets); setSelected(draft.design.layers[0]?.id || null); setHistory({ past: [], future: [] }); revision.current = 0; setConflict(Boolean(draft.conflict)); if (draft.conflict) setStatus('Nacrt je promenjen na drugom uređaju. Lokalne izmene su sačuvane.'); setReady(true);
@@ -125,8 +138,16 @@ export default function Engraving() {
     <div className="engrave-heading"><div><h1>{translateText("Graviranje sata")}</h1><p>{translateText("Vaše reči. Vaš sat. Graviranje bez doplate.")}</p></div><nav className="engrave-progress" aria-label={translateText("Koraci graviranja")}>{[['Izbor sata', () => { setParams({}); setReady(false); }], ['Gravura', () => setReview(false)], ['Pregled', () => { setReview(true); setRotate(false); resetView(); }]].map(([label, action], index) => <button key={label} disabled={index > 0 && !ready || index === 2 && incomplete} className={(!slug ? index === 0 : review ? index === 2 : index === 1) ? 'active' : ''} aria-current={(!slug ? index === 0 : review ? index === 2 : index === 1) ? 'step' : undefined} onClick={action}><span>{translateText(index + 1)}</span>{translateText(label)}</button>)}</nav>{slug && <button className="engrave-change-watch" onClick={() => { setParams({}); setReady(false); }}><ArrowLeftRight size={20} />{translateText("Promeni sat")}</button>}</div>
     {(error || productError?.message || catalogError?.message) && <div className="engrave-error" role="alert">{translateText(error || productError?.message || catalogError?.message)}<button aria-label={translateText("Zatvori poruku")} onClick={() => setError('')}>×</button></div>}
     {translateText(!slug ? <>
-      <section className="engrave-card"><h2>{translateText("Izaberite sat za graviranje")}</h2><input aria-label={translateText("Pretražite satove")} placeholder={translateText("Pretražite model ili brend…")} value={query} onChange={(event) => setQuery(event.target.value)} />{catalogLoading && <p>{translateText("Učitavanje satova…")}</p>}<div className="engrave-products">{products.filter((p) => (p.department || 'satovi') === 'satovi').filter((p) => `${p.name} ${p.brand}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())).map((p) => <Link key={p.id} to={`/graviranje?slug=${encodeURIComponent(p.slug)}`}><img src={p.image || p.primaryImageUrl} alt={translateText(p.name)} /><b>{translateText(p.name)}</b><span>{money(p.price)}</span></Link>)}</div></section>
-      {saved.length > 0 && <section className="engrave-card"><h2>{translateText("Vaši nacrti")}</h2><div className="engrave-products">{saved.map((draft) => { const p = products.find((product) => (product.productId || product.id) === draft.productId && product.variantId === draft.variantId); return p && <Link key={draft.id} to={`/graviranje?slug=${encodeURIComponent(p.slug)}&draft=${draft.id}`}><img src={draft.preview || p.image} alt={translateText("Sačuvana gravura")} /><b>{translateText(p.name)}</b><span>{translateText("Nastavi uređivanje")}</span></Link>; })}</div></section>}
+      <section className="engrave-card"><h2>{translateText("Izaberite sat za graviranje")}</h2><input aria-label={translateText("Pretražite satove")} placeholder={translateText("Pretražite model ili brend…")} value={query} onChange={(event) => setQuery(event.target.value)} />{catalogLoading && <p>{translateText("Učitavanje satova…")}</p>}<div className="engrave-products">{products.map((p) => <Link key={p.id} to={`/graviranje?slug=${encodeURIComponent(p.slug)}`}><img src={p.thumbnailUrl || p.image || p.primaryImageUrl} alt={translateText(p.name)} loading="lazy" /><b>{translateText(p.name)}</b><span>{money(p.price)}</span></Link>)}</div>
+        {!catalogLoading && !catalogError && !products.length && <p role="status">{translateText("Nema satova za zadatu pretragu.")}</p>}
+        {catalogError && <button type="button" onClick={catalogListing.retry}>{translateText("Pokušajte ponovo")}</button>}
+        {catalogPages > 1 && <nav className="engrave-pagination" aria-label={translateText("Izbor sata")} aria-busy={catalogListing.updating}>
+          <button type="button" aria-label={translateText("Prethodna stranica satova")} disabled={catalogPage <= 1 || catalogListing.updating} onClick={() => setCatalogPage(page => page - 1)}>←</button>
+          <span aria-live="polite">{catalogListing.data?.page || catalogPage} / {catalogPages}</span>
+          <button type="button" aria-label={translateText("Sledeća stranica satova")} disabled={catalogPage >= catalogPages || catalogListing.updating} onClick={() => setCatalogPage(page => page + 1)}>→</button>
+        </nav>}
+      </section>
+      {saved.length > 0 && <section className="engrave-card"><h2>{translateText("Vaši nacrti")}</h2><div className="engrave-products">{saved.map((draft) => { const p = draft.slug ? { slug: draft.slug, name: draft.name, image: draft.preview } : products.find((product) => (product.productId || product.id) === draft.productId && product.variantId === draft.variantId); return p && <Link key={draft.id} to={`/graviranje?slug=${encodeURIComponent(p.slug)}&draft=${draft.id}`}><img src={draft.preview || p.image || "/images/product-placeholder.svg"} alt={translateText("Sačuvana gravura")} loading="lazy" /><b>{translateText(p.name)}</b><span>{translateText("Nastavi uređivanje")}</span></Link>; })}</div></section>}
     </> : !ready ? <p>{translateText(loading ? 'Učitavanje sata…' : error || productError ? 'Nacrt nije otvoren.' : 'Priprema editora…')}</p> : <div className="engrave-layout">
       <section className="engrave-preview engrave-card"><div className="engrave-preview-shell"><div className="engrave-toolbar engrave-camera-toolbar"><button className={rotate ? 'active' : ''} onClick={() => { if (rotate) resetView(); setRotate(!rotate); }}><RotateCcw size={20} />{translateText(rotate ? 'Uredi gravuru' : 'Rotiraj sat')}</button><button onClick={() => { setRotate(false); resetView(); }}><Eye size={21} />{translateText("Pogled odozgo")}</button><button aria-pressed={flat} onClick={() => setFlat((v) => !v)}><Scan size={20} />{translateText(flat ? '3D prikaz' : '2D prikaz')}</button><button onClick={resetView}><RotateCcw size={20} />{translateText("Reset")}</button></div>
         <div className="engrave-view-thumbs" aria-label={translateText("Ugao pregleda sata")}>{[['back', 'Poklopac'], ['side', 'Bočni pogled'], ['angle', 'Pogled pod uglom'], ['front', 'Prednja strana']].map(([key, title]) => <button key={key} className={view === key ? 'active' : ''} aria-label={translateText(title)} aria-pressed={view === key} onClick={() => { setView(key); setFlat(false); setRotate(key !== 'back'); setReset((v) => v + 1); }}><svg viewBox="0 0 80 90" aria-hidden="true"><defs><radialGradient id={`steel-${key}`}><stop offset="0" stopColor="#f5f6f7" /><stop offset=".55" stopColor="#bfc2c5" /><stop offset=".75" stopColor="#eef0f1" /><stop offset="1" stopColor="#9b9fa3" /></radialGradient></defs><g transform={key === 'angle' ? 'translate(8 6) rotate(-18 32 40) scale(.8 1)' : key === 'side' ? 'translate(29 0) scale(.25 1)' : ''}><rect x="28" y="5" width="24" height="80" rx="3" fill="#878c91" /><circle cx="40" cy="45" r="31" fill={`url(#steel-${key})`} stroke="#686d72" strokeWidth="2" /><circle cx="40" cy="45" r="27" fill={key === 'front' ? '#393e45' : `url(#steel-${key})`} stroke="#f0f1f3" />{key === 'front' && <><path d="M40 24V45L56 48" stroke="#fff" fill="none" strokeWidth="2" />{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => <path key={i} d="M40 19V23" stroke="#fff" transform={`rotate(${i * 30} 40 45)`} />)}</>}</g></svg></button>)}</div>

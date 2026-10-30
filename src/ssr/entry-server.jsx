@@ -12,6 +12,7 @@ export function renderPage(location, snapshot, siteUrl) {
     ...snapshot, siteUrl, language,
     catalogPage: snapshot.catalogPage ? { ...snapshot.catalogPage, items: snapshot.catalogPage.items.map(normalizeProduct) } : null,
     homeProducts: snapshot.homeProducts ? { ...snapshot.homeProducts, items: snapshot.homeProducts.items.map(normalizeProduct) } : null,
+    engravingProducts: snapshot.engravingProducts ? { ...snapshot.engravingProducts, items: snapshot.engravingProducts.items.map(normalizeProduct) } : null,
     catalog: snapshot.catalog?.map(normalizeProduct) ?? null,
     product: snapshot.product ? normalizeProduct(snapshot.product) : null,
     relatedVariants: (snapshot.relatedVariants || []).map(normalizeProduct),

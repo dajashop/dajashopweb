@@ -23,6 +23,7 @@
 .engrave-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px;align-items:start}
 .engrave-card{background:#fff;border:1px solid #ecf0f5;border-radius:25px;padding:20px;box-shadow:0 12px 40px #4d607009;margin-bottom:16px}
 .engrave-card h2{font-size:23px;font-weight:750;margin:0 0 16px}
+.engrave-pagination{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:20px}
 .engrave-preview{position:sticky;top:145px;padding:12px}
 .engrave-preview-shell{position:relative;isolation:isolate;overflow:hidden;border-radius:22px;background:radial-gradient(ellipse at 55% 35%,#fff 5%,#f5f7f9 55%,#eef1f5 100%)}
 .engrave-stage{height:clamp(540px,calc(100dvh - 230px),790px);position:relative;overflow:hidden;touch-action:none}
