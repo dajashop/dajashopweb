@@ -1,3 +1,7 @@
+import { translate } from '../localization/translate.js';
+import { pathLanguage } from '../localization/paths.js';
+import { safeApiErrorMessage } from './publicApiError.js';
+
 const DEFAULT_BASE_URL = 'https://daja-platform-api.onrender.com/api/v1';
 const API_BASE_URL = (
   import.meta.env.VITE_DAJA_API_BASE_URL || DEFAULT_BASE_URL
@@ -113,6 +117,12 @@ async function parseResponse(response) {
   return response.text();
 }
 
+function publicErrorMessage(response, data) {
+  // Proxy HTML/text and server exceptions may contain infrastructure details.
+  return translate(safeApiErrorMessage(response.status, data),
+    typeof window === 'undefined' ? 'sr' : pathLanguage(window.location.pathname));
+}
+
 async function sessionRequest(path, options, phase) {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), SESSION_REQUEST_TIMEOUT_MS);
@@ -167,7 +177,7 @@ async function refreshAccessToken() {
         body: JSON.stringify({ refreshToken: requestedRefreshToken }),
       }, 'customer-refresh');
       if (!response.ok) {
-        const error = new Error(data?.message || data?.error?.message || 'Obnova sesije nije uspela.');
+        const error = new Error(publicErrorMessage(response, data));
         error.status = response.status;
         error.authPhase = 'customer-refresh';
         error.code = data?.code || data?.error?.code;
@@ -320,7 +330,7 @@ async function refreshStaffAccessToken() {
       const { response, data: rawData } = result;
       const data = unwrapEnvelope(rawData);
       if (!response.ok) {
-        const error = new Error(data?.message || data?.error?.message || 'Staff sesija nije dostupna.');
+        const error = new Error(publicErrorMessage(response, data));
         error.status = response.status;
         error.authPhase = 'staff-refresh';
         error.code = data?.code || data?.error?.code;
@@ -403,9 +413,8 @@ export async function apiRequest(path, options = {}) {
     });
   } catch (error) {
     if (error.name === 'AbortError') throw error;
-    throw new Error(
-      `DAJA API nije dostupan. Proveri da li je pokrenut backend (${error.message}).`,
-    );
+    throw new Error(translate('Usluga je privremeno nedostupna. Pokušajte ponovo kasnije.',
+      typeof window === 'undefined' ? 'sr' : pathLanguage(window.location.pathname)));
   }
 
   if (response.status === 401 && auth && retry && !staff) {
@@ -423,16 +432,9 @@ export async function apiRequest(path, options = {}) {
 
   const rawData = await parseResponse(response);
   if (!response.ok) {
-    const message =
-      rawData?.message ||
-      rawData?.error?.message ||
-      rawData?.error ||
-      (typeof rawData === 'string' && rawData.trim()
-        ? rawData.trim().slice(0, 300)
-        : 'API zahtev nije uspeo.');
-    const error = new Error(message);
+    const error = new Error(publicErrorMessage(response, rawData));
     error.status = response.status;
-    error.data = rawData;
+    error.code = rawData?.code || rawData?.error?.code;
     throw error;
   }
   return unwrapEnvelope(rawData);

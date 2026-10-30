@@ -1,15 +1,12 @@
 name = "dajashop-r2-image-worker"
 main = "src/workers/r2-image-worker.js"
 compatibility_date = "2026-04-12"
-workers_dev = true
+workers_dev = false
 account_id = "10bd3bdfe4417a769f8efd8d3f54bc74"
 
 [[r2_buckets]]
 binding = "DAJASHOP_IMAGES"
 bucket_name = "dajashop-images"
-
-[vars]
-ALLOWED_ORIGINS = "https://dajashop.rs,https://www.dajashop.rs"
 
 [env.production]
 workers_dev = false
@@ -22,18 +19,16 @@ custom_domain = true
 binding = "DAJASHOP_IMAGES"
 bucket_name = "dajashop-images"
 
-[env.production.vars]
-ALLOWED_ORIGINS = "https://dajashop.rs,https://www.dajashop.rs"
-
 [observability]
-enabled = false
+enabled = true
 head_sampling_rate = 1
+redact_query_string = true
 
 [observability.logs]
 enabled = true
 head_sampling_rate = 1
 persist = true
-invocation_logs = true
+invocation_logs = false
 
 [observability.traces]
 enabled = false

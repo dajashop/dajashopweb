@@ -15,8 +15,15 @@ tmp
 
 # Environment variables
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+.wrangler/
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Editor directories and files
 .vscode/*

@@ -4,14 +4,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite --host 127.0.0.1",
     "build": "node scripts/build.mjs",
     "lint": "eslint .",
+    "test:security": "node --test scripts/security.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1108.0",
-    "@react-google-maps/api": "^2.20.7",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.0",
     "@simplewebauthn/browser": "^13.3.0",
@@ -40,8 +39,9 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "miniflare": "^5.20261023.3-beta",
     "postcss": "^8.5.6",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.1.17",
     "vite": "^7.2.2",
     "wrangler": "^4.81.1"

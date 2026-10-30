@@ -1,9 +1,11 @@
 import { build } from 'vite';
 import react from '@vitejs/plugin-react';
 import { readFile } from 'node:fs/promises';
+import { assertPublicBuild } from './public-security.mjs';
 
 // Pages deploys the browser assets and the bundled advanced-mode Worker
 // together. No Node.js runtime or external npm imports are needed at the edge.
+await assertPublicBuild();
 await build();
 await build({
   configFile: false,
