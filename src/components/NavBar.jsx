@@ -31,11 +31,9 @@ export default function NavBar() {
   const { t: translateText } = useStorefront();
 
   const [isMobile, setIsMobile] = useState(false);
-  // openIdx može biti broj (index brenda) ili string 'ostalo'
+  // Otvoren brend ili brzi izbor svih modela na telefonu.
   const [openIdx, setOpenIdx] = useState(null);
 
-  // State samo za desktop hover dropdown
-  const [desktopOstaloOpen, setDesktopOstaloOpen] = useState(false);
 
   const rowRef = useRef(null);
   const location = useLocation();
@@ -63,14 +61,6 @@ export default function NavBar() {
     if (isMobile) {
       setOpenIdx((prev) => (prev === 'all-models' ? null : 'all-models'));
     }
-  };
-
-  const handleOstaloClick = () => {
-    if (isMobile) {
-      // Na mobilnom otvaramo donji red (sub-meni)
-      setOpenIdx((prev) => (prev === 'ostalo' ? null : 'ostalo'));
-    }
-    // Na desktopu se ovo ne dešava na klik (koristi se hover)
   };
 
   const selectedBrand = new URLSearchParams(location.search)
@@ -165,52 +155,14 @@ export default function NavBar() {
             </div>
           ))}
 
-          {/* "OSTALO" Grupa */}
-          <div
-            className="navbar__group"
-            data-open={isMobile && openIdx === 'ostalo' ? 'true' : 'false'}
-            onMouseEnter={() => !isMobile && setDesktopOstaloOpen(true)}
-            onMouseLeave={() => !isMobile && setDesktopOstaloOpen(false)}
-          >
-            <button
-              className={`navbar__label ${isMobile ? 'navbar__chip' : ''}`}
-              onClick={handleOstaloClick}
-            >{translateText("Ostalo")}{/* Ikonica SAMO NA MOBILNOM */}
-              {isMobile && (
-                <ChevronDown
-                  size={14}
-                  style={{
-                    marginLeft: 4,
-                    opacity: 0.6,
-                    transform:
-                      isMobile && openIdx === 'ostalo'
-                        ? 'rotate(180deg)'
-                        : 'rotate(0deg)',
-                    transition: 'transform 0.2s',
-                  }}
-                />
-              )}
-            </button>
-
-            {/* Desktop Dropdown (Vidljiv samo na desktopu na hover) */}
-            <div
-              className="navbar__dropdown card"
-              style={{
-                display: !isMobile && desktopOstaloOpen ? 'grid' : 'none',
-              }}
-            >
-              <Link to="/daljinski">{translateText("Daljinski")}</Link>
-              <Link to="/baterije">{translateText("Baterije")}</Link>
-              <Link to="/naocare">{translateText("Naočare za sunce")}</Link>
-            </div>
-          </div>
+          <Link to="/catalog" className={`navbar__label ${isMobile ? 'navbar__chip' : ''}`} onClick={() => setOpenIdx(null)}>{translateText("Ostalo")}</Link>
         </div>
 
         {/* --- MOBILNI SUB-MENI (ZA SVE) --- */}
         {isMobile && openIdx !== null && (
           <div className="navbar__sub">
             <div className="navbar__subrow">
-              {/* SCENARIO 1: OTVORENO JE "OSTALO" */}
+              {/* Brzi izbor svih modela ili podmeni izabranog brenda. */}
               {translateText(openIdx === 'all-models' ? (
                 <>
                   <Link
@@ -225,24 +177,6 @@ export default function NavBar() {
                   >{translateText("Svi modeli")}</Link>
                   <Link className="navbar__pill" to="/muski-satovi" onClick={() => setOpenIdx(null)}>{translateText("MUŠKI")}</Link>
                   <Link className="navbar__pill" to="/zenski-satovi" onClick={() => setOpenIdx(null)}>{translateText("ŽENSKI")}</Link>
-                </>
-              ) : openIdx === 'ostalo' ? (
-                <>
-                  <Link
-                    className="navbar__pill"
-                    to="/daljinski"
-                    onClick={() => setOpenIdx(null)}
-                  >{translateText("Daljinski")}</Link>
-                  <Link
-                    className="navbar__pill"
-                    to="/baterije"
-                    onClick={() => setOpenIdx(null)}
-                  >{translateText("Baterije")}</Link>
-                  <Link
-                    className="navbar__pill"
-                    to="/naocare"
-                    onClick={() => setOpenIdx(null)}
-                  >{translateText("Naočare za sunce")}</Link>
                 </>
               ) : (
                 /* SCENARIO 2: OTVOREN JE NEKI BREND (Broj) */

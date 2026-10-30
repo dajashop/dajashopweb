@@ -97,14 +97,25 @@
   bottom: 14px;
   translate: -50% 0;
   display: inline-flex;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 0;
+  padding: 0 4px;
   border-radius: 999px;
   background: color-mix(in oklab, var(--color-surface) 60%, transparent);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
 .heroBg__dots .dot {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.heroBg__dots .dot::after {
+  content: '';
   width: 8px;
   height: 8px;
   border-radius: 999px;
@@ -112,16 +123,17 @@
   background: color-mix(in oklab, var(--color-surface, #fff) 40%, transparent);
   cursor: pointer;
 }
-.heroBg__dots .dot.is-active {
+.heroBg__dots .dot.is-active::after {
   width: 18px;
   transition: width 0.25s ease;
   background: var(--color-text, #111);
 }
+.heroBg__dots .dot:focus-visible { outline: 2px solid var(--color-text); outline-offset: -4px; border-radius: 50%; }
 
 /* Mobile proporcije (prepuštamo .hero visini) */
 @media (max-width: 640px) {
   .heroBg__btn {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
   }
 }

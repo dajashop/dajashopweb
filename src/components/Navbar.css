@@ -150,7 +150,8 @@
   white-space: nowrap;
 }
 @media (hover: hover) and (pointer: fine) {
-  .navbar__group:hover .navbar__dropdown {
+  .navbar__group:hover .navbar__dropdown,
+  .navbar__group:focus-within .navbar__dropdown {
     display: grid; /* Desktop: Prikaz na hover! */
   }
 }

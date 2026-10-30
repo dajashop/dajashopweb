@@ -1,0 +1,19 @@
+.catalog-departments { margin-bottom: 28px; }
+.catalog-departments__heading { margin: 0 0 12px; color: var(--color-text); font-size: 18px; font-weight: 650; }
+.catalog-departments__choices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--color-border, #ddd); border-radius: 16px; overflow: hidden; }
+.catalog-departments__choice { display: flex; align-items: center; gap: 14px; min-width: 0; min-height: 88px; padding: 16px 20px; background: var(--color-bg); color: var(--color-text); text-decoration: none; border-inline-end: 1px solid var(--color-border, #ddd); }
+.catalog-departments__choice:last-child { border-inline-end: 0; }
+.catalog-departments__choice > svg { flex-shrink: 0; }
+.catalog-departments__choice > span { min-width: 0; overflow-wrap: anywhere; }
+.catalog-departments__choice strong, .catalog-departments__choice small { display: block; }
+.catalog-departments__choice strong { font-size: 15px; font-weight: 650; line-height: 1.35; }
+.catalog-departments__choice small { margin-top: 4px; font-size: 12px; line-height: 1.5; opacity: .7; }
+.catalog-departments__choice:hover { background: var(--color-surface); }
+.catalog-departments__choice.is-current { background: var(--color-text); color: var(--color-bg); }
+.catalog-departments__choice:focus-visible { outline: 3px solid currentColor; outline-offset: -5px; }
+@media (max-width: 900px) {
+  .catalog-departments__choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .catalog-departments__choice { gap: 10px; padding: 14px 12px; }
+  .catalog-departments__choice:nth-child(2) { border-inline-end: 0; }
+  .catalog-departments__choice:nth-child(-n+2) { border-bottom: 1px solid var(--color-border, #ddd); }
+}

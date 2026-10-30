@@ -1,6 +1,6 @@
 import React, { createContext, useState, useCallback, useMemo } from "react";
 import FlashModal from "../components/modals/FlashModal.jsx";
-import { CheckCircle2, ShoppingBag, Info } from "lucide-react";
+import { CheckCircle2, ShoppingBag, Info, CircleAlert } from "lucide-react";
 
 export const FlashCtx = createContext();
 
@@ -21,7 +21,7 @@ export function FlashProvider({ children }) {
    * Glavna funkcija za prikaz obaveštenja.
    * @param {string} title - Glavni naslov
    * @param {string} subtitle - Opis (npr. "Uspešno dodato")
-   * @param {'success'|'cart'|'info'|ReactNode} typeOrIcon - Tip ikone ili custom ikona
+   * @param {'success'|'cart'|'info'|'error'|ReactNode} typeOrIcon - Tip ikone ili custom ikona
    */
   const flash = useCallback((title, subtitle = "", typeOrIcon = "success") => {
     let iconElement;
@@ -36,6 +36,9 @@ export function FlashProvider({ children }) {
         case "info":
           iconElement = <Info size={22} className="text-white" />;
           break;
+        case "error":
+          iconElement = <CircleAlert size={22} className="text-white" />;
+          break;
         case "success":
         default:
           iconElement = <CheckCircle2 size={22} className="text-white" />;
@@ -48,6 +51,7 @@ export function FlashProvider({ children }) {
       title,
       subtitle,
       icon: iconElement,
+      isError: typeOrIcon === 'error',
       duration: 2000, // default trajanje
     });
   }, []);
@@ -65,6 +69,7 @@ export function FlashProvider({ children }) {
         icon={state.icon}
         onClose={close}
         duration={state.duration}
+        isError={state.isError}
       />
     </FlashCtx.Provider>
   );

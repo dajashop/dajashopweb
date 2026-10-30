@@ -12,6 +12,7 @@ export default function FlashModal({
   onClose,
   duration = 2000,
   icon,
+  isError = false,
 }) {
   const { t: translateText } = useStorefront();
 
@@ -52,7 +53,7 @@ export default function FlashModal({
             exit={{ y: 10, opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            <div className="flash-icon">
+            <div className={`flash-icon${isError ? ' flash-icon--error' : ''}`}>
               {icon ?? <CheckCircle2 size={24} strokeWidth={3} />}
             </div>
 

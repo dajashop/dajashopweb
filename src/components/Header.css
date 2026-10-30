@@ -6,6 +6,7 @@
 }
 
 @media (max-width: 768px) {
+  .header__actions > button, .header__wishlist, .header__cart { min-width: 44px; min-height: 44px; }
   :root {
     --header-bar-h: 56px;
     --header-search-h: 52px;

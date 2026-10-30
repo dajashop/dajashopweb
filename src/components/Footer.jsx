@@ -1,6 +1,7 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { seoConfig } from '../config/seo.js';
 import {
   MapPin,
   Phone,
@@ -197,12 +198,12 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="mailto:cvelenis42@yahoo.com"
+                  href={`mailto:${seoConfig.business.email}`}
                   className="footer__contact-link"
                   aria-label={translateText("Email adresa")}
                 >
                   <Mail size={18} />
-                  <span>{translateText("cvelenis42@yahoo.com")}</span>
+                  <span>{seoConfig.business.email}</span>
                 </a>
               </li>
             </ul>

@@ -51,6 +51,8 @@
   color: var(--color-text);
 }
 
+.flash-icon--error { background: #b42318; color: #fff; }
+
 .flash-subtitle {
   font-size: 0.9rem;
   color: var(--color-muted);

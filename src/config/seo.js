@@ -10,6 +10,11 @@ const businessStreet = /\s/u.test(configuredStreet)
   ? configuredStreet.replace(/,?\s*(?:Niš|Nis)\s*18000\s*$/iu, '').trim()
   : 'Obrenovićeva bb, Podzemni prolaz lokal C31';
 const businessCity = import.meta.env.VITE_BUSINESS_CITY || 'Niš';
+const publicSetting = value => {
+  const setting = (value || '').trim();
+  return /^@?(?:none|null|undefined|n\/a|your_.*|placeholder.*|example.*)$/iu.test(setting) ? '' : setting;
+};
+const configuredEmail = (import.meta.env.VITE_BUSINESS_EMAIL || '').trim();
 
 export const seoConfig = {
   siteUrl,
@@ -20,10 +25,10 @@ export const seoConfig = {
   siteLocaleAlt: import.meta.env.VITE_SITE_LOCALE_ALT || '',
   ogDefaultImage: !configuredShareImage || /\/og-default\.jpg(?:[?#]|$)/i.test(configuredShareImage)
     ? defaultShareImage : configuredShareImage,
-  twitterHandle: import.meta.env.VITE_TWITTER_HANDLE || '',
-  facebookAppId: import.meta.env.VITE_FACEBOOK_APP_ID || '',
+  twitterHandle: publicSetting(import.meta.env.VITE_TWITTER_HANDLE),
+  facebookAppId: publicSetting(import.meta.env.VITE_FACEBOOK_APP_ID),
   siteLogoUrl: import.meta.env.VITE_SITE_LOGO_URL || '',
-  googleSiteVerification: import.meta.env.VITE_GOOGLE_SITE_VERIFICATION || '',
+  googleSiteVerification: publicSetting(import.meta.env.VITE_GOOGLE_SITE_VERIFICATION),
   business: {
     name: import.meta.env.VITE_BUSINESS_NAME || 'DajaShop',
     street: businessStreet,
@@ -31,7 +36,7 @@ export const seoConfig = {
     postalCode: import.meta.env.VITE_BUSINESS_POSTAL_CODE || '18000',
     country: import.meta.env.VITE_BUSINESS_COUNTRY || 'RS',
     phone: import.meta.env.VITE_BUSINESS_PHONE || '+381641262425',
-    email: import.meta.env.VITE_BUSINESS_EMAIL || 'cvelenis42@yahoo.com',
+    email: configuredEmail && configuredEmail.toLowerCase() !== 'info@dajashop.com' ? configuredEmail : 'cvelenis42@yahoo.com',
     hours: import.meta.env.VITE_BUSINESS_HOURS || 'Mo-Fr 10:00-20:00, Sa 10:00-15:00',
   },
 };

@@ -111,7 +111,7 @@ export default function SearchBar() {
   }, [open, mobile, close]);
 
   const accessibility = { role: 'combobox', 'aria-autocomplete': 'list', 'aria-expanded': open, 'aria-controls': open ? `${id}-list` : undefined,
-    'aria-activedescendant': active >= 0 ? `${id}-option-${active}` : undefined, 'aria-label': 'Pretraži modele, brendove i kolekcije' };
+    'aria-activedescendant': active >= 0 ? `${id}-option-${active}` : undefined, 'aria-label': translateText('Pretraži modele, brendove i kolekcije') };
   const content = <SearchSuggestions data={data} loading={loading} error={error} retry={retry} query={q}
     recommendations={data?.recommendations||[]}
     onNavigate={go} onCorrect={correct} onLiteral={()=>setLiteral(true)} literal={literal} active={active} onActive={setActive} idPrefix={id} />;

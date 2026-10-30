@@ -84,12 +84,12 @@ const CATEGORY_TILES = [
     to: '/catalog?brand=CASIO&category=G-SHOCK',
   },
   {
-    title: 'Nakit & pokloni',
+    title: 'Satovi za svaki stil',
     image: '/images/home/gifts-1280.webp',
     srcSet: '/images/home/gifts-480.webp 480w, /images/home/gifts-960.webp 960w, /images/home/gifts-1280.webp 1280w',
     width: 1280,
     height: 454,
-    to: '/catalog?category=NAKIT',
+    to: '/catalog',
     wide: true,
   },
 ];

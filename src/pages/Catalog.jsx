@@ -12,6 +12,7 @@ import { Loader2, AlertTriangle, ArrowLeft, X } from 'lucide-react';
 // Komponente
 import Breadcrumbs from '../components/Breadcrumbs.jsx';
 import ProductGrid from '../components/ProductGrid.jsx';
+import CatalogDepartments from '../components/CatalogDepartments.jsx';
 import { CatalogSkeleton } from '../components/LoadingSkeletons.jsx';
 import Filters from '../components/Filters.jsx';
 import Pagination from '../components/Pagination.jsx';
@@ -397,6 +398,8 @@ export default function Catalog({ department = 'satovi', seo }) {
           },
         ]}
       />
+
+      <CatalogDepartments department={department} />
 
       <div className="catalog-mobile-trigger lg:hidden mb-4">
         <FilterDrawer department={department} products={departmentItems} configuration={filterConfiguration} serverFacets={facets} facetsPending={listing.displayingPrevious || loading} configurationLoading={filterConfigurationLoading} configurationError={filterConfigurationError} />

@@ -2,6 +2,7 @@ import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useRef, useState } from 'react';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
 import './Contact.css';
+import { seoConfig } from '../config/seo.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import GoogleMapEmbed from '../components/privacy/GoogleMapEmbed.jsx';
 import { apiRequest } from '../services/apiClient.js';
@@ -94,7 +95,7 @@ export default function Contact() {
               <h3>{translateText("Elektronska pošta")}</h3>
               <p>{translateText("Za upite van radnog vremena ili detaljnu dokumentaciju.")}</p>
               <p>
-                <a href="mailto:cvelenis42@yahoo.com">{translateText("cvelenis42@yahoo.com")}</a>{translateText(' ')}{translateText("(Upiti i korisnička podrška)")}</p>
+                <a href={`mailto:${seoConfig.business.email}`}>{seoConfig.business.email}</a>{translateText(' ')}{translateText("(Upiti i korisnička podrška)")}</p>
             </div>
           </div>
 
@@ -198,7 +199,7 @@ export default function Contact() {
           </button>
           </fieldset>
           {status === 'success' && <p className="contact-notice contact-notice--success" role="status">{translateText("Vaša poruka je primljena. Hvala vam na javljanju! Odgovorićemo na navedenu email adresu.")}</p>}
-          {status === 'error' && <p className="contact-notice contact-notice--error" role="alert">{translateText("Poruka nije primljena. Pokušajte ponovo ili nam pišite na ")}<a href="mailto:cvelenis42@yahoo.com">{translateText("cvelenis42@yahoo.com")}</a>{translateText(". Vaš unos je sačuvan u formularu.")}</p>}
+          {status === 'error' && <p className="contact-notice contact-notice--error" role="alert">{translateText("Poruka nije primljena. Pokušajte ponovo ili nam pišite na ")}<a href={`mailto:${seoConfig.business.email}`}>{seoConfig.business.email}</a>{translateText(". Vaš unos je sačuvan u formularu.")}</p>}
         </form>
       </section>
     </div>

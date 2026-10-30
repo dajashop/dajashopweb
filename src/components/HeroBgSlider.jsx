@@ -141,12 +141,13 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
       </div>
 
       {/* Tačkice */}
-      <div className="heroBg__dots" role="tablist" aria-label={translateText("Navigacija slajdova")}>
+      <div className="heroBg__dots" role="group" aria-label={translateText("Navigacija slajdova")}>
         {slides.map((_, idx) => (
           <button
             key={idx}
-            role="tab"
-            aria-selected={idx === i}
+            type="button"
+            aria-label={translateText('Prikaži slajd {number}', { number: idx + 1 })}
+            aria-pressed={idx === i}
             className={`dot ${idx === i ? "is-active" : ""}`}
             onClick={() => goTo(idx)}
           />
