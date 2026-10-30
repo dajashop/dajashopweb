@@ -8,6 +8,7 @@ import {
   toArrayPayload,
 } from './apiClient';
 import { createRealtimeSocket } from './realtimeSocket.js';
+import { createOAuthBrowserState } from './oauthBrowserState.js';
 import { getAccessToken, getStaffAccessToken } from './apiClient';
 import { readStoredValue, writeStoredValue } from './consentStorage.js';
 import { visibleProductSpecs } from '../utils/catalogPresentation.js';
@@ -30,10 +31,9 @@ const delay = (duration) =>
 
 async function waitForApiBeforeOAuth(onProgress) {
   const probeUrl = new URL(
-    `${API_BASE_URL}/public/catalog/products`,
+    `${API_BASE_URL}/customer-auth/security-capabilities`,
     window.location.origin,
   );
-  probeUrl.searchParams.set('limit', '1');
 
   const startedAt = Date.now();
   let attempt = 0;
@@ -60,7 +60,10 @@ async function waitForApiBeforeOAuth(onProgress) {
       // Render returns its own HTML while a sleeping service is starting.
       // Only a real JSON response means that it is safe to navigate away
       // from the DajaShop modal to the Google OAuth endpoint.
-      if (response.ok && contentType.includes('application/json')) return;
+      if (response.ok && contentType.includes('application/json')) {
+        const payload = await response.json();
+        if ((payload?.data || payload)?.googleOAuthBrowserState === true) return;
+      }
 
       lastError = new Error('API još nije spreman za Google prijavu.');
     } catch (error) {
@@ -368,6 +371,7 @@ export const authApi = {
       window.location.origin,
     );
     startUrl.searchParams.set('returnTo', window.location.href);
+    startUrl.searchParams.set('browserState', createOAuthBrowserState());
     window.location.assign(startUrl.toString());
   },
   async passkeyRegisterStart(payload) {
@@ -1029,9 +1033,10 @@ export const customerApi = {
     });
   },
   linkOAuth(provider) {
-    window.location.assign(
-      `${API_BASE_URL}/customer-auth/oauth/${provider}/start?link=1`,
-    );
+    const url = new URL(`${API_BASE_URL}/customer-auth/oauth/${provider}/start`, window.location.origin);
+    url.searchParams.set('link', '1');
+    url.searchParams.set('browserState', createOAuthBrowserState());
+    window.location.assign(url.toString());
   },
 };
 

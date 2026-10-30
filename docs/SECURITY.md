@@ -22,15 +22,19 @@ Cloudflare zona: TLS minimum 1.2, Full (strict), HSTS 30 dana bez preload i incl
 
 1. Kupčev access/refresh i staff token i dalje su dostupni JavaScriptu u localStorage. Koordinisati backend i web prelazak na HttpOnly/Secure sesije, CSRF zaštitu i očuvanje realtime veze, obnove i odjave.
 2. Obavezan administratorski MFA mora da se sprovodi na backendu, ne samo u web interfejsu.
-3. Backend autorizacija vlasništva podataka, auth rate limiting, produkcioni CORS, upload sadržaj/veličina, zabrana trusted-header identiteta i redakcija backend logova.
-4. Zatvaranje javnog pristupa bazi, odvajanje DB aplikacionog korisnika od vlasnika/migratora, TLS verifikacija i backup/restore.
+3. Backend korak je dodao auth limite, HTTP/WS CORS ograničenja, upload provere, zabranu trusted-header identiteta i redakciju logova. Potpun pregled svih poslovnih autorizacija i produkcijski deploy nisu potvrđeni; detalji su u daja-platform/docs/SECURITY.md.
+4. Render baza sada ima blokiran javni pristup, a produkcijski backup je uspešno vraćen i proveren u izolaciji. Produkcijski DB aplikacioni korisnik još nije odvojen od vlasnika/migratora.
 5. Ograničenja javnog Google Maps browser ključa proveriti u Google Cloud Console. Javne browser ključeve nije moguće sakriti u frontend buildu; privatne ključeve nikada ne stavljati u `VITE_*`.
 6. Nastaviti reviziju istorije/rotaciju ako bude dokaza o izloženom privatnom ključu. Odsustvo nalaza u pregledanim lokalnim Git referencama ne dokazuje odsustvo u svim fork-ovima, logovima ili backupima.
 
 ## Provera
 
-`npm run build` zatim `npm run test:security`: 9 test grupa za redakciju API grešaka, putanje i kodirane pokušaje zaobilaženja, odbijanje javnih env naziva, sanitizaciju opisa, CDN metode/CORS/tipove, spakovani Pages Worker, nonce/cache/email privatnost i odbijanje upisa. Runtime je lokalni Cloudflare Workerd kroz Miniflare; R2 i statički binding su kontrolisane zamene, ne produkcijski storage.
+`npm run build` zatim `npm run test:security`: 10 test grupa za OAuth browser-state, redakciju API grešaka, putanje i kodirane pokušaje zaobilaženja, odbijanje javnih env naziva, sanitizaciju opisa, CDN metode/CORS/tipove, spakovani Pages Worker, nonce/cache/email privatnost i odbijanje upisa. Runtime je lokalni Cloudflare Workerd kroz Miniflare; R2 i statički binding su kontrolisane zamene, ne produkcijski storage.
 
 `npm audit`: 0 poznatih ranjivosti na kraju ovog koraka. Ciljani ESLint nad izmenjenim JS kodom i `git diff --check` prolaze. Ovo ne predstavlja dokaz odsustva svih ranjivosti, test kupovine/prijave ili potvrdu produkcijskog deploya. Deploy završetak se po korisnikovom uputstvu ne proverava.
 
 Reference: [Cloudflare Workers smernice](https://developers.cloudflare.com/workers/best-practices/workers-best-practices/), [Google Maps CSP zahtevi](https://developers.google.com/maps/documentation/javascript/content-security-policy).
+
+## Dopuna: OAuth browser-state
+
+Google OAuth povratak mora da odgovara kriptografski nasumičnom jednokratnom stanju započetom u istom tabu, uz rok od 10 minuta. Stanje je potpisano na backendu; podmetnuti, ponovljeni ili stari fragment ne zamenjuje sesiju. Stari/in-flight Google login posle promene treba ponoviti; desktop/mobile Google tok koristi zaseban postojeći ugovor. Logout callback u auth kontekstu ima usklađene React zavisnosti.

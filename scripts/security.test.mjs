@@ -8,11 +8,26 @@ import { isSensitivePath } from '../src/ssr/requestSecurity.js';
 import { assertPublicBuild } from './public-security.mjs';
 import { descriptionHtml } from '../src/components/description.js';
 import { safeApiErrorMessage } from '../src/services/publicApiError.js';
+import { createOAuthBrowserState, consumeOAuthBrowserState } from '../src/services/oauthBrowserState.js';
 
 const attacks = ['/.env', '/en/.env.production', '/.git/config', '/backup.sql',
   '/.dev.vars', '/package-lock.json', '/src/main.jsx', '/scripts/build.mjs',
   '/node_modules/a/index.js', '/key.pem', '/db.sqlite', '/assets/main.js.map',
   '/%252eenv', '/%2egit/config', '/%00env', '/%ZZ', '/foo%5c.env', '/__ssr-data/v1/catalog'];
+
+test('OAuth callback accepts only the initiating tab and consumes its state once', () => {
+  const values = new Map();
+  const storage = { setItem: (key, value) => values.set(key, value), getItem: key => values.get(key), removeItem: key => values.delete(key) };
+  const nonce = createOAuthBrowserState(storage);
+  assert.match(nonce, /^[a-f0-9]{64}$/);
+  assert.equal(consumeOAuthBrowserState('0'.repeat(64), storage), false);
+  assert.equal(consumeOAuthBrowserState(nonce, { getItem: () => null }), false);
+  assert.equal(consumeOAuthBrowserState(nonce, storage), true);
+  assert.equal(consumeOAuthBrowserState(nonce, storage), false);
+  const expired = createOAuthBrowserState(storage);
+  for (const [key, value] of values) values.set(key, JSON.stringify({ ...JSON.parse(value), createdAt: Date.now() - 11 * 60_000 }));
+  assert.equal(consumeOAuthBrowserState(expired, storage), false);
+});
 
 test('API errors hide server diagnostics and proxy HTML while preserving safe validation messages', () => {
   for (const data of [{ message: 'SELECT secret FROM users' }, { error: { message: 'internal password' } }, '<h1>Proxy stack trace</h1>']) {

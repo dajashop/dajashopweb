@@ -14,6 +14,7 @@ import {
   resumeAuthSession,
 } from '../services/apiClient';
 import { useConsent } from './ConsentContext.jsx';
+import { consumeOAuthBrowserState } from '../services/oauthBrowserState.js';
 import {
   browserSupportsWebAuthn,
   startAuthentication,
@@ -51,6 +52,7 @@ export function AuthProvider({ children }) {
   const [pendingEmailVerify, setPendingEmailVerify] = useState(false);
   const [oauthJustSucceeded, setOauthJustSucceeded] = useState(false);
   const loadSequence = useRef(0);
+  const handledOAuthFragment = useRef('');
 
   const loadMe = useCallback(async () => {
     const sequence = ++loadSequence.current;
@@ -172,9 +174,18 @@ export function AuthProvider({ children }) {
     const accessToken = params.get('accessToken');
     const refreshToken = params.get('refreshToken');
     if (params.get('oauth') !== 'success' || !accessToken || !refreshToken) return;
+    if (handledOAuthFragment.current === hash) return;
+    handledOAuthFragment.current = hash;
 
-    setAuthTokens({ accessToken, refreshToken });
-    setOauthJustSucceeded(true);
+    if (consumeOAuthBrowserState(params.get('browserState'))) {
+      setAuthTokens({ accessToken, refreshToken });
+      setOauthJustSucceeded(true);
+    } else {
+      // Discard injected/replayed OAuth fragments without changing an existing
+      // session. A new login creates a fresh tab-bound nonce.
+      setMode('login');
+      setAuthOpen(true);
+    }
     // Keep React Router in sync with the cleaned address. A direct history
     // replacement leaves the consumed OAuth fragment in useLocation(), where
     // language links could copy it and announce the same login again.
@@ -279,7 +290,7 @@ export function AuthProvider({ children }) {
     return authApi.oauthStart(provider, onProgress);
   }
 
-  async function logout() {
+  const logout = useCallback(async () => {
     const pendingSaves = [];
     window.dispatchEvent(new CustomEvent('daja:before-logout', { detail: pendingSaves }));
     await Promise.allSettled(pendingSaves);
@@ -288,7 +299,7 @@ export function AuthProvider({ children }) {
     setUserInfo(null);
     setStaffReady(false);
     navigate('/logout', { replace: true });
-  }
+  }, [navigate]);
 
   const passkeyLogin = useCallback(async () => {
     if (!window.isSecureContext) {
@@ -375,6 +386,7 @@ export function AuthProvider({ children }) {
       linkPasskey,
       loadMe,
       dismissOauthSuccess,
+      logout,
     ],
   );
 
