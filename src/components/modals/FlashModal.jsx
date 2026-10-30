@@ -33,7 +33,16 @@ export default function FlashModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  const announcement = open ? `${translateText(title)}${subtitle ? `. ${translateText(subtitle)}` : ''}` : '';
+
   return (
+    <>
+    <div className="flash-announcement" role="status" aria-atomic="true">
+      {!isError ? announcement : ''}
+    </div>
+    <div className="flash-announcement" role="alert" aria-atomic="true">
+      {isError ? announcement : ''}
+    </div>
     <AnimatePresence>
       {open && (
         <motion.div
@@ -42,8 +51,7 @@ export default function FlashModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          aria-live="polite"
-          role="alertdialog"
+          aria-hidden="true"
         >
           <motion.div
             className="flash-card"
@@ -63,5 +71,6 @@ export default function FlashModal({
         </motion.div>
       )}
     </AnimatePresence>
+    </>
   );
 }

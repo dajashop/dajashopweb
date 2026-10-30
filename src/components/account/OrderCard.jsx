@@ -18,7 +18,7 @@ export default function OrderCard({ order }) {
   const { t: translateText, money } = useStorefront();
 
   const [isOpen, setIsOpen] = useState(false);
-  const placeholderImage = '/placeholder.png';
+  const placeholderImage = '/images/product-placeholder.svg';
 
   // Određivanje boje bedža na osnovu statusa
   const getStatusColor = (status) => {
