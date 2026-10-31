@@ -6,6 +6,7 @@ import {
   clearAuthTokens,
   onStaffAccessTokenChange,
   toArrayPayload,
+  BROWSER_SESSIONS_ENABLED,
 } from './apiClient';
 import { createRealtimeSocket } from './realtimeSocket.js';
 import { createOAuthBrowserState } from './oauthBrowserState.js';
@@ -87,7 +88,7 @@ function realtimeNamespaceUrl() {
     : `${window.location.origin}${API_BASE_URL}`;
   // VITE_DAJA_WS_URL may be either an origin or the complete `/realtime`
   // namespace. Normalize both forms so it can never become `/realtime/realtime`.
-  const configured = import.meta.env.VITE_DAJA_WS_URL || apiBase;
+  const configured = BROWSER_SESSIONS_ENABLED ? apiBase : import.meta.env.VITE_DAJA_WS_URL || apiBase;
   return `${new URL(configured).origin}/realtime`;
 }
 
@@ -295,10 +296,20 @@ export const authApi = {
         name: payload.name || payload.displayName || payload.email,
       },
     });
-    if (data?.accessToken || data?.access_token) setAuthTokens(data);
+    if (data?.webSession || data?.accessToken || data?.access_token) setAuthTokens(data);
     return normalizeUser(data);
   },
   async logout() {
+    if (BROWSER_SESSIONS_ENABLED) {
+      if (getStaffAccessToken()) {
+        try { await apiRequest('/auth/logout', { method: 'POST', staff: true, retry: false }); }
+        catch (error) { if (error.status !== 401) throw error; }
+      }
+      try { await apiRequest('/customer-auth/logout', { method: 'POST', retry: false }); }
+      catch (error) { if (error.status !== 401) throw error; }
+      clearAuthTokens();
+      return;
+    }
     try {
       // Customer and staff sessions are separate server records. Revoke the
       // staff session before discarding its bearer token locally.
@@ -348,7 +359,7 @@ export const authApi = {
       method: 'POST',
       body: { deviceId },
     });
-    setStaffAccessToken(data?.accessToken || data?.access_token || null);
+    setStaffAccessToken(BROWSER_SESSIONS_ENABLED ? data?.staffSession === true : data?.accessToken || data?.access_token || null, data?.expiresIn);
     return data;
   },
   async requestPhoneOtp(phone) {

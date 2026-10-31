@@ -12,6 +12,8 @@ import {
   onAuthTokenChange,
   setAuthTokens,
   resumeAuthSession,
+  initializeBrowserSession,
+  BROWSER_SESSIONS_ENABLED,
 } from '../services/apiClient';
 import { useConsent } from './ConsentContext.jsx';
 import { consumeOAuthBrowserState } from '../services/oauthBrowserState.js';
@@ -56,6 +58,9 @@ export function AuthProvider({ children }) {
 
   const loadMe = useCallback(async () => {
     const sequence = ++loadSequence.current;
+    try { await initializeBrowserSession(); }
+    catch { if (sequence === loadSequence.current) setAuthReady(true); return null; }
+    if (sequence !== loadSequence.current) return null;
     if (!getAccessToken()) {
       setUser(null);
       setUserInfo(null);
@@ -173,12 +178,15 @@ export function AuthProvider({ children }) {
     const params = new URLSearchParams(hash);
     const accessToken = params.get('accessToken');
     const refreshToken = params.get('refreshToken');
-    if (params.get('oauth') !== 'success' || !accessToken || !refreshToken) return;
+    const cookieSession = BROWSER_SESSIONS_ENABLED && params.get('session') === 'cookie';
+    if (params.get('oauth') !== 'success' || (!cookieSession && (!accessToken || !refreshToken))) return;
     if (handledOAuthFragment.current === hash) return;
     handledOAuthFragment.current = hash;
 
     if (consumeOAuthBrowserState(params.get('browserState'))) {
-      setAuthTokens({ accessToken, refreshToken });
+      if (cookieSession) {
+        void initializeBrowserSession(true).then(() => loadMe()).catch(() => { setMode('login'); setAuthOpen(true); });
+      } else if (!BROWSER_SESSIONS_ENABLED) setAuthTokens({ accessToken, refreshToken });
       setOauthJustSucceeded(true);
     } else {
       // Discard injected/replayed OAuth fragments without changing an existing
@@ -193,7 +201,7 @@ export function AuthProvider({ children }) {
       replace: true,
       state: location.state,
     });
-  }, [hasDecision, location, navigate]);
+  }, [hasDecision, location, navigate, loadMe]);
 
   const dismissOauthSuccess = useCallback(() => {
     setOauthJustSucceeded(false);

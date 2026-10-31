@@ -1,7 +1,10 @@
 import { io } from 'socket.io-client';
-import { resumeAuthSession } from './apiClient.js';
+import { resumeAuthSession, BROWSER_SESSIONS_ENABLED } from './apiClient.js';
 
 export function createRealtimeSocket(url, readAuth) {
+  const cookieAuth = value => BROWSER_SESSIONS_ENABLED && !value.publicCatalog
+    ? { sessionKind: value.token?.includes('cookie-staff-session') ? 'staff' : 'customer' }
+    : value;
   const socket = io(url, {
     path: '/socket.io',
     // A WebSocket keeps all packets on one connection. Polling requires every
@@ -17,7 +20,7 @@ export function createRealtimeSocket(url, readAuth) {
       }
       // A persistent socket now expires with its access token. Renew before
       // reconnecting, so idle authenticated tabs can recover securely.
-      Promise.resolve(resumeAuthSession()).then(() => callback(readAuth())).catch(() => callback({}));
+      Promise.resolve(resumeAuthSession()).then(() => callback(cookieAuth(readAuth()))).catch(() => callback({}));
     },
     reconnection: true,
     reconnectionAttempts: Infinity,

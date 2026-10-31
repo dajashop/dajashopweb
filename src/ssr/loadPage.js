@@ -24,12 +24,12 @@ export function publicCacheSeconds(data, maximum = 60) {
     Math.max(0, Math.floor((new Date(item.saleValidUntil).getTime() - Date.now()) / 1000) || 0)), maximum);
 }
 
-export async function loadPage(url, apiBase, readProduct, readCatalog, readRelated, readPublicApi) {
+export async function loadPage(url, apiBase, readProduct, readCatalog, readRelated, readPublicApi, requestHeaders = {}) {
   const path = stripLanguagePrefix(url.pathname).replace(/\/+$/, '') || '/';
   const api = async (route, optional = false) => {
     try {
       const loader = async () => {
-        const response = await fetch(`${apiBase}${route}`, { signal: AbortSignal.timeout(optional ? 3000 : 8000) });
+        const response = await fetch(`${apiBase}${route}`, { signal: AbortSignal.timeout(optional ? 3000 : 8000), headers: requestHeaders });
         if (!response.ok) { const error = new Error(`Public catalog response: ${response.status}`); error.status = response.status; throw error; }
         const body = await response.json();
         return body?.data ?? body;
@@ -62,6 +62,7 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
     const slug = path.split('/')[2];
     const response = await fetch(`${apiBase}/public/catalog/products/${encodeURIComponent(decodeURIComponent(slug))}`, {
       signal: AbortSignal.timeout(8000),
+      headers: requestHeaders,
     });
     if (response.status === 404) return { missing: true };
     if (!response.ok) throw new Error(`Product response: ${response.status}`);

@@ -6,6 +6,7 @@ import { isSensitivePath } from '../src/ssr/requestSecurity.js';
 // Every VITE_* value is public browser code. Approve names explicitly instead
 // of trying to recognize leaked secret values after publication.
 const publicNames = new Set([
+  'VITE_DAJA_BROWSER_SESSIONS',
   'VITE_ADMIN_EMAILS', 'VITE_BUSINESS_NAME', 'VITE_BUSINESS_STREET',
   'VITE_BUSINESS_PHONE', 'VITE_BUSINESS_EMAIL', 'VITE_BUSINESS_HOURS',
   'VITE_BUSINESS_CITY', 'VITE_BUSINESS_POSTAL_CODE', 'VITE_BUSINESS_COUNTRY',
