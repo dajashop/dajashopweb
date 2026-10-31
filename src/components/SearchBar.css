@@ -140,6 +140,7 @@
     flex-basis: 100%;
   }
   .searchNeo .s2__clear { width: 40px; height: 40px; }
+  .searchNeo .s2__input { font-size: max(1rem, 16px); }
   .searchNeo.has-value .s2__input { padding-right: 92px; }
   .s2__submit:focus-visible, .s2__clear:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 }
