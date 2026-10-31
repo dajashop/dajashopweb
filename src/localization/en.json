@@ -1981,5 +1981,10 @@
   "Prijavu nije moguće započeti. Omogućite čuvanje podataka i pokušajte ponovo.": "Sign-in could not be started. Enable browser storage and try again.",
   "Usluga je privremeno nedostupna. Pokušajte ponovo kasnije.": "The service is temporarily unavailable. Please try again later.",
   "Zahtev nije uspeo. Proverite podatke i pokušajte ponovo.": "The request failed. Check your details and try again.",
-  "Naočare za sunce, daljinski upravljači i baterije. Izaberite kategoriju za pregled ponude.": "Sunglasses, remote controls and batteries. Choose a category to browse the collection."
+  "Naočare za sunce, daljinski upravljači i baterije. Izaberite kategoriju za pregled ponude.": "Sunglasses, remote controls and batteries. Choose a category to browse the collection.",
+  "Ograničenje prostora za nacrte gravure je dostignuto. Pokušajte kasnije.": "The engraving draft storage limit has been reached. Please try again later.",
+  "Slika mora biti PNG do 1024 px.": "The image must be a PNG no larger than 1024 pixels.",
+  "Najviše 40 slika po nacrtu.": "A draft can contain up to 40 images.",
+  "Povezivanje odjavljuje sve uređaje i uklanja postojeću lozinku i broj telefona. Posle povezivanja možete ih ponovo podesiti.": "Linking signs out all devices and removes your existing password and phone number. You can set them up again after linking.",
+  "Nacrti gostiju dostupni su 24 sata. Nacrti na nalogu čuvaju se 30 dana od poslednje izmene. Gravure potvrđenih porudžbina ostaju sačuvane.": "Guest drafts are available for 24 hours. Account drafts are kept for 30 days after the last edit. Engravings in confirmed orders remain saved."
 }

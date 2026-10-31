@@ -47,7 +47,7 @@ const SecuritySettings = () => {
   const handleGoogleLink = async () => {
     try {
       if (!user) throw new Error('Morate biti ulogovani.');
-      customerApi.linkOAuth('google');
+      await customerApi.linkOAuth('google');
     } catch (err) {
       console.error(err);
       alert(translateText('Greska: ' + err.message));
@@ -121,6 +121,11 @@ const SecuritySettings = () => {
           <div>
             <span className="font-medium block">{translateText("Google Nalog")}</span>
             <span className="text-xs text-gray-500">{translateText("Koristite Google za bržu prijavu.")}</span>
+            {!isGoogleLinked && (
+              <span className="text-xs text-gray-500 block mt-1 max-w-lg">
+                {translateText('Povezivanje odjavljuje sve uređaje i uklanja postojeću lozinku i broj telefona. Posle povezivanja možete ih ponovo podesiti.')}
+              </span>
+            )}
           </div>
         </div>
 

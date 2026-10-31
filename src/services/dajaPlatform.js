@@ -1041,11 +1041,15 @@ export const customerApi = {
       },
     });
   },
-  linkOAuth(provider) {
-    const url = new URL(`${API_BASE_URL}/customer-auth/oauth/${provider}/start`, window.location.origin);
-    url.searchParams.set('link', '1');
-    url.searchParams.set('browserState', createOAuthBrowserState());
-    window.location.assign(url.toString());
+  async linkOAuth(provider) {
+    const data = await apiRequest(`/customer-auth/oauth/${provider}/link/start`, {
+      method: 'POST',
+      body: {
+        browserState: createOAuthBrowserState(),
+        returnTo: window.location.href,
+      },
+    });
+    window.location.assign(data.url);
   },
 };
 

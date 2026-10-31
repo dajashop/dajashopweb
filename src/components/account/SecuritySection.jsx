@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFlash } from '../../hooks/useFlash.js';
 import { usePasskey } from '../../hooks/usePasskey.js';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import {
   Lock,
   ShieldCheck,
@@ -48,7 +48,7 @@ export default function SecuritySection({ user }) {
   const [loading, setLoading] = useState(false);
 
   // --- PASSKEY HOOK ---
-  const { registerPasskey, loading: pkLoading, error: pkError } = usePasskey();
+  const { loading: pkLoading, error: pkError } = usePasskey();
   const { linkPasskey, refreshUser } = useAuth();
   const [isPasskeyEnabled, setIsPasskeyEnabled] = useState(false); // Idealno povući sa servera
 
@@ -67,7 +67,7 @@ export default function SecuritySection({ user }) {
   // --- HANDLER ZA GOOGLE ---
   const handleGoogleLink = async () => {
     try {
-      customerApi.linkOAuth('google');
+      await customerApi.linkOAuth('google');
       flash('Info', 'Preusmeravamo vas na Google povezivanje naloga.', 'info');
     } catch (err) {
       console.error(err);
@@ -137,7 +137,7 @@ export default function SecuritySection({ user }) {
   };
 
   return (
-    <motion.div
+    <Motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="section-content"
@@ -179,7 +179,7 @@ export default function SecuritySection({ user }) {
             <div className="flex-1">
               <AnimatePresence mode="wait">
                 {!isEditingPassword ? (
-                  <motion.div
+                  <Motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -194,9 +194,9 @@ export default function SecuritySection({ user }) {
                       <CheckCircle2 size={14} />
                       <span>{translateText(hasPassword ? 'Lozinka je aktivna' : 'Google prijava je aktivna')}</span>
                     </div>
-                  </motion.div>
+                  </Motion.div>
                 ) : (
-                  <motion.form
+                  <Motion.form
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
@@ -259,7 +259,7 @@ export default function SecuritySection({ user }) {
                           <Save size={14} />
                         )}{translateText("Sačuvaj")}</button>
                     </div>
-                  </motion.form>
+                  </Motion.form>
                 )}
               </AnimatePresence>
             </div>
@@ -343,6 +343,11 @@ export default function SecuritySection({ user }) {
                 ? 'Google nalog je povezan za brzu prijavu jednim klikom.'
                 : 'Povežite Google nalog za brzu prijavu jednim klikom.')}
             </p>
+            {!isGoogleLinked && (
+              <p className="text-xs text-[var(--color-muted)] mt-1 max-w-lg">
+                {translateText('Povezivanje odjavljuje sve uređaje i uklanja postojeću lozinku i broj telefona. Posle povezivanja možete ih ponovo podesiti.')}
+              </p>
+            )}
           </div>
         </div>
 
@@ -369,6 +374,6 @@ export default function SecuritySection({ user }) {
           <p className="text-xs text-[var(--color-muted)]">{translateText("Trenutno ste prijavljeni na ovom uređaju. Ako primetite sumnjivu aktivnost, promenite lozinku odmah.")}</p>
         </div>
       </div>
-    </motion.div>
+    </Motion.div>
   );
 }
