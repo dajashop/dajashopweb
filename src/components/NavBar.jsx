@@ -1,6 +1,6 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { brandUrl, brandChoiceUrl, urlSlug, isBrandPath } from '../utils/catalogUrls.js';
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import './Navbar.css';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
@@ -33,6 +33,7 @@ export default function NavBar() {
   const [isMobile, setIsMobile] = useState(false);
   // Otvoren brend ili brzi izbor svih modela na telefonu.
   const [openIdx, setOpenIdx] = useState(null);
+  const [otherDismissed, setOtherDismissed] = useState(false);
 
 
   const rowRef = useRef(null);
@@ -61,6 +62,11 @@ export default function NavBar() {
     if (isMobile) {
       setOpenIdx((prev) => (prev === 'all-models' ? null : 'all-models'));
     }
+  };
+
+  const closeOtherMenu = () => {
+    setOpenIdx(null);
+    setOtherDismissed(true);
   };
 
   const selectedBrand = new URLSearchParams(location.search)
@@ -155,12 +161,18 @@ export default function NavBar() {
             </div>
           ))}
 
-          <div className="navbar__group">
-            <Link to="/ostalo" className={`navbar__label ${isMobile ? 'navbar__chip' : ''}`} onClick={() => setOpenIdx(null)}>{translateText("Ostalo")}</Link>
+          <div className="navbar__group"
+            data-dismissed={otherDismissed ? 'true' : undefined}
+            onPointerEnter={() => setOtherDismissed(false)}
+            onFocusCapture={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setOtherDismissed(false);
+            }}
+          >
+            <Link to="/ostalo" className={`navbar__label ${isMobile ? 'navbar__chip' : ''}`} onClick={closeOtherMenu}>{translateText("Ostalo")}</Link>
             <div className="navbar__dropdown card">
-              <Link to="/naocare">{translateText("Naočare za sunce")}</Link>
-              <Link to="/daljinski">{translateText("Daljinski")}</Link>
-              <Link to="/baterije">{translateText("Baterije")}</Link>
+              <Link to="/naocare" onClick={closeOtherMenu}>{translateText("Naočare za sunce")}</Link>
+              <Link to="/daljinski" onClick={closeOtherMenu}>{translateText("Daljinski")}</Link>
+              <Link to="/baterije" onClick={closeOtherMenu}>{translateText("Baterije")}</Link>
             </div>
           </div>
         </div>
