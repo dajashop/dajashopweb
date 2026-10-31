@@ -69,6 +69,10 @@ async function cachedData(request, name, loader, ttl) {
 
 async function serveRequest(request, env) {
     const url = new URL(request.url);
+    // Bound URL parsing/filter work before issuing any backend subrequests.
+    if (request.url.length > 4096 || [...url.searchParams].length > 40) {
+      return new Response('Request URI too long', { status: 414, headers: { 'Cache-Control': 'no-store' } });
+    }
     const language = pathLanguage(url.pathname);
     const path = stripLanguagePrefix(url.pathname).replace(/\/+$/, '') || '/';
     if (isSensitivePath(url.pathname)) return hiddenFileResponse(request);
@@ -91,10 +95,12 @@ async function serveRequest(request, env) {
     if (path === '/api/v1/customer-auth/oauth/google/callback') {
       const callback = new URL(`${apiBase}/customer-auth/oauth/google/callback`);
       callback.search = url.search;
-      return fetch(new Request(callback, request));
+      // The callback only needs its query. Do not forward browser cookies or
+      // Authorization to a different origin, or follow its OAuth redirect.
+      return fetch(callback, { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(10_000) });
     }
     if (path === '/sitemap.xml' || path === '/merchant-feed.xml') {
-      return fetch(`${apiBase}/public/catalog${path}`, { headers: { 'Cache-Control': 'no-cache' } });
+      return fetch(`${apiBase}/public/catalog${path}`, { headers: { 'Cache-Control': 'no-cache' }, signal: AbortSignal.timeout(10_000) });
     }
     if (/\.\w{1,8}$/.test(path) && !isProductPath(path)) {
       const asset = await env.ASSETS.fetch(request);
@@ -124,6 +130,10 @@ async function serveRequest(request, env) {
         loader => cachedData(request, 'catalog', loader, catalog => publicCacheSeconds({ catalog })),
         loader => cachedData(request, `related/${encodeURIComponent(path.split('/')[2])}`, loader,
           relatedProducts => publicCacheSeconds({ relatedProducts })),
+        // Cache anonymous listings, filters and variants too. Previously each
+        // repeated SSR page could issue several uncached database-backed calls.
+        (route, loader) => cachedData(request, `public-api/${encodeURIComponent(route)}`, loader,
+          value => publicCacheSeconds({ catalog: Array.isArray(value?.items) ? value.items : [] }, 30)),
       ), env.ASSETS.fetch(new Request(new URL('/', url)))
         .then(async response => ({ response, text: await response.text() }))
         .catch(() => null)]);

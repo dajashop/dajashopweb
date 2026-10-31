@@ -24,14 +24,17 @@ export function publicCacheSeconds(data, maximum = 60) {
     Math.max(0, Math.floor((new Date(item.saleValidUntil).getTime() - Date.now()) / 1000) || 0)), maximum);
 }
 
-export async function loadPage(url, apiBase, readProduct, readCatalog, readRelated) {
+export async function loadPage(url, apiBase, readProduct, readCatalog, readRelated, readPublicApi) {
   const path = stripLanguagePrefix(url.pathname).replace(/\/+$/, '') || '/';
   const api = async (route, optional = false) => {
     try {
-      const response = await fetch(`${apiBase}${route}`, { signal: AbortSignal.timeout(optional ? 3000 : 8000) });
-      if (!response.ok) { const error = new Error(`Public catalog response: ${response.status}`); error.status = response.status; throw error; }
-      const body = await response.json();
-      return body?.data ?? body;
+      const loader = async () => {
+        const response = await fetch(`${apiBase}${route}`, { signal: AbortSignal.timeout(optional ? 3000 : 8000) });
+        if (!response.ok) { const error = new Error(`Public catalog response: ${response.status}`); error.status = response.status; throw error; }
+        const body = await response.json();
+        return body?.data ?? body;
+      };
+      return await (readPublicApi ? readPublicApi(route, loader) : loader());
     } catch (error) {
       if (optional) return null;
       throw error;
