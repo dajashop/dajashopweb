@@ -119,7 +119,8 @@ async function refreshCustomer() {
     };
     await withSessionLock(operation);
   })().catch(error => {
-    if (error.status === 401 || error.status === 403) clearAuthTokens();
+    // A CSRF/Origin rejection is not proof that the customer session expired.
+    if (error.status === 401) clearAuthTokens();
     throw error;
   }).finally(() => { refreshing = undefined; });
   return refreshing;
