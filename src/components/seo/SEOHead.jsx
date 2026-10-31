@@ -78,10 +78,6 @@ export default function SEOHead({
       <meta name="twitter:description" content={translatedDescription} />
       <meta name="twitter:image" content={imageUrl} />
       {twitterSite && <meta name="twitter:site" content={twitterSite} />}
-
-      {seoConfig.facebookAppId && (
-        <meta property="fb:app_id" content={seoConfig.facebookAppId} />
-      )}
       {seoConfig.googleSiteVerification && (
         <meta
           name="google-site-verification"

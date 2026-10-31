@@ -643,7 +643,7 @@
 
   /* NOVE IZMENE ZA RESPONZIVNOST UNUTRAŠNJIH ELEMENATA: */
 
-  /* Stavlja Google i Facebook dugmad vertikalno */
+  /* Stavlja OAuth dugmad vertikalno */
   .oauth-row {
     grid-auto-flow: row;
     grid-template-columns: 1fr;

@@ -1,8 +1,8 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
-import { Facebook, Instagram } from 'lucide-react';
+import { Instagram } from 'lucide-react';
 import { socialProfiles } from '../config/socialProfiles.js';
 
-const icons = { Facebook, Instagram };
+const icons = { Instagram };
 
 export default function SocialLinks({ className, size = 20 }) {
   const { t: translateText } = useStorefront();

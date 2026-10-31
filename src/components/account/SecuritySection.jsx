@@ -2,6 +2,7 @@ import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFlash } from '../../hooks/useFlash.js';
+import PasskeyManager from './PasskeyManager.jsx';
 import { usePasskey } from '../../hooks/usePasskey.js';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import {
@@ -48,9 +49,9 @@ export default function SecuritySection({ user }) {
   const [loading, setLoading] = useState(false);
 
   // --- PASSKEY HOOK ---
-  const { loading: pkLoading, error: pkError } = usePasskey();
-  const { linkPasskey, refreshUser } = useAuth();
-  const [isPasskeyEnabled, setIsPasskeyEnabled] = useState(false); // Idealno povući sa servera
+  const { registerPasskey, loading: pkLoading, error: pkError } = usePasskey();
+  const { refreshUser } = useAuth();
+  const isPasskeyEnabled = Number(user?.passkeyCount) > 0;
 
   // State za Lozinku
   const [isEditingPassword, setIsEditingPassword] = useState(false);
@@ -78,8 +79,7 @@ export default function SecuritySection({ user }) {
   // --- HANDLER ZA PASSKEY ---
   const handleAddPasskey = async () => {
     try {
-      await linkPasskey(user.email);
-      setIsPasskeyEnabled(true);
+      await registerPasskey();
       flash('Uspeh', 'Passkey uspešno dodat!', 'success');
     } catch (error) {
       console.error(error);
@@ -289,6 +289,7 @@ export default function SecuritySection({ user }) {
             </div>
 
             <div className="flex-1 flex flex-col justify-between">
+              <PasskeyManager user={user} />
               <div>
                 <p className="text-sm text-[var(--color-muted)] leading-relaxed mb-4">{translateText("Prijavite se bez lozinke koristeći otisak prsta, prepoznavanje lica ili PIN uređaja. Brže i sigurnije od klasične lozinke.")}</p>
                 {pkError && (
@@ -307,7 +308,7 @@ export default function SecuritySection({ user }) {
                     />
                     <div className="text-xs">
                       <span className="block font-bold text-[var(--color-text)]">{translateText("Zaštićeno")}</span>
-                      <span className="text-[var(--color-muted)]">{translateText("Uređaj je registrovan.")}</span>
+                      <span className="text-[var(--color-muted)]">{translateText("Passkey je povezan sa nalogom.")}</span>
                     </div>
                   </div>
                 ) : (

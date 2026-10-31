@@ -1986,5 +1986,22 @@
   "Slika mora biti PNG do 1024 px.": "The image must be a PNG no larger than 1024 pixels.",
   "Najviše 40 slika po nacrtu.": "A draft can contain up to 40 images.",
   "Povezivanje odjavljuje sve uređaje i uklanja postojeću lozinku i broj telefona. Posle povezivanja možete ih ponovo podesiti.": "Linking signs out all devices and removes your existing password and phone number. You can set them up again after linking.",
-  "Nacrti gostiju dostupni su 24 sata. Nacrti na nalogu čuvaju se 30 dana od poslednje izmene. Gravure potvrđenih porudžbina ostaju sačuvane.": "Guest drafts are available for 24 hours. Account drafts are kept for 30 days after the last edit. Engravings in confirmed orders remain saved."
+  "Nacrti gostiju dostupni su 24 sata. Nacrti na nalogu čuvaju se 30 dana od poslednje izmene. Gravure potvrđenih porudžbina ostaju sačuvane.": "Guest drafts are available for 24 hours. Account drafts are kept for 30 days after the last edit. Engravings in confirmed orders remain saved.",
+  "Za upravljanje passkey ključevima prijavite se ponovo, pa pokušajte u roku od 10 minuta.": "Sign in again, then manage your passkeys within 10 minutes.",
+  "Potvrdite email adresu pre dodavanja passkey ključa.": "Verify your email address before adding a passkey.",
+  "Možete imati najviše 10 passkey ključeva.": "You can have up to 10 passkeys.",
+  "Ovaj passkey ključ je već registrovan.": "This passkey is already registered.",
+  "Neispravan passkey odgovor.": "Invalid passkey response.",
+  "Prvo se prijavite na nalog, pa dodajte passkey u podešavanjima bezbednosti.": "Sign in first, then add a passkey in your security settings.",
+  "Passkey potvrda je otkazana ili je vreme isteklo. Pokušajte ponovo.": "Passkey verification was cancelled or timed out. Please try again.",
+  "Ovaj passkey ključ je već registrovan na uređaju.": "This passkey is already registered on the device.",
+  "Ovaj uređaj ne podržava traženi passkey. Koristite drugi uređaj ili Google prijavu.": "This device does not support the requested passkey. Use another device or sign in with Google.",
+  "Passkey je dostupan samo na bezbednom DajaShop domenu.": "Passkeys are available only on the secure DajaShop domain.",
+  "Passkey ključeve nije moguće učitati. Osvežite stranicu i pokušajte ponovo.": "Passkeys could not be loaded. Refresh the page and try again.",
+  "Ukloniti ovaj passkey? Bićete odjavljeni sa svih uređaja.": "Remove this passkey? You will be signed out on all devices.",
+  "Ukloni passkey": "Remove passkey",
+  "Ovaj način prijave nije podržan.": "This sign-in method is not supported.",
+  "Dodaj još jedan passkey": "Add another passkey",
+  "Passkey je povezan sa nalogom.": "A passkey is linked to your account.",
+  "Passkey možete dodati nakon prijave, u podešavanjima bezbednosti naloga.": "You can add a passkey after signing in, in your account security settings."
 }

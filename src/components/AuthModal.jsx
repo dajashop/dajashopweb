@@ -1,6 +1,6 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 import {
   Mail,
   Lock,
@@ -8,7 +8,6 @@ import {
   Eye,
   EyeOff,
   X,
-  Facebook,
   Smartphone,
   ShieldCheck,
   ArrowRightToLine,
@@ -42,7 +41,7 @@ const REGEX = {
 };
 
 const LAST_LOGIN_STORAGE_KEY = 'daja_last_login';
-const LAST_LOGIN_PROVIDERS = ['password', 'google', 'facebook', 'passkey'];
+const LAST_LOGIN_PROVIDERS = ['password', 'google', 'passkey'];
 
 function readLastLogin() {
   try {
@@ -124,13 +123,13 @@ function PasswordResetRequest({
       {isSent && (
         <p className="auth-password-reset-request__notice" role="status">{translateText("Ako postoji nalog sa adresom ")}{translateText(email)}{translateText(", stići će poruka za promenu lozinke. Proverite i spam folder.")}</p>
       )}
-      <motion.button
+      <Motion.button
         className="btn-primary w-full"
         disabled={isSending || isSent}
         whileTap={{ scale: 0.97 }}
       >
         {translateText(isSending ? 'Šaljemo link...' : isSent ? 'Link je poslat' : 'Pošalji link za promenu')}
-      </motion.button>
+      </Motion.button>
       <button type="button" className="auth-forgot-password" onClick={onCancel}>{translateText("Nazad na prijavu")}</button>
     </form>
   );
@@ -152,9 +151,7 @@ export default function AuthModal() {
     oauthJustSucceeded,
     dismissOauthSuccess,
     pendingEmailVerify,
-    detectIdentity,
     passkeyLogin,
-    passkeyRegister,
   } = useAuth();
   const { preferencesAllowed } = useConsent();
 
@@ -179,9 +176,8 @@ export default function AuthModal() {
   const [loading, setLoading] = useState(false);
   const [oauthWaking, setOauthWaking] = useState(false);
   const [oauthWakeupAttempt, setOauthWakeupAttempt] = useState(0);
-  const [oauthProvider, setOauthProvider] = useState('');
   const [errors, setErrors] = useState({});
-  const [submitCount, setSubmitCount] = useState(0);
+  const [, setSubmitCount] = useState(0);
   const [forgotPassword, setForgotPassword] = useState(false);
   const [passwordResetEmail, setPasswordResetEmail] = useState('');
   const [passwordResetError, setPasswordResetError] = useState('');
@@ -258,7 +254,6 @@ export default function AuthModal() {
     setSubmitCount(0);
     setOauthWaking(false);
     setOauthWakeupAttempt(0);
-    setOauthProvider('');
     setForgotPassword(false);
     setPasswordResetEmail('');
     setPasswordResetError('');
@@ -376,7 +371,7 @@ export default function AuthModal() {
   const validateField = (fieldName, value) => {
     const cleanVal = value ? value.trim() : '';
     switch (fieldName) {
-      case 'identity':
+      case 'identity': {
         if (!cleanVal) return 'Unesite email ili broj telefona.';
         const cleanIdentity = cleanVal.replace(/\s/g, '');
         if (isPhone) {
@@ -387,6 +382,7 @@ export default function AuthModal() {
             return 'Neispravan format email-a.';
         }
         return null;
+      }
       case 'name':
         if (!isLogin) {
           if (!cleanVal) return 'Ovo polje je obavezno.';
@@ -643,7 +639,7 @@ export default function AuthModal() {
         isLogin ? 'Prijava uspešna' : 'Registracija uspešna',
         'Broj telefona verifikovan ✅'
       );
-    } catch (err) {
+    } catch {
       alert(translateText('Nevažeći kod.'));
     } finally {
       setLoading(false);
@@ -660,7 +656,6 @@ export default function AuthModal() {
         if (savedLogin) setLastLogin(savedLogin);
       }
       setLoading(true);
-      setOauthProvider(provider);
       setOauthWakeupAttempt(1);
       setOauthWaking(true);
       await oauth(provider, ({ attempt }) => setOauthWakeupAttempt(attempt));
@@ -670,30 +665,17 @@ export default function AuthModal() {
       setLoading(false);
       setOauthWaking(false);
       setOauthWakeupAttempt(0);
-      setOauthProvider('');
     }
   }
 
   async function handlePasskey() {
     setLoading(true);
     try {
-      if (isLogin) {
-        const savedLogin = saveLastLogin('passkey', undefined);
-        if (savedLogin) setLastLogin(savedLogin);
-        await passkeyLogin();
-        hideAuth();
-        openFlash('Uspeh', 'Prijavljeni ste putem Passkey-a! 🔑');
-      } else {
-        // Za registraciju nam treba ime. Ako je polje prazno, tražimo ga.
-        if (!name && idType !== 'username') {
-          alert(translateText('Molimo unesite ime pre kreiranja Passkey-a.'));
-          setLoading(false);
-          return;
-        }
-        await passkeyRegister({ name, identity }); // Kreira nalog i passkey
-        hideAuth();
-        openFlash('Uspeh', 'Passkey kreiran! 🛡️');
-      }
+      await passkeyLogin();
+      const savedLogin = saveLastLogin('passkey', undefined);
+      if (savedLogin) setLastLogin(savedLogin);
+      hideAuth();
+      openFlash('Uspeh', 'Prijavljeni ste putem Passkey-a! 🔑');
     } catch (err) {
       alert(translateText(err.message));
     } finally {
@@ -713,14 +695,14 @@ export default function AuthModal() {
 
       <AnimatePresence>
         {authOpen && (
-          <motion.div
+          <Motion.div
             className="auth-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             data-lenis-prevent
           >
-            <motion.div
+            <Motion.div
               className="auth-card glass"
               role="dialog"
               aria-modal="true"
@@ -741,7 +723,7 @@ export default function AuthModal() {
 
               <AnimatePresence>
                 {oauthWaking && (
-                  <motion.div
+                  <Motion.div
                     className="oauth-wakeup"
                     role="status"
                     aria-live="polite"
@@ -750,24 +732,24 @@ export default function AuthModal() {
                     exit={{ opacity: 0 }}
                   >
                     <div className="oauth-wakeup-spinner" aria-hidden="true" />
-                    <h2>{translateText("Pripremamo ")}{translateText(oauthProvider === 'google' ? 'Google' : 'Facebook')}{translateText(" prijavu")}</h2>
+                    <h2>{translateText("Pripremamo ")}{translateText('Google')}{translateText(" prijavu")}</h2>
                     <p>{translateText("DajaShop bezbedno uspostavlja vezu. Samo trenutak, zatim nastavljate na prijavu.")}</p>
                     {oauthWakeupAttempt > 1 && (
                       <span>{translateText("Server se pokreće, molimo sačekajte…")}</span>
                     )}
-                  </motion.div>
+                  </Motion.div>
                 )}
               </AnimatePresence>
 
               <div className="tabs">
-                <motion.button
+                <Motion.button
                   className={`tab ${isLogin ? 'active' : ''}`}
                   onClick={() => go('login')}
                   whileTap={{ scale: 0.96 }}
                 >
                   <span className="tab-label">{translateText("Prijava")}</span>
                   {isLogin && (
-                    <motion.span
+                    <Motion.span
                       layoutId="tabPill"
                       className="tab-pill"
                       transition={{
@@ -777,8 +759,8 @@ export default function AuthModal() {
                       }}
                     />
                   )}
-                </motion.button>
-                <motion.button
+                </Motion.button>
+                <Motion.button
                   className={`tab ${!isLogin ? 'active' : ''}`}
                   onClick={() => go('register')}
                   whileTap={{ scale: 0.96 }}
@@ -793,7 +775,7 @@ export default function AuthModal() {
                 >
                   <span className="tab-label">{translateText("Registracija")}</span>
                   {!isLogin && (
-                    <motion.span
+                    <Motion.span
                       layoutId="tabPill"
                       className="tab-pill"
                       transition={{
@@ -803,7 +785,7 @@ export default function AuthModal() {
                       }}
                     />
                   )}
-                </motion.button>
+                </Motion.button>
               </div>
 
               <div className="form-slider">
@@ -938,7 +920,7 @@ export default function AuthModal() {
                               <ErrorMessage message={errors.identity} />
                               <AnimatePresence>
                                 {showSuggestions && isLogin === loginPane && (
-                                  <motion.ul
+                                  <Motion.ul
                                     ref={loginPane ? loginEmailSuggestionsRef : registerEmailSuggestionsRef}
                                     className="auth-dropdown"
                                     aria-label={translateText("Predlozi email adresa")}
@@ -969,7 +951,7 @@ export default function AuthModal() {
                                         </button>
                                       </li>
                                     ))}
-                                  </motion.ul>
+                                  </Motion.ul>
                                 )}
                               </AnimatePresence>
                             </label>
@@ -1041,7 +1023,7 @@ export default function AuthModal() {
                                 disabled={loading}
                               >{translateText("Zaboravili ste lozinku?")}</button>
                             )}
-                            <motion.button
+                            <Motion.button
                               className="btn-primary w-full"
                               disabled={loading}
                               whileTap={{ scale: 0.97 }}
@@ -1053,11 +1035,11 @@ export default function AuthModal() {
                                 : loginPane
                                 ? 'Prijavi se'
                                 : 'Napravi nalog')}
-                            </motion.button>
+                            </Motion.button>
                             <div
                               className={`oauth-row ${
                                 loginPane &&
-                                ['google', 'facebook', 'passkey'].includes(lastLogin?.provider)
+                                ['google', 'passkey'].includes(lastLogin?.provider)
                                   ? 'oauth-row--has-last-used'
                                   : ''
                               }`}
@@ -1088,22 +1070,7 @@ export default function AuthModal() {
                                   <small className="last-used-badge">{translateText("Poslednje korišćeno")}</small>
                                 )}
                               </button>
-                              <button
-                                type="button"
-                                className={`btn-oauth ${
-                                  loginPane && lastLogin?.provider === 'facebook'
-                                    ? 'btn-oauth--last-used'
-                                    : ''
-                                }`}
-                                onClick={() => handleOauth('facebook')}
-                                disabled={loading}
-                              >
-                                <Facebook size={18} />
-                                <span>{translateText("Facebook")}</span>
-                                {loginPane && lastLogin?.provider === 'facebook' && (
-                                  <small className="last-used-badge">{translateText("Poslednje korišćeno")}</small>
-                                )}
-                              </button>
+                              {loginPane && (
                               <button
                                 type="button"
                                 className={`btn-oauth ${
@@ -1124,14 +1091,14 @@ export default function AuthModal() {
                                   className="text-primary"
                                 />
                                 <span>
-                                  {translateText(isLogin
-                                    ? 'Prijavi se Passkey-om'
-                                    : 'Registruj se Passkey-om')}
+                                  {translateText('Prijavi se Passkey-om')}
                                 </span>
                                 {loginPane && lastLogin?.provider === 'passkey' && (
                                   <small className="last-used-badge">{translateText("Poslednje korišćeno")}</small>
                                 )}
                               </button>
+                              )}
+                              {!loginPane && <small>{translateText('Passkey možete dodati nakon prijave, u podešavanjima bezbednosti naloga.')}</small>}
                             </div>
                           </form>
                         ) : pendingEmailVerify && !loginPane ? (
@@ -1158,11 +1125,11 @@ export default function AuthModal() {
                                 />
                               </div>
                             </label>
-                            <motion.button
+                            <Motion.button
                               className="btn-primary w-full"
                               disabled={loading}
                               whileTap={{ scale: 0.97 }}
-                            >{translateText("Potvrdi kod")}</motion.button>
+                            >{translateText("Potvrdi kod")}</Motion.button>
                           </form>
                         ))}
                       </div>
@@ -1171,8 +1138,8 @@ export default function AuthModal() {
                 </div>
               </div>
               <div id="recaptcha-container" />
-            </motion.div>
-          </motion.div>
+            </Motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
     </>

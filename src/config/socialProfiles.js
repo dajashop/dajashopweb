@@ -13,6 +13,5 @@ function profileUrl(value, hosts) {
 
 // Leave blank until the owner supplies the official profiles.
 export const socialProfiles = [
-  { name: 'Facebook', href: profileUrl(import.meta.env.VITE_FACEBOOK_PROFILE_URL, ['facebook.com', 'www.facebook.com', 'm.facebook.com']) },
   { name: 'Instagram', href: profileUrl(import.meta.env.VITE_INSTAGRAM_PROFILE_URL, ['instagram.com', 'www.instagram.com']) },
 ].filter(profile => profile.href);

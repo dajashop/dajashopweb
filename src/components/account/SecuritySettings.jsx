@@ -1,4 +1,5 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
+import PasskeyManager from './PasskeyManager.jsx';
 // src/components/account/SecuritySettings.jsx
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
@@ -76,9 +77,7 @@ const SecuritySettings = () => {
   const isGoogleLinked = Boolean(user?.googleLinked);
 
   // Provera da li je Passkey povezan
-  const isPasskeyLinked = user?.providerData.some(
-    (p) => p.providerId === 'passkey.daja-platform'
-  );
+  const isPasskeyLinked = Number(user?.passkeyCount) > 0;
 
   // Stilizovani Google icon wrapper (koristi originalni SVG)
   const GoogleIcon = () => (
@@ -204,6 +203,7 @@ const SecuritySettings = () => {
           )}
         </AnimatePresence>
       </motion.div>
+      <PasskeyManager user={user} />
     </motion.div>
   );
 };

@@ -139,6 +139,7 @@ function normalizeUser(data) {
     providerData: user.providerData || user.identities || [],
     hasPassword: Boolean(user.hasPassword ?? user.has_password),
     googleLinked: Boolean(user.googleLinked ?? user.google_linked),
+    passkeyCount: Number(user.passkeyCount ?? 0),
   };
 }
 
@@ -379,6 +380,7 @@ export const authApi = {
     return normalizeUser(data);
   },
   async oauthStart(provider, onProgress) {
+    if (provider !== 'google') throw new Error('Ovaj način prijave nije podržan.');
     // Keep the customer on DajaShop while a sleeping Render instance starts.
     // Redirect only after the API is serving JSON, so Render's wake-up screen
     // is never shown as part of the Google sign-in flow.
@@ -397,19 +399,18 @@ export const authApi = {
   async passkeyRegisterStart(payload) {
     return apiRequest('/customer-auth/passkeys/register-challenge', {
       method: 'POST',
-      auth: false,
       body: payload,
     });
   },
   async passkeyRegisterFinish(payload) {
     const data = await apiRequest('/customer-auth/passkeys/register-verify', {
       method: 'POST',
-      auth: false,
       body: payload,
     });
-    if (data?.accessToken || data?.access_token) setAuthTokens(data);
     return data;
   },
+  passkeyList() { return apiRequest('/customer-auth/passkeys'); },
+  passkeyRemove(id) { return apiRequest('/customer-auth/passkeys/' + encodeURIComponent(id), { method: 'DELETE', retry: false }); },
   async passkeyLoginStart(payload) {
     return apiRequest('/customer-auth/passkeys/login-challenge', {
       method: 'POST',

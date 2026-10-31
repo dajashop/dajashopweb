@@ -17,6 +17,7 @@ import {
 } from '../services/apiClient';
 import { useConsent } from './ConsentContext.jsx';
 import { consumeOAuthBrowserState } from '../services/oauthBrowserState.js';
+import { passkeyError } from '../services/passkeyError.js';
 import {
   browserSupportsWebAuthn,
   startAuthentication,
@@ -311,13 +312,13 @@ export function AuthProvider({ children }) {
 
   const passkeyLogin = useCallback(async () => {
     if (!window.isSecureContext) {
-      throw new Error('Passkey radi samo na https domeni ili na http://localhost:5173.');
+      throw new Error('Passkey je dostupan samo na bezbednom DajaShop domenu.');
     }
     if (!browserSupportsWebAuthn()) {
       throw new Error('Ovaj browser ili uredjaj ne podrzava Passkey.');
     }
     const options = await authApi.passkeyLoginStart({});
-    const credential = await startAuthentication({ optionsJSON: options });
+    const credential = await startAuthentication({ optionsJSON: options }).catch(error => { throw passkeyError(error); });
     await authApi.passkeyLoginFinish({ credential });
     await loadMe();
     return 'success';
@@ -325,8 +326,9 @@ export function AuthProvider({ children }) {
 
   const passkeyRegister = useCallback(
     async (payload = {}) => {
+      if (!user) throw new Error('Prvo se prijavite na nalog, pa dodajte passkey u podešavanjima bezbednosti.');
       if (!window.isSecureContext) {
-        throw new Error('Passkey radi samo na https domeni ili na http://localhost:5173.');
+        throw new Error('Passkey je dostupan samo na bezbednom DajaShop domenu.');
       }
       if (!browserSupportsWebAuthn()) {
         throw new Error('Ovaj browser ili uredjaj ne podrzava Passkey.');
@@ -335,13 +337,13 @@ export function AuthProvider({ children }) {
         typeof payload === 'string'
           ? { name: payload }
           : payload;
-      const options = await authApi.passkeyRegisterStart(data);
-      const credential = await startRegistration({ optionsJSON: options });
+      const options = await authApi.passkeyRegisterStart({ name: String(data.name || 'DajaShop passkey').slice(0, 80) });
+      const credential = await startRegistration({ optionsJSON: options }).catch(error => { throw passkeyError(error); });
       await authApi.passkeyRegisterFinish({ credential });
       await loadMe();
       return 'success';
     },
-    [loadMe],
+    [loadMe, user],
   );
 
   const linkPasskey = useCallback(

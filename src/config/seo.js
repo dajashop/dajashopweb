@@ -26,7 +26,6 @@ export const seoConfig = {
   ogDefaultImage: !configuredShareImage || /\/og-default\.jpg(?:[?#]|$)/i.test(configuredShareImage)
     ? defaultShareImage : configuredShareImage,
   twitterHandle: publicSetting(import.meta.env.VITE_TWITTER_HANDLE),
-  facebookAppId: publicSetting(import.meta.env.VITE_FACEBOOK_APP_ID),
   siteLogoUrl: import.meta.env.VITE_SITE_LOGO_URL || '',
   googleSiteVerification: publicSetting(import.meta.env.VITE_GOOGLE_SITE_VERIFICATION),
   business: {
