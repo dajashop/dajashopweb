@@ -131,7 +131,31 @@
 }
 
 /* ================== MOBILE TWEAKS ================== */
+.s2__mobile-trigger { display: none; }
 @media (max-width: 768px) {
+  .searchNeo > .s2__input,
+  .searchNeo > .s2__clear,
+  .searchNeo > .s2__submit { visibility: hidden; pointer-events: none; }
+  .searchNeo .s2__mobile-trigger {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0 16px 0 44px;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: max(1rem, 16px);
+    text-align: left;
+    cursor: text;
+  }
+  .searchNeo .s2__mobile-trigger[hidden] { display: none; }
+  .s2__mobile-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .s2__mobile-placeholder { color: color-mix(in oklab, var(--text) 55%, transparent); }
+  .s2__mobile-trigger:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
   .searchNeo {
     --h: 44px;
     --btn-size: 40px;
