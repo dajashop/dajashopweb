@@ -107,8 +107,8 @@
 .heroBg__dots .dot {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -116,15 +116,15 @@
 }
 .heroBg__dots .dot::after {
   content: '';
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
   border: 1px solid var(--color-border, #e5e7eb);
   background: color-mix(in oklab, var(--color-surface, #fff) 40%, transparent);
   cursor: pointer;
 }
 .heroBg__dots .dot.is-active::after {
-  width: 18px;
+  width: 14px;
   transition: width 0.25s ease;
   background: var(--color-text, #111);
 }
