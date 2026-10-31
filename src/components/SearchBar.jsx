@@ -86,7 +86,17 @@ export default function SearchBar() {
     if (!open) return;
     const viewport = window.visualViewport;
     function update() {
-      if (mobile) { const height = viewport?.height || window.innerHeight; setPosition({ top: viewport?.offsetTop || 0, left: viewport?.offsetLeft || 0, width: viewport?.width || window.innerWidth, height, '--search-viewport-height': `${height}px` }); return; }
+      if (mobile) {
+        // Only the inner content follows the keyboard. The opaque outer layer
+        // always covers the layout viewport, including Safari's glass UI.
+        setPosition({
+          '--search-viewport-top': (viewport?.offsetTop || 0) + 'px',
+          '--search-viewport-left': (viewport?.offsetLeft || 0) + 'px',
+          '--search-viewport-width': (viewport?.width || window.innerWidth) + 'px',
+          '--search-viewport-height': (viewport?.height || window.innerHeight) + 'px'
+        });
+        return;
+      }
       const bounds = anchor.current.getBoundingClientRect(); const width = Math.min(1080, window.innerWidth - 24);
       setPosition({ top: bounds.bottom + 10, left: Math.max(12, Math.min(bounds.left, window.innerWidth - width - 12)), width, maxHeight: Math.max(120, window.innerHeight - bounds.bottom - 24) });
     }
@@ -98,11 +108,23 @@ export default function SearchBar() {
   useLayoutEffect(() => {
     if (!open || !mobile) return;
     const body = document.body; const y = window.scrollY;
+    const html = document.documentElement;
+    const root = document.getElementById('root');
+    const wasInert = root?.inert;
+    const hadSearchClass = html.classList.contains('mobile-search-open');
+    html.classList.add('mobile-search-open');
+    if (root) root.inert = true;
     const previous = { position: body.style.position, top: body.style.top, left: body.style.left, right: body.style.right, overflow: body.style.overflow };
     const lenis = window.lenis;
     const wasStopped = lenis?.isStopped;
     lenis?.stop(); Object.assign(body.style, { position: 'fixed', top: `-${y}px`, left: '0', right: '0', overflow: 'hidden' });
-    return () => { Object.assign(body.style, previous); window.scrollTo({ top: y, behavior: 'instant' }); if (!wasStopped) lenis?.start(); };
+    return () => {
+      Object.assign(body.style, previous);
+      window.scrollTo({ top: y, behavior: 'instant' });
+      if (root) root.inert = wasInert;
+      if (!hadSearchClass) html.classList.remove('mobile-search-open');
+      if (!wasStopped) lenis?.start();
+    };
   }, [open, mobile]);
   useEffect(() => {
     if (!open) return;
@@ -132,12 +154,14 @@ export default function SearchBar() {
     </div>
     {translateText(open && createPortal(<div ref={panel} id={`${id}-panel`} style={position} className={`live-search ${mobile ? 'live-search--mobile' : 'live-search--desktop'}`} data-lenis-prevent
       role={mobile ? 'dialog' : undefined} aria-modal={mobile ? 'true' : undefined} aria-label={translateText("Pretraga kataloga")} onKeyDown={mobile ? onKeyDown : undefined}>
+      <div className="live-search__viewport">
       {mobile && <div className="live-search__mobile-header">
         <button type="button" onClick={dismiss} aria-label={translateText("Zatvori pretragu")}><ArrowLeft size={22} /></button>
         <div className="live-search__mobile-field"><Search size={19} aria-hidden="true" /><input ref={mobileInput} value={q} maxLength={120} onChange={(event) => { setLiteral(false); setQ(event.target.value); }} placeholder={translateText("Model, brend, kolekcija…")} inputMode="search" enterKeyHint="search" autoComplete="off" {...accessibility} />
           {hasValue && <button type="button" onClick={clear} aria-label={translateText("Obriši pretragu")}><X size={18} /></button>}</div>
       </div>}
       <div className="live-search__scroll" data-lenis-prevent id={`${id}-list`} role="listbox" aria-label={translateText("Predlozi pretrage")} aria-busy={loading}>{translateText(content)}</div>
+      </div>
     </div>, document.body))}
   </>;
 }

@@ -1,6 +1,7 @@
 .live-search { position: fixed; z-index: 1000; background: #fff; color: #17181b; box-sizing: border-box; text-align: left; font-size: 14px; }
 .live-search *, .live-search *::before, .live-search *::after { box-sizing: border-box; min-width: 0; }
 .live-search--desktop { display: flex; flex-direction: column; border: 1px solid #e9e9ed; border-radius: 22px; box-shadow: 0 18px 55px #11182726; overflow: hidden; }
+.live-search__viewport { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
 .live-search__scroll { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
 .live-search__body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-gutter: stable; padding: 22px; }
 .live-search a { color: inherit; text-decoration: none; }
@@ -49,7 +50,28 @@
 .live-search__correction { display: inline-flex; gap: 6px; align-items: center; border: 1px solid #dbe5fb; background: #f6f8fd; color: #2563eb; border-radius: 9px; padding: 8px 10px; }
 .live-search__error { padding: 12px 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; color: #7c5d5d; }
 .live-search__error button { display: inline-flex; align-items: center; gap: 6px; padding: 8px; border: 1px solid #e4e6eb; border-radius: 9px; background: #fff; }
-.live-search--mobile { display: flex; flex-direction: column; overflow: hidden; }
+html.mobile-search-open { overflow: hidden; overscroll-behavior: none; background: var(--color-bg, #fff); }
+html.mobile-search-open body { background: var(--color-bg, #fff); overscroll-behavior: none; }
+/* iOS glass may sample the page beneath the keyboard/address bar. */
+html.mobile-search-open #root { visibility: hidden; }
+.live-search--mobile {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100lvh;
+  overflow: hidden;
+  background: var(--color-bg, #fff);
+}
+.live-search--mobile > .live-search__viewport {
+  position: absolute;
+  top: var(--search-viewport-top, 0px);
+  left: var(--search-viewport-left, 0px);
+  width: var(--search-viewport-width, 100%);
+  height: var(--search-viewport-height, 100%);
+  background: inherit;
+  container: daja-search / size;
+}
 .live-search__mobile-header { flex-shrink: 0; display: flex; align-items: center; gap: 9px; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 12px max(8px, env(safe-area-inset-left)); border-bottom: 1px solid #f0f0f3; }
 .live-search__mobile-header button { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border: 0; border-radius: 10px; color: #24262c; background: transparent; padding: 0; }
 .live-search__mobile-field { display: flex; align-items: center; gap: 8px; flex: 1; min-height: 44px; padding: 0 10px; background: #f4f5f7; border-radius: 13px; }
@@ -75,6 +97,11 @@
 .live-search--mobile .live-search__footer { flex-wrap: wrap; gap: 10px; padding: 12px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
 .live-search--mobile a.live-search__all { margin-left: auto; padding: 10px 15px; }
 .searchNeo .s2__submit { color: #fff; }
+@container daja-search (max-height: 560px) {
+  .live-search--mobile .live-search__start { min-height: 0; padding: 8px 10px 14px; }
+  .live-search--mobile .live-search__start > span { width: 32px; height: 32px; margin-bottom: 8px; border-radius: 11px; }
+  .live-search--mobile .live-search__start > span svg { width: 22px; height: 22px; }
+}
 @media (prefers-reduced-motion: reduce) { .live-search__loading svg, .live-search__skeleton > span { animation: none; } }
 
 .live-search__conditions{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 16px}.live-search__conditions button{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid #e5e5e8;border-radius:20px;background:#f5f5f7;color:#555;font-size:11px}.live-search__conditions button:hover{background:#eee;color:#111}.live-search__completion{display:flex;align-items:center;gap:8px;justify-content:space-between;width:100%;padding:9px 0;text-align:left;background:transparent;border:0;font-size:12px}.live-search__completion span{flex:1}.live-search__completion small{color:#888}.live-search__difference{display:block;color:#777;font-size:11px;line-height:1.5;padding:5px 8px 12px}.live-search__feedback>button{margin:8px 0 0}
