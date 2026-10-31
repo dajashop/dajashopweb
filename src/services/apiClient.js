@@ -33,9 +33,18 @@ function discardLegacyTokens() {
     } catch { /* Cookies work without JavaScript storage. */ }
   }
 }
-function unpack(body) { return body && 'data' in body && 'meta' in body ? body.data : body; }
+function unpack(body) { return body && typeof body === 'object' && 'data' in body && 'meta' in body ? body.data : body; }
+async function fetchSafe(url, options) {
+  try { return await fetch(url, options); }
+  catch (error) {
+    if (error.name === 'AbortError') throw error;
+    throw new Error(translate('Usluga je privremeno nedostupna. Pokušajte ponovo kasnije.',
+      typeof window === 'undefined' ? 'sr' : pathLanguage(window.location.pathname)));
+  }
+}
 async function read(response) {
-  const body = /application\/json/i.test(response.headers.get('content-type') || '') ? await response.json() : null;
+  if (response.status === 204) return null;
+  const body = /application\/json/i.test(response.headers.get('content-type') || '') ? await response.json() : await response.text();
   if (!response.ok) {
     const error = new Error(translate(safeApiErrorMessage(response.status, body), typeof window === 'undefined' ? 'sr' : pathLanguage(window.location.pathname)));
     error.status = response.status; error.code = body?.error?.code;
@@ -49,7 +58,7 @@ export async function initializeBrowserSession(force = false) {
   if (!force && initialized && csrfCookie()) return;
   initializing ??= (async () => {
     discardLegacyTokens();
-    const response = await fetch(`${API_BASE_URL}/customer-auth/browser-session`, {
+    const response = await fetchSafe(`${API_BASE_URL}/customer-auth/browser-session`, {
       credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(20_000)
     });
     const data = await read(response);
@@ -101,7 +110,7 @@ async function refreshCustomer() {
   refreshing ??= (async () => {
     const operation = async () => {
       await initializeBrowserSession();
-      const response = await fetch(`${API_BASE_URL}/customer-auth/refresh`, {
+      const response = await fetchSafe(`${API_BASE_URL}/customer-auth/refresh`, {
         method: 'POST', credentials: 'same-origin', cache: 'no-store',
         headers: { 'Content-Type': 'application/json', 'X-Daja-CSRF': csrfCookie() },
         body: '{}', signal: AbortSignal.timeout(20_000)
@@ -176,7 +185,7 @@ export async function apiRequest(path, options = {}) {
   if (body != null && !(body instanceof FormData) && !(body instanceof Blob) && typeof body !== 'string') {
     requestHeaders.set('Content-Type', 'application/json'); payload = JSON.stringify(body);
   }
-  const response = await fetch(url, {
+  const response = await fetchSafe(url, {
     method, headers: requestHeaders, body: payload,
     credentials: auth || mutation ? 'same-origin' : 'omit', signal
   });

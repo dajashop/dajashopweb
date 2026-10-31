@@ -28,8 +28,9 @@ odvojeno. Zatečene korisničke izmene `.env.example` i `.idea` nisu uključene 
   ostati usklađena: platform `infra/edge-gateway/worker.mjs` i web `src/edge/apiProxy.js`.
 - Backend proverava dokaz pre obrade poslovnog HTTP zahteva i na svim Engine.IO
   transport zahtevima. Posle potvrđenog prebacivanja uključuje se `enforce`.
-- Izuzeci su ograničeni health endpointi i tačan Google callback GET, jer je ta
-  adresa registrovana kod provajdera. Signed OAuth state i browser nonce ostaju obavezni.
+- Izuzeci su samo ograničeni health endpointi. Proveren Google callback je
+  `https://dajashop.rs/api/v1/customer-auth/oauth/google/callback` i prolazi kroz
+  Pages. Signed OAuth state i browser nonce ostaju obavezni.
 - Cloudflare ograničava saobraćaj pre aplikacije, ali serverski dokaz nije mrežna
   izolacija Rendera. Javni origin i dalje prima mrežni saobraćaj i odbija poslovne zahteve.
 
