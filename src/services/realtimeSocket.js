@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { resumeAuthSession } from './apiClient.js';
 
 export function createRealtimeSocket(url, readAuth) {
   const socket = io(url, {
@@ -8,7 +9,16 @@ export function createRealtimeSocket(url, readAuth) {
     transports: ['websocket', 'polling'],
     tryAllTransports: true,
     withCredentials: true,
-    auth: (callback) => callback(readAuth()),
+    auth: (callback) => {
+      const initial = readAuth();
+      if (initial.publicCatalog === true) {
+        callback(initial);
+        return;
+      }
+      // A persistent socket now expires with its access token. Renew before
+      // reconnecting, so idle authenticated tabs can recover securely.
+      Promise.resolve(resumeAuthSession()).then(() => callback(readAuth())).catch(() => callback({}));
+    },
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1_000,

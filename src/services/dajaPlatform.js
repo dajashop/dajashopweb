@@ -300,6 +300,15 @@ export const authApi = {
   },
   async logout() {
     try {
+      // Customer and staff sessions are separate server records. Revoke the
+      // staff session before discarding its bearer token locally.
+      if (getStaffAccessToken()) {
+        try {
+          await apiRequest('/auth/logout', { method: 'POST', staff: true, retry: false });
+        } catch {
+          console.warn('Staff session revocation could not be confirmed.');
+        }
+      }
       await apiRequest('/customer-auth/logout', {
         method: 'POST',
         retry: false,
@@ -308,7 +317,7 @@ export const authApi = {
       // Logout must always finish locally. A 401 only means that the session
       // was already expired/revoked, which is a normal state for this action.
       if (error?.status && error.status !== 401) {
-        console.warn('Odjava na serveru nije uspela:', error);
+          console.warn('Customer session revocation could not be confirmed.');
       }
     } finally {
       clearAuthTokens();
