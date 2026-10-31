@@ -1,8 +1,7 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // src/components/account/AccountNav.jsx
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useId, useRef, useState } from 'react';
 import './AccountNav.css';
 import { Link } from 'react-router-dom';
 import {
@@ -22,6 +21,28 @@ function AccountNav({ activeTab, logout }) {
   const { t: translateText } = useStorefront();
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const menuId = useId();
+  const menuRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  useEffect(() => {
+    if (!isMobileOpen) return undefined;
+    const dismiss = (event) => {
+      if (!menuRef.current?.contains(event.target)) setIsMobileOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsMobileOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', dismiss);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', dismiss);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isMobileOpen]);
 
   const navItems = [
     { id: 'profile', label: 'Profil', icon: User },
@@ -57,8 +78,8 @@ function AccountNav({ activeTab, logout }) {
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                   <span>{translateText(item.label)}</span>
                   {isActive && (
-                    <motion.div
-                      layoutId="activeIndicator"
+                    <span
+                      aria-hidden="true"
                       className="active-indicator"
                     />
                   )}
@@ -74,9 +95,13 @@ function AccountNav({ activeTab, logout }) {
           </li>
         </ul>
       </nav>
-      <div className="mobile-nav-wrapper">
+      <div className="account-mobile-nav" ref={menuRef}>
         <button
-          className={`mobile-dropdown-trigger card glass ${
+          ref={triggerRef}
+          type="button"
+          aria-expanded={isMobileOpen}
+          aria-controls={isMobileOpen ? menuId : undefined}
+          className={`mobile-dropdown-trigger ${
             isMobileOpen ? 'open' : ''
           }`}
           onClick={() => setIsMobileOpen(!isMobileOpen)}
@@ -90,14 +115,11 @@ function AccountNav({ activeTab, logout }) {
             className={`chevron ${isMobileOpen ? 'rotate' : ''}`}
           />
         </button>
-        <AnimatePresence>
           {isMobileOpen && (
-            <motion.div
-              className="mobile-dropdown-menu card glass"
-              initial={{ opacity: 0, y: -10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
+            <nav
+              id={menuId}
+              aria-label={translateText('Moj Nalog')}
+              className="mobile-dropdown-menu"
             >
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -116,21 +138,19 @@ function AccountNav({ activeTab, logout }) {
                     {isActive && (
                       <Check
                         size={16}
-                        className="ml-auto"
-                        style={{ color: 'var(--color-primary)' }}
+                        className="account-menu-check"
                       />
                     )}
                   </Link>
                 );
               })}
               <div className="mobile-menu-divider"></div>
-              <button className="mobile-menu-item logout" onClick={logout}>
+              <button type="button" className="mobile-menu-item logout" onClick={() => { setIsMobileOpen(false); logout(); }}>
                 <LogOut size={18} />
                 <span>{translateText("Odjavi se")}</span>
               </button>
-            </motion.div>
+            </nav>
           )}
-        </AnimatePresence>
       </div>
     </>
   );

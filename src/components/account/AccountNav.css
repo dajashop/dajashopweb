@@ -1,193 +1,184 @@
-/* src/components/account/AccountNav.css */
+/* Account navigation follows the storefront palette in both layouts. */
+.account-nav.desktop-nav,
+.account-mobile-nav {
+  --account-nav-border: color-mix(in srgb, var(--color-text, #111) 12%, transparent);
+  --account-nav-shadow: 0 2px 5px #00000005, 0 8px 20px #0000000a, 0 24px 56px -12px #00000026;
+  color: var(--color-text, #111);
+}
 
-/* --- DESKTOP NAVIGACIJA --- */
-.desktop-nav {
+.account-nav.desktop-nav {
   position: sticky;
   top: 100px;
   display: flex;
   flex-direction: column;
   height: fit-content;
-  min-height: 400px;
+  padding: 10px;
   overflow: hidden;
-  padding: 8px;
+  background: var(--color-bg, #fff);
+  border: 1px solid var(--account-nav-border);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px #00000005;
 }
-
-.nav-header {
-  padding: 16px 16px 8px;
+.account-nav .nav-header {
+  padding: 12px 12px 16px;
   margin-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--account-nav-border);
 }
-.nav-title {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 800;
-  color: var(--color-muted);
-  opacity: 0.8;
+.account-nav .nav-title {
+  color: var(--color-muted, #6e6e73);
+  font-size: 13px;
+  font-weight: 600;
 }
-
-.nav-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.account-nav .nav-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  flex: 1;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-
-.nav-btn {
-  text-decoration: none;
-  width: 100%;
+.account-nav .nav-btn,
+.account-mobile-nav .mobile-menu-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  width: 100%;
+  min-height: 46px;
+  padding: 12px;
   border: 0;
+  border-radius: 10px;
   background: transparent;
-  color: var(--color-text);
-  font-weight: 600;
-  font-size: 0.95rem;
-  border-radius: 12px;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.nav-btn:hover {
+  color: var(--color-text, #111);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  text-align: left;
   text-decoration: none;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--color-primary);
+  cursor: pointer;
+  transition: background-color .14s ease, color .14s ease;
 }
-
-.nav-btn.active {
-  background: color-mix(in oklab, var(--color-primary) 12%, transparent);
-  color: var(--color-primary);
+.account-nav .nav-btn svg,
+.account-mobile-nav svg {
+  flex-shrink: 0;
+  color: var(--color-muted, #6e6e73);
 }
-
-.active-indicator {
+.account-nav .nav-btn:hover,
+.account-nav .nav-btn.active,
+.account-mobile-nav .mobile-menu-item:hover,
+.account-mobile-nav .mobile-menu-item.active {
+  background: var(--color-surface, #f5f5f7);
+  color: var(--color-text, #111);
+  text-decoration: none;
+}
+.account-nav .nav-btn.active,
+.account-mobile-nav .mobile-menu-item.active { font-weight: 650; }
+.account-nav .nav-btn.active svg,
+.account-mobile-nav .mobile-menu-item.active svg { color: var(--color-text, #111); }
+.account-nav .active-indicator {
   position: absolute;
-  left: 0;
-  top: 12px;
-  bottom: 12px;
-  width: 3px;
-  background: var(--color-primary);
-  border-radius: 0 4px 4px 0;
+  inset: 14px auto 14px 0;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--color-text, #111);
 }
-
-.nav-item-logout {
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+.account-nav .nav-item-logout {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--account-nav-border);
 }
-
-.logout-btn {
-  color: #ef4444 !important;
+.account-nav .logout-btn,
+.account-mobile-nav .mobile-menu-item.logout { color: var(--color-muted, #6e6e73); }
+.account-nav .logout-btn:hover,
+.account-mobile-nav .mobile-menu-item.logout:hover {
+  background: color-mix(in srgb, #b42318 7%, var(--color-bg, #fff));
+  color: #b42318;
 }
-.logout-btn:hover {
-  background: rgba(239, 68, 68, 0.1) !important;
+.account-nav .logout-btn:hover svg,
+.account-mobile-nav .mobile-menu-item.logout:hover svg { color: inherit; }
+.account-nav .nav-btn:focus-visible,
+.account-mobile-nav button:focus-visible,
+.account-mobile-nav a:focus-visible {
+  outline: 2px solid var(--color-text, #111);
+  outline-offset: -2px;
 }
-
-/* --- MOBILE NAVIGACIJA --- */
-.mobile-nav-wrapper {
-  display: none;
-}
+.account-mobile-nav { display: none; }
 
 @media (max-width: 900px) {
-  .desktop-nav {
-    display: none;
-  }
-  .mobile-nav-wrapper {
-    display: block;
+  .account-nav.desktop-nav { display: none; }
+  .account-mobile-nav {
     position: relative;
-    margin-bottom: 16px;
+    display: block;
+    min-width: 0;
     z-index: 45;
   }
-  .mobile-dropdown-trigger {
-    width: 100%;
-    padding: 16px;
+  .account-mobile-nav .mobile-dropdown-trigger {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: var(--color-surface);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    color: var(--color-text);
+    gap: 12px;
+    width: 100%;
+    min-height: 54px;
+    padding: 14px 16px;
+    border: 1px solid var(--account-nav-border);
+    border-radius: 14px;
+    background: var(--color-bg, #fff);
+    color: var(--color-text, #111);
+    box-shadow: 0 2px 8px #00000005;
+    font: inherit;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: border-color .14s ease, background-color .14s ease;
   }
-  .mobile-dropdown-trigger:hover,
-  .mobile-dropdown-trigger.open {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.2);
+  .account-mobile-nav .mobile-dropdown-trigger:hover,
+  .account-mobile-nav .mobile-dropdown-trigger.open {
+    border-color: color-mix(in srgb, var(--color-text, #111) 28%, transparent);
+    background: var(--color-bg, #fff);
   }
-  .trigger-content {
+  .account-mobile-nav .trigger-content {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
   }
-  .trigger-label {
-    font-weight: 700;
-    font-size: 1rem;
+  .account-mobile-nav .trigger-label {
+    font-size: 14px;
+    font-weight: 650;
+    line-height: 22px;
   }
-  .chevron {
-    transition: transform 0.2s ease;
-    color: var(--color-muted);
-  }
-  .chevron.rotate {
-    transform: rotate(180deg);
-  }
-
-  .mobile-dropdown-menu {
+  .account-mobile-nav .chevron { transition: transform .14s ease; }
+  .account-mobile-nav .chevron.rotate { transform: rotate(180deg); }
+  .account-mobile-nav .mobile-dropdown-menu {
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
-    width: 100%;
-    padding: 8px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    background: #18181b;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
+    gap: 3px;
+    width: 100%;
+    max-height: min(420px, calc(100dvh - 32px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 8px;
+    border: 1px solid var(--account-nav-border);
+    border-radius: 16px;
+    background: var(--color-bg, #fff);
+    color: var(--color-text, #111);
+    box-shadow: var(--account-nav-shadow);
     z-index: 50;
   }
-  .mobile-menu-item {
-    text-decoration: none;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background: transparent;
-    border: none;
-    border-radius: 10px;
-    color: var(--color-text);
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    text-align: left;
-  }
-  .mobile-menu-item:hover {
-    color: var(--color-text);
-    text-decoration: none;
-    background: rgba(255, 255, 255, 0.05);
-  }
-  .mobile-menu-item.active {
-    background: color-mix(in oklab, var(--color-primary) 15%, transparent);
-    color: var(--color-primary);
-    font-weight: 700;
-  }
-  .mobile-menu-divider {
+  .account-mobile-nav .mobile-menu-item > span { flex: 1; min-width: 0; }
+  .account-mobile-nav .account-menu-check { margin-left: auto; }
+  .account-mobile-nav .mobile-menu-divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.1);
-    margin: 4px 0;
+    flex-shrink: 0;
+    margin: 6px 4px;
+    background: var(--account-nav-border);
   }
-  .mobile-menu-item.logout {
-    color: #ef4444;
-  }
-  .mobile-menu-item.logout:hover {
-    background: rgba(239, 68, 68, 0.1);
-  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .account-nav .nav-btn,
+  .account-mobile-nav .mobile-menu-item,
+  .account-mobile-nav .mobile-dropdown-trigger,
+  .account-mobile-nav .chevron { transition: none; }
 }
