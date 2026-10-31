@@ -33,7 +33,7 @@ export default function NavBar() {
   const [isMobile, setIsMobile] = useState(false);
   // Otvoren brend ili brzi izbor svih modela na telefonu.
   const [openIdx, setOpenIdx] = useState(null);
-  const [otherDismissed, setOtherDismissed] = useState(false);
+  const [dismissedGroups, setDismissedGroups] = useState(() => new Set());
 
 
   const rowRef = useRef(null);
@@ -64,9 +64,25 @@ export default function NavBar() {
     }
   };
 
-  const closeOtherMenu = () => {
-    setOpenIdx(null);
-    setOtherDismissed(true);
+  const dropdownProps = (id) => {
+    const reopen = () => setDismissedGroups((previous) => {
+      if (!previous.has(id)) return previous;
+      const next = new Set(previous);
+      next.delete(id);
+      return next;
+    });
+    return {
+      'data-dismissed': dismissedGroups.has(id) ? 'true' : undefined,
+      onPointerEnter: reopen,
+      onFocusCapture: (event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) reopen();
+      },
+      onClickCapture: (event) => {
+        if (!event.target.closest('a')) return;
+        setOpenIdx(null);
+        setDismissedGroups((previous) => new Set(previous).add(id));
+      }
+    };
   };
 
   const selectedBrand = new URLSearchParams(location.search)
@@ -87,6 +103,7 @@ export default function NavBar() {
           {/* Svi modeli: isti padajući meni kao brendovi, sa brzim izborom pola. */}
           <div
             className="navbar__group"
+            {...dropdownProps('all-models')}
             data-open={isMobile && openIdx === 'all-models' ? 'true' : 'false'}
           >
             <NavLabel
@@ -117,6 +134,7 @@ export default function NavBar() {
             <div
               key={g.label}
               className="navbar__group"
+              {...dropdownProps(g.label)}
               data-open={isMobile && openIdx === i ? 'true' : 'false'}
             >
               <NavLabel
@@ -161,18 +179,12 @@ export default function NavBar() {
             </div>
           ))}
 
-          <div className="navbar__group"
-            data-dismissed={otherDismissed ? 'true' : undefined}
-            onPointerEnter={() => setOtherDismissed(false)}
-            onFocusCapture={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget)) setOtherDismissed(false);
-            }}
-          >
-            <Link to="/ostalo" className={`navbar__label ${isMobile ? 'navbar__chip' : ''}`} onClick={closeOtherMenu}>{translateText("Ostalo")}</Link>
+          <div className="navbar__group" {...dropdownProps('other')}>
+            <Link to="/ostalo" className={`navbar__label ${isMobile ? 'navbar__chip' : ''}`}>{translateText("Ostalo")}</Link>
             <div className="navbar__dropdown card">
-              <Link to="/naocare" onClick={closeOtherMenu}>{translateText("Naočare za sunce")}</Link>
-              <Link to="/daljinski" onClick={closeOtherMenu}>{translateText("Daljinski")}</Link>
-              <Link to="/baterije" onClick={closeOtherMenu}>{translateText("Baterije")}</Link>
+              <Link to="/naocare">{translateText("Naočare za sunce")}</Link>
+              <Link to="/daljinski">{translateText("Daljinski")}</Link>
+              <Link to="/baterije">{translateText("Baterije")}</Link>
             </div>
           </div>
         </div>
