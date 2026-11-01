@@ -24,8 +24,9 @@ export async function uploadProductImage(slug, file, index = 0) {
       body: file,
     });
     if (!response.ok) throw new Error(`R2 upload nije uspeo (${response.status}).`);
-    await mediaApi.completeUpload(mediaId);
-    return { mediaId, url: upload.publicUrl || '', thumb: upload.thumbnailUrl || upload.publicUrl || '' };
+    const completed = await mediaApi.completeUpload(mediaId);
+    const url = completed.mainImageUrl || completed.publicUrl || upload.publicUrl || '';
+    return { mediaId, url, thumb: completed.thumbnailUrl || upload.thumbnailUrl || url };
   } catch (error) {
     try {
       await mediaApi.discardUpload(mediaId);
