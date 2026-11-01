@@ -24,9 +24,8 @@ export default function SearchResults() {
   const queryKey = JSON.stringify([q, department, sort, literal]);
   const [page, setPage] = useState({ key: queryKey, cursor: undefined, items: [] });
   const [field, setField] = useState(q);
-  const [seed] = useState(() => crypto.randomUUID());
   const cursor = page.key === queryKey ? page.cursor : undefined;
-  const { data, loading, error, retry } = useCatalogSearch({ q, mode: 'results', department, sort, cursor, seed, literal });
+  const { data, loading, error, retry } = useCatalogSearch({ q, mode: 'results', department, sort, cursor, literal });
   const previousItems = page.key === queryKey ? page.items : [];
   const items = useMemo(() => [...previousItems, ...(data?.items || [])].filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index), [previousItems, data]);
   useEffect(() => { setField(q); }, [q]);

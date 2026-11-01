@@ -9,7 +9,7 @@ export function SearchProductRow({ product, ...props }) {
   return <a href={localizePath(`/product/${encodeURIComponent(product.slug)}`)} className="live-search__product" title={translateText(product.inStock ? undefined : 'Nema na stanju')}
     aria-label={translateText(`${product.brand || ''} ${product.name}, ${price}${product.inStock ? '' : ', nema na stanju'}`)} {...props}>
     <span className="live-search__thumbnail">{product.thumbnailUrl || product.image
-      ? <img src={product.thumbnailUrl || product.image} alt="" loading="lazy" decoding="async" /> : <Watch size={38} aria-hidden="true" />}</span>
+      ? <img src={product.thumbnailUrl || product.image} alt="" loading="eager" decoding="async" /> : <Watch size={38} aria-hidden="true" />}</span>
     <span className="live-search__product-info">{product.brand && <small>{translateText(product.brand)}</small>}<strong>{translateText(product.name)}</strong><span className="live-search__price">{translateText(price)}</span></span>
   </a>;
 }
@@ -33,7 +33,9 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
   const option = (onClick) => {
     const position = index++;
     return { id: `${idPrefix}-option-${position}`, role: 'option', 'aria-selected': active === position,
-      'data-search-index': position, tabIndex: -1, onMouseEnter: () => onActive(position), onClick };
+      'data-search-index': position, 'aria-disabled': loading || undefined, tabIndex: -1,
+      onMouseEnter: () => { if (!loading) onActive(position); },
+      onClick: event => { if (loading) { event.preventDefault(); return; } onClick(event); } };
   };
   const link = (href) => option((event) => {
     if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
@@ -51,10 +53,11 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
       {categories.map((item) => <a key={item.href} href={localizePath(item.href)} className="live-search__category" {...link(item.href)}>{translateText(item.label)}<ArrowUpRight size={12} aria-hidden="true" /></a>)}
     </div></section>
   </aside>;
-  const renderRight = () => <section className="live-search__matches" aria-label={translateText("Artikli")}>
+  const renderRight = () => <section className={`live-search__matches ${loading && data?.items?.length ? 'is-updating' : ''}`} aria-label={translateText("Artikli")}>
     {translateText(!hasQuery ? <div className="live-search__start"><span><Search size={28} aria-hidden="true" /></span><h2>{translateText("Pronađite baš ono što tražite.")}</h2><p>{translateText("Počnite da kucate model, brend ili osobine proizvoda.")}</p><small>{translateText("Na primer: ORIENT, ženski automatik ili srebrna narukvica.")}</small></div>
-      : loading ? <><div className="live-search__loading" role="status"><Search size={15} aria-hidden="true" />{translateText(" Tražimo najbolje rezultate…")}</div><div className="live-search__product-grid" aria-hidden="true">{translateText(Array.from({ length: 6 }, (_, i) => <div className="live-search__skeleton" key={i}><span /><i /><i /></div>))}</div></>
+      : loading && !data?.items?.length ? <><div className="live-search__loading" role="status"><Search size={15} aria-hidden="true" />{translateText(" Tražimo najbolje rezultate…")}</div><div className="live-search__product-grid" aria-hidden="true">{translateText(Array.from({ length: 6 }, (_, i) => <div className="live-search__skeleton" key={i}><span /><i /><i /></div>))}</div></>
         : error ? null : <>
+          {loading && <div className="live-search__loading" role="status"><Search size={15} aria-hidden="true" />{translateText("Osvežavamo rezultate…")}</div>}
           {data?.appliedCorrection && <div className="live-search__feedback" role="status">{translateText("Prikazujemo rezultate za „")}{translateText(data.appliedCorrection.label || data.appliedCorrection.query)}“. <button type="button" className="live-search__correction" {...option(()=>onLiteral?.())}>{translateText("Traži originalni unos")}</button></div>}
           {data?.conditions?.length > 0 && <div className="live-search__conditions" aria-label={translateText("Prepoznati uslovi")}>{data.conditions.map(condition=><button type="button" key={condition.id} {...option(()=>onCorrect(condition.query))} aria-label={translateText(`Ukloni uslov: ${condition.label}`)}>{translateText(condition.label)}<X size={12}/></button>)}</div>}
           {noResults && <div className="live-search__feedback" role="status" aria-live="polite">
@@ -80,7 +83,7 @@ export default function SearchSuggestions({ data, loading, error, retry, query, 
       <div className={`live-search__layout ${hasQuery ? '' : 'is-idle'}`}>{translateText(left)}{translateText(right)}</div>
     </div>
     {allProps && <footer className="live-search__footer">
-      {allProps && <a href={localizePath(seeAllHref)} className="live-search__all" {...allProps}>{translateText("Prikaži sve (")}{translateText(data.total)})<ArrowRight size={17} aria-hidden="true" /></a>}
+      {allProps && <a href={localizePath(seeAllHref)} className="live-search__all" {...allProps}>{translateText("Prikaži sve (")}{translateText(loading ? '…' : data.total)})<ArrowRight size={17} aria-hidden="true" /></a>}
     </footer>}
   </>;
 }

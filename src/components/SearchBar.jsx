@@ -16,12 +16,11 @@ export default function SearchBar() {
   const [open, setOpen] = useState(false);
   const [mobile, setMobile] = useState(false);
   const [position, setPosition] = useState({});
-  const [seed, setSeed] = useState('catalog');
   const [active, setActive] = useState(-1);
   const inputRef = useRef(null); const mobileTrigger = useRef(null); const mobileInput = useRef(null); const anchor = useRef(null); const panel = useRef(null);
   const navigate = useNavigate(); const location = useLocation();
   const id = `search-${useId().replace(/:/g, '')}`;
-  const { data, loading, error, retry } = useCatalogSearch({ q, enabled: open, seed, literal });
+  const { data, loading, error, retry } = useCatalogSearch({ q, enabled: open, literal });
   const hasValue = q.trim().length > 0;
   const close = useCallback(() => { setOpen(false); setActive(-1); }, []);
 
@@ -30,7 +29,7 @@ export default function SearchBar() {
     // Mount the fullscreen field before focusing it, in the same user gesture.
     // The mobile header is a trigger, so no first input opens the keyboard.
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
-    flushSync(() => { setMobile(isMobile); setSeed(crypto.randomUUID()); setActive(-1); setOpen(true); });
+    flushSync(() => { setMobile(isMobile); setActive(-1); setOpen(true); });
     if (isMobile) mobileInput.current?.focus({ preventScroll: true });
   }
   function dismiss() {
@@ -55,17 +54,17 @@ export default function SearchBar() {
     if (event.target.tagName !== 'INPUT') return;
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault(); if (!open) show();
-      const options = [...(panel.current?.querySelectorAll('[data-search-index]') || [])].sort((a, b) => Number(a.dataset.searchIndex) - Number(b.dataset.searchIndex));
+      const options = [...(panel.current?.querySelectorAll('[data-search-index]:not([aria-disabled="true"])') || [])].sort((a, b) => Number(a.dataset.searchIndex) - Number(b.dataset.searchIndex));
       if (!options.length) return;
       const next = event.key === 'ArrowDown' ? (active + 1) % options.length : (active <= 0 ? options.length : active) - 1;
       setActive(next); options[next]?.scrollIntoView({ block: 'nearest' });
     }
     if (event.key === 'Enter') {
-      event.preventDefault(); const selected = active >= 0 ? panel.current?.querySelector(`[data-search-index="${active}"]`) : null;
+      event.preventDefault(); const selected = !loading && active >= 0 ? panel.current?.querySelector(`[data-search-index="${active}"]`) : null;
       if (selected) selected.click(); else submit();
     }
   }
-  useEffect(() => { setActive(-1); }, [q, data]);
+  useEffect(() => { setActive(-1); }, [q, data, loading]);
   useEffect(() => {
     close();
     if (location.pathname === '/search') { setQ(new URLSearchParams(location.search).get('q') || ''); setLiteral(new URLSearchParams(location.search).get('literal') === 'yes'); }
