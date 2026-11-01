@@ -65,6 +65,15 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
   const [busy, setBusy] = useState('');
   const [revision, setRevision] = useState(0);
   const selection = useRef(0);
+  const [products, setProducts] = useState([]);
+  const [productTotal, setProductTotal] = useState(0);
+  const [nextOffset, setNextOffset] = useState(null);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState('');
+  const productVersion = useRef(0);
+  const pageInFlight = useRef(false);
+  const moreProducts = useRef(null);
+  const loadMoreRef = useRef(null);
   const refresh = () => setRevision((value) => value + 1);
   useEffect(() => {
     if (selected) { setLoading(false); return; }
@@ -92,7 +101,7 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
     setDetailError('');
     setDetailLoading(true);
     workforceApi
-      .member(selected.id)
+      .member(selected.id, { paged: '1' })
       .then((value) => {
         if (!cancelled) setDetail(value);
       })
@@ -131,27 +140,47 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
   };
   const worker =
     detail?.summary || members.find((m) => m.id === selected?.id) || selected;
-  const products = (detail?.products || [])
-    .filter((p) => {
-      const matches = `${p.name} ${p.sku || ''} ${p.brand || ''}`
-        .toLocaleLowerCase()
-        .includes(search.toLocaleLowerCase());
-      return (
-        matches &&
-        (filter === 'all' ||
-          (filter === 'incomplete'
-            ? !p.deletedAt && p.qualityMissing?.length
-            : filter === 'deleted'
-              ? p.deletedAt
-              : !p.deletedAt && p.qualityReviewStatus === filter))
-      );
-    })
-    .sort(
-      (a, b) =>
-        Number(b.qualityReviewStatus === 'changes_requested') -
-          Number(a.qualityReviewStatus === 'changes_requested') ||
-        new Date(b.createdAt) - new Date(a.createdAt),
-    );
+  useEffect(() => {
+    const version = ++productVersion.current;
+    setProducts([]); setProductTotal(0); setNextOffset(0); setProductsError('');
+    pageInFlight.current = Boolean(selected); setProductsLoading(Boolean(selected));
+    if (!selected) return undefined;
+    const timer = setTimeout(() => {
+      workforceApi.products(selected.id, { limit: 30, offset: 0, search, status: filter }).then(page => {
+        if (version !== productVersion.current) return;
+        setProducts(page.items); setProductTotal(page.total); setNextOffset(page.nextOffset);
+      }).catch(error => {
+        if (version === productVersion.current) setProductsError(error.message || 'Artikli nisu učitani.');
+      }).finally(() => {
+        if (version === productVersion.current) { pageInFlight.current = false; setProductsLoading(false); }
+      });
+    }, 250);
+    return () => { clearTimeout(timer); productVersion.current++; };
+  }, [selected, search, filter, revision]);
+  const loadMoreProducts = () => {
+    if (!selected || pageInFlight.current || nextOffset === null) return;
+    const version = productVersion.current;
+    pageInFlight.current = true; setProductsLoading(true); setProductsError('');
+    workforceApi.products(selected.id, { limit: 30, offset: nextOffset, search, status: filter }).then(page => {
+      if (version !== productVersion.current) return;
+      setProducts(current => [...new Map([...current,...page.items].map(product => [product.id,product])).values()]);
+      setProductTotal(page.total); setNextOffset(page.nextOffset);
+    }).catch(error => {
+      if (version === productVersion.current) setProductsError(error.message || 'Artikli nisu učitani.');
+    }).finally(() => {
+      if (version === productVersion.current) { pageInFlight.current = false; setProductsLoading(false); }
+    });
+  };
+  loadMoreRef.current = loadMoreProducts;
+  useEffect(() => {
+    const element = moreProducts.current;
+    if (!element || nextOffset === null || productsLoading || productsError) return undefined;
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) loadMoreRef.current();
+    }, { rootMargin: '300px' });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [selected, detail, products.length, nextOffset, productsLoading, productsError]);
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
@@ -318,7 +347,7 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 p-5">
               <h3 className="font-bold">
                 Artikli zaposlenog{' '}
-                <span className="text-neutral-400">({products.length})</span>
+                <span className="text-neutral-400">({productTotal})</span>
               </h3>
               <div className="flex flex-wrap gap-2">
                 <label className="flex items-center gap-2 rounded-xl border px-3">
@@ -502,7 +531,10 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
                 </tbody>
               </table>
             </div>
-            {!products.length && (
+            <div ref={moreProducts} className="p-4 text-center text-sm text-neutral-500" aria-live="polite">
+              {productsLoading ? 'Učitavanje artikala…' : productsError ? <><p role="alert" className="text-red-700">{productsError}</p><button type="button" onClick={loadMoreProducts} className="mt-2 rounded-lg border px-3 py-2">Pokušaj ponovo</button></> : nextOffset !== null ? <button type="button" onClick={loadMoreProducts} className="rounded-lg border px-3 py-2">Učitaj još 30</button> : products.length > 0 ? `Prikazano ${products.length} od ${productTotal}` : null}
+            </div>
+            {!productsLoading && !productsError && !products.length && (
               <p className="p-8 text-center text-neutral-500">
                 Nema artikala za izabrani filter.
               </p>

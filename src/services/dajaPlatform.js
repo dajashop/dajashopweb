@@ -1185,8 +1185,11 @@ export const workforceApi = {
       method: 'PATCH', staff: true, body: { rateMinor },
     });
   },
-  member(userId) {
-    return workforceRead(`/admin/workforce/${encodeURIComponent(userId)}`);
+  member(userId, params) {
+    return workforceRead(`/admin/workforce/${encodeURIComponent(userId)}`, params);
+  },
+  products(userId, params) {
+    return workforceRead(`/admin/workforce/${encodeURIComponent(userId)}/products`, params);
   },
   reviewProduct(productId, status, note) {
     return apiRequest(`/admin/workforce/products/${encodeURIComponent(productId)}/review`, {

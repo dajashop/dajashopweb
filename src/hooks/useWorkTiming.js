@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from './useAuth';
 import { workforceApi } from '../services/dajaPlatform';
-import { getStaffAccessToken } from '../services/apiClient';
 import { readStoredValue, writeStoredValue } from '../services/consentStorage';
 
 const pendingRequests = new Map();
@@ -60,13 +59,9 @@ export default function useWorkTiming({ product, draft, reviewContext }) {
   const isReview = Boolean(reviewContext);
   useEffect(() => {
     if (!userKey || !staffReady) return;
-    let identity;
-    try {
-      const encoded = getStaffAccessToken().split('.')[1].replaceAll('-', '+').replaceAll('_', '/');
-      identity = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, '=')));
-      if (!identity.sub || !identity.org) return;
-    } catch { return; }
-    const key = `daja_work_timing_queue:${identity.org}:${identity.sub}`;
+    // Identity comes from the authenticated server context, including HttpOnly sessions.
+    // Scope local delivery to the signed-in account without reading a bearer token.
+    const key = `daja_work_timing_queue:account:${userKey}`;
     const ownerId = crypto.randomUUID();
     const kind = isReview ? 'review' : product?.id ? 'edit' : 'create';
     let activeSeconds = 0;
@@ -85,7 +80,7 @@ export default function useWorkTiming({ product, draft, reviewContext }) {
     };
     const flush = (status = 'open', productId, finishedAt, release = false) => {
       settle();
-      const body = { ownerId, actorUserId: identity.sub, organizationId: identity.org, sequence: ++sequence, startedAt: meta.current.startedAt,
+      const body = { ownerId, sequence: ++sequence, startedAt: meta.current.startedAt,
         kind, activeSeconds, eligible: !release && status === 'open' && eligible(), complete, status,
         ...(productId || currentProductId ? { productId: productId || currentProductId } : {}),
         ...(finishedAt ? { finishedAt } : {}) };

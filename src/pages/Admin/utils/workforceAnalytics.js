@@ -73,9 +73,11 @@ export function workforceModel({ entries = [], report, products = [], date, firs
   const history = report?.daily || [];
   const previous = history.find((row) => row.date === shiftWorkDate(date, -1))?.periodCount || 0;
   const week = Array.from({ length: 7 }, (_, index) => history.find((row) => row.date === shiftWorkDate(date, -index - 1))?.periodCount || 0);
-  return { all, periodEntries, periodCreations, gaps, hourly, growth, peak, timings, measured, quality, types, waiting, unknownWaiting,
-    missing: [...missing].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count),
-    brands: groups('brand'), departments: groups('department'), histogram, history, previous, weekAverage: average(week),
+  return { all, periodEntries, periodCreations, gaps, hourly, growth, peak, timings, measured, quality: report?.productStats?.quality || quality, types,
+    waiting: report?.productStats?.waiting || waiting,
+    unknownWaiting: report?.productStats?.unknownWaiting ?? unknownWaiting,
+    missing: report?.productStats?.missing || [...missing].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count),
+    brands: report?.productStats?.brands || groups('brand'), departments: report?.productStats?.departments || groups('department'), histogram, history, previous, weekAverage: average(week),
     activeAverage: average(measured.map((item) => item.activeSeconds)), elapsedAverage: average(measured.map((item) => item.elapsedSeconds)),
     gapAverage: average(continuous), gapMedian: continuous.length ? (continuous[Math.floor(continuous.length / 2)] + continuous[Math.floor((continuous.length - 1) / 2)]) / 2 : null,
     positions: new Map(all.map((entry, index) => [entry.id, index])) };
