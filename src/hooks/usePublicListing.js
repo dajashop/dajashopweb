@@ -11,7 +11,7 @@ let generation = 0;
 function remember(key, data) {
   cache.delete(key);
   const saleExpiry = Math.min(...data.items.map(item => Date.parse(item.saleValidUntil)).filter(Number.isFinite));
-  cache.set(key, { data, expires: Math.min(Date.now() + TTL, saleExpiry), retainUntil: Math.min(Date.now() + 5 * TTL, saleExpiry) });
+  cache.set(key, { data, expires: Math.min(Date.now() + (data.staffUnavailable ? 5000 : TTL), saleExpiry), retainUntil: Math.min(Date.now() + (data.staffUnavailable ? 5000 : 5 * TTL), saleExpiry) });
   while (cache.size > 24) cache.delete(cache.keys().next().value);
 }
 function cached(key, fresh = false) {

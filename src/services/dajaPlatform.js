@@ -7,6 +7,7 @@ import {
   onStaffAccessTokenChange,
   toArrayPayload,
   BROWSER_SESSIONS_ENABLED,
+  ensureStaffSession,
 } from './apiClient';
 import { createRealtimeSocket } from './realtimeSocket.js';
 import { createOAuthBrowserState } from './oauthBrowserState.js';
@@ -350,6 +351,7 @@ export const authApi = {
     });
   },
   async createAdminSession() {
+    if (BROWSER_SESSIONS_ENABLED) return ensureStaffSession();
     const storageKey = 'daja_staff_device_id';
     let deviceId = readStoredValue(storageKey, 'necessary');
     if (!deviceId) {
@@ -492,11 +494,16 @@ export const catalogApi = {
     const department = query.get('department');
     const version = adminConfigurationVersions.get(department);
     if (version) query.set('configurationVersion', version);
-    const data = await apiRequest('/admin/catalog/page', {
-      staff: true,
-      query: Object.fromEntries(query),
-      signal,
-    });
+    let data;
+    try {
+      data = await apiRequest('/admin/catalog/page', {
+        staff: true, query: Object.fromEntries(query), signal,
+      });
+    } catch (error) {
+      if (error.status !== 429) throw error;
+      // A staff-session quota must not hide the public storefront catalog.
+      return { ...await this.listing(route, signal), staffUnavailable: true };
+    }
     if (!data || !Array.isArray(data.items)) throw new Error('Neispravan odgovor kataloga.');
     if (query.get('pathname') && data.pathname !== query.get('pathname')) {
       const [{ decodeCatalogParams }, { configuredFilterParams }, { catalogPageRequest }, { filterConfigurationApi }] = await Promise.all([

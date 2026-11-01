@@ -14,6 +14,8 @@ let expiresAt = 0;
 let staffExpiresAt = 0;
 let refreshing;
 let staffRefreshing;
+let staffRetryAt = 0;
+let staffRetryError;
 const authListeners = new Set();
 const staffListeners = new Set();
 let sessionChannel;
@@ -48,6 +50,9 @@ async function read(response) {
   if (!response.ok) {
     const error = new Error(translate(safeApiErrorMessage(response.status, body), typeof window === 'undefined' ? 'sr' : pathLanguage(window.location.pathname)));
     error.status = response.status; error.code = body?.error?.code;
+    const retryAfter = response.headers.get('Retry-After');
+    const seconds = Number(retryAfter);
+    error.retryAfterMs = retryAfter && Number.isFinite(seconds) ? Math.max(1000, seconds * 1000) : 60_000;
     throw error;
   }
   return unpack(body);
@@ -64,7 +69,7 @@ export async function initializeBrowserSession(force = false) {
     const data = await read(response);
     customer = data?.webSession === true;
     staff = data?.staffSession === true;
-    staffExpiresAt = 0;
+    staffExpiresAt = staff ? Date.now() + Math.max(0, Number(data?.staffExpiresIn) || 0) * 1000 : 0;
     expiresAt = Date.now() + Number(data?.expiresIn || 0) * 1000;
     initialized = true;
   })().finally(() => { initializing = undefined; });
@@ -90,18 +95,19 @@ export function setAuthTokens(data = {}, { notify = true } = {}) {
   if (!BROWSER_SESSIONS_ENABLED) return legacy.setAuthTokens(data, { notify });
   customer = data.webSession === true;
   expiresAt = Date.now() + Number(data.expiresIn || 900) * 1000;
-  if (notify) { staff = false; emit(staffListeners); emit(authListeners); publishSessionChange(); }
+  if (notify) { staffRetryAt = 0; staffRetryError = undefined; staff = false; emit(staffListeners); emit(authListeners); publishSessionChange(); }
 }
 export function setStaffAccessToken(value, expiresIn = 900) {
   if (!BROWSER_SESSIONS_ENABLED) return legacy.setStaffAccessToken(value);
   const next = value === true;
   staffExpiresAt = next ? Date.now() + Number(expiresIn) * 1000 : 0;
-  if (!next && staff === next) return;
+  if (next) { staffRetryAt = 0; staffRetryError = undefined; }
+  if (staff === next) return;
   staff = next; emit(staffListeners);
 }
 export function clearAuthTokens() {
   if (!BROWSER_SESSIONS_ENABLED) return legacy.clearAuthTokens();
-  customer = false; staff = false; initialized = false; expiresAt = 0;
+  customer = false; staff = false; initialized = false; expiresAt = 0; staffRetryAt = 0; staffRetryError = undefined;
   discardLegacyTokens(); emit(authListeners); emit(staffListeners);
   publishSessionChange();
 }
@@ -147,6 +153,7 @@ async function withSessionLock(operation) {
   throw new Error(translate('Usluga je privremeno nedostupna. Pokušajte ponovo kasnije.', pathLanguage(window.location.pathname)));
 }
 async function refreshStaff() {
+  if (staffRetryError && Date.now() < staffRetryAt) throw staffRetryError;
   staffRefreshing ??= (async () => {
     let deviceId;
     try { deviceId = localStorage.getItem('daja_staff_device_id'); } catch { /* Optional. */ }
@@ -154,8 +161,17 @@ async function refreshStaff() {
     try { localStorage.setItem('daja_staff_device_id', deviceId); } catch { /* Optional. */ }
     const data = await apiRequest('/customer-auth/admin/session', { method: 'POST', body: { deviceId } });
     setStaffAccessToken(data?.staffSession === true, data?.expiresIn);
-  })().catch(error => { if (error.status === 401 || error.status === 403) setStaffAccessToken(false); throw error; }).finally(() => { staffRefreshing = undefined; });
+  })().catch(error => {
+    if (error.status === 429) { staffRetryError = error; staffRetryAt = Date.now() + error.retryAfterMs; }
+    if (error.status === 401 || error.status === 403) setStaffAccessToken(false);
+    throw error;
+  }).finally(() => { staffRefreshing = undefined; });
   return staffRefreshing;
+}
+export async function ensureStaffSession() {
+  await initializeBrowserSession();
+  if (!staff || staffExpiresAt <= Date.now() + 30_000) await refreshStaff();
+  return { staffSession: staff, expiresIn: Math.max(0, Math.floor((staffExpiresAt - Date.now()) / 1000)) };
 }
 export async function resumeAuthSession() {
   if (!BROWSER_SESSIONS_ENABLED) return legacy.resumeAuthSession();

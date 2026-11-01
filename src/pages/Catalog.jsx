@@ -451,11 +451,15 @@ export default function Catalog({ department = 'satovi', seo }) {
 
             <p className="catalog__description">{translateText(catalogDescription)}</p>
 
+            {listing.data?.staffUnavailable && <p role="status" className="mb-3 text-sm text-neutral-500">
+              {translateText('Administratorski prikaz je privremeno ograničen. Prikazani su javni proizvodi.')}{' '}
+              <button type="button" className="underline" onClick={listing.retry}>{translateText('Pokušaj ponovo')}</button>
+            </p>}
             <div className="catalog__subrow">
               <div className="catalog__showing">
                 {translateText(listing.displayingPrevious ? (err ? 'Novi rezultati trenutno nisu dostupni' : 'Učitavanje novih rezultata…') : listing.data ? `Ukupno ${totalCount} proizvoda` : 'Učitavanje proizvoda…')}
                 {listing.updating && <span className="ml-2 inline-flex items-center gap-1 text-neutral-500" role="status"><Loader2 size={14} className="animate-spin" />{translateText(" Osvežavanje…")}</span>}
-                {includeHiddenForAdmin && listing.data && (
+                {includeHiddenForAdmin && listing.data && !listing.data.staffUnavailable && (
                   <span className="ml-2 text-neutral-500">{translateText("· Sakriveno ")}{translateText(hiddenCount)}
                   </span>
                 )}
