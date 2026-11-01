@@ -1,3 +1,4 @@
+import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // src/components/account/OrderCard.jsx
 import React, { useState } from 'react';
@@ -121,7 +122,7 @@ export default function OrderCard({ order }) {
 
                     const imageNode = (
                       <div className="relative group w-20 h-20 rounded-lg overflow-hidden border border-[var(--color-border)] bg-white flex-shrink-0">
-                        <img
+                        <ProgressiveImage
                           src={imageSrc}
                           alt={translateText(item.name)}
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"

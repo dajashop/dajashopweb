@@ -1,3 +1,4 @@
+import { preloadProductImage } from '../utils/productImageFormats.js';
 import { catalogImageSrcSet } from '../utils/catalogImages.js';
 import { apiRequest } from './apiClient.js';
 import { requestResource } from './catalogResourceCache.js';
@@ -92,19 +93,19 @@ export async function preloadCatalogImages(items, signal, { gallery = false, con
       const { src, srcSet } = urls[cursor++];
       await new Promise(resolve => {
         const img = new Image();
+        let cleanup;
         const done = () => {
           if (!signal.aborted && img.naturalWidth > 0) {
             warmedImages.delete(src); warmedImages.set(src, Date.now() + 5 * 60_000);
             while (warmedImages.size > 192) warmedImages.delete(warmedImages.keys().next().value);
           }
-          img.onload = null; img.onerror = null; signal.removeEventListener('abort', abort); resolve();
+          img.onload = null; img.onerror = null; cleanup?.(); signal.removeEventListener('abort', abort); resolve();
         };
         const abort = () => { done(); img.src = ''; };
         signal.addEventListener('abort', abort, { once: true });
         img.onload = done; img.onerror = done;
         img.decoding = 'async'; img.fetchPriority = 'low';
-        if (srcSet) { img.srcset = srcSet; img.sizes = '320px'; }
-        img.src = src;
+        cleanup = preloadProductImage(img, src, srcSet, '320px');
         if (img.complete) done();
       });
     }

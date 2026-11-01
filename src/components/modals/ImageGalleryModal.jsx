@@ -1,3 +1,4 @@
+import { preloadProductImage } from '../../utils/productImageFormats.js';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -42,14 +43,20 @@ export default function ImageGalleryModal({ images, initialIndex, onClose, conta
   // --- PRELOADING ---
   useEffect(() => {
     if (!images || images.length === 0) return;
+    const cleanups = [];
     const preloadImg = (idx) => {
-      const img = new Image();
-      img.src = images[idx]?.url;
+      const src = images[idx]?.url;
+      if (!src) return;
+      const img = new Image(); img.fetchPriority = 'low';
+      let cleanup;
+      img.onload = img.onerror = () => cleanup?.();
+      cleanup = preloadProductImage(img, src); cleanups.push(cleanup);
     };
     const len = images.length;
     preloadImg((currentIndex + 1) % len);
     preloadImg((currentIndex + 2) % len);
     preloadImg((currentIndex - 1 + len) % len);
+    return () => cleanups.forEach(cleanup => cleanup());
   }, [currentIndex, images]);
 
   // Navigacija tastaturom
@@ -225,7 +232,7 @@ export default function ImageGalleryModal({ images, initialIndex, onClose, conta
                     : 'border-transparent opacity-50 hover:opacity-100'
                 }`}
               >
-                <img
+                <ProgressiveImage
                   src={img.thumb || img.url || '/placeholder.png'}
                   className={`w-full h-full ${containThumbnails ? 'object-contain bg-white p-1' : 'object-cover'}`}
                   alt={translateText(`thumbnail-${idx}`)}

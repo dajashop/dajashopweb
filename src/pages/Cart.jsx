@@ -1,3 +1,4 @@
+import ProgressiveImage from '../components/ui/ProgressiveImage.jsx';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useState, useEffect, useRef } from 'react';
 import './Cart.css';
@@ -343,7 +344,7 @@ export default function Cart() {
                   >
                     <button type="button" className="cart__image-button" onClick={() => setPreviewItem(it)} aria-label={translateText(`Uvećaj slike: ${it.name}`)}>
                       <ShoppingBag className="cart__image-fallback" size={28} aria-hidden="true" />
-                      {(it.image || it.thumb) && <img key={it.image || it.thumb} className="cart__thumb" src={it.image || it.thumb} alt={translateText(it.name)} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
+                      {(it.image || it.thumb) && <ProgressiveImage key={it.image || it.thumb} className="cart__thumb" src={it.image || it.thumb} alt={translateText(it.name)} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
                       <span className="cart__zoom"><ZoomIn size={16} aria-hidden="true" /></span>
                     </button>
 
@@ -533,7 +534,7 @@ export default function Cart() {
           {saved.items.map(item => <article key={item.lineId || item.id} className="cart__saved-item">
             <button type="button" className="cart__image-button" onClick={() => setPreviewItem(item)} aria-label={translateText(`Uvećaj slike: ${item.name}`)}>
               <ShoppingBag className="cart__image-fallback" size={24} aria-hidden="true" />
-              {(item.image || item.thumb) && <img src={item.image || item.thumb} className="cart__thumb" alt={translateText(item.name)} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
+              {(item.image || item.thumb) && <ProgressiveImage src={item.image || item.thumb} className="cart__thumb" alt={translateText(item.name)} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
               <span className="cart__zoom"><ZoomIn size={14} aria-hidden="true" /></span>
             </button>
             <div className="cart__saved-meta"><Link to={`/product/${item.slug}`} className="cart__name">{translateText(item.name)}</Link><div className="cart__brand">{translateText(item.brand)}</div>

@@ -1,3 +1,4 @@
+import ProgressiveImage from './ui/ProgressiveImage.jsx';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
@@ -94,7 +95,7 @@ export default function CartImagePreview({ item, onClose }) {
             touch.current = null;
             if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) move(dx < 0 ? 1 : -1);
           }}>
-          {source && !failed && <img key={source} src={source} alt={translateText(`${item.name} — slika ${index + 1}`)} draggable="false"
+          {source && !failed && <ProgressiveImage key={source} src={source} alt={translateText(`${item.name} — slika ${index + 1}`)} draggable="false"
             className={loaded ? 'is-loaded' : ''} onLoad={() => setLoadedSource(source)} onError={() => setFailedSource(source)} />}
           {source && !loaded && !failed && <Loader2 className="cart-preview__loading" size={28} aria-label={translateText("Učitavanje slike")} />}
           {(!source || failed) && <p role="status">{translateText("Slika trenutno nije dostupna.")}</p>}
@@ -106,7 +107,7 @@ export default function CartImagePreview({ item, onClose }) {
         <footer className="cart-preview__footer">
           {images.length > 1 && <div className="cart-preview__thumbnails" aria-label={translateText("Slike proizvoda")}>
             {images.map((url, position) => <button key={url} type="button" aria-label={translateText(`Prikaži sliku ${position + 1}`)} aria-pressed={position === index} onClick={() => setIndex(position)}>
-              <img src={url} alt="" loading="lazy" />
+              <ProgressiveImage src={url} alt="" loading="lazy" />
             </button>)}
           </div>}
           <p role="status">{translateText(fetching ? 'Učitavanje galerije…' : galleryError ? 'Ostale slike trenutno nisu dostupne.' : `Slika ${index + 1} od ${images.length || 1}`)}</p>

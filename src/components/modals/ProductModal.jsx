@@ -1,3 +1,4 @@
+import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import React, { useState, useRef, useEffect } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
@@ -313,7 +314,7 @@ export default function ProductModal({ open, onClose }) {
                         key={src}
                         className="relative group aspect-square rounded-lg overflow-hidden border border-[var(--color-border)]"
                       >
-                        <img
+                        <ProgressiveImage
                           src={src}
                           alt="preview"
                           className="w-full h-full object-cover"

@@ -1,3 +1,4 @@
+import ProgressiveImage from './ui/ProgressiveImage.jsx';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -228,7 +229,7 @@ export default function FeaturedSlider({
                 whileTap={{ cursor: "grabbing" }}
               >
                 <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/40 via-transparent to-white/60" />
-                <img
+                <ProgressiveImage
                   src={active.image}
                   alt={translateText(`${active.brand} ${active.model}`)}
                   className={`absolute inset-0 w-full h-full ${

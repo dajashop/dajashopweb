@@ -1,3 +1,4 @@
+import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -279,7 +280,7 @@ function WishlistSection() {
                 to={`/product/${item.slug}`}
                 className="wishlist-img-wrapper"
               >
-                <img
+                <ProgressiveImage
                   src={
                     item.image ||
                     item.images?.[0]?.url ||

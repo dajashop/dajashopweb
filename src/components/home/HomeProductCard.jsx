@@ -1,3 +1,4 @@
+import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React from 'react';
 import './HomeProductCard.css';
@@ -60,7 +61,7 @@ export default function HomeProductCard({ product }) {
   return (
     <article className={`homeCard${product.department === 'naocare' ? ' homeCard--eyewear' : ''}`}>
       <Link to={`/product/${slug}`} className="homeCard__img">
-        <img src={primaryImg} alt={translateText(name)} loading="lazy" />
+        <ProgressiveImage src={primaryImg} alt={translateText(name)} loading="lazy" />
       </Link>
 
       <div className="homeCard__body">

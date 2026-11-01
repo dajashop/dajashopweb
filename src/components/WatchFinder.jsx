@@ -1,3 +1,4 @@
+import ProgressiveImage from './ui/ProgressiveImage.jsx';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useRef, useState } from 'react';
 import './WatchFinder.css';
@@ -816,7 +817,7 @@ export default function WatchFinder({
         {hasVisual && (
           <span className={`wf-chip__iconWrap ${showLogo ? 'is-logo' : 'is-icon'}`} aria-hidden="true">
             {translateText(showLogo ? (
-              <img
+              <ProgressiveImage
                 className="wf-chip__logo"
                 src={visual.logoSrc}
                 alt=""
@@ -1002,7 +1003,7 @@ export default function WatchFinder({
               transition={cardMotionTransition}
             >
               <Link to={`/product/${p.slug}`} className="wf-card-mini__img">
-                <img src={p.thumbnailUrl || p.image} alt={translateText(p.name)} loading="lazy" />
+                <ProgressiveImage src={p.thumbnailUrl || p.image} alt={translateText(p.name)} loading="lazy" />
               </Link>
               <div className="wf-card-mini__body">
                 <div className="wf-card-mini__brand">{translateText(p.brand)}</div>

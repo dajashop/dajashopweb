@@ -1,3 +1,4 @@
+import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { ArrowUpRight, ArrowRight, PackageSearch, RefreshCw, Search, Watch, X } from 'lucide-react';
 
@@ -9,7 +10,7 @@ export function SearchProductRow({ product, ...props }) {
   return <a href={localizePath(`/product/${encodeURIComponent(product.slug)}`)} className="live-search__product" title={translateText(product.inStock ? undefined : 'Nema na stanju')}
     aria-label={translateText(`${product.brand || ''} ${product.name}, ${price}${product.inStock ? '' : ', nema na stanju'}`)} {...props}>
     <span className="live-search__thumbnail">{product.thumbnailUrl || product.image
-      ? <img src={product.thumbnailUrl || product.image} alt="" loading="eager" decoding="async" /> : <Watch size={38} aria-hidden="true" />}</span>
+      ? <ProgressiveImage src={product.thumbnailUrl || product.image} alt="" loading="eager" decoding="async" /> : <Watch size={38} aria-hidden="true" />}</span>
     <span className="live-search__product-info">{product.brand && <small>{translateText(product.brand)}</small>}<strong>{translateText(product.name)}</strong><span className="live-search__price">{translateText(price)}</span></span>
   </a>;
 }

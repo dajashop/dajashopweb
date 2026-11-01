@@ -45,7 +45,10 @@ export default {
         : await env.DAJASHOP_IMAGES.get(key);
       if (!object) return failure(request, 404, 'Not found');
       const headers = new Headers();
-      object.writeHttpMetadata(headers);
+      // Never forward original filenames, custom metadata or source provenance.
+      // Generated images only need their type, encoding, length and our cache policy.
+      const encoding = object.httpMetadata?.contentEncoding;
+      if (encoding && /^(?:gzip|br|deflate)$/.test(encoding)) headers.set('Content-Encoding', encoding);
       for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
       const type = (object.httpMetadata?.contentType || 'application/octet-stream').split(';')[0].trim().toLowerCase();
       headers.set('Content-Type', type);

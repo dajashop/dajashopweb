@@ -1,3 +1,4 @@
+import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { useEffect, useState } from 'react';
 import { Sparkles, RefreshCw } from 'lucide-react';
@@ -20,7 +21,7 @@ function SuggestionPreview({ suggestion, assets }) {
     })().catch(() => { if (!cancelled) setPreview(null); });
     return () => { cancelled = true; };
   }, [suggestion, assets]);
-  return preview ? <img src={preview} alt={translateText(`${suggestion.name}: pregled vašeg sadržaja`)} /> : <span className="engrave-suggestion-loading">{translateText("Priprema pregleda…")}</span>;
+  return preview ? <ProgressiveImage src={preview} alt={translateText(`${suggestion.name}: pregled vašeg sadržaja`)} /> : <span className="engrave-suggestion-loading">{translateText("Priprema pregleda…")}</span>;
 }
 export default function Suggestions({ design, assets, apply, setReserveCenter }) {
   const { t: translateText } = useStorefront();

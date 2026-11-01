@@ -1,3 +1,4 @@
+import ProgressiveImage from './ui/ProgressiveImage.jsx';
 import AdminSkeleton from './AdminSkeleton.jsx';
 import React, { useEffect, useMemo, useState } from 'react';
 import { variantGroupsApi, subscribeStaffCatalogRealtime } from '../services/dajaPlatform.js';
@@ -9,7 +10,7 @@ const kindLabel = g => g.kind === 'custom' ? 'Ručna grupa' : g.customized ? g.f
 const copy = g => ({ ...g, internalName: g.internalName || '', memberIds: [...g.memberIds], removedIds: [], addedIds: [] });
 const sameMembers = (a, b) => a.length === b.length && a.every(id => b.includes(id));
 const textMatch = (text, query) => text.toLocaleLowerCase('sr').includes(query.trim().toLocaleLowerCase('sr'));
-function Photo({ product }) { return product?.image ? <img src={product.image} alt="" loading="lazy" /> : <span className="vg-no-photo">—</span>; }
+function Photo({ product }) { return product?.image ? <ProgressiveImage src={product.image} alt="" loading="lazy" /> : <span className="vg-no-photo">—</span>; }
 
 export default function VariantGroupsPanel({ onDirtyChange }) {
   const [data, setData] = useState(EMPTY);

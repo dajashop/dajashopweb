@@ -1,3 +1,4 @@
+import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useMemo, useRef, useState } from 'react';
 import Link from '../ProductLink.jsx';
@@ -83,7 +84,7 @@ export default function RelatedProducts({ currentProduct, allProducts }) {
             }}
           >
             <div className="related-image-box">
-              <img
+              <ProgressiveImage
                 src={
                   item.thumbnailUrl ||
                   item.images?.[0]?.thumb ||

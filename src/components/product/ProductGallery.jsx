@@ -147,7 +147,7 @@ export default function ProductGallery({ product }) {
                     <span>{translateText("3D")}</span>
                   </div>
                 ) : (
-                  <img
+                  <ProgressiveImage
                     src={item.thumb || item.src}
                     alt={
                       translateText(item.altText ||

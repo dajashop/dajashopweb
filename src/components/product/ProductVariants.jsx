@@ -1,3 +1,4 @@
+import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect } from 'react';
 import { Layers } from 'lucide-react';
@@ -40,7 +41,7 @@ export default function ProductVariants({ product, relatedVariants, onSelect, pe
               event.preventDefault();
               if (variant.id !== product.id) onSelect(variant);
             }}>
-            <img src={variant.thumbnailUrl || variant.images?.[0]?.thumb || variant.images?.[0]?.url || variant.image}
+            <ProgressiveImage src={variant.thumbnailUrl || variant.images?.[0]?.thumb || variant.images?.[0]?.url || variant.image}
               alt={translateText(variant.name)} className="variant-img" loading="lazy" decoding="async" />
             {packs && batteryPackaging(variant) && <span className="battery-pack-option-copy">
               <strong>{translateText(batteryPackaging(variant).box ? 'Cela kutija — {count} komada' : '{count} komada', { count: batteryPackaging(variant).quantity })}</strong>
