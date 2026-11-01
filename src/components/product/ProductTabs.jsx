@@ -17,6 +17,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
   const activeTab = hideSpecs && selectedTab === 'specs' ? 'desc' : selectedTab;
   const translatedDescription = product.attributes?._translations?.[language]?.description;
   const description = typeof translatedDescription === 'string' && translatedDescription.trim() ? translatedDescription : product.description;
+  const isDanielKlein = String(product.brand || product.brand_name || '').trim().toLowerCase() === 'daniel klein';
 
   return (
     <div className="product-tabs-container">
@@ -92,7 +93,7 @@ export default function ProductTabs({ product, hideSpecs = false }) {
                 <ShieldCheck size={20} />
               </div>
               <div>
-                <h3>{translateText("2 Godine Garancije")}</h3>
+                <h3>{translateText(isDanielKlein ? "25 meseci garancije" : "2 Godine Garancije")}</h3>
                 <p>{translateText("Zvanična garancija na mehanizam.")}</p>
               </div>
             </div>
@@ -101,8 +102,8 @@ export default function ProductTabs({ product, hideSpecs = false }) {
                 <Package size={20} />
               </div>
               <div>
-                <h3>{translateText("Originalno Pakovanje")}</h3>
-                <p>{translateText("Sat stiže u originalnoj kutiji.")}</p>
+                <h3>{translateText("DajaShop pakovanje")}</h3>
+                <p>{translateText("Sat stiže u DajaShop pakovanju, u kutiji i kesici.")}</p>
               </div>
             </div>
           </div>
