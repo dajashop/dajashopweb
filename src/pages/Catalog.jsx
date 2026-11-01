@@ -319,7 +319,8 @@ export default function Catalog({ department = 'satovi', seo }) {
   const countFormatter = new Intl.NumberFormat(locale);
 
   const renderContent = () => {
-    if (!err && (loading || listing.displayingPrevious || (!listing.data && filterConfigurationLoading))) return <CatalogSkeleton square={department === 'naocare'} products={departmentItems} />;
+    const pending = !err && (loading || listing.displayingPrevious || (!listing.data && filterConfigurationLoading));
+    if (pending && !itemsToShow.length) return <CatalogSkeleton square={department === 'naocare'} />;
 
     if (err && (!listing.data || listing.displayingPrevious)) {
       return (
@@ -351,10 +352,14 @@ export default function Catalog({ department = 'satovi', seo }) {
     return (
       <>
         {err && <p role="status">{translateText("Nova stranica trenutno nije dostupna. ")}<button type="button" onClick={listing.retry}>{translateText("Pokušaj ponovo")}</button></p>}
-        <div aria-busy={listing.changingPage} onClickCapture={event => {
-          if (listing.changingPage) { event.preventDefault(); event.stopPropagation(); }
-        }}><ProductGrid items={itemsToShow} /></div>
-        <div className="catalog__footer">
+        <div className="catalog__cards" aria-busy={pending || listing.changingPage} onClickCapture={event => {
+          if (pending || listing.changingPage) { event.preventDefault(); event.stopPropagation(); }
+        }}>
+          {/* Preserve decoded images for cards shared by consecutive filters. */}
+          <div style={pending ? { visibility: 'hidden' } : undefined} inert={pending || undefined} aria-hidden={pending || undefined}><ProductGrid items={itemsToShow} /></div>
+          {pending && <div className="catalog__cards-skeleton"><CatalogSkeleton square={department === 'naocare'} products={departmentItems} /></div>}
+        </div>
+        <div className="catalog__footer" hidden={pending}>
           <div className="catalog__pagination">
             <Pagination
               page={page}

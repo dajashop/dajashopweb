@@ -1,7 +1,9 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './LoadingSkeletons.css';
 import ProgressiveImage from './ui/ProgressiveImage.jsx';
+
+const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 // Keep the displayed DOM image until the requested DOM image has decoded.
 // Only explicit gallery changes crossfade; first-load photos paint natively.
@@ -13,6 +15,7 @@ export default function CatalogCardImage({ src, thumbSrc, alt, className, priori
   const [previous, setPrevious] = useState(null);
   const latest = useRef(src);
   const mounted = useRef(true);
+  const gallery = useRef(null);
   latest.current = src;
   useEffect(() => {
     mounted.current = true;
@@ -30,9 +33,20 @@ export default function CatalogCardImage({ src, thumbSrc, alt, className, priori
     if (!mounted.current || latest.current !== url) return;
     setPrevious(shown); setShown(url);
   };
-  return <span className="catalog-card-gallery" aria-busy={src !== shown || !loaded.has(shown)}>
+  // Cached images (including SSR images loaded before hydration) may already
+  // be complete before React attaches onLoad. Clear their mask before paint.
+  useBrowserLayoutEffect(() => {
+    const ready = [...(gallery.current?.querySelectorAll('img') || [])]
+      .filter(element => element.complete && element.naturalWidth > 0);
+    const newlyLoaded = ready.map(element => element.dataset.gallerySrc).filter(url => !loaded.has(url));
+    if (newlyLoaded.length) setLoaded(current => new Set([...current, ...newlyLoaded]));
+    const requested = ready.find(element => element.dataset.gallerySrc === src);
+    if (requested && src !== shown) void reveal(src, requested);
+  });
+  return <span ref={gallery} className="catalog-card-gallery" aria-busy={src !== shown || !loaded.has(shown)}>
     {!loaded.has(shown) && <span className="catalog-card-gallery__skeleton loading-block" aria-hidden="true" />}
     {sources.map(url => <ProgressiveImage key={url} src={url}
+      data-gallery-src={url}
       thumbSrc={url === src ? thumbSrc : undefined}
       srcSet={url === src ? srcSet : undefined} sizes={url === src && srcSet ? sizes : undefined}
       alt={translateText(url === shown ? alt : '')} aria-hidden={url !== shown || undefined}

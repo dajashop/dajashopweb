@@ -331,3 +331,6 @@
     font-size: 19px;
   }
 }
+.catalog__cards { position: relative; }
+.catalog__cards-skeleton { position: absolute; inset: 0; }
+.catalog__footer[hidden] { display: none; }
