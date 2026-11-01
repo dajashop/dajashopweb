@@ -1,4 +1,4 @@
-import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
+import { AdminTableSkeleton } from '../../../components/AdminSkeleton.jsx';
 // src/pages/Admin/components/AdminOrders.jsx
 import React, { useState, useEffect } from 'react';
 import EngravingSummary from '../../../components/engraving/EngravingSummary';
@@ -134,10 +134,6 @@ export default function AdminOrders() {
   };
 
   if (loadError && !orders.length) return <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-700">{loadError} <button onClick={() => setRevision(value => value + 1)}>Pokušaj ponovo</button></p>;
-  if (loading && !orders.length)
-    return (
-      <AdminSkeleton rows={6} label="Učitavanje porudžbina" />
-    );
 
   return (
     <motion.div
@@ -168,7 +164,8 @@ export default function AdminOrders() {
               <th className="p-4 text-right">Detalji</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100">
+          <tbody className="divide-y divide-neutral-100" aria-busy={loading}>
+            {loading && !orders.length && <AdminTableSkeleton columns={6} variant="orders" />}
             {orders.map((order) => (
               <React.Fragment key={order.id}>
                 {/* GLAVNI RED */}

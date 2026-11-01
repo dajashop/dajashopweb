@@ -17,7 +17,7 @@ const findNode = (nodes, id) => nodes.flatMap((node) => [node, ...allNodes(node.
 const allNodes = (nodes) => nodes.flatMap((node) => [node, ...allNodes(node.children)]);
 const reprioritize = (nodes) => nodes.map((node, priority) => ({ ...node, priority }));
 
-export default function FilterManager({ products, productsLoading, definitions, departments, canWrite }) {
+export default function FilterManager({ products, productsLoading, definitions, departments, canWrite, visible = true }) {
   const [department, setDepartment] = useState('satovi');
   const [state, setState] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -30,7 +30,7 @@ export default function FilterManager({ products, productsLoading, definitions, 
   const [preview, setPreview] = useState(true);
   const [newSpec, setNewSpec] = useState({ name: '', unit: '', values: '' });
   const [optionDraft, setOptionDraft] = useState({ label: '', source: '', values: [] });
-  const { items: storefrontProducts, loading: storefrontLoading } = useProducts({ admin: false, all: true });
+  const { items: storefrontProducts, loading: storefrontLoading } = useProducts({ admin: false, all: true, enabled: visible && preview && !productsLoading && Boolean(draft) });
   const scopedProducts = useMemo(() => products.filter((product) => (product.department || 'satovi') === department), [products, department]);
   const departmentId = departments.find((item) => item.slug === department)?.id;
   const sources = useMemo(() => discoverFilterSources(scopedProducts, definitions.filter((definition) => definition.departmentId === departmentId)), [scopedProducts, definitions, departmentId]);

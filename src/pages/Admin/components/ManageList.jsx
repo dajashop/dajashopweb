@@ -146,7 +146,7 @@ export default function ManageList({
       {/* List */}
       <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
         {loading ? (
-<AdminSkeleton rows={4} />
+<AdminSkeleton variant="taxonomy" rows={4} />
         ) : (
           <AnimatePresence initial={false}>
             {items.map((item) => (

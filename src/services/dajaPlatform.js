@@ -910,11 +910,17 @@ export function createCollectionService(collectionName) {
   const subscribers = new Set();
   let cachedItems = [];
   let stopRealtime = null;
+  let inFlight = null;
+  let hasSnapshot = false;
+  let refreshQueued = false;
   const notify = (items) => {
     cachedItems = items;
+    hasSnapshot = true;
     subscribers.forEach((subscriber) => subscriber.onData(items));
   };
-  const refresh = async () => {
+  const refresh = () => {
+    if (inFlight) return inFlight;
+    inFlight = (async () => {
     try {
       const data = await apiRequest(endpoint, { staff: true });
       const items = toArrayPayload(data);
@@ -923,14 +929,28 @@ export function createCollectionService(collectionName) {
     } catch (error) {
       subscribers.forEach((subscriber) => subscriber.onError?.(error));
       throw error;
+    } finally {
+      inFlight = null;
+      if (refreshQueued) {
+        refreshQueued = false;
+        void refresh().catch(() => {});
+      }
     }
+    })();
+    return inFlight;
+  };
+  // A write must revalidate after any older read has finished.
+  const refreshAfterWrite = async () => {
+    if (inFlight) await inFlight.catch(() => {});
+    return refresh();
   };
   const startRealtime = () => {
     if (stopRealtime) return;
     stopRealtime = subscribeStaffCatalogRealtime((event) => {
       const collections = event?.data?.collections ?? event?.collections;
       if (!Array.isArray(collections) || collections.includes(collectionName)) {
-        void refresh().catch(() => {});
+        if (inFlight) refreshQueued = true;
+        else void refresh().catch(() => {});
       }
     });
   };
@@ -946,8 +966,8 @@ export function createCollectionService(collectionName) {
       const subscriber = { onData, onError };
       subscribers.add(subscriber);
       startRealtime();
-      if (cachedItems.length) onData(cachedItems);
-      else void refresh();
+      if (hasSnapshot) onData(cachedItems);
+      void refresh().catch(() => {});
       return () => {
         subscribers.delete(subscriber);
         if (subscribers.size === 0 && stopRealtime) {
@@ -962,7 +982,7 @@ export function createCollectionService(collectionName) {
         staff: true,
         body: { name: name.trim(), ...extraData },
       });
-      await refresh();
+      await refreshAfterWrite();
       return created;
     },
     async update(id, name, extraData = {}) {
@@ -974,7 +994,7 @@ export function createCollectionService(collectionName) {
           body: { name: name.trim(), ...extraData },
         },
       );
-      await refresh();
+      await refreshAfterWrite();
       return updated;
     },
     async remove(id) {
@@ -982,7 +1002,7 @@ export function createCollectionService(collectionName) {
         method: 'DELETE',
         staff: true,
       });
-      await refresh();
+      await refreshAfterWrite();
       return result;
     },
   };

@@ -10,38 +10,39 @@ export const ordersService = {
   subscribe(onData, onError) {
     let cancelled = false;
 
-    ordersApi
-      .adminList()
-      .then((items) => {
+    let inFlight = false;
+    let refreshAgain = false;
+    const load = async () => {
+      if (cancelled) return;
+      if (inFlight) { refreshAgain = true; return; }
+      inFlight = true;
+      try {
+        const items = await ordersApi.adminList();
         if (!cancelled) onData(items);
-      })
-      .catch((error) => {
+      } catch (error) {
         if (!cancelled) onError?.(error);
-      });
-
+      } finally {
+        inFlight = false;
+        if (refreshAgain && !cancelled) {
+          refreshAgain = false;
+          void load();
+        }
+      }
+    };
+    void load();
     const stopRealtime = subscribeRealtime(
-      ['orders.created', 'orders.updated'],
-      () => {
-        ordersApi
-          .adminList()
-          .then((items) => {
-            if (!cancelled) onData(items);
-          })
-          .catch((error) => {
-            if (!cancelled) onError?.(error);
-          });
-      },
-      onError,
+      ['orders.created', 'orders.updated'], load, onError,
     );
-    const fallbackRefresh = window.setInterval(() => {
-      ordersApi.adminList().then((items) => {
-        if (!cancelled) onData(items);
-      }).catch(() => {});
-    }, 30_000);
+    const refreshVisible = () => {
+      if (document.visibilityState === 'visible') void load();
+    };
+    const fallbackRefresh = window.setInterval(refreshVisible, 30_000);
+    document.addEventListener('visibilitychange', refreshVisible);
 
     return () => {
       cancelled = true;
       window.clearInterval(fallbackRefresh);
+      document.removeEventListener('visibilitychange', refreshVisible);
       stopRealtime?.();
     };
   },

@@ -1,3 +1,4 @@
+import ProgressiveImage from '../../components/ui/ProgressiveImage.jsx';
 import AdminSkeleton, { AdminDashboardSkeleton, AdminTableSkeleton, AdminModalSkeleton } from '../../components/AdminSkeleton.jsx';
 import LoadErrorBoundary from '../../components/LoadErrorBoundary.jsx';
 import { specificationEditorApi } from '../../services/dajaPlatform';
@@ -63,15 +64,15 @@ import './TaxonomyMobile.css';
 import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
 
 
-function adminPanel(loader, modal = false) {
+function adminPanel(loader, modal = false, skeletonProps = {}) {
   const Panel = lazy(loader);
   return function AdminPanel(props) {
-    return <LoadErrorBoundary><Suspense fallback={modal ? <AdminModalSkeleton /> : <AdminSkeleton />}><Panel {...props} /></Suspense></LoadErrorBoundary>;
+    return <LoadErrorBoundary><Suspense fallback={modal ? <AdminModalSkeleton /> : <AdminSkeleton {...skeletonProps} />}><Panel {...props} /></Suspense></LoadErrorBoundary>;
   };
 }
 
-const CatalogSearchSettings = adminPanel(() => import('./components/CatalogSearchSettings.jsx'));
-const WorkforcePanel = adminPanel(() => import('./components/WorkforcePanel.jsx'));
+const CatalogSearchSettings = adminPanel(() => import('./components/CatalogSearchSettings.jsx'), false, { variant: 'synonyms', rows: 4 });
+const WorkforcePanel = adminPanel(() => import('./components/WorkforcePanel.jsx'), false, { variant: 'employees', rows: 6 });
 const ExcelManager = adminPanel(() => import('./components/ExcelManager'));
 const PolicyPublicationPanel = adminPanel(() => import('./components/PolicyPublicationPanel.jsx'));
 const EmailDeliveryPanel = adminPanel(() => import('./components/EmailDeliveryPanel.jsx'));
@@ -591,6 +592,7 @@ function AdminDashboardContent() {
   // then loads only that product through its authenticated catalog API.
   const { items: products, loading: productsLoading, err: productsError, refresh: refreshProducts, hasMore: hasMoreProducts, loadMore: loadMoreProducts } = useProducts({
     admin: true,
+    enabled: activeTab === 'products' || activeTab === 'promotions',
     publicRealtime: true,
     paginated: paginatedProducts,
     limit: 30,
@@ -1307,7 +1309,7 @@ function AdminDashboardContent() {
       <div className="container mt-8">
         {activeTab === 'variant-groups' && canManageVariantGroups && <VariantGroupsPanel onDirtyChange={onVariantGroupsDirty} />}
         {(activeTab === 'filters' || filtersVisited) && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
-          <div hidden={activeTab !== 'filters'}><FilterManager products={completeCatalog.items} productsLoading={completeCatalog.loading} definitions={specs} departments={departments}
+          <div hidden={activeTab !== 'filters'}><FilterManager visible={activeTab === 'filters'} products={completeCatalog.items} productsLoading={completeCatalog.loading} definitions={specs} departments={departments}
             canWrite={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))} /></div>
         )}
         {activeTab === 'promotions' && (
@@ -1434,7 +1436,7 @@ function AdminDashboardContent() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100" aria-busy={productsLoading}>
-                    {productsLoading && !products.length && <AdminTableSkeleton columns={8} />}
+                    {productsLoading && !products.length && <AdminTableSkeleton columns={8} variant="products" />}
                     {filteredProducts.map((p) => {
                       // Provera da li je sakriven
                       const isHidden = p.isVisible === false;
@@ -1453,8 +1455,10 @@ function AdminDashboardContent() {
                         >
                           <td className="p-4">
                             <div className="w-12 h-12 rounded-lg border border-neutral-200 bg-neutral-100 overflow-hidden relative">
-                              <img
-                                src={p.image || '/placeholder.png'}
+                              <ProgressiveImage
+                                src={p.thumbnailUrl || p.image || '/placeholder.png'}
+                                loading="lazy"
+                                decoding="async"
                                 alt=""
                                 className="w-full h-full object-cover"
                               />
@@ -1995,7 +1999,7 @@ function AdminDashboardContent() {
               </form>{' '}
               <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar max-h-[500px] taxonomy-list">
                 {' '}
-                {taxonomyLoading.brands && <AdminSkeleton rows={4} />}
+                {taxonomyLoading.brands && <AdminSkeleton rows={4} variant="taxonomy" />}
                 {taxonomyErrors.brands && <p role="alert" className="text-red-600">{taxonomyErrors.brands}</p>}
                 <AnimatePresence initial={false}>
                   {' '}
@@ -2245,7 +2249,7 @@ function AdminDashboardContent() {
               </form>{' '}
               <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar max-h-[500px] taxonomy-list">
                 {' '}
-                {taxonomyLoading.categories && <AdminSkeleton rows={4} />}
+                {taxonomyLoading.categories && <AdminSkeleton rows={4} variant="taxonomy" />}
                 {taxonomyErrors.categories && <p role="alert" className="text-red-600">{taxonomyErrors.categories}</p>}
                 <AnimatePresence initial={false}>
                   {' '}
@@ -2487,7 +2491,7 @@ function AdminDashboardContent() {
               </form>{' '}
               <div data-spec-scroll data-lenis-prevent className="min-h-0 min-w-0 overflow-y-scroll overflow-x-hidden pr-1 space-y-2 custom-scrollbar max-h-[500px]" style={{ scrollbarGutter: 'stable', overscrollBehavior: 'contain' }}>
                 {' '}
-                {taxonomyLoading.specs && <AdminSkeleton rows={4} />}
+                {taxonomyLoading.specs && <AdminSkeleton rows={4} variant="taxonomy" />}
                 {taxonomyErrors.specs && <p role="alert" className="text-red-600">{taxonomyErrors.specs}</p>}
                 <AnimatePresence initial={false}>
                   {' '}

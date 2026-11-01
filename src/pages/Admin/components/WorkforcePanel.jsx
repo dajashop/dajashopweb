@@ -1,4 +1,5 @@
-import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
+import ProgressiveImage from '../../../components/ui/ProgressiveImage.jsx';
+import AdminSkeleton, { AdminTableSkeleton } from '../../../components/AdminSkeleton.jsx';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -234,7 +235,7 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
             onSaved={refresh}
           />
           {loading && !members.length ? (
-            <AdminSkeleton cards rows={6} label="Učitavanje zaposlenih" />
+            <AdminSkeleton variant="employees" rows={6} label="Učitavanje zaposlenih" />
           ) : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {members.map((member) => (
@@ -392,7 +393,8 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100">
+                <tbody className="divide-y divide-neutral-100" aria-busy={productsLoading}>
+                  {productsLoading && !products.length && <AdminTableSkeleton variant="workforce" rows={3} />}
                   {products.map((product) => (
                     <tr
                       key={product.id}
@@ -406,7 +408,7 @@ export default function WorkforcePanel({ departments = [], categories = [], bran
                     >
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <img
+                          <ProgressiveImage
                             className="h-16 w-16 rounded-xl border border-neutral-100 bg-white object-contain"
                             src={
                               product.thumbnailUrl ||
