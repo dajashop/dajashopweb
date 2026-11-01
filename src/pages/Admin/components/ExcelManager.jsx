@@ -13,16 +13,25 @@ import {
   downloadTemplate,
 } from '../../../utils/excelHelpers';
 import './ExcelManager.css';
+import { adminCatalogApi } from '../../../services/dajaPlatform';
 
-const ExcelManager = ({ products, brands, categories, onImport, catalogLoading = false }) => {
+const ExcelManager = ({ brands, categories, onImport, catalogLoading = false }) => {
   const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
 
   const handleExport = async () => {
-    await exportToExcel(products);
-    setStatus({ type: 'success', msg: 'Tabela uspešno preuzeta!' });
-    setTimeout(() => setStatus(null), 3000);
+    setLoading(true);
+    try {
+      const allProducts = await adminCatalogApi.listProducts({ onPage: () => {} });
+      await exportToExcel(allProducts);
+      setStatus({ type: 'success', msg: 'Tabela uspešno preuzeta!' });
+      setTimeout(() => setStatus(null), 3000);
+    } catch (error) {
+      setStatus({ type: 'error', msg: error.message || 'Preuzimanje nije uspelo.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDownloadTemplate = async () => {

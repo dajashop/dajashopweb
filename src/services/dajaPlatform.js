@@ -599,6 +599,13 @@ function productWritePayload(product) {
 }
 
 export const adminCatalogApi = {
+  async listProductPage({ after, limit = 30, search, fields, signal } = {}) {
+    const data = await apiRequest('/admin/catalog/batches', {
+      staff: true, signal, query: { after, limit, search, fields },
+    });
+    if (!Array.isArray(data?.items)) throw new Error('Proizvodi nisu dostupni.');
+    return { items: data.items.map(normalizeProduct), nextCursor: data.nextCursor || null };
+  },
   async listProducts({ onPage, signal } = {}) {
     if (onPage) {
       const items = [];

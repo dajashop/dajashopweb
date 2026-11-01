@@ -575,15 +575,42 @@ const getAuditDetailTabs = (event) => {
 
 function AdminDashboardContent() {
   const { user } = useAuth();
+  const [activeTab, updateActiveTab] = useState('products');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchFilters, setSearchFilters] = useState([]);
+  const [filtersVisited, setFiltersVisited] = useState(false);
+  const [completeCatalogRequested, setCompleteCatalogRequested] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchTerm]);
+  const paginatedProducts = activeTab !== 'promotions';
+  const productsEndRef = useRef(null);
   // The public realtime signal carries the changed product ID. The admin hook
   // then loads only that product through its authenticated catalog API.
-  const { items: products, loading: productsLoading, err: productsError, refresh: refreshProducts } = useProducts({
+  const { items: products, loading: productsLoading, err: productsError, refresh: refreshProducts, hasMore: hasMoreProducts, loadMore: loadMoreProducts } = useProducts({
     admin: true,
     publicRealtime: true,
+    paginated: paginatedProducts,
+    limit: 30,
+    ...(paginatedProducts ? { search: debouncedSearch, fields: searchFilters.join(',') } : {}),
   });
 
+  const completeCatalog = useProducts({ admin: true, publicRealtime: false, enabled: completeCatalogRequested || filtersVisited });
+
+  useEffect(() => {
+    if (activeTab !== 'products' || !hasMoreProducts || productsLoading || productsError || searchTerm !== debouncedSearch) return undefined;
+    const target = productsEndRef.current;
+    if (!target || typeof IntersectionObserver === 'undefined') return undefined;
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) loadMoreProducts();
+    }, { rootMargin: '200px' });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [activeTab, hasMoreProducts, productsLoading, productsError, loadMoreProducts, searchTerm, debouncedSearch]);
+
   // ... (State varijable ostaju iste: activeTab, searchTerm, filters...)
-  const [activeTab, updateActiveTab] = useState('products');
   const variantGroupsDirty = useRef(false);
   const onVariantGroupsDirty = useCallback(value => { variantGroupsDirty.current = value; }, []);
   const setActiveTab = useCallback(next => {
@@ -592,7 +619,6 @@ function AdminDashboardContent() {
     variantGroupsDirty.current = false;
     updateActiveTab(next);
   }, [activeTab]);
-  const [filtersVisited, setFiltersVisited] = useState(false);
   useEffect(() => { if (activeTab === 'filters') setFiltersVisited(true); }, [activeTab]);
   useEffect(() => {
     const refreshIfVisible = () => {
@@ -622,8 +648,6 @@ function AdminDashboardContent() {
   const isCatalogContributor = Boolean(
     !staffAccess?.isOwner && staffAccess?.roles?.includes('Unosilac kataloga'),
   );
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchFilters, setSearchFilters] = useState([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef(null);
 
@@ -724,10 +748,10 @@ function AdminDashboardContent() {
     );
   }, [user?.id]);
   const { openEditor, editors, hasEditors: modalOpen, hasDraftEditor } = useProductEditors({
-    existingProducts: products,
+    existingProducts: completeCatalogRequested ? completeCatalog.items : products,
     taxonomy: { brands: taxonomyLoading.brands ? undefined : brands, categories: taxonomyLoading.categories ? undefined : categories, departments: departments.length ? departments : undefined },
-    catalogLoading: productsLoading,
-    catalogError: productsError,
+    catalogLoading: completeCatalogRequested ? completeCatalog.loading : productsLoading,
+    catalogError: completeCatalogRequested ? completeCatalog.err : productsError,
   });
   const [editingSpecOptionDraft, setEditingSpecOptionDraft] = useState('');
   const [editingSpecOptionsOpen, setEditingSpecOptionsOpen] = useState(false);
@@ -1085,11 +1109,13 @@ function AdminDashboardContent() {
   };
 
   const openNew = () => {
+    setCompleteCatalogRequested(true);
     // Keep an existing recovery draft untouched. A new blank form becomes a
     // draft only when no other unfinished product is waiting in the corner.
     openEditor({ onDraftChange: !productDraft && !hasDraftEditor ? saveProductDraft : undefined });
   };
   const openSavedDraft = () => {
+    setCompleteCatalogRequested(true);
     openEditor({ draft: productDraft?.payload, onDraftChange: saveProductDraft });
   };
   const openEdit = (p) => {
@@ -1281,7 +1307,7 @@ function AdminDashboardContent() {
       <div className="container mt-8">
         {activeTab === 'variant-groups' && canManageVariantGroups && <VariantGroupsPanel onDirtyChange={onVariantGroupsDirty} />}
         {(activeTab === 'filters' || filtersVisited) && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
-          <div hidden={activeTab !== 'filters'}><FilterManager products={products} productsLoading={productsLoading} definitions={specs} departments={departments}
+          <div hidden={activeTab !== 'filters'}><FilterManager products={completeCatalog.items} productsLoading={completeCatalog.loading} definitions={specs} departments={departments}
             canWrite={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))} /></div>
         )}
         {activeTab === 'promotions' && (
@@ -1389,7 +1415,7 @@ function AdminDashboardContent() {
               </div>
             </div>
 
-            {productsError && <p role="alert" className="mb-3 rounded-xl bg-red-50 p-4 text-red-700">{productsError.message || 'Proizvodi nisu učitani.'} <button type="button" onClick={refreshProducts}>Pokušaj ponovo</button></p>}
+            {productsError && <p role="alert" className="mb-3 rounded-xl bg-red-50 p-4 text-red-700">{productsError.message || 'Proizvodi nisu učitani.'} <button type="button" onClick={hasMoreProducts ? loadMoreProducts : refreshProducts}>Pokušaj ponovo</button></p>}
             {productsLoading && products.length > 0 && <p role="status" className="mb-3 text-sm text-neutral-500">Učitavanje proizvoda… ({products.length} učitano)</p>}
             {/* TABELA PROIZVODA */}
             <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
@@ -1549,6 +1575,10 @@ function AdminDashboardContent() {
                     })}
                   </tbody>
                 </table>
+              </div>
+              <div ref={productsEndRef} className="p-4 text-center text-sm text-neutral-500" aria-live="polite">
+                {productsLoading ? 'Učitavanje proizvoda…' : `Prikazano ${filteredProducts.length} proizvoda`}
+                {hasMoreProducts && <button type="button" disabled={productsLoading || searchTerm !== debouncedSearch} onClick={loadMoreProducts} className="ml-3 font-semibold underline">Učitaj još 30</button>}
               </div>
             </div>
           </motion.div>

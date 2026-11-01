@@ -21,6 +21,11 @@ export default function useProducts(params = {}) {
   const [loading, setLoading] = useState(!initialItems);
   const [err, setErr] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [pageRetry, setPageRetry] = useState(0);
+  const [after, setAfter] = useState(null);
+  const [nextCursor, setNextCursor] = useState(null);
+  const pageBusy = useRef(false);
+  const paginationScope = useRef(null);
   // A desktop create is two writes: product first, then its inventory
   // placement. Keep only the response for the newest live event so a slower
   // first request without a shelf can never overwrite the newer placement.
@@ -42,6 +47,49 @@ export default function useProducts(params = {}) {
     const changes = new Map();
     if (memoizedParams.admin) loadingAdminChanges.current = changes;
 
+    if (memoizedParams.admin && memoizedParams.paginated) {
+      const scope = JSON.stringify([memoizedParams, refreshKey]);
+      const firstPage = paginationScope.current !== scope || !after;
+      paginationScope.current = scope;
+      const controller = new AbortController();
+      pageBusy.current = true;
+      setLoading(true);
+      if (firstPage) {
+        setNextCursor(null);
+        setItems([]);
+        if (after) { setAfter(null); return () => controller.abort(); }
+      }
+      void adminCatalogApi.listProductPage({
+        after: firstPage ? undefined : after, limit: memoizedParams.limit || 30,
+        search: memoizedParams.search, fields: memoizedParams.fields, signal: controller.signal,
+      }).then(result => {
+        if (controller.signal.aborted) return;
+        setItems(current => {
+          const merged = new Map((firstPage ? result.items : [...current, ...result.items]).map(item => [item.id, item]));
+          for (const [id, patch] of changes) {
+            if (patch === null) merged.delete(id);
+            else if (merged.has(id)) merged.set(id, { ...merged.get(id), ...patch });
+          }
+          return [...merged.values()];
+        });
+        setNextCursor(result.nextCursor);
+        window.dispatchEvent(new Event('daja:supplier-refresh'));
+      }).catch(error => {
+        if (!controller.signal.aborted) setErr(error);
+      }).finally(() => {
+        if (controller.signal.aborted) return;
+        pageBusy.current = false;
+        setLoading(false);
+        if (loadingAdminChanges.current === changes) loadingAdminChanges.current = null;
+      });
+      return () => {
+        controller.abort();
+        pageBusy.current = false;
+        if (loadingAdminChanges.current === changes) loadingAdminChanges.current = null;
+      };
+    }
+    paginationScope.current = null;
+    setNextCursor(null);
     const { publicRealtime: _publicRealtime, enabled: _enabled, ...requestParams } = memoizedParams;
     const unsub = subscribeProducts({
       onData: (arr, { partial = false } = {}) => {
@@ -79,7 +127,7 @@ export default function useProducts(params = {}) {
       if (loadingAdminChanges.current === changes) loadingAdminChanges.current = null;
       unsub?.();
     };
-  }, [memoizedParams, refreshKey, enabled]);
+  }, [memoizedParams, refreshKey, enabled, after, pageRetry]);
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -166,7 +214,7 @@ export default function useProducts(params = {}) {
             loadingAdminChanges.current?.set(product.id, product);
             setItems((current) => {
               const index = current.findIndex((item) => item.id === product.id);
-              if (index === -1) return [product, ...current];
+              if (index === -1) return memoizedParams.paginated && memoizedParams.search ? current : [product, ...current];
               const next = [...current];
               next[index] = product;
               return next;
@@ -176,7 +224,7 @@ export default function useProducts(params = {}) {
       },
       () => {},
     );
-  }, [hasDecision, memoizedParams.admin, usePublicRealtime, enabled]);
+  }, [hasDecision, memoizedParams.admin, memoizedParams.paginated, memoizedParams.search, usePublicRealtime, enabled]);
 
   // A timed sale can end without an admin request. Refresh only the affected
   // product at that exact time; never reload the whole catalog.
@@ -198,7 +246,7 @@ export default function useProducts(params = {}) {
   const supplierItems = useRef(items);
   supplierItems.current = items;
   useEffect(() => {
-    if (!memoizedParams.admin) return undefined;
+    if (!enabled || !memoizedParams.admin) return undefined;
     let revision = 0;
     let stopped = false;
     let busy = false;
@@ -247,8 +295,15 @@ export default function useProducts(params = {}) {
     document.addEventListener('visibilitychange', wake);
     void poll();
     return () => { stopped = true; window.clearTimeout(timer); window.removeEventListener('daja:supplier-refresh', wake); document.removeEventListener('visibilitychange', wake); };
-  }, [memoizedParams.admin, refreshKey]);
+  }, [memoizedParams.admin, refreshKey, enabled]);
 
   const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
-  return { items, loading, err, refresh };
+  const loadMore = useCallback(() => {
+    if (!nextCursor || pageBusy.current || loading) return;
+    setErr(null);
+    setAfter(nextCursor);
+    // Allow retrying a failed page without changing its cursor.
+    if (after === nextCursor) setPageRetry(key => key + 1);
+  }, [nextCursor, loading, after]);
+  return { items, loading, err, refresh, hasMore: Boolean(nextCursor), loadMore };
 }
