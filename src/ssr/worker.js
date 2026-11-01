@@ -201,7 +201,9 @@ export default {
         .replace("script-src ", `script-src 'nonce-${nonce}' 'strict-dynamic' `));
       // Never share a per-response nonce through browser or CDN HTML caches.
       // The anonymous API snapshot cache above remains enabled.
-      headers.set('Cache-Control', 'no-store');
+      // Edge email obfuscation rewrites React's HTML and injects a script
+      // without our CSP nonce. Preserve the HTML instead of loosening CSP.
+      headers.set('Cache-Control', 'no-store, no-transform');
       headers.delete('ETag');
       headers.delete('Content-Length');
       response = new HTMLRewriter().on('script', { element(element) {
@@ -212,7 +214,7 @@ export default {
     if (isEmailLinkPath(new URL(request.url).pathname)) {
       headers.set('Referrer-Policy', 'no-referrer');
       headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
-      headers.set('Cache-Control', 'no-store');
+      headers.set('Cache-Control', 'no-store, no-transform');
     }
     return new Response(response.body, {
       status: response.status, statusText: response.statusText, headers,
