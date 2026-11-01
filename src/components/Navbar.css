@@ -149,9 +149,10 @@
   color: var(--color-text, #111);
   white-space: nowrap;
 }
+/* Mouse clicks retain focus; only keyboard focus should keep a menu open. */
 @media (hover: hover) and (pointer: fine) {
   .navbar__group:not([data-dismissed="true"]):hover .navbar__dropdown,
-  .navbar__group:not([data-dismissed="true"]):focus-within .navbar__dropdown {
+  .navbar__group:not([data-dismissed="true"]):has(:focus-visible) .navbar__dropdown {
     display: grid; /* Desktop: Prikaz na hover! */
   }
 }
