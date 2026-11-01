@@ -1,3 +1,4 @@
+import { beginCatalogForeground } from './catalogPreparation.js';
 import { apiRequest } from './apiClient.js';
 
 const cache = new Map();
@@ -37,6 +38,7 @@ async function published(department) {
   const previous = cachedFilterConfiguration(department, true);
   const started = generation;
   const requestedAt = Date.now();
+  const finishForeground = beginCatalogForeground();
   const request = apiRequest(`/public/catalog/filters/${department}`, { auth: false, query: previous?.version ? { version: previous.version } : undefined })
     .then(result => {
       if (started !== generation) return published(department);
@@ -44,7 +46,7 @@ async function published(department) {
       if (!configuration) throw new Error('Konfiguracija filtera nije dostupna.');
       rememberFilterConfiguration(department, configuration, result.version, requestedAt);
       return cachedFilterConfiguration(department, true) || { configuration, version: result.version };
-    }).finally(() => { if (requests.get(department) === request) requests.delete(department); });
+    }).finally(() => { finishForeground(); if (requests.get(department) === request) requests.delete(department); });
   requests.set(department, request);
   return request;
 }

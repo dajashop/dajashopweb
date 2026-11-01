@@ -6,7 +6,10 @@ export default function ProgressiveImage({ src, thumbSrc, alt, loading = 'lazy',
 
   return <img key={src || thumbSrc} {...rest} src={src || thumbSrc || undefined} alt={translateText(alt)} loading={loading} decoding="async"
     onError={event => {
-      if (thumbSrc && event.currentTarget.getAttribute('src') !== thumbSrc) event.currentTarget.src = thumbSrc;
+      if (thumbSrc && event.currentTarget.getAttribute('src') !== thumbSrc) {
+        event.currentTarget.removeAttribute('srcset'); event.currentTarget.removeAttribute('sizes');
+        event.currentTarget.src = thumbSrc;
+      }
       onError?.(event);
     }} />;
 }

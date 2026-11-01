@@ -1,5 +1,41 @@
+import { catalogImageSrcSet } from '../utils/catalogImages.js';
 import { apiRequest } from './apiClient.js';
 import { requestResource } from './catalogResourceCache.js';
+
+let foreground = 0;
+let lastForeground = 0;
+export function beginCatalogForeground() {
+  foreground += 1;
+  lastForeground = Date.now();
+  let ended = false;
+  return () => { if (!ended) { ended = true; foreground -= 1; lastForeground = Date.now(); } };
+}
+function pause(signal, delay = 150) {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) { reject(new DOMException('Aborted', 'AbortError')); return; }
+    const abort = () => { window.clearTimeout(timer); reject(new DOMException('Aborted', 'AbortError')); };
+    const timer = window.setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, delay);
+    signal.addEventListener('abort', abort, { once: true });
+  });
+}
+// Every speculative batch/image yields to current navigation, filters and photos.
+export async function waitForCatalogPriority(signal) {
+  while (!signal.aborted) {
+    const root = document.querySelector('[data-catalog-listing]');
+    if (foreground || document.visibilityState !== 'visible' || !root || root.getAttribute('aria-busy') === 'true'
+        || root.querySelector('[data-catalog-skeleton]') || Date.now() - lastForeground < 180) {
+      await pause(signal); continue;
+    }
+    const key = root.dataset.listingKey;
+    if (document.fonts?.status === 'loading') await document.fonts.ready;
+    await waitForVisibleCatalogImages(key, signal);
+    // Two frames let decoded images and the final card layout reach the screen.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    if (!foreground && !signal.aborted && root.isConnected && root.dataset.listingKey === key
+        && root.getAttribute('aria-busy') !== 'true' && Date.now() - lastForeground >= 180) return;
+  }
+  throw new DOMException('Aborted', 'AbortError');
+}
 
 const warmedImages = new Map();
 const plans = new Map();
@@ -11,6 +47,7 @@ export function backgroundCatalogAllowed() {
 export async function prepareCatalogRoutes(routes, admin, signal) {
   const missing = [...new Set(routes)].filter(route => (plans.get(planKey(route, admin))?.expires || 0) <= Date.now());
   for (let offset = 0; offset < missing.length; offset += 32) {
+    await waitForCatalogPriority(signal);
     if (signal.aborted) return;
     const batch = missing.slice(offset, offset + 32);
     const key = `catalog-plans:${admin}:${JSON.stringify(batch)}`;
@@ -38,18 +75,21 @@ export async function preloadCatalogImages(items, signal, { gallery = false, con
     for (let index = 1; index < depth; index++) {
       for (const item of items) {
         const image = item.images?.[index];
-        candidates.push(typeof image === 'string' ? image : image?.url);
+        candidates.push({ src: typeof image === 'string' ? image : image?.url });
       }
     }
   } else {
-    candidates.push(...items.map(item => item.thumbnailUrl || item.images?.[0]?.thumb
-      || item.images?.[0]?.url || item.primaryImageUrl || item.mainImageUrl || item.image));
+    candidates.push(...items.map(item => ({ src: item.thumbnailUrl || item.images?.[0]?.thumb
+      || item.images?.[0]?.url || item.primaryImageUrl || item.mainImageUrl || item.image,
+      srcSet: catalogImageSrcSet(item.images?.[0]) })));
   }
-  const urls = [...new Set(candidates.filter(url => url && (warmedImages.get(url) || 0) < Date.now()))];
+  const urls = [...new Map(candidates.filter(item => item.src).map(item => [item.src, item])).values()].filter(item => (warmedImages.get(item.src) || 0) < Date.now());
   let cursor = 0;
   const worker = async () => {
     while (!signal.aborted && cursor < urls.length) {
-      const src = urls[cursor++];
+      await waitForCatalogPriority(signal);
+      if (signal.aborted || cursor >= urls.length) return;
+      const { src, srcSet } = urls[cursor++];
       await new Promise(resolve => {
         const img = new Image();
         const done = () => {
@@ -62,7 +102,9 @@ export async function preloadCatalogImages(items, signal, { gallery = false, con
         const abort = () => { done(); img.src = ''; };
         signal.addEventListener('abort', abort, { once: true });
         img.onload = done; img.onerror = done;
-        img.decoding = 'async'; img.fetchPriority = 'low'; img.src = src;
+        img.decoding = 'async'; img.fetchPriority = 'low';
+        if (srcSet) { img.srcset = srcSet; img.sizes = '320px'; }
+        img.src = src;
         if (img.complete) done();
       });
     }
@@ -85,6 +127,7 @@ export async function waitForVisibleCatalogImages(route, signal) {
     img.addEventListener('load', done, { once: true }); img.addEventListener('error', done, { once: true });
     signal.addEventListener('abort', done, { once: true });
   })));
+  if (!signal.aborted) await Promise.all(images.filter(img => img.naturalWidth > 0).map(img => img.decode?.().catch(() => {})));
 }
 
 if (typeof window !== 'undefined') {

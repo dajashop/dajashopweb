@@ -1,3 +1,4 @@
+import { catalogImageSrcSet, CATALOG_IMAGE_SIZES } from '../utils/catalogImages.js';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import './ProductCard.css';
@@ -307,7 +308,7 @@ function ProductCard({ p, priority = false, blankImage = false }) {
         )}
 
         {/* Slider */}
-        <div className={`relative ${isEyewear ? 'aspect-square' : 'aspect-4/5'} w-full overflow-hidden bg-white`}>
+        <div className={`product-card__media relative ${isEyewear ? 'aspect-square' : 'aspect-4/5'} w-full overflow-hidden bg-white`}>
           <AnimatePresence initial={false} custom={swipeDirection}>
           <motion.div
             key={swipeDirection ? `swipe:${page}` : 'hover'}
@@ -335,6 +336,8 @@ function ProductCard({ p, priority = false, blankImage = false }) {
             >
               {!blankImage && <CatalogCardImage
                 src={activeImageSrc}
+                srcSet={catalogImageSrcSet(activeImage)}
+                sizes={CATALOG_IMAGE_SIZES}
                 priority={priority}
                 thumbSrc={
                   imageIndex === 0

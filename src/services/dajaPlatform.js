@@ -471,6 +471,16 @@ export const catalogApi = {
       data = legacyListing(items, route, filters?.configuration);
     }
     if (!data || !Array.isArray(data.items)) throw new Error('Neispravan odgovor kataloga.');
+    if (request.get('pathname') && data.pathname !== request.get('pathname')) {
+      const [{ decodeCatalogParams }, { configuredFilterParams }, { catalogPageRequest }, { filterConfigurationApi }] = await Promise.all([
+        import('../utils/catalogUrls.js'), import('../utils/filterConfiguration.js'), import('../utils/catalogPageRequest.js'), import('./filterConfiguration.js'),
+      ]);
+      const filters = await filterConfigurationApi.published(department);
+      const params = new URLSearchParams(request.get('params') || '');
+      params.set('page', request.get('page') || '1');
+      const canonical = configuredFilterParams(decodeCatalogParams(params, filters.configuration, request.get('pathname')), filters.configuration);
+      return this.listing(catalogPageRequest(department, canonical), signal);
+    }
     if (department && !signal?.aborted && generation === filterConfigurationGeneration()) {
       const nextConfiguration = data.configuration || (data.configurationVersion === configuration?.version ? configuration?.configuration : null);
       rememberFilterConfiguration(department, nextConfiguration, data.configurationVersion, requestedAt);
@@ -488,6 +498,16 @@ export const catalogApi = {
       signal,
     });
     if (!data || !Array.isArray(data.items)) throw new Error('Neispravan odgovor kataloga.');
+    if (query.get('pathname') && data.pathname !== query.get('pathname')) {
+      const [{ decodeCatalogParams }, { configuredFilterParams }, { catalogPageRequest }, { filterConfigurationApi }] = await Promise.all([
+        import('../utils/catalogUrls.js'), import('../utils/filterConfiguration.js'), import('../utils/catalogPageRequest.js'), import('./filterConfiguration.js'),
+      ]);
+      const filters = await filterConfigurationApi.published(department);
+      const params = new URLSearchParams(query.get('params') || '');
+      params.set('page', query.get('page') || '1');
+      return this.adminListing(catalogPageRequest(department, configuredFilterParams(decodeCatalogParams(params, filters.configuration, query.get('pathname')), filters.configuration)), signal);
+    }
+    if (data.configuration) rememberFilterConfiguration(department, data.configuration, data.configurationVersion);
     if (data.configurationVersion) adminConfigurationVersions.set(department, data.configurationVersion);
     return { ...data, items: data.items.map(normalizeProduct) };
   },

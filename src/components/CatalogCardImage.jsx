@@ -1,12 +1,14 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect, useRef, useState } from 'react';
+import './LoadingSkeletons.css';
 import ProgressiveImage from './ui/ProgressiveImage.jsx';
 
 // Keep the displayed DOM image until the requested DOM image has decoded.
 // Only explicit gallery changes crossfade; first-load photos paint natively.
-export default function CatalogCardImage({ src, thumbSrc, alt, className, priority }) {
+export default function CatalogCardImage({ src, thumbSrc, alt, className, priority, srcSet, sizes }) {
   const { t: translateText } = useStorefront();
 
+  const [loaded, setLoaded] = useState(() => new Set());
   const [shown, setShown] = useState(src);
   const [previous, setPrevious] = useState(null);
   const latest = useRef(src);
@@ -28,13 +30,16 @@ export default function CatalogCardImage({ src, thumbSrc, alt, className, priori
     if (!mounted.current || latest.current !== url) return;
     setPrevious(shown); setShown(url);
   };
-  return <span className="catalog-card-gallery" aria-busy={src !== shown}>
+  return <span className="catalog-card-gallery" aria-busy={src !== shown || !loaded.has(shown)}>
+    {!loaded.has(shown) && <span className="catalog-card-gallery__skeleton loading-block" aria-hidden="true" />}
     {sources.map(url => <ProgressiveImage key={url} src={url}
       thumbSrc={url === src ? thumbSrc : undefined}
+      srcSet={url === src ? srcSet : undefined} sizes={url === src && srcSet ? sizes : undefined}
       alt={translateText(url === shown ? alt : '')} aria-hidden={url !== shown || undefined}
       loading={url !== shown || priority ? 'eager' : 'lazy'}
       fetchPriority={url !== shown || priority ? 'high' : 'auto'} draggable={false}
       className={`${className} catalog-card-gallery__layer ${url === shown ? previous ? 'is-revealing' : 'is-shown' : url === previous ? 'is-previous' : 'is-pending'}`}
-      onLoad={event => { void reveal(url, event.currentTarget); }} />)}
+      onLoad={event => { setLoaded(current => new Set(current).add(url)); void reveal(url, event.currentTarget); }}
+      onError={() => setLoaded(current => new Set(current).add(url))} />)}
   </span>;
 }

@@ -23,7 +23,7 @@ export default function useFilterConfiguration(department, deferInitialRequest =
       if (!cancelled) setState((current) => current.department === department && current.configuration
         ? current : { department, configuration: null, loading: false, error: error.message });
     });
-    if (!deferInitialRequest || cachedFilterConfiguration(department, true)) refresh();
+    if (!deferInitialRequest) refresh();
     const onFocus = () => { if (document.visibilityState === 'visible') refresh(); };
     window.addEventListener('focus', onFocus);
     window.addEventListener('daja:filters-changed', refresh);

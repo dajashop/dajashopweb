@@ -101,9 +101,7 @@ export default function Catalog({ department = 'satovi', seo }) {
   const [rawParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const bootstrapListing = !includeHiddenForAdmin && ['/catalog', '/naocare', '/baterije', '/daljinski'].includes(location.pathname)
-    && [...rawParams.keys()].every(key => ['page', 'sort', 'q', 'gclid', 'fbclid'].includes(key) || key.startsWith('utm_'));
-  const { configuration: savedFilterConfiguration, loading: filterConfigurationLoading, error: filterConfigurationError } = useFilterConfiguration(department, bootstrapListing);
+  const { configuration: savedFilterConfiguration, loading: filterConfigurationLoading, error: filterConfigurationError } = useFilterConfiguration(department, true);
   const sp = useMemo(() => decodeCatalogParams(rawParams, savedFilterConfiguration, location.pathname), [rawParams, savedFilterConfiguration, location.pathname]);
   const setSp = (value, options) => {
     const next = new URLSearchParams(typeof value === 'function' ? value(new URLSearchParams(sp)) : value);
@@ -150,10 +148,10 @@ export default function Catalog({ department = 'satovi', seo }) {
 
   const filterConfiguration = savedFilterConfiguration;
   const configuredParams = useMemo(() => filterConfiguration ? configuredFilterParams(sp, filterConfiguration) : sp, [sp, filterConfiguration]);
-  const requestKey = catalogPageRequest(department, configuredParams);
-  const listing = usePublicListing(requestKey, 'catalogPage', (bootstrapListing || !filterConfigurationLoading) && !filterConfigurationError, includeHiddenForAdmin);
+  const requestKey = catalogPageRequest(department, rawParams, undefined, location.pathname);
+  const listing = usePublicListing(requestKey, 'catalogPage', !filterConfigurationError, includeHiddenForAdmin);
   const prepareFilter = useCallback(async (node, params, signal) => {
-    if (!filterConfiguration || !backgroundCatalogAllowed()) return;
+    if (!filterConfiguration || listing.updating || listing.loading || !backgroundCatalogAllowed()) return;
     const routes = [];
     for (const leaf of filterLeaves({ filters: [node] })) {
       if (!leaf.visible || leaf.style === 'range') continue;
@@ -170,7 +168,7 @@ export default function Catalog({ department = 'satovi', seo }) {
       }
     }
     await prepareCatalogRoutes(routes, includeHiddenForAdmin, signal);
-  }, [department, filterConfiguration, includeHiddenForAdmin, listing.data?.facets]);
+  }, [department, filterConfiguration, includeHiddenForAdmin, listing.data?.facets, listing.updating, listing.loading]);
   const loading = listing.loading;
   const err = listing.error;
   const departmentItems = listing.data?.items || [];
@@ -321,13 +319,14 @@ export default function Catalog({ department = 'satovi', seo }) {
   const countFormatter = new Intl.NumberFormat(locale);
 
   const renderContent = () => {
-    if (!err && !listing.data && (loading || filterConfigurationLoading)) return <CatalogSkeleton square={department === 'naocare'} />;
+    if (!err && (loading || listing.displayingPrevious || (!listing.data && filterConfigurationLoading))) return <CatalogSkeleton square={department === 'naocare'} products={departmentItems} />;
 
-    if (err && !listing.data) {
+    if (err && (!listing.data || listing.displayingPrevious)) {
       return (
         <div className="flex flex-col items-center justify-center h-64 p-6 text-red-500">
           <AlertTriangle size={32} />
           <p className="mt-3 font-bold">{translateText("Greška pri učitavanju")}</p>
+          <button type="button" onClick={listing.retry} className="mt-3 underline">{translateText("Pokušaj ponovo")}</button>
         </div>
       );
     }
@@ -354,7 +353,7 @@ export default function Catalog({ department = 'satovi', seo }) {
         {err && <p role="status">{translateText("Nova stranica trenutno nije dostupna. ")}<button type="button" onClick={listing.retry}>{translateText("Pokušaj ponovo")}</button></p>}
         <div aria-busy={listing.changingPage} onClickCapture={event => {
           if (listing.changingPage) { event.preventDefault(); event.stopPropagation(); }
-        }}><ProductGrid items={itemsToShow} blankImages={listing.changingPage} /></div>
+        }}><ProductGrid items={itemsToShow} /></div>
         <div className="catalog__footer">
           <div className="catalog__pagination">
             <Pagination
@@ -485,7 +484,7 @@ export default function Catalog({ department = 'satovi', seo }) {
           <motion.div
             data-catalog-listing
             data-listing-key={includeHiddenForAdmin ? `admin:${requestKey}` : requestKey}
-            aria-busy={listing.updating || loading}
+            aria-busy={listing.updating || loading || filterConfigurationLoading}
             initial={false}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

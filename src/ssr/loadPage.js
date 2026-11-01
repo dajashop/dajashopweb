@@ -1,6 +1,4 @@
 import { legacyListing } from '../utils/legacyListing.js';
-import { decodeCatalogParams } from '../utils/catalogUrls.js';
-import { configuredFilterParams } from '../utils/filterConfiguration.js';
 import { catalogPageRequest } from '../utils/catalogPageRequest.js';
 import { isBrandPath } from '../utils/catalogUrls.js';
 import { serviceCatalog } from '../data/serviceCatalog.js';
@@ -73,13 +71,25 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
     const related = await api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/related`, true);
     return Array.isArray(related?.items) ? related.items.slice(0, 12) : null;
   };
-  const filters = department ? await api(`/public/catalog/filters/${department}`) : null;
-  const configuration = filters?.configuration ?? null;
-  // Match the browser request exactly, including removable gender selections.
-  const listingParams = configuredFilterParams(decodeCatalogParams(url.searchParams, configuration, path), configuration);
-  const requestKey = department ? catalogPageRequest(department, listingParams) : null;
+  // The listing returns its filter configuration in the same response.
+  const requestKey = department ? catalogPageRequest(department, url.searchParams, undefined, path) : null;
+  let configuration = null;
+  let filters = null;
   const listingLoader = async (route) => {
-    try { return await api(`/public/catalog/${route}${route.startsWith('page?') && filters?.version ? `&configurationVersion=${encodeURIComponent(filters.version)}` : ''}`); }
+    try {
+      const result = await api(`/public/catalog/${route}`);
+      if (department && result.pathname !== path) {
+        // Compatibility while the additive backend endpoint is deploying.
+        filters = await api(`/public/catalog/filters/${department}`);
+        configuration = filters?.configuration ?? null;
+        const [{ decodeCatalogParams }, { configuredFilterParams }] = await Promise.all([
+          import('../utils/catalogUrls.js'), import('../utils/filterConfiguration.js'),
+        ]);
+        const legacyParams = configuredFilterParams(decodeCatalogParams(url.searchParams, configuration, path), configuration);
+        return await api(`/public/catalog/${catalogPageRequest(department, legacyParams)}`);
+      }
+      return result;
+    }
     catch (error) {
       if (error.status !== 404) throw error;
       return legacyListing(await (readCatalog ? readCatalog(catalogLoader) : catalogLoader()),route,configuration);

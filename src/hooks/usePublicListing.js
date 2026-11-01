@@ -1,4 +1,4 @@
-import { backgroundCatalogAllowed, prepareCatalogRoutes, preloadCatalogImages, waitForVisibleCatalogImages } from '../services/catalogPreparation.js';
+import { backgroundCatalogAllowed, beginCatalogForeground, waitForCatalogPriority, prepareCatalogRoutes, preloadCatalogImages, waitForVisibleCatalogImages } from '../services/catalogPreparation.js';
 import { useEffect, useRef, useState } from 'react';
 import { catalogApi, subscribePublicCatalogRealtime, subscribeStaffCatalogRealtime } from '../services/dajaPlatform.js';
 import { usePageData } from '../ssr/PageData.jsx';
@@ -8,7 +8,6 @@ const cache = new Map();
 const requests = new Map();
 const TTL = 60_000;
 let generation = 0;
-let foregroundRequests = 0;
 function remember(key, data) {
   cache.delete(key);
   const saleExpiry = Math.min(...data.items.map(item => Date.parse(item.saleValidUntil)).filter(Number.isFinite));
@@ -105,7 +104,7 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
     const load = async () => {
       const requestSequence = ++sequence;
       setState(previous => ({ ...previous, request: cacheKey, pending: true, error: null }));
-      foregroundRequests++;
+      const finishForeground = beginCatalogForeground();
       try {
         const result = await requestListing(route, includeHiddenForAdmin, controller.signal);
         if (controller.signal.aborted || requestSequence !== sequence) return;
@@ -114,7 +113,7 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
         if (!controller.signal.aborted && requestSequence === sequence && failure.name !== 'AbortError') {
           setState(previous => ({ ...previous, request: cacheKey, error: failure, pending: false }));
         }
-      } finally { foregroundRequests--; }
+      } finally { finishForeground(); }
     };
     if (!cached(cacheKey, true)) void load();
     const refresh = () => { void load(); };
@@ -146,12 +145,10 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
     let started = false;
     const start = async () => {
       if (signal.aborted || started) return;
-      if (foregroundRequests || document.visibilityState !== 'visible') {
-        timer = window.setTimeout(start, 500); return;
-      }
       started = true;
       try {
         // Finish this page's images before warming exactly one full page.
+        await waitForCatalogPriority(signal);
         await waitForVisibleCatalogImages(cacheKey, signal);
         if (signal.aborted) return;
         await preloadCatalogImages(current.items, signal);
@@ -170,6 +167,7 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
           // full next page. A missing preparation endpoint cannot block it.
           preparation = prepareCatalogRoutes([`page?${later}`], includeHiddenForAdmin, signal).catch(() => {});
         }
+        await waitForCatalogPriority(signal);
         const nextPage = cached(nextKey, true) || await requestListing(next, includeHiddenForAdmin, signal);
         if (signal.aborted) return;
         await preloadCatalogImages(nextPage.items, signal);
