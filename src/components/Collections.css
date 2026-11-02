@@ -45,40 +45,82 @@
 @media(max-width:700px){.watch-journal{padding:20px 18px 40px}.watch-journal__hero,.watch-journal__story-intro{grid-template-columns:1fr;gap:28px}.watch-journal__hero{padding-top:8px}.watch-journal h1{max-width:14ch}.watch-journal__hero p{font-size:16px}.watch-journal__feature{padding:16px}.watch-journal__story{padding:36px 0}.watch-journal__selections{grid-template-columns:1fr;gap:28px;margin-top:28px}.watch-journal__brands{gap:18px}.collections-menu__layout{grid-template-columns:1fr;gap:18px;padding:14px 4px}.collections-menu__choices{flex-direction:row;max-height:none;overflow-x:auto;overflow-y:hidden;padding-bottom:5px}.collections-menu__choices button{flex-shrink:0;white-space:nowrap}.collections-menu__preview .collection-preview{gap:8px}.collection-preview__image img{padding:7px}.collections-menu__heading{padding-inline:4px}.collection-preview__model,.collection-preview__price{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.collection-preview__image img{transition:none}}
 
-/* Magazine: distinct editorial hierarchy, using the storefront's existing tokens. */
+/* Visual magazine: broad page, photographed covers, readable article columns. */
+.magazine{width:calc(100% - 72px);max-width:1760px;padding:28px 0 84px}
 .magazine section[id]{scroll-margin-top:130px}
-.magazine__intro{max-width:850px;padding:24px 0 48px}
-.magazine h1{max-width:23ch;font-size:clamp(32px,4.5vw,56px)}
-.magazine__intro>p,.magazine__lead{font-size:18px;line-height:1.75;max-width:65ch}
-.magazine__intro nav{display:flex;flex-wrap:wrap;gap:24px;margin-top:28px}
-.magazine__intro nav a{color:inherit;text-underline-offset:5px;font-size:14px}
-.magazine__brand-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:42px 56px;margin-top:28px}
-.magazine__brand-card{min-width:0;border-top:1px solid var(--color-border);padding-top:26px}
-.magazine__brand-name{font-size:26px;font-weight:650;letter-spacing:-.02em;color:inherit;text-decoration:none}
-.magazine__brand-card>p{margin:18px 0 22px}
-.magazine__brand-card .collection-preview__image{background:var(--color-surface,#f5f5f7)}
-.magazine__section{margin-top:64px;padding-top:32px;border-top:1px solid var(--color-border)}
-.magazine__article-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px;margin-top:24px}
-.magazine__article-grid article{padding-left:20px;border-left:2px solid var(--color-border);min-width:0}
+.magazine h1{font-size:clamp(36px,4.6vw,76px);line-height:1.04;letter-spacing:-.045em;max-width:19ch;margin:20px 0 26px}
+.magazine h2{font-size:clamp(26px,2.7vw,42px);max-width:none;line-height:1.2;letter-spacing:-.035em}
+.magazine p{color:var(--color-muted,#64656a)}
+.magazine-kicker{display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:600;text-decoration:none;color:inherit}
+.magazine-button{display:inline-flex;align-items:center;justify-content:space-between;gap:24px;padding:15px 22px;border-radius:99px;background:var(--color-text,#151515);color:var(--color-bg,#fff);font-size:14px;font-weight:600;text-decoration:none;width:fit-content;transition:transform .2s,box-shadow .2s}
+.magazine-button:hover{transform:translateY(-3px);box-shadow:0 8px 20px #0002}
+.magazine-text-link{display:inline-flex;align-items:center;gap:14px;font-size:14px;font-weight:600;color:inherit;text-decoration:none;margin-top:14px}
+.magazine-cover,.magazine-detail-cover{position:relative;display:grid;grid-template-columns:1.05fr 1fr;background:var(--color-surface,#f5f5f7);border-radius:26px;overflow:hidden;min-height:560px;margin-bottom:64px}
+.magazine-cover__copy,.magazine-detail-cover__copy{padding:clamp(28px,4vw,70px);align-self:center;z-index:1}
+.magazine-cover__copy>p,.magazine-detail-cover .magazine__lead{font-size:clamp(16px,1.3vw,20px);line-height:1.7;max-width:48ch;margin-bottom:30px}
+.magazine-cover nav{display:flex;gap:24px;margin-top:28px;font-size:13px}
+.magazine-cover nav a{color:inherit;text-underline-offset:5px}
+.magazine-cover__stamp{position:absolute;right:22px;bottom:22px;color:white;background:#1119;backdrop-filter:blur(12px);border:1px solid #ffffff30;border-radius:99px;padding:10px 16px;font-size:12px}
+.magazine-visual{margin:0;min-width:0;position:relative;overflow:hidden}
+.magazine-visual__frame{width:100%;height:100%;min-height:inherit;overflow:hidden}
+.magazine-visual img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .7s cubic-bezier(.2,.65,.3,1)}
+.magazine-visual--product{background:#fff}
+.magazine-visual--product img{object-fit:contain;padding:clamp(20px,3vw,54px);box-sizing:border-box}
+.magazine-cover>.magazine-visual,.magazine-detail-cover>.magazine-visual{min-height:560px}
+.magazine-cover>.magazine-visual img{object-position:68% center}
+.magazine-visual figcaption{position:absolute;bottom:15px;left:16px;right:16px;background:#ffffffed;border-radius:9px;padding:8px 12px;font-size:11px;color:#444;line-height:1.5}
+.magazine__brand-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:34px;margin-top:30px}
+.magazine__brand-card{min-width:0;border-radius:22px;overflow:hidden;background:var(--color-surface,#f5f5f7);border:1px solid var(--color-border,#e9e9eb);transition:transform .3s,box-shadow .3s}
+.magazine__brand-card:hover{transform:translateY(-5px);box-shadow:0 18px 40px #0000000c}
+.magazine__brand-media{display:block;position:relative;height:clamp(280px,27vw,440px);overflow:hidden}
+.magazine__brand-media>.magazine-visual{height:100%}
+.magazine__brand-media>span{position:absolute;right:20px;bottom:20px;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:#fff;color:#171717;box-shadow:0 4px 16px #0001}
+.magazine__brand-card:hover img{transform:scale(1.055)}
+.magazine__brand-body{padding:30px 34px 34px}
+.magazine__brand-name{font-size:clamp(24px,2.3vw,36px);font-weight:650;letter-spacing:-.025em;color:inherit;text-decoration:none}
+.magazine__brand-body>p{font-size:16px;line-height:1.8;max-width:65ch}
+.magazine__section{margin-top:64px;padding-top:20px}
+.magazine__article-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin-top:28px}
+.magazine__article-grid article{min-width:0;border:1px solid var(--color-border,#e6e6e9);border-radius:18px;overflow:hidden;background:var(--color-bg,#fff)}
+.magazine__article-image{height:260px;display:block;position:relative;overflow:hidden;background:var(--color-surface)}
+.magazine__article-image>.magazine-visual{height:100%}
+.magazine__article-image>span{position:absolute;top:16px;left:16px;background:#fff;color:#171717;padding:7px 12px;border-radius:99px;font-size:11px;font-weight:600}
+.magazine__article-image:hover img{transform:scale(1.06)}
+.magazine__article-body{padding:25px}
 .magazine__article-grid time{font-size:12px;color:var(--color-muted)}
-.magazine__article-grid h3{font-size:22px;line-height:1.4;margin-top:12px}
-.magazine__article-grid p{font-size:14px}
-.magazine__article-header{padding:26px 0 38px;max-width:850px}
-.magazine__article-header>a{color:var(--color-muted);font-size:13px;text-underline-offset:5px}
-.magazine__article-header h1{margin-top:24px}
-.magazine__date{font-size:12px!important}
-.magazine__reading-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(240px,1fr);gap:64px;align-items:start}
-.magazine__prose{max-width:740px}
-.magazine__prose>p{font-size:17px;line-height:1.9;margin:0 0 25px}
+.magazine__article-grid h3{font-size:23px;line-height:1.35;margin:12px 0}
+.magazine__article-grid p{font-size:14px;line-height:1.8}
+.magazine__article-grid .collections-link{display:inline-flex;align-items:center;gap:12px;text-decoration:none}
+.magazine-detail-cover{margin-bottom:36px}
+.magazine-detail-cover h1{font-size:clamp(34px,4vw,66px)}
+.magazine__date{display:flex;align-items:center;gap:9px;font-size:12px!important;margin:20px 0 0}
+.magazine-timeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;padding:32px 36px;margin:0 0 54px;background:var(--color-surface,#f5f5f7);border-radius:18px}
+.magazine-timeline>div{border-left:2px solid var(--color-border,#d2d2d7);padding-left:24px}
+.magazine-timeline span{font-size:clamp(26px,3vw,44px);font-weight:600;letter-spacing:-.04em;color:var(--color-text)}
+.magazine-timeline p{font-size:14px;margin:8px 0 0}
+.magazine__reading-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.46fr);gap:clamp(36px,6vw,100px);align-items:start;padding:25px clamp(0px,3vw,56px)}
+.magazine__prose{max-width:none}
+.magazine__prose>p,.magazine__prose section>p{font-size:clamp(17px,1.2vw,20px);line-height:1.85;margin:0 0 28px;max-width:76ch}
+.magazine__prose>p:first-of-type{font-size:clamp(19px,1.55vw,24px);color:var(--color-text);line-height:1.7}
 .magazine__prose section{margin-top:38px}
-.magazine__prose section h2{font-size:25px}
-.magazine__sidebar{position:sticky;top:130px;background:var(--color-surface,#f5f5f7);padding:24px;border-radius:14px;min-width:0}
-.magazine__sidebar h2{font-size:20px}
-.magazine__sidebar nav{display:grid;gap:14px;margin-top:24px;font-size:13px}
+.magazine__prose section h2{font-size:27px}
+.magazine__sidebar{position:sticky;top:130px;background:var(--color-surface,#f5f5f7);padding:26px;border-radius:20px;min-width:0}
+.magazine__sidebar>.magazine-visual{height:250px;border-radius:12px;margin:20px 0}
+.magazine__sidebar h2{font-size:23px}
+.magazine__sidebar p{font-size:14px;line-height:1.7}
+.magazine__sidebar nav{display:grid;gap:14px;margin-top:24px;font-size:14px}
 .magazine__sidebar nav a{color:inherit;text-underline-offset:4px}
-.magazine__sources{border-top:1px solid var(--color-border);padding-top:22px}
-.magazine__sources p{font-size:12px}
+.magazine__sources{border:1px solid var(--color-border);border-radius:16px;padding:24px;background:var(--color-surface,#f5f5f7)}
+.magazine__prose .magazine__sources p{font-size:12px;line-height:1.7;margin:12px 0 0}
 .magazine__sources>a{display:block;font-size:13px;color:inherit;overflow-wrap:anywhere;text-underline-offset:4px}
-.magazine__notice{font-size:13px!important;border-left:2px solid var(--color-border);padding-left:18px;margin-top:32px}
-@media(max-width:800px){.magazine__reading-layout{grid-template-columns:1fr;gap:30px}.magazine__sidebar{position:static}.magazine__brand-grid{gap:32px}.magazine__article-grid{grid-template-columns:1fr}.magazine__article-grid article{padding-bottom:14px}.magazine__section{margin-top:40px}}
-@media(max-width:540px){.magazine__brand-grid{grid-template-columns:1fr}.magazine__intro{padding-top:8px;padding-bottom:32px}.magazine__intro>p,.magazine__lead{font-size:16px}.magazine__article-header{padding-top:14px}.magazine__prose>p{font-size:16px}}
+.magazine__notice{font-size:13px!important;border-left:2px solid var(--color-border);padding-left:18px;margin:30px 3vw}
+.magazine .watch-journal__selections{gap:30px}
+.magazine .watch-journal__selection{border:1px solid var(--color-border);padding:28px;border-radius:18px;background:var(--color-surface,#f5f5f7)}
+.magazine [data-magazine-reveal]{transition:opacity .65s ease,transform .65s cubic-bezier(.2,.65,.3,1)}
+.magazine [data-revealed=false]{opacity:0;transform:translateY(28px)}
+.magazine-cover__copy,.magazine-detail-cover__copy{animation:magazine-enter .65s ease both}
+@keyframes magazine-enter{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@media(min-width:1450px){.magazine__brand-card:first-child{grid-column:span 2;display:grid;grid-template-columns:1.05fr 1fr}.magazine__brand-card:first-child .magazine__brand-media{height:470px}.magazine__brand-card:first-child .magazine__brand-body{align-self:center;padding:56px}}
+@media(max-width:1000px){.magazine{width:calc(100% - 40px)}.magazine-cover,.magazine-detail-cover{min-height:450px}.magazine-cover>.magazine-visual,.magazine-detail-cover>.magazine-visual{min-height:450px}.magazine-cover__copy,.magazine-detail-cover__copy{padding:32px}.magazine h1{font-size:44px}.magazine__reading-layout{grid-template-columns:1fr minmax(260px,.55fr);padding-inline:0;gap:30px}.magazine__article-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.magazine{width:calc(100% - 28px);padding-top:18px}.magazine-cover,.magazine-detail-cover{grid-template-columns:1fr;border-radius:18px}.magazine-cover>.magazine-visual,.magazine-detail-cover>.magazine-visual{min-height:0;height:340px}.magazine-cover__copy,.magazine-detail-cover__copy{padding:30px 24px}.magazine h1,.magazine-detail-cover h1{font-size:39px;max-width:21ch}.magazine-cover__stamp{font-size:10px;bottom:12px;right:12px}.magazine__brand-grid,.magazine__article-grid,.magazine__reading-layout{grid-template-columns:1fr}.magazine__brand-media{height:320px}.magazine__brand-body{padding:25px}.magazine__sidebar{position:static}.magazine__section{margin-top:42px}.magazine .watch-journal__selection{padding:20px}.magazine-timeline{padding:24px;gap:24px}.magazine__article-image{height:280px}.magazine__sources{padding:20px}.magazine-cover__copy>p,.magazine-detail-cover .magazine__lead{font-size:16px}}
+@media(prefers-reduced-motion:reduce){.magazine [data-magazine-reveal],.magazine-visual img,.magazine-button,.magazine__brand-card{transition:none}.magazine [data-revealed=false]{opacity:1;transform:none}.magazine-cover__copy,.magazine-detail-cover__copy{animation:none}}

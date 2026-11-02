@@ -59,3 +59,12 @@ Nema automatskog prepisivanja vesti niti slika preuzetih sa izvora. Novosti ne
 tvrde da je najavljeni proizvod na stanju. Article JSON-LD koristi stvarni datum
 objavljivanja teksta, odvojen od datuma saopštenja proizvođača.
 Istorije ostaju dostupne i kada pregled kataloga privremeno nije dostupan.
+
+## Vizuelni izgled magazina
+
+Magazin sada koristi sadržaj do širine 1760 px, fotografske uvode i kartice sa
+velikim slikama, vremenske linije iz postojećih istorijskih izvora i animacije
+pojavljivanja preko IntersectionObserver-a. SSR sadržaj je vidljiv bez JavaScript-a;
+podešavanje reduced-motion isključuje animacije. Slike su iz postojeće biblioteke
+sajta i javnog DAJA kataloga; ilustrativne slike u člancima su tako označene.
+Članak o Diver Design 40 koristi fotografiju baš navedenog RA-AC0Q13E iz kataloga.

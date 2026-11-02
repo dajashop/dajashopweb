@@ -29,6 +29,7 @@ export const watchArticles = [
   },
   {
     "slug": "orient-mako-40-boje-2026",
+    "cover": {"brand":"ORIENT","name":"RA-AC0Q13E","images":[{"url":"https://cdn.dajashop.rs/images/ra-ac0q13e/ra-ac0q13e-1-31128c41-7d81-443a-9aeb-b6091b9b92ff.webp"}]},
     "brand": "ORIENT",
     "title": "Orient Mako 40: nove boje i gradijentni brojčanici",
     "excerpt": "Pet Diver Design 40 modela donosi novi pogled na boju brojčanika.",
