@@ -68,3 +68,11 @@ pojavljivanja preko IntersectionObserver-a. SSR sadržaj je vidljiv bez JavaScri
 podešavanje reduced-motion isključuje animacije. Slike su iz postojeće biblioteke
 sajta i javnog DAJA kataloga; ilustrativne slike u člancima su tako označene.
 Članak o Diver Design 40 koristi fotografiju baš navedenog RA-AC0Q13E iz kataloga.
+
+## Zajednička širina sajta
+
+App tretira sve putanje iz `catalogLandings`, magazin i njegovu glavnu stranicu
+kao široke stranice: nema dodatnog roditeljskog `.container` oko njih. Katalog i
+magazin dele `--site-content-width` sa zaglavljem (min(1600px, 92vw)).
+Katalog nema dodatni 95% okvir niti bočni padding unutar catalog-layout.
+Ovo zamenjuje ranije zasebno ograničenje magazina na 1760px.

@@ -1,3 +1,4 @@
+import { catalogLanding } from './data/catalogLandings.js';
 import AppRoutes from './router.jsx';
 import EngravingSync from './components/engraving/EngravingSync';
 import Header from './components/Header.jsx';
@@ -19,6 +20,8 @@ export default function App() {
   const pageStatus = pageData?.errorPath === pathname ? pageData.errorStatus : null;
 
   const isWidePage =
+    Boolean(catalogLanding(pathname)) ||
+    pathname === '/kolekcije-satova' || pathname.startsWith('/magazin/') ||
     pathname.startsWith('/catalog') ||
     pathname.startsWith('/brend/') ||
     pathname === '/search' ||

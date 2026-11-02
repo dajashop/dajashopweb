@@ -52,8 +52,9 @@ a {
 button {
   cursor: pointer;
 }
+:root { --site-content-width: min(1600px, 92vw); }
 .container {
-  width: min(1600px, 92vw);
+  width: var(--site-content-width);
   margin: 0 auto;
 }
 .card {

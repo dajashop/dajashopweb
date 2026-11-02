@@ -385,7 +385,7 @@ export default function Catalog({ department = 'satovi', seo }) {
 
   return (
     <CatalogPreparationContext.Provider value={prepareFilter}><CatalogParamsContext.Provider value={[configuredParams, setSp]}><motion.div
-      className="catalog-page w-full max-w-[95%] mx-auto px-4 sm:px-6 py-6"
+      className="catalog-page"
       initial={false}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}

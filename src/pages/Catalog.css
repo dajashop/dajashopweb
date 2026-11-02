@@ -3,6 +3,10 @@
 } /* prilagodi tvojoj visini headera */
 
 .catalog-page {
+  width: var(--site-content-width, min(1600px, 92vw));
+  margin-inline: auto;
+  padding-block: 24px;
+  box-sizing: border-box;
   background: var(--color-bg, #fff);
   color: var(--color-text, #111);
 }
@@ -45,9 +49,10 @@
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 24px; /* Malo veći razmak */
-  max-width: 1600px; /* <--- REŠENJE: Puštamo punu širinu */
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
-  padding: 12px;
+  padding: 0;
   box-sizing: border-box;
 }
 
