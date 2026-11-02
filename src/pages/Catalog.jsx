@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+import { catalogLanding } from '../data/catalogLandings.js';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import './Catalog.css';
@@ -126,8 +128,9 @@ export default function Catalog({ department = 'satovi', seo }) {
   const brandName = selectedBrands.length === 1 ? brandDisplayName(selectedBrands[0].option.label)
     : !savedFilterConfiguration && routeBrand ? brandDisplayName(routeBrand === 'q-q' ? 'Q&Q' : routeBrand.replace(/-/g, ' ')) : '';
   const brandPath = brandName && department === 'satovi' ? `/brend/${selectedBrands[0]?.slug || routeBrand}` : '';
-  const activeSeo = brandPath ? { ...baseSeo, path: brandPath, title: `${brandName} satovi`, description: brandDescription(brandName) } : baseSeo;
-  const hasFilteredCatalogUrl = [...sp.keys()].some(key => !['page', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid', ...(brandPath ? [`cf_${brandEntry?.node.id}`, 'brand'] : []), ...(isGenderPage ? [`cf_${genderEntry?.node.id}`, 'gender'] : [])].includes(key));
+  const landing = catalogLanding(location.pathname);
+  const activeSeo = landing ? landing : brandPath ? { ...baseSeo, path: brandPath, title: `${brandName} satovi`, description: brandDescription(brandName) } : baseSeo;
+  const hasFilteredCatalogUrl = [...sp.keys()].some(key => ![...(landing ? ['landing'] : []), 'page', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid', ...(!landing && brandPath ? [`cf_${brandEntry?.node.id}`, 'brand'] : []), ...(!landing && isGenderPage ? [`cf_${genderEntry?.node.id}`, 'gender'] : [])].includes(key));
   const navType = useNavigationType();
   const sortParam = sp.get('sort') || 'popular';
 
@@ -184,6 +187,8 @@ export default function Catalog({ department = 'satovi', seo }) {
     if (filterConfigurationLoading || filterConfigurationError) return [];
     if (filterConfiguration) {
       const chips = configuredFilterChips(configuredParams, filterConfiguration, { money, t: translateText });
+      const landing = catalogLanding(location.pathname);
+      if (landing) chips.unshift({key:'landing',val:landing.path.slice(1),label:landing.title});
       const q = configuredParams.get('q');
       if (q) chips.unshift({ key: 'q', val: q, label: `Traži: "${q}"` });
       return chips;
@@ -229,15 +234,15 @@ export default function Catalog({ department = 'satovi', seo }) {
     });
 
     return active;
-  }, [sp, configuredParams, filterConfiguration, filterConfigurationLoading, filterConfigurationError, money, translateText]);
+  }, [sp, configuredParams, filterConfiguration, filterConfigurationLoading, filterConfigurationError, money, translateText, location.pathname]);
 
   const mechanismEntry = filterUrlEntries(filterConfiguration).find(entry => entry.key === 'mehanizam');
   const chosenMechanism = mechanismEntry?.options.filter(entry => configuredParams.getAll(`cf_${mechanismEntry.node.id}`).includes(entry.option.id)) || [];
   const nonBrandChips = activeFilters.filter(chip => chip.key !== `cf_${brandEntry?.node.id}`);
   const automaticOnly = brandName && nonBrandChips.length === 1 && chosenMechanism.length === 1 && urlSlug(chosenMechanism[0].option.label) === 'automatski';
-  const catalogTitle = brandName ? `${brandName}${selectedGender ? ` ${selectedGender.toLowerCase()}` : ''}${automaticOnly ? ' automatski' : ''} satovi`
+  const catalogTitle = landing ? landing.title : brandName ? `${brandName}${selectedGender ? ` ${selectedGender.toLowerCase()}` : ''}${automaticOnly ? ' automatski' : ''} satovi`
     : selectedGender && department === 'satovi' ? `${selectedGender} satovi` : TITLES[department] || activeSeo.title;
-  const catalogDescription = automaticOnly
+  const catalogDescription = landing ? landing.description : automaticOnly
     ? `Pregledajte automatske ${brandName} satove. Uporedite dimenzije kućišta, vrstu stakla, funkcije i cenu u detaljima svakog modela.`
     : brandName ? brandDescription(brandName) : activeSeo.description;
 
@@ -387,16 +392,16 @@ export default function Catalog({ department = 'satovi', seo }) {
       transition={{ duration: 0.4 }}
     >
       <SEOHead
-        title={translateText(`${brandName ? catalogTitle : activeSeo.title}${page > 1 ? ` — strana ${page}` : ''}`)}
+        title={`${translateText(landing || brandName ? catalogTitle : activeSeo.title)}${page > 1 ? ` — ${translateText('strana {page}', {page})}` : ''}`}
         description={translateText(catalogDescription)}
         keywords={activeSeo.keywords}
         url={`${siteRoot}${activeSeo.path}${page > 1 ? `?page=${page}` : ''}`}
-        noIndex={hasFilteredCatalogUrl}
+        noIndex={hasFilteredCatalogUrl || Boolean(landing && (!listing.data || listing.data.total === 0 || listing.error))}
       />
       <BreadcrumbJsonLd
         items={[
           {
-            name: brandName ? `${brandName} satovi` : TITLES[department] || department,
+            name: landing ? landing.title : brandName ? `${brandName} satovi` : TITLES[department] || department,
             url: `${siteRoot}${activeSeo.path}`,
           },
         ]}
@@ -417,7 +422,7 @@ export default function Catalog({ department = 'satovi', seo }) {
               <Breadcrumbs
                 trail={[
                   {
-                    label: brandName ? `${brandName} satovi` : TITLES[department] || department,
+                    label: landing ? landing.title : brandName ? `${brandName} satovi` : TITLES[department] || department,
                     href: activeSeo.path,
                   },
                 ]}
@@ -501,6 +506,10 @@ export default function Catalog({ department = 'satovi', seo }) {
           >
             {translateText(renderContent())}
           </motion.div>
+          {department === 'satovi' && listing.data?.landingPages?.length > 0 && <section id="izbor-satova" className="mt-8 border-t pt-5" aria-label={translateText('Istražite satove')}>
+            <h2 className="text-lg font-semibold mb-3">{translateText('Istražite satove')}</h2>
+            <nav className="flex flex-wrap gap-3">{listing.data.landingPages.filter(page => page.path !== location.pathname).map(page => <Link key={page.path} className="underline" to={page.path}>{translateText(page.title)}</Link>)}</nav>
+          </section>}
         </main>
       </div>
     </motion.div></CatalogParamsContext.Provider></CatalogPreparationContext.Provider>

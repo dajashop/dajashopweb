@@ -1,3 +1,4 @@
+import { catalogLandings, catalogLanding } from '../data/catalogLandings.js';
 import { legacyListing } from '../utils/legacyListing.js';
 import { catalogPageRequest } from '../utils/catalogPageRequest.js';
 import { isBrandPath } from '../utils/catalogUrls.js';
@@ -5,6 +6,7 @@ import { serviceCatalog } from '../data/serviceCatalog.js';
 import { stripLanguagePrefix } from '../localization/paths.js';
 
 export const PUBLIC_PATHS = new Set([
+  ...catalogLandings.map(page => page.path),
   '/', '/catalog', '/muski-satovi', '/zenski-satovi', '/naocare',
   '/baterije', '/daljinski', '/ostalo', '/about', '/contact', '/faq', '/usluge', '/graviranje',
   ...serviceCatalog.map(service => service.path),
@@ -14,7 +16,7 @@ export const CATALOG_DEPARTMENTS = {
   '/naocare': 'naocare', '/baterije': 'baterije', '/daljinski': 'daljinski',
 };
 export const isProductPath = path => /^\/product\/[^/]+\/?$/.test(path);
-export const catalogDepartment = path => CATALOG_DEPARTMENTS[path] || (isBrandPath(path) ? 'satovi' : null);
+export const catalogDepartment = path => CATALOG_DEPARTMENTS[path] || (isBrandPath(path) || catalogLanding(path) ? 'satovi' : null);
 
 export function publicCacheSeconds(data, maximum = 60) {
   const sales = [data.product, ...(data.catalog || []), ...(data.catalogPage?.items || []), ...(data.homeProducts?.items || []), ...(data.engravingProducts?.items || []), ...(data.relatedVariants || []), ...(data.relatedProducts || [])].filter(item => item?.saleValidUntil);

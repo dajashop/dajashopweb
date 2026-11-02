@@ -1,3 +1,4 @@
+import { catalogLanding } from '../data/catalogLandings.js';
 import { movementFilterRole } from './filterConfiguration.js';
 
 const cyrillic = 'абвгдђежзијклљмнњопрстћуфхцчџш';
@@ -36,6 +37,8 @@ export function filterUrlEntries(configuration) {
 
 export function decodeCatalogParams(raw, configuration, pathname = '/catalog') {
   const next = new URLSearchParams(raw);
+  const landing = catalogLanding(pathname);
+  if (landing) next.set('landing', landing.path.slice(1));
   const routeBrand = isBrandPath(pathname) ? decodeURIComponent(pathname.split('/')[2]) : null;
   const routeGender = genderRoutes[pathname];
   const entries = filterUrlEntries(configuration);
@@ -73,7 +76,9 @@ export function decodeCatalogParams(raw, configuration, pathname = '/catalog') {
 
 export function catalogUrl(params, configuration, pathname = '/catalog') {
   const next = new URLSearchParams(params);
-  let path = isBrandPath(pathname) || genderRoutes[pathname] ? '/catalog' : pathname;
+  const landing = catalogLanding(pathname);
+  let path = isBrandPath(pathname) || genderRoutes[pathname] || landing ? '/catalog' : pathname;
+  if (landing && next.get('landing') === landing.path.slice(1)) { path = pathname; next.delete('landing'); }
   let genderSelection;
   for (const { node, key, options } of filterUrlEntries(configuration)) {
     if (node.style === 'range') {

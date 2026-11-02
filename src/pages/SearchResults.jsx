@@ -35,9 +35,9 @@ export default function SearchResults() {
   function loadMore() { if (data?.nextCursor) setPage({ key: queryKey, items, cursor: data.nextCursor }); }
   const shown = q.trim().length >= 2;
   return <div className="search-results">
-    <SEOHead title={translateText(q ? `Pretraga: ${q}` : 'Pretraga')} description={translateText("Pretražite modele, brendove, kolekcije i osobine proizvoda u DajaShop-u.")} noIndex />
+    <SEOHead title={q ? translateText('Pretraga za: {query}', {query:q}) : translateText('Pretraga')} description={translateText("Pretražite modele, brendove, kolekcije i osobine proizvoda u DajaShop-u.")} noIndex />
     <div className="search-results__breadcrumb"><Link to="/">{translateText("Početna")}</Link><span>/</span><span>{translateText("Pretraga")}</span></div>
-    <header className="search-results__heading"><div><span>{translateText("Pronađi svoj sledeći izbor")}</span><h1>{translateText(q ? `Rezultati za „${q}“` : 'Pretraga proizvoda')}</h1></div>
+    <header className="search-results__heading"><div><span>{translateText("Pronađi svoj sledeći izbor")}</span><h1>{q ? translateText('Pretraga za: {query}', {query:q}) : translateText('Pretraga proizvoda')}</h1></div>
       <form onSubmit={submit} className="search-results__form"><Search size={19} aria-hidden="true" /><input value={field} maxLength={120} onChange={(event) => setField(event.target.value)} placeholder={translateText("Model, brend ili osobine…")} aria-label={translateText("Unesi pretragu")} inputMode="search" enterKeyHint="search" /><button disabled={field.trim().length < 2} aria-label={translateText("Pretraži")}><ArrowRight size={19} /></button></form>
     </header>
     {shown && <div className="search-results__toolbar"><div className="search-results__departments" aria-label={translateText("Odeljenje")}>{departments.map((item) => <button key={item.id} type="button" aria-pressed={(department || '') === item.id} className={(department || '') === item.id ? 'is-active' : ''} onClick={() => update('department', item.id)}>{translateText(item.label)}</button>)}</div>

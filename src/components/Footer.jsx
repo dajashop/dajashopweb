@@ -167,6 +167,7 @@ export default function Footer() {
             <nav className="footer__nav">
               <Link to="/muski-satovi">{translateText("Muški satovi")}</Link>
               <Link to="/zenski-satovi">{translateText("Ženski satovi")}</Link>
+              <Link to="/catalog#izbor-satova">{translateText("Istražite satove")}</Link>
               <Link to="/about">{translateText("O nama")}</Link>
               <Link to="/usluge">{translateText("Usluge")}</Link>
               <Link to="/contact">{translateText("Kontakt")}</Link>

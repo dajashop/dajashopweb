@@ -1,3 +1,4 @@
+import { catalogLandings } from './data/catalogLandings.js';
 import React, { lazy } from 'react';
 import ClientOnly from './components/ClientOnly.jsx';
 import { AdminDashboardSkeleton } from './components/AdminSkeleton.jsx';
@@ -47,6 +48,7 @@ export default function AppRoutes() {
 
       {/* --- RUTE ZA ODELJENJA --- */}
       {/* Glavni katalog (Satovi) */}
+      {catalogLandings.map(page => <Route key={page.path} path={page.path} element={<Catalog department="satovi" seo={page} />} />)}
       <Route path="/catalog" element={<Catalog department="satovi" />} />
       <Route path="/ostalo" element={<OtherCatalog />} />
       <Route path="/brend/:brandSlug" element={<Catalog department="satovi" />} />
