@@ -6,7 +6,7 @@ export const watchArticles = [
     "excerpt": "Casio je predstavio GMC-2500 i GAC-2500, sa dizajnom inspirisanim prvim G-Shock modelom.",
     "published": "2026-11-03",
     "sourceDate": "2026-10-22",
-    "source": "https://www.casio.com/europe/corporate/casio-corporate/news/2026/2500-series/",
+    "source": "https://www.casio.com/intl/news/2026/1022-gac-2500gmc-2500/",
     "paragraphs": [
       "U saopštenju od 22. oktobra 2026. Casio najavljuje analogne G-Shock modele koji se oslanjaju na oblikovni jezik prvog digitalnog predstavnika brenda. U najavi su navedene oznake GMC-2500 i GAC-2500.",
       "Zanimljivost ove priče je kontinuitet dizajna: prepoznatljiva ideja može da dobije drugačiji prikaz vremena. To je dobar povod da pri izboru sata odvojite ono što vam se dopada u izgledu od funkcija koje stvarno koristite.",
