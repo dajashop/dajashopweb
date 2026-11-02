@@ -64,7 +64,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     const ready = [];
     while (queue.current.length && ['ready', 'cancelled'].includes(queue.current[0].status)) {
       const job = queue.current.shift();
-      if (job.status === 'ready') ready.push(job.image);
+      if (job.status === 'ready') ready.push({ ...job.image, altText: job.altText || '' });
       releasePreview(job);
     }
     if (ready.length) {
@@ -120,7 +120,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     nextPosition.current = Math.max(nextPosition.current, imagesRef.current.length);
     for (const entry of entries) {
       queue.current.push({ ...entry, id: crypto.randomUUID(), slug, department,
-        position: nextPosition.current++, status: 'queued', error: null,
+        position: nextPosition.current++, status: 'queued', error: null, altText: '',
         preview: entry.file ? URL.createObjectURL(entry.file) : null });
     }
     // Reserve the slots and block Save synchronously, before either request starts.
@@ -152,6 +152,12 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     if (!job || job.status !== 'failed') return;
     job.status = 'queued'; job.error = null; pump();
   };
+  const updateJobAlt = (id, altText) => {
+    const job = queue.current.find(item => item.id === id);
+    if (!job || job.status === 'cancelled') return;
+    job.altText = altText;
+    notify();
+  };
   const visibleJobs = jobs.filter(job => job.status !== 'cancelled');
   const busy = jobs.length > 0;
 
@@ -178,10 +184,10 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
       </button>
     </div>
     {busy && <p className="text-xs text-blue-700" role="status">{t('Možete dodati još slika dok traje otpremanje. Redosled dodavanja se čuva.')}</p>}
-    <Reorder.Group axis="y" style={disabled || busy ? { pointerEvents: 'none' } : undefined}
-      values={images} onReorder={publishImages} className="space-y-2 max-h-75 overflow-y-auto custom-scrollbar pr-1">
+    <Reorder.Group axis="y"
+      values={images} onReorder={nextImages => { if (!disabled && !busy) publishImages(nextImages); }} className="space-y-2 max-h-75 overflow-y-auto custom-scrollbar pr-1">
       {images.map((image, index) => <Reorder.Item key={image.linkId || image.mediaId || image.url} value={image}
-        className="cursor-grab active:cursor-grabbing">
+        dragListener={!disabled && !busy} className={disabled || busy ? '' : 'cursor-grab active:cursor-grabbing'}>
         <motion.div layout className="flex items-center gap-3 p-2 bg-white border border-neutral-200 rounded-xl shadow-sm">
           <div className="p-2 text-neutral-300"><GripHorizontal size={18} /></div>
           <button type="button" className="h-12 w-12 rounded-lg overflow-hidden border border-neutral-100 bg-neutral-50 shrink-0"
@@ -192,8 +198,11 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
           <div className="flex-1 min-w-0">
             {index === 0 && <span className="text-xs font-semibold text-emerald-700">{t('Glavna slika')}</span>}
             <input value={image.altText || ''} placeholder={`${t('Alt tekst slike')} ${index + 1}`}
+              aria-label={`${t('Alt tekst slike')} ${index + 1}`} maxLength={240}
               onPointerDown={event => event.stopPropagation()}
-              onChange={event => publishImages(imagesRef.current.map(item => item === image ? { ...item, altText: event.target.value } : item))}
+              onChange={event => publishImages(imagesRef.current.map(item =>
+                (item.linkId || item.mediaId || item.url) === (image.linkId || image.mediaId || image.url)
+                  ? { ...item, altText: event.target.value } : item))}
               className="w-full rounded-md border border-neutral-200 px-2 py-1 text-xs text-neutral-700" />
           </div>
           <button type="button" disabled={busy} title={t('Ukloni sliku')}
@@ -212,6 +221,10 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
           {!images.length && index === 0 && <p className="font-semibold text-emerald-700">{t('Rezervisano mesto glavne slike')}</p>}
           <p>{t(job.status === 'uploading' ? 'Otpremanje i obrada slike…' : job.status === 'ready' ? 'Spremna — čeka prethodnu sliku.' : job.status === 'failed' ? 'Otpremanje nije uspelo. Pokušajte ponovo ili uklonite sliku.' : 'Čeka početak otpremanja…')}</p>
           {job.status === 'failed' && job.error && <p className="mt-1 break-words text-red-700">{job.error}</p>}
+          <input value={job.altText || ''} placeholder={`${t('Alt tekst slike')} ${images.length + index + 1}`}
+            aria-label={`${t('Alt tekst slike')} ${images.length + index + 1}`} maxLength={240}
+            onChange={event => updateJobAlt(job.id, event.target.value)}
+            className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs text-neutral-700" />
         </div>
         {job.status === 'uploading' && <Loader2 size={16} className="animate-spin text-blue-600" />}
         {job.status === 'failed' && <button type="button" onClick={() => retryJob(job.id)} title={t('Pokušaj ponovo')} className="p-2 text-blue-700"><RotateCcw size={16} /></button>}
