@@ -7,7 +7,7 @@ import { uploadProductImage } from '../../../services/r2ImageService';
 import { resizeToWebP, generateSeoFilename } from '../../../utils/imageProcessing';
 import { mediaApi } from '../../../services/dajaPlatform';
 
-const MAX_CONCURRENT_UPLOADS = 2;
+const MAX_CONCURRENT_UPLOADS = 1;
 
 export default function ImageManager({ images, onChange, onImageClick, productSlug, productName,
   department, onRemoteUploadSuccess, disabled = false, onBusyChange }) {
@@ -22,7 +22,13 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
   const current = useRef({});
   current.current = { images, onChange, onRemoteUploadSuccess, onBusyChange };
   const imagesRef = useRef(images);
-  imagesRef.current = images;
+  const receivedImagesRef = useRef(images);
+  // Local job-status renders can still receive the previous parent props.
+  // Do not overwrite an image list already advanced by a completed upload.
+  if (receivedImagesRef.current !== images) {
+    receivedImagesRef.current = images;
+    imagesRef.current = images;
+  }
 
   const discard = image => {
     if (image?.mediaId) void mediaApi.discardUpload(image.mediaId).catch(error =>
@@ -205,6 +211,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
           <p className="truncate font-semibold">{job.file?.name || `${t('Slika sa linka')} ${images.length + index + 1}`}</p>
           {!images.length && index === 0 && <p className="font-semibold text-emerald-700">{t('Rezervisano mesto glavne slike')}</p>}
           <p>{t(job.status === 'uploading' ? 'Otpremanje i obrada slike…' : job.status === 'ready' ? 'Spremna — čeka prethodnu sliku.' : job.status === 'failed' ? 'Otpremanje nije uspelo. Pokušajte ponovo ili uklonite sliku.' : 'Čeka početak otpremanja…')}</p>
+          {job.status === 'failed' && job.error && <p className="mt-1 break-words text-red-700">{job.error}</p>}
         </div>
         {job.status === 'uploading' && <Loader2 size={16} className="animate-spin text-blue-600" />}
         {job.status === 'failed' && <button type="button" onClick={() => retryJob(job.id)} title={t('Pokušaj ponovo')} className="p-2 text-blue-700"><RotateCcw size={16} /></button>}
