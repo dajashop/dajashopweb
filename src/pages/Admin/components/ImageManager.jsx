@@ -7,7 +7,7 @@ import { uploadProductImage } from '../../../services/r2ImageService';
 import { resizeToWebP, generateSeoFilename } from '../../../utils/imageProcessing';
 import { mediaApi } from '../../../services/dajaPlatform';
 
-const MAX_CONCURRENT_UPLOADS = 1;
+const MAX_CONCURRENT_UPLOADS = 2;
 
 export default function ImageManager({ images, onChange, onImageClick, productSlug, productName,
   department, onRemoteUploadSuccess, disabled = false, onBusyChange }) {

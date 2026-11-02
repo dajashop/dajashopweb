@@ -6,6 +6,7 @@ async function checksumSha256(file) {
 
 export async function uploadProductImage(slug, file, index = 0) {
   if (!slug) throw new Error('Slug proizvoda je obavezan za upload slike.');
+  if (!file.size || file.size > 25 * 1024 * 1024) throw new Error('Slika mora biti manja od 25 MiB.');
   const upload = await mediaApi.createUpload({
     mimeType: file.type || 'application/octet-stream',
     sizeBytes: file.size,
@@ -22,9 +23,21 @@ export async function uploadProductImage(slug, file, index = 0) {
       method: 'PUT',
       headers: { 'Content-Type': file.type || 'application/octet-stream' },
       body: file,
+      signal: AbortSignal.timeout(60_000),
     });
     if (!response.ok) throw new Error(`R2 upload nije uspeo (${response.status}).`);
-    const completed = await mediaApi.completeUpload(mediaId);
+    // Completion is idempotent on the API. Retry the same media ID when a
+    // response is lost or the bounded image queue is temporarily full.
+    let completed;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        completed = await mediaApi.completeUpload(mediaId);
+        break;
+      } catch (error) {
+        if (attempt === 2 || (error.status && ![429, 502, 503, 504].includes(error.status))) throw error;
+        await new Promise(resolve => setTimeout(resolve, Math.min(15_000, error.retryAfterMs || 3000)));
+      }
+    }
     const url = completed.mainImageUrl || completed.publicUrl || upload.publicUrl || '';
     return { mediaId, url, thumb: completed.thumbnailUrl || upload.thumbnailUrl || url };
   } catch (error) {
