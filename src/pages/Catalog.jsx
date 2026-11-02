@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { catalogLanding } from '../data/catalogLandings.js';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
@@ -506,10 +505,6 @@ export default function Catalog({ department = 'satovi', seo }) {
           >
             {translateText(renderContent())}
           </motion.div>
-          {department === 'satovi' && listing.data?.landingPages?.length > 0 && <section id="izbor-satova" className="mt-8 border-t pt-5" aria-label={translateText('Istražite satove')}>
-            <h2 className="text-lg font-semibold mb-3">{translateText('Istražite satove')}</h2>
-            <nav className="flex flex-wrap gap-3">{listing.data.landingPages.filter(page => page.path !== location.pathname).map(page => <Link key={page.path} className="underline" to={page.path}>{translateText(page.title)}</Link>)}</nav>
-          </section>}
         </main>
       </div>
     </motion.div></CatalogParamsContext.Provider></CatalogPreparationContext.Provider>

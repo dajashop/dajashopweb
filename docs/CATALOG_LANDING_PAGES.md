@@ -12,9 +12,9 @@ Identitet izbora ulazi u ključeve keša i ostaje pri sortiranju i promeni stran
 Oznaka izbora može da se ukloni; tada se posetilac vraća u običan katalog.
 
 Javni odgovor vraća `landingPages` samo za izbore sa vidljivim proizvodima.
-Oni su povezani u odeljku „Istražite satove“, a sitemap v5 dodaje srpske i engleske
+Oni su povezani na stranici `/kolekcije-satova`, dostupnoj kroz meni „Satovi“ i podnožje. Sitemap v6 dodaje srpske i engleske
 adrese sa hreflang vezama. Prazne stalne stranice imaju noindex i ne oglašavaju se
-u sitemap-u ili tom odeljku. Casio rute su pripremljene za buduću ponudu.
+u sitemap-u ili među pregledima kolekcija. Casio rute su pripremljene za buduću ponudu.
 Interna pretraga ostaje noindex, sa naslovom „Pretraga za: {query}“.
 Proizvoljni dodatni filteri i sortiranje ostaju noindex; paginacija ima svoj canonical.
 
@@ -32,3 +32,16 @@ modeli ne dobijaju seriju nagađanjem.
 
 Validacija tokom implementacije: TypeScript kompilacija API-ja i web client/SSR build;
 bez testova i bez čekanja ili provere završetka deploya.
+
+## Magazin i pregled u meniju
+
+`CollectionsMenu` koristi zajednički HeaderDropdown sa podesivom širinom.
+Otvara se klikom, zatvara klikom van njega, Escape tasterom ili navigacijom.
+Na telefonu izbori kolekcija skroluju se vodoravno, a ispod je pregled tri modela.
+
+`/kolekcije-satova` je SSR stranica sa originalnim srpskim/engleskim tekstovima
+iz `src/data/watchStories.js`, izvorima istorije i pregledima kolekcija.
+Javni endpoint `/public/catalog/collections` grupiše najviše tri modela po izboru,
+uz jednu grupnu pretragu fotografija. Browser deli zahtev između menija i stranice.
+Pregledi koriste samo javne proizvode i kratko keširanje ograničeno istekom akcija.
+Spisak linkova ispod kataloga je uklonjen.

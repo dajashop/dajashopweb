@@ -7,7 +7,7 @@ import { stripLanguagePrefix } from '../localization/paths.js';
 
 export const PUBLIC_PATHS = new Set([
   ...catalogLandings.map(page => page.path),
-  '/', '/catalog', '/muski-satovi', '/zenski-satovi', '/naocare',
+  '/kolekcije-satova', '/', '/catalog', '/muski-satovi', '/zenski-satovi', '/naocare',
   '/baterije', '/daljinski', '/ostalo', '/about', '/contact', '/faq', '/usluge', '/graviranje',
   ...serviceCatalog.map(service => service.path),
 ]);
@@ -19,7 +19,7 @@ export const isProductPath = path => /^\/product\/[^/]+\/?$/.test(path);
 export const catalogDepartment = path => CATALOG_DEPARTMENTS[path] || (isBrandPath(path) || catalogLanding(path) ? 'satovi' : null);
 
 export function publicCacheSeconds(data, maximum = 60) {
-  const sales = [data.product, ...(data.catalog || []), ...(data.catalogPage?.items || []), ...(data.homeProducts?.items || []), ...(data.engravingProducts?.items || []), ...(data.relatedVariants || []), ...(data.relatedProducts || [])].filter(item => item?.saleValidUntil);
+  const sales = [data.product, ...(data.catalog || []), ...(data.catalogPage?.items || []), ...(data.homeProducts?.items || []), ...(data.engravingProducts?.items || []), ...(data.relatedVariants || []), ...(data.relatedProducts || []), ...(data.collectionPreviews?.groups || []).flatMap(group=>group.items || [])].filter(item => item?.saleValidUntil);
   return sales.reduce((seconds, item) => Math.min(seconds,
     Math.max(0, Math.floor((new Date(item.saleValidUntil).getTime() - Date.now()) / 1000) || 0)), maximum);
 }
@@ -97,14 +97,16 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
       return legacyListing(await (readCatalog ? readCatalog(catalogLoader) : catalogLoader()),route,configuration);
     }
   };
-  const [product, listing, variants, related] = await Promise.all([
+  const [product, listing, variants, related, collectionPreviews] = await Promise.all([
     isProductPath(path) ? (readProduct ? readProduct(productLoader) : productLoader()) : null,
     requestKey ? listingLoader(requestKey) : engravingRequest ? listingLoader(engravingRequest) : path === '/' ? listingLoader('home') : null,
     isProductPath(path) ? api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/variants`, true) : null,
     isProductPath(path) ? (readRelated ? readRelated(relatedLoader) : relatedLoader()) : [],
+    path === '/kolekcije-satova' ? api('/public/catalog/collections') : null,
   ]);
   if (product?.missing) return { missing: true };
   if (product?.redirectTo) return { redirectTo: product.redirectTo };
+  data.collectionPreviews = collectionPreviews;
   data.product = product?.product || product;
   if (engravingRequest) {
     const { configuration: _configuration, ...listingData } = listing;
