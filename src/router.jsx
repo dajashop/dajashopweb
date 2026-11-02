@@ -51,6 +51,8 @@ export default function AppRoutes() {
       {/* Glavni katalog (Satovi) */}
       {catalogLandings.map(page => <Route key={page.path} path={page.path} element={<Catalog department="satovi" seo={page} />} />)}
       <Route path="/kolekcije-satova" element={<Collections />} />
+      <Route path="/magazin/brendovi/:slug" element={<Collections kind="brand" />} />
+      <Route path="/magazin/clanci/:slug" element={<Collections kind="article" />} />
       <Route path="/catalog" element={<Catalog department="satovi" />} />
       <Route path="/ostalo" element={<OtherCatalog />} />
       <Route path="/brend/:brandSlug" element={<Catalog department="satovi" />} />

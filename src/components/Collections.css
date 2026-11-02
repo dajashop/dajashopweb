@@ -44,3 +44,41 @@
 .watch-journal__availability{padding:16px 0}
 @media(max-width:700px){.watch-journal{padding:20px 18px 40px}.watch-journal__hero,.watch-journal__story-intro{grid-template-columns:1fr;gap:28px}.watch-journal__hero{padding-top:8px}.watch-journal h1{max-width:14ch}.watch-journal__hero p{font-size:16px}.watch-journal__feature{padding:16px}.watch-journal__story{padding:36px 0}.watch-journal__selections{grid-template-columns:1fr;gap:28px;margin-top:28px}.watch-journal__brands{gap:18px}.collections-menu__layout{grid-template-columns:1fr;gap:18px;padding:14px 4px}.collections-menu__choices{flex-direction:row;max-height:none;overflow-x:auto;overflow-y:hidden;padding-bottom:5px}.collections-menu__choices button{flex-shrink:0;white-space:nowrap}.collections-menu__preview .collection-preview{gap:8px}.collection-preview__image img{padding:7px}.collections-menu__heading{padding-inline:4px}.collection-preview__model,.collection-preview__price{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.collection-preview__image img{transition:none}}
+
+/* Magazine: distinct editorial hierarchy, using the storefront's existing tokens. */
+.magazine section[id]{scroll-margin-top:130px}
+.magazine__intro{max-width:850px;padding:24px 0 48px}
+.magazine h1{max-width:23ch;font-size:clamp(32px,4.5vw,56px)}
+.magazine__intro>p,.magazine__lead{font-size:18px;line-height:1.75;max-width:65ch}
+.magazine__intro nav{display:flex;flex-wrap:wrap;gap:24px;margin-top:28px}
+.magazine__intro nav a{color:inherit;text-underline-offset:5px;font-size:14px}
+.magazine__brand-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:42px 56px;margin-top:28px}
+.magazine__brand-card{min-width:0;border-top:1px solid var(--color-border);padding-top:26px}
+.magazine__brand-name{font-size:26px;font-weight:650;letter-spacing:-.02em;color:inherit;text-decoration:none}
+.magazine__brand-card>p{margin:18px 0 22px}
+.magazine__brand-card .collection-preview__image{background:var(--color-surface,#f5f5f7)}
+.magazine__section{margin-top:64px;padding-top:32px;border-top:1px solid var(--color-border)}
+.magazine__article-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px;margin-top:24px}
+.magazine__article-grid article{padding-left:20px;border-left:2px solid var(--color-border);min-width:0}
+.magazine__article-grid time{font-size:12px;color:var(--color-muted)}
+.magazine__article-grid h3{font-size:22px;line-height:1.4;margin-top:12px}
+.magazine__article-grid p{font-size:14px}
+.magazine__article-header{padding:26px 0 38px;max-width:850px}
+.magazine__article-header>a{color:var(--color-muted);font-size:13px;text-underline-offset:5px}
+.magazine__article-header h1{margin-top:24px}
+.magazine__date{font-size:12px!important}
+.magazine__reading-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(240px,1fr);gap:64px;align-items:start}
+.magazine__prose{max-width:740px}
+.magazine__prose>p{font-size:17px;line-height:1.9;margin:0 0 25px}
+.magazine__prose section{margin-top:38px}
+.magazine__prose section h2{font-size:25px}
+.magazine__sidebar{position:sticky;top:130px;background:var(--color-surface,#f5f5f7);padding:24px;border-radius:14px;min-width:0}
+.magazine__sidebar h2{font-size:20px}
+.magazine__sidebar nav{display:grid;gap:14px;margin-top:24px;font-size:13px}
+.magazine__sidebar nav a{color:inherit;text-underline-offset:4px}
+.magazine__sources{border-top:1px solid var(--color-border);padding-top:22px}
+.magazine__sources p{font-size:12px}
+.magazine__sources>a{display:block;font-size:13px;color:inherit;overflow-wrap:anywhere;text-underline-offset:4px}
+.magazine__notice{font-size:13px!important;border-left:2px solid var(--color-border);padding-left:18px;margin-top:32px}
+@media(max-width:800px){.magazine__reading-layout{grid-template-columns:1fr;gap:30px}.magazine__sidebar{position:static}.magazine__brand-grid{gap:32px}.magazine__article-grid{grid-template-columns:1fr}.magazine__article-grid article{padding-bottom:14px}.magazine__section{margin-top:40px}}
+@media(max-width:540px){.magazine__brand-grid{grid-template-columns:1fr}.magazine__intro{padding-top:8px;padding-bottom:32px}.magazine__intro>p,.magazine__lead{font-size:16px}.magazine__article-header{padding-top:14px}.magazine__prose>p{font-size:16px}}

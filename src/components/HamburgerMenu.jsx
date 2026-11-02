@@ -195,6 +195,7 @@ function DesktopDropdown({
           <nav className="header-dropdown__items">
             <DDItem to="/about" label={translateText("O nama")} onClose={onClose} />
             <DDItem to="/catalog" label={translateText("Prodavnica")} onClose={onClose} />
+            <DDItem to="/kolekcije-satova" label={translateText("Brendovi i kolekcije")} onClose={onClose} />
             <DDItem to="/usluge" label={translateText("Usluge")} onClose={onClose} />
             <DDItem to="/contact" label={translateText("Kontakt")} onClose={onClose} />
             <DDItem to="/faq" label={translateText("Pomoć / FAQ")} onClose={onClose} />

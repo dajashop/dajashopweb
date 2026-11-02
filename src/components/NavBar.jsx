@@ -1,4 +1,3 @@
-import CollectionsMenu from './CollectionsMenu.jsx';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { brandUrl, brandChoiceUrl, urlSlug, isBrandPath } from '../utils/catalogUrls.js';
 import { useEffect, useState, useRef } from 'react';
@@ -101,7 +100,6 @@ export default function NavBar() {
     <nav className="navbar" aria-label={translateText("Glavna navigacija")}>
       <div className="container navbar__wrap">
         <div className="navbar__row" ref={rowRef}>
-          <CollectionsMenu />
           {/* Svi modeli: isti padajući meni kao brendovi, sa brzim izborom pola. */}
           <div
             className="navbar__group"

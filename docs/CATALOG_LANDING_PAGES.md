@@ -45,3 +45,17 @@ Javni endpoint `/public/catalog/collections` grupiše najviše tri modela po izb
 uz jednu grupnu pretragu fotografija. Browser deli zahtev između menija i stranice.
 Pregledi koriste samo javne proizvode i kratko keširanje ograničeno istekom akcija.
 Spisak linkova ispod kataloga je uklonjen.
+
+## Magazin, novembar 2026.
+
+Ulaz „Brendovi i kolekcije“ nalazi se u hamburger meniju i footeru.
+Gornja navigacija više ne prikazuje CollectionsMenu. Glavna stranica ostaje
+`/kolekcije-satova`, istorije imaju `/magazin/brendovi/:slug`, a članci
+`/magazin/clanci/:slug`. Samo poznate adrese iz manifesta su SSR javne rute.
+Istorije: `watchStories.js`; vodiči: `watchBrandGuides.js`; članci: `watchArticles.js`.
+Pri dodavanju članka pripremiti prevod, originalni sažetak, datum objave i datum
+izvora, direktan zvanični izvor i sitemap adresu u backend projektu.
+Nema automatskog prepisivanja vesti niti slika preuzetih sa izvora. Novosti ne
+tvrde da je najavljeni proizvod na stanju. Article JSON-LD koristi stvarni datum
+objavljivanja teksta, odvojen od datuma saopštenja proizvođača.
+Istorije ostaju dostupne i kada pregled kataloga privremeno nije dostupan.

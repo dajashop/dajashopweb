@@ -1,3 +1,5 @@
+import {watchStories} from '../data/watchStories.js';
+import {watchArticles,articlePath} from '../data/watchArticles.js';
 import { catalogLandings, catalogLanding } from '../data/catalogLandings.js';
 import { legacyListing } from '../utils/legacyListing.js';
 import { catalogPageRequest } from '../utils/catalogPageRequest.js';
@@ -6,6 +8,8 @@ import { serviceCatalog } from '../data/serviceCatalog.js';
 import { stripLanguagePrefix } from '../localization/paths.js';
 
 export const PUBLIC_PATHS = new Set([
+  ...watchStories.map(story=>`/magazin/brendovi/${story.slug}`),
+  ...watchArticles.map(articlePath),
   ...catalogLandings.map(page => page.path),
   '/kolekcije-satova', '/', '/catalog', '/muski-satovi', '/zenski-satovi', '/naocare',
   '/baterije', '/daljinski', '/ostalo', '/about', '/contact', '/faq', '/usluge', '/graviranje',
@@ -102,7 +106,7 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
     requestKey ? listingLoader(requestKey) : engravingRequest ? listingLoader(engravingRequest) : path === '/' ? listingLoader('home') : null,
     isProductPath(path) ? api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/variants`, true) : null,
     isProductPath(path) ? (readRelated ? readRelated(relatedLoader) : relatedLoader()) : [],
-    path === '/kolekcije-satova' ? api('/public/catalog/collections') : null,
+    path === '/kolekcije-satova' || path.startsWith('/magazin/brendovi/') ? api('/public/catalog/collections', true) : null,
   ]);
   if (product?.missing) return { missing: true };
   if (product?.redirectTo) return { redirectTo: product.redirectTo };
