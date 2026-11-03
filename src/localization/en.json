@@ -1,4 +1,7 @@
 {
+  "Izaberite ili prevucite sve slike odjednom. Obrađuju se redom, jedna po jedna.": "Select or drop all images at once. They are processed in order, one at a time.",
+  "Nalepi linkove slika, svaki u novom redu (http...)": "Paste image URLs, one per line (http...)",
+  "Na čekanju:": "Queued:",
   "SMS potvrda je trenutno dostupna samo za brojeve iz Srbije.": "SMS verification is currently available only for Serbian numbers.",
   "Potvrdite bezbednosnu proveru i pokušajte ponovo.": "Complete the security check and try again.",
   "SMS trenutno nije dostupan. Pokušajte kasnije.": "SMS is currently unavailable. Try again later.",

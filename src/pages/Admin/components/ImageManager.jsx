@@ -7,7 +7,7 @@ import { uploadProductImage } from '../../../services/r2ImageService';
 import { resizeToWebP, generateSeoFilename } from '../../../utils/imageProcessing';
 import { mediaApi } from '../../../services/dajaPlatform';
 
-const MAX_CONCURRENT_UPLOADS = 2;
+const MAX_CONCURRENT_UPLOADS = 1;
 
 export default function ImageManager({ images, onChange, onImageClick, productSlug, productName,
   department, onRemoteUploadSuccess, disabled = false, onBusyChange }) {
@@ -86,7 +86,17 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
       }
       return uploadProductImage(job.slug, file, job.position);
     }
-    const asset = await mediaApi.registerExternal(job.sourceUrl, { productSlug: job.slug, imageIndex: job.position + 1 });
+    let asset;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      if (!mounted.current || job.status === 'cancelled') return null;
+      try {
+        asset = await mediaApi.registerExternal(job.sourceUrl, { productSlug: job.slug, imageIndex: job.position + 1 });
+        break;
+      } catch (error) {
+        if (attempt === 3 || ![429, 503].includes(error.status)) throw error;
+        await new Promise(resolve => setTimeout(resolve, Math.min(60_000, Math.max(1000, error.retryAfterMs || 3000))));
+      }
+    }
     const image = { mediaId: asset.id || asset.mediaId, url: asset.mainImageUrl || asset.publicUrl || asset.public_url,
       thumb: asset.thumbnailUrl || asset.thumbnail_url || asset.publicUrl || asset.public_url };
     if (!image.mediaId || !image.url) throw new Error(t('Server nije vratio podatke slike.'));
@@ -133,11 +143,11 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     enqueue(files.map(file => ({ file })));
   };
   const handleUrlUpload = () => {
-    const sourceUrl = urlInput.trim();
-    if (!sourceUrl || disabled) return;
-    try { if (!['http:', 'https:'].includes(new URL(sourceUrl).protocol)) throw new Error(); }
+    const sourceUrls = urlInput.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+    if (!sourceUrls.length || disabled) return;
+    try { for (const sourceUrl of sourceUrls) if (!['http:', 'https:'].includes(new URL(sourceUrl).protocol)) throw new Error(); }
     catch { alert(t('Unesite direktan HTTP ili HTTPS link slike.')); return; }
-    enqueue([{ sourceUrl }]);
+    enqueue(sourceUrls.map(sourceUrl => ({ sourceUrl })));
     setUrlInput('');
   };
   const removeJob = id => {
@@ -161,7 +171,13 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
   const visibleJobs = jobs.filter(job => job.status !== 'cancelled');
   const busy = jobs.length > 0;
 
-  return <fieldset className="space-y-4 min-w-0" disabled={disabled}>
+  return <fieldset className="space-y-4 min-w-0" disabled={disabled}
+    onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.preventDefault(); }}
+    onDrop={event => {
+      if (!event.dataTransfer.types.includes('Files')) return;
+      event.preventDefault();
+      enqueue(Array.from(event.dataTransfer.files).map(file => ({ file })));
+    }}>
     <div className="flex items-center justify-between">
       <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">{t('Galerija')}</span>
       <button type="button" onClick={() => fileInputRef.current?.click()}
@@ -170,12 +186,12 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
       </button>
       <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleUpload} />
     </div>
+    <p className="text-xs text-neutral-500">{t('Izaberite ili prevucite sve slike odjednom. Obrađuju se redom, jedna po jedna.')}</p>
     <div className="flex gap-2 items-center">
       <div className="relative flex-1">
         <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-        <input value={urlInput} onChange={event => setUrlInput(event.target.value)}
-          onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); handleUrlUpload(); } }}
-          placeholder={t('Nalepi direktan link slike (http...)')}
+        <textarea rows={2} value={urlInput} onChange={event => setUrlInput(event.target.value)}
+          placeholder={t('Nalepi linkove slika, svaki u novom redu (http...)')}
           className="w-full bg-neutral-50 border border-neutral-200 rounded-xl pl-9 pr-3 py-2.5 text-xs outline-none" />
       </div>
       <button type="button" onClick={handleUrlUpload} disabled={!urlInput.trim()}
@@ -183,7 +199,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
         <Plus size={16} />
       </button>
     </div>
-    {busy && <p className="text-xs text-blue-700" role="status">{t('Možete dodati još slika dok traje otpremanje. Redosled dodavanja se čuva.')}</p>}
+    {busy && <p className="text-xs text-blue-700" role="status">{t('Možete dodati još slika dok traje otpremanje. Redosled dodavanja se čuva.')} {t('Na čekanju:')} {visibleJobs.filter(job => job.status === 'queued').length}</p>}
     <Reorder.Group axis="y"
       values={images} onReorder={nextImages => { if (!disabled && !busy) publishImages(nextImages); }} className="space-y-2 max-h-75 overflow-y-auto custom-scrollbar pr-1">
       {images.map((image, index) => <Reorder.Item key={image.linkId || image.mediaId || image.url} value={image}
@@ -214,7 +230,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     {visibleJobs.length > 0 && <div className="space-y-2" aria-live="polite">
       {visibleJobs.map((job, index) => <div key={job.id} className={`flex items-center gap-3 rounded-xl border p-3 ${job.status === 'failed' ? 'border-red-200 bg-red-50' : 'border-blue-100 bg-blue-50/50'}`}>
         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white flex items-center justify-center">
-          {(job.preview || job.image?.thumb || job.image?.url) ? <img src={job.preview || job.image?.thumb || job.image?.url} alt="" className="h-full w-full object-contain" /> : <ImageIcon size={22} className="text-neutral-400" />}
+          {(job.preview || job.image?.thumb || job.image?.url) ? <img loading="lazy" decoding="async" src={job.preview || job.image?.thumb || job.image?.url} alt="" className="h-full w-full object-contain" /> : <ImageIcon size={22} className="text-neutral-400" />}
         </div>
         <div className="min-w-0 flex-1 text-xs">
           <p className="truncate font-semibold">{job.file?.name || `${t('Slika sa linka')} ${images.length + index + 1}`}</p>
