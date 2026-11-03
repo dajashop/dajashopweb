@@ -1,98 +1,48 @@
-/* src/components/product/ProductTrust.css */
-
 .product-trust {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* 2x2 Mreža */
-  gap: 12px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 24px;
+  padding: 14px 0;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 14px;
+  background: var(--color-surface, #f8f9fa);
 }
 
-.trust-item {
-  display: flex;
-  align-items: center; /* Centrira ikonicu vertikalno u odnosu na tekst */
-  gap: 12px;
-
-  background-color: #f8f9fa;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  padding: 12px 14px;
-
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: default;
-}
-
-.trust-item:hover {
-  background-color: #ffffff;
-  border-color: rgba(0, 0, 0, 0.05);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  transform: translateY(-2px);
-}
-
-/* Kontejner za ikonicu */
-.trust-icon-box {
+.product-trust .trust-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0; /* Da se ne spljeska */
-
-  color: var(--color-primary, #000);
-
-  width: 36px; /* Malo veći box da parira visini dva reda teksta */
-  height: 36px;
-  background-color: #ffffff;
-  border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  min-width: 0;
+  gap: 8px;
+  padding: 0 12px;
 }
 
-/* Wrapper za tekst (Naslov + Podnaslov) */
-.trust-content {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.product-trust .trust-item + .trust-item {
+  border-left: 1px solid var(--color-border, #e5e7eb);
 }
 
-/* Naslov (Gornji red) */
-.trust-title {
-  font-size: 0.8rem;
-  font-weight: 700;
+.product-trust .trust-icon-box {
+  display: inline-flex;
+  flex-shrink: 0;
   color: var(--color-text, #333);
-  line-height: 1.2;
-  margin-bottom: 2px; /* Mali razmak do podnaslova */
 }
 
-/* Podnaslov (Donji red - objašnjenje) */
-.trust-subtitle {
-  font-size: 0.7rem;
-  font-weight: 400;
-  color: var(--color-muted, #777); /* Svetlija boja */
-  line-height: 1.1;
-  white-space: nowrap; /* Sprečava prelamanje ako je moguće */
+.product-trust .trust-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-text, #333);
 }
 
-/* --- MOBILNI IZGLED --- */
 @media (max-width: 480px) {
-  .product-trust {
-    gap: 8px;
+  .product-trust .trust-item {
+    flex-direction: column;
+    gap: 6px;
+    padding: 0 6px;
+    text-align: center;
   }
 
-  .trust-item {
-    padding: 10px;
-    gap: 10px;
-  }
-
-  .trust-icon-box {
-    width: 32px;
-    height: 32px;
-  }
-
-  .trust-icon-box svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  /* Na baš malim ekranima dozvoli prelamanje podnaslova */
-  .trust-subtitle {
-    white-space: normal;
-    font-size: 0.65rem;
+  .product-trust .trust-title {
+    font-size: 0.7rem;
   }
 }
