@@ -65,7 +65,7 @@ export default function SEOHead({
         <link key={code} rel="alternate" hrefLang={code} href={serbianUrl} />
       ))}
       {!sensitiveEmailLink && !noIndex && <link rel="alternate" hrefLang="en" href={englishUrl} />}
-      {!sensitiveEmailLink && !noIndex && <link rel="alternate" hrefLang="x-default" href={englishUrl} />}
+      {!sensitiveEmailLink && !noIndex && <link rel="alternate" hrefLang="x-default" href={serbianUrl} />}
       {productPrice != null && Number.isFinite(Number(productPrice)) && <meta property="product:price:amount" content={Number(productPrice).toFixed(2)} />}
       {productPrice != null && Number.isFinite(Number(productPrice)) && <meta property="product:price:currency" content="RSD" />}
 
