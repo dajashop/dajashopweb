@@ -1,4 +1,5 @@
 import { apiRequest } from './apiClient';
+import { pathLanguage } from '../localization/paths.js';
 
 let configuration;
 let runtime;
@@ -19,7 +20,6 @@ async function firebaseRuntime() {
     const [{ initializeApp, getApps }, authSdk] = await Promise.all([import('firebase/app'), import('firebase/auth')]);
     const app = getApps().find(item => item.name === 'daja-phone') || initializeApp(config, 'daja-phone');
     const auth = authSdk.initializeAuth(app, { persistence: authSdk.inMemoryPersistence });
-    auth.useDeviceLanguage();
     return { auth, authSdk };
   })();
   return runtime;
@@ -33,6 +33,9 @@ export async function requestFirebasePhone(phone, purpose) {
   pending = null;
   try {
     const { auth, authSdk } = await firebaseRuntime();
+    // Resolve on every send so changing the storefront language also changes
+    // Firebase's SMS and reCAPTCHA locale, regardless of browser preferences.
+    auth.languageCode = pathLanguage(window.location.pathname);
     const challenge = await apiRequest('/customer-auth/phone/start', {
       method: 'POST', auth: purpose === 'link', body: { phone, purpose },
     });
