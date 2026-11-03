@@ -1363,8 +1363,9 @@ export const mediaProcessingApi = {
   reportUploadFailure(mediaId) { return apiRequest(`/admin/media-processing/${encodeURIComponent(mediaId)}/upload-failed`, { method: 'POST', staff: true }); },
   closeAlert(alertId) { return apiRequest(`/admin/media-processing/alerts/${encodeURIComponent(alertId)}/close`, { method: 'POST', staff: true }); },
   summary() { return apiRequest('/admin/media-processing/summary', { staff: true }); },
-  list({ view = 'problems', page = 1 } = {}) {
-    return apiRequest(`/admin/media-processing?view=${encodeURIComponent(view)}&page=${page}`, { staff: true });
+  list(options = {}) {
+    const query = new URLSearchParams(Object.entries(options).filter(([, value]) => value !== undefined && value !== ''));
+    return apiRequest(`/admin/media-processing?${query}`, { staff: true });
   },
   retry(mediaId) {
     return apiRequest(`/admin/media-processing/${encodeURIComponent(mediaId)}/retry`, { method: 'POST', staff: true });

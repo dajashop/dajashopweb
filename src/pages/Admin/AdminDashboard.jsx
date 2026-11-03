@@ -40,6 +40,7 @@ import {
   ChevronDown,
   ShieldCheck,
   Ticket,
+  BellRing,
 } from 'lucide-react';
 import useProducts from '../../hooks/useProducts';
 import useProductEditors, { prepareProductEditor } from './components/useProductEditors.jsx';
@@ -76,7 +77,7 @@ const WorkforcePanel = adminPanel(() => import('./components/WorkforcePanel.jsx'
 const ExcelManager = adminPanel(() => import('./components/ExcelManager'));
 const PolicyPublicationPanel = adminPanel(() => import('./components/PolicyPublicationPanel.jsx'));
 const EmailDeliveryPanel = adminPanel(() => import('./components/EmailDeliveryPanel.jsx'));
-const MediaProcessingPanel = adminPanel(() => import('./components/MediaProcessingPanel.jsx'));
+const MediaProcessingPanel = lazy(() => import('./components/MediaProcessingPanel.jsx'));
 const SupplierQueuePanel = adminPanel(() => import('./components/SupplierQueuePanel.jsx'));
 const PromotionManager = adminPanel(() => import('./components/PromotionManager.jsx'));
 const FilterManager = adminPanel(() => import('./components/FilterManager.jsx'));
@@ -578,6 +579,7 @@ const getAuditDetailTabs = (event) => {
 function AdminDashboardContent() {
   const { user } = useAuth();
   const [activeTab, updateActiveTab] = useState('products');
+  const [mediaSummary, setMediaSummary] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFilters, setSearchFilters] = useState([]);
   const [filtersVisited, setFiltersVisited] = useState(false);
@@ -686,7 +688,7 @@ function AdminDashboardContent() {
   }, []);
 
   useEffect(() => {
-    if (isCatalogContributor && !(activeTab === 'variant-groups' && canManageVariantGroups) && !['products', 'brands', 'categories', 'specs', 'filters', 'search-settings', 'suppliers', 'my-workforce'].includes(activeTab)) {
+    if (isCatalogContributor && !(activeTab === 'variant-groups' && canManageVariantGroups) && !['products', 'brands', 'categories', 'specs', 'filters', 'search-settings', 'suppliers', 'my-workforce', 'media'].includes(activeTab)) {
       setActiveTab('products');
     }
   }, [activeTab, isCatalogContributor, canManageVariantGroups, setActiveTab]);
@@ -1279,6 +1281,9 @@ function AdminDashboardContent() {
               <TabButton active={activeTab === 'filters'} onClick={() => setActiveTab('filters')} icon={Filter} label="Filteri" />
             )}
             {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && <TabButton active={activeTab === 'search-settings'} onClick={() => setActiveTab('search-settings')} icon={Search} label="Pretraga" />}
+            {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) &&
+              <TabButton active={activeTab === 'media'} onClick={() => setActiveTab('media')} icon={BellRing}
+                label="Slike i obaveštenja" badge={mediaSummary?.unread} />}
             {staffAccessLoaded && canManageVariantGroups && <TabButton active={activeTab === 'variant-groups'} onClick={() => setActiveTab('variant-groups')} icon={Layers} label="Grupe varijanti" />}
             {staffAccessLoaded && isCatalogContributor && staffAccess?.permissions?.includes('catalog.read') && (
               <TabButton active={activeTab === 'suppliers'} onClick={() => setActiveTab('suppliers')} icon={Truck} label="Dobavljači" />
@@ -1309,7 +1314,8 @@ function AdminDashboardContent() {
 
       <div className="container mt-8">
         {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) &&
-          <MediaProcessingPanel canRetry={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('media.upload'))} onOpenProduct={openEdit} />}
+          <LoadErrorBoundary><Suspense fallback={activeTab === 'media' ? <AdminSkeleton /> : null}><MediaProcessingPanel visible={activeTab === 'media'} onActivate={() => setActiveTab('media')} onSummary={setMediaSummary}
+            canRetry={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('media.upload'))} onOpenProduct={openEdit} /></Suspense></LoadErrorBoundary>}
         {activeTab === 'variant-groups' && canManageVariantGroups && <VariantGroupsPanel onDirtyChange={onVariantGroupsDirty} />}
         {(activeTab === 'filters' || filtersVisited) && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
           <div hidden={activeTab !== 'filters'}><FilterManager visible={activeTab === 'filters'} products={completeCatalog.items} productsLoading={completeCatalog.loading} definitions={specs} departments={departments}
@@ -2679,7 +2685,7 @@ export default function AdminDashboard() {
 }
 
 // Helper komponenta za tabove
-function TabButton({ active, onClick, icon: Icon, label }) {
+function TabButton({ active, onClick, icon: Icon, label, badge }) {
   return (
     <button
       onClick={onClick}
@@ -2691,6 +2697,7 @@ function TabButton({ active, onClick, icon: Icon, label }) {
     >
       {' '}
       <Icon size={18} /> {label}{' '}
+      {badge > 0 && <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">{badge > 99 ? '99+' : badge}</span>}
     </button>
   );
 }
