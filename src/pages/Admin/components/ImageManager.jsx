@@ -187,6 +187,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
       <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleUpload} />
     </div>
     <p className="text-xs text-neutral-500">{t('Izaberite ili prevucite sve slike odjednom. Obrađuju se redom, jedna po jedna.')}</p>
+    <p className="text-xs text-neutral-500">{t('Pri dodavanju se priprema velika AVIF slika. Ostale tri verzije obrađuju se od 03:00 do 07:00 po vremenu u Srbiji.')}</p>
     <div className="flex gap-2 items-center">
       <div className="relative flex-1">
         <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
