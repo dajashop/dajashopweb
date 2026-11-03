@@ -1,5 +1,5 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useState, useRef } from 'react';
 import { AnimatePresence, motion as Motion, useReducedMotion } from 'framer-motion';
 import {
   Mail,
@@ -138,8 +138,11 @@ function PasswordResetRequest({
 export default function AuthModal() {
   const { t: translateText } = useStorefront();
   const reduceMotion = useReducedMotion();
-  const trackRef = useRef(null);
+  const loginSizeRef = useRef(null);
+  const registerSizeRef = useRef(null);
+  const measuredHeightRef = useRef(null);
   const [formHeight, setFormHeight] = useState(null);
+  const [resizing, setResizing] = useState(false);
 
   const {
     user,
@@ -160,18 +163,28 @@ export default function AuthModal() {
 
   const isLogin = mode === 'login';
 
-  useEffect(() => {
-    if (!authOpen || !trackRef.current) {
+  useLayoutEffect(() => {
+    const content = isLogin ? loginSizeRef.current : registerSizeRef.current;
+    if (!authOpen || !content) {
+      measuredHeightRef.current = null;
       setFormHeight(null);
+      setResizing(false);
       return;
     }
-    const track = trackRef.current;
-    const measure = () => setFormHeight(track.getBoundingClientRect().height);
+    const measure = () => {
+      // Measure layout height independently of the modal's opening transform.
+      const height = content.offsetHeight;
+      const previous = measuredHeightRef.current;
+      if (previous === height) return;
+      measuredHeightRef.current = height;
+      setResizing(previous !== null && !reduceMotion);
+      setFormHeight(height);
+    };
     measure();
     const observer = new ResizeObserver(measure);
-    observer.observe(track);
+    observer.observe(content);
     return () => observer.disconnect();
-  }, [authOpen]);
+  }, [authOpen, isLogin, reduceMotion]);
 
   function go(next) {
     setMode(next);
@@ -808,23 +821,26 @@ export default function AuthModal() {
                 initial={false}
                 animate={{ height: formHeight ?? 'auto' }}
                 transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+                style={{ overflow: resizing ? 'hidden' : 'visible' }}
+                onAnimationComplete={() => setResizing(false)}
               >
-                <div className="track" ref={trackRef}>
-                  <AnimatePresence initial={false} mode="popLayout">
-                  {[isLogin].map((loginPane) => (
+                <div className="track">
+                  {[true, false].map((loginPane) => (
                     <Motion.div
                       key={loginPane ? 'login' : 'register'}
-                      initial={{ opacity: 0, x: reduceMotion ? 0 : loginPane ? -12 : 12 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: reduceMotion ? 0 : loginPane ? -8 : 8, pointerEvents: 'none' }}
-                      transition={{ duration: reduceMotion ? 0 : 0.18, ease: 'easeOut' }}
+                      initial={false}
+                      animate={{
+                        opacity: isLogin === loginPane ? 1 : 0,
+                        x: isLogin === loginPane || reduceMotion ? 0 : loginPane ? -10 : 10,
+                      }}
+                      transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
                       className={`pane ${
                         isLogin === loginPane ? 'active' : 'inactive'
                       }`}
                       aria-hidden={isLogin !== loginPane}
                       inert={isLogin !== loginPane}
                     >
-                      <div className="pane-inner">
+                      <div className="pane-inner" ref={loginPane ? loginSizeRef : registerSizeRef}>
                         {translateText(loginPane && forgotPassword ? (
                           <PasswordResetRequest
                             email={passwordResetEmail}
@@ -1155,7 +1171,6 @@ export default function AuthModal() {
                       </div>
                     </Motion.div>
                   ))}
-                  </AnimatePresence>
                 </div>
               </Motion.div>
               <div id="recaptcha-container" />

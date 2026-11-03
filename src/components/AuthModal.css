@@ -21,8 +21,9 @@
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
+  scrollbar-width: none;
 }
+.auth-card::-webkit-scrollbar { display: none; }
 .glass {
   background: linear-gradient(
     180deg,
@@ -127,6 +128,12 @@
   transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 .btn-oauth svg { flex-shrink: 0; width: 18px; height: 18px; }
+.auth-card .btn-oauth {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  gap: 6px;
+  padding-inline: 8px;
+}
 .btn-oauth:hover:not(:disabled) { background: var(--color-bg, #fff); box-shadow: 0 3px 10px #00000008; }
 .btn-oauth:focus-visible { outline: 2px solid var(--color-text, #111); outline-offset: 3px; }
 .btn-oauth span {
@@ -220,45 +227,33 @@
   }
 }
 
-/* Slider */
+/* Only the visible form contributes to the modal's measured height. */
 .form-slider {
   position: relative;
   width: 100%;
-  overflow-x: hidden;
-  overflow-y: visible;
+  min-width: 0;
 }
 .pane-inner {
   padding: 12px 14px 16px;
 }
 .track {
-  display: flex;
-  will-change: transform;
-  transform: translateZ(0);
+  position: relative;
+  width: 100%;
 }
 .pane {
-  flex: 0 0 100%;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
   position: relative;
 }
-.pane.inactive {
+.auth-card .pane.inactive {
+  display: none;
   pointer-events: none;
 }
 .pane.inactive * {
   box-shadow: none !important;
 }
-.auth-card .form-slider { min-width: 0; overflow: visible; }
-.auth-card .track {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-  will-change: auto;
-  transform: none;
-}
-.auth-card .pane { grid-area: 1 / 1; }
-.auth-card .pane.inactive { visibility: hidden; height: 0; overflow: hidden; }
 
 /* Forms */
 .form {
