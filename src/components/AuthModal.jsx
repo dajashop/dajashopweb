@@ -1120,15 +1120,17 @@ export default function AuthModal() {
                                     : ''
                                 }`}
                                 onClick={handlePasskey}
+                                aria-label={translateText('Prijavi se Passkey-om')}
                                 disabled={loading}
                               >
                                 <Fingerprint
                                   size={20}
                                   className="text-primary"
                                 />
-                                <span>
+                                <span className="passkey-label-desktop" aria-hidden="true">
                                   {translateText('Prijavi se Passkey-om')}
                                 </span>
+                                <span className="passkey-label-mobile" aria-hidden="true">{translateText('Passkey')}</span>
                                 {loginPane && lastLogin?.provider === 'passkey' && (
                                   <small className="last-used-badge">{translateText("Poslednje korišćeno")}</small>
                                 )}
