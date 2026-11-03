@@ -1,4 +1,4 @@
-import MagazineVisual from '../components/MagazineVisual.jsx';
+import MagazineVisual, {MagazineCredit} from '../components/MagazineVisual.jsx';
 import {watchMilestones} from '../data/watchMilestones.js';
 import {ArrowUpRight,ArrowDown,Clock3} from 'lucide-react';
 import {Link,useParams} from 'react-router-dom';
@@ -12,13 +12,12 @@ import PageStatus from './PageStatus.jsx';
 import {watchStories} from '../data/watchStories.js';
 import {watchArticles,articlePath} from '../data/watchArticles.js';
 import {watchBrandGuides} from '../data/watchBrandGuides.js';
-import {articlePhotography,watchPhotography} from '../data/watchPhotography.js';
+import {articlePhotography,brandPhotography,collectionPhotography} from '../data/watchPhotography.js';
 import {localizedSiteUrl} from '../localization/paths.js';
 import {seoConfig} from '../config/seo.js';
 import '../components/Collections.css';
 
 const brandPath=story=>`/magazin/brendovi/${story.slug}`;
-const brandPhotography={ORIENT:watchPhotography.movement,'ORIENT STAR':watchPhotography.calibre,CASIO:watchPhotography.gshock};
 
 function ArticleCard({item,date,compact=false,priority=false,imageSizes}){
   const {t}=useStorefront();
@@ -76,6 +75,8 @@ export default function Collections({kind='index'}){
         <div className="magazine__brand-grid">{watchStories.map(item=>{
           const preview=groups.find(group=>group.path===`/brend/${item.slug}`);
           return <article key={item.slug} className="magazine__brand-card">
+            <Link className="magazine-brand-photo" to={brandPath(item)} aria-label={t(item.title)}><MagazineVisual photo={brandPhotography[item.brand]} brand={item.brand} sizes="(max-width: 700px) 92vw, (max-width: 1100px) 44vw, 30vw"/></Link>
+            <MagazineCredit photo={brandPhotography[item.brand]}/>
             <div className="magazine__brand-heading"><Link to={brandPath(item)}>{item.brand}</Link><Link to={brandPath(item)} aria-label={t(item.title)}><ArrowUpRight size={22}/></Link></div>
             {preview?.items?.length?<CollectionPreview items={preview.items}/>:<Link className="magazine__brand-fallback" to={brandPath(item)}><MagazineVisual brand={item.brand}/></Link>}
             <p>{t(item.paragraphs[0])}</p><Link className="magazine-text-link" to={brandPath(item)}>{t('Priča o brendu')}<ArrowUpRight size={16}/></Link>
@@ -114,7 +115,10 @@ export default function Collections({kind='index'}){
     {kind==='brand'&&articles.length>0&&<section id="clanci" className="magazine__section"><h2>{t('Iz sveta satova')}</h2><div className="magazine__article-grid">{articles.map(item=><ArticleCard key={item.slug} item={item} date={date}/>)}</div></section>}
     {!article&&<>
       {loading&&<p role="status">{t('Učitavanje…')}</p>}{error&&<p role="status">{t('Pregled kolekcija trenutno nije dostupan.')} <button onClick={retry}>{t('Pokušaj ponovo')}</button></p>}
-      <section id="kolekcije" className="magazine__section"><h2>{t(story?'Kolekcije ovog brenda':'Istražite kolekcije')}</h2><div className="watch-journal__selections">{(story?selections:groups.filter(group=>!group.path.startsWith('/brend/'))).map(group=><section key={group.path} className="watch-journal__selection"><h3><Link to={group.path}>{t(group.title)}</Link></h3><p>{t(group.description)}</p><CollectionPreview items={group.items}/><Link className="collections-link" to={group.path}>{t('Pogledajte celu kolekciju')}</Link></section>)}</div>{story&&!loading&&!selections.length&&<p>{t('Trenutno nema izdvojenih kolekcija za ovaj brend. Ponudu možete pogledati u katalogu brenda.')}</p>}</section>
+      <section id="kolekcije" className="magazine__section"><h2>{t(story?'Kolekcije ovog brenda':'Istražite kolekcije')}</h2><div className="watch-journal__selections">{(story?selections:groups.filter(group=>!group.path.startsWith('/brend/'))).map(group=>{
+        const photo=collectionPhotography[group.path]||(/(muski|zenski)-satovi$/.test(group.path)?brandPhotography[group.brand]:null);
+        return <section key={group.path} className="watch-journal__selection">{photo&&<><Link className="magazine-collection-photo" to={group.path} aria-label={t(group.title)}><MagazineVisual photo={photo} sizes="(max-width: 700px) 92vw, (max-width: 1100px) 44vw, 30vw"/></Link><MagazineCredit photo={photo}/></>}<h3><Link to={group.path}>{t(group.title)}</Link></h3><p>{t(group.description)}</p><CollectionPreview items={group.items}/><Link className="collections-link" to={group.path}>{t('Pogledajte celu kolekciju')}</Link></section>;
+      })}</div>{story&&!loading&&!selections.length&&<p>{t('Trenutno nema izdvojenih kolekcija za ovaj brend. Ponudu možete pogledati u katalogu brenda.')}</p>}</section>
     </>}
   </main>;
 }

@@ -71,6 +71,13 @@
 .magazine-visual--product img{object-fit:contain;padding:18px;box-sizing:border-box;mix-blend-mode:multiply}
 .magazine-visual figcaption{display:flex;justify-content:space-between;gap:6px 18px;flex-wrap:wrap;font-size:11px;color:var(--color-muted);line-height:1.5;padding-top:9px}
 .magazine-visual figcaption a{color:inherit;text-underline-offset:3px}
+.magazine-photo-credit{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;font-size:11px;line-height:1.6;color:var(--color-muted)}
+.magazine-photo-credit a{color:inherit;text-decoration:underline;text-underline-offset:3px}
+.magazine__brand-card>.magazine-photo-credit,.watch-journal__selection>.magazine-photo-credit{margin:8px 0 12px}
+.magazine-brand-photo,.magazine-collection-photo{display:block;aspect-ratio:16/9;overflow:hidden;border-radius:10px;margin-bottom:18px}
+.magazine-brand-photo>.magazine-visual,.magazine-collection-photo>.magazine-visual{height:100%}
+.magazine-article-cover .magazine-visual--panorama .magazine-visual__frame{height:auto;aspect-ratio:var(--magazine-photo-ratio)}
+.magazine-visual--panorama img{object-fit:contain}
 .magazine-feature{display:grid;grid-template-columns:1.55fr 1fr;gap:28px}
 .magazine-story{min-width:0}
 .magazine-story__image{display:block;overflow:hidden;border-radius:12px;aspect-ratio:16/9}
@@ -210,6 +217,8 @@
   .magazine .collection-preview__image img{padding:7px}
   .magazine-inline-story{padding:18px 0;gap:18px}
   .magazine-visual figcaption{font-size:12px;line-height:1.55;gap:4px 12px}
+  .magazine-photo-credit{font-size:12px}
+  .magazine-photo-credit a{display:inline-flex;align-items:center;min-height:32px}
   .magazine-visual figcaption a{display:inline-flex;align-items:center;min-height:32px}
   .magazine__sources>a{min-height:44px;line-height:1.6}
   .magazine__prose .magazine__sources p,.magazine__prose>.magazine__notice{font-size:13px;line-height:1.7}
