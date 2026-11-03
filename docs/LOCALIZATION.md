@@ -33,7 +33,7 @@ Opisi artikala su zaseban sadržaj iz baze. Ako postoji `product.attributes._tra
 
 ## Cene
 
-`useStorefront().money(amountRsd)` formatira iznos za izabrani jezik i valutu. `moneyRsd(amountRsd)` uvek prikazuje stvarni iznos za naplatu. RSD nema decimale u prikazu; ostale valute imaju dve. Sve računanje popusta, dostave, cena, budžeta i filter parametara ostaje u RSD. Košarica i podaci poslati API-ju ne sadrže preračunate iznose drugih valuta.
+`useStorefront().money(amountRsd)` formatira iznos za izabrani jezik i valutu. `moneyRsd(amountRsd)` uvek prikazuje stvarni iznos za naplatu. RSD nema decimale u prikazu; ostale valute imaju dve. RSD hiljade se odvajaju uskim neraskidivim razmakom (npr. `40 000 RSD`), bez dvosmislene tačke/zareza koji pretraživač može protumačiti kao decimalni separator. Numerički SEO podaci koriste `40000.00` i zasebnu valutu `RSD`. Sve računanje popusta, dostave, cena, budžeta i filter parametara ostaje u RSD. Košarica i podaci poslati API-ju ne sadrže preračunate iznose drugih valuta.
 
 Kurs stiže sa `GET /api/v1/public/catalog/exchange-rates` iz projekta `daja-platform`. Izvor je zvanična važeća srednja kursna lista NBS (`https://webappcenter.nbs.rs/ExchangeRateWebApp/ExchangeRate/CurrentMiddleRate`), a ne prosek kupovnog i prodajnog kursa. Odgovor uključuje `asOf`, `fetchedAt` i `sourceUrl`. Serverski keš važi do 15 minuta i obavezno se ponovo proverava pri prvom zahtevu svakog novog dana po vremenu u Beogradu. Vikendom i praznicima aktuelna NBS lista ostaje poslednja važeća lista. Osvežavanje je vezano za zahteve sajta i ne zahteva poseban cron.
 
