@@ -1,6 +1,7 @@
 const unsplash = (file, alt, caption, author, page, position = 'center') => ({
   src: `/images/magazine/${file}-1600.webp`,
   small: `/images/magazine/${file}-640.webp`,
+  medium: `/images/magazine/${file}-960.webp`,
   alt, caption, author, creditUrl: `https://unsplash.com/photos/${page}`,
   licenseUrl: 'https://unsplash.com/license', position,
 });

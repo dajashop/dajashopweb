@@ -31,6 +31,7 @@ import {
   Package,
   Home,
   ShoppingBag,
+  BookOpen,
   Info,
   Briefcase,
   User,
@@ -43,6 +44,7 @@ const MENU_ICONS = {
   '/about': Info, '/catalog': ShoppingBag, '/usluge': Briefcase,
   '/contact': Phone, '/faq': HelpCircle, '/admin': ShieldCheck,
   '/account/profile': User, '/cart': ShoppingBag,
+  '/kolekcije-satova': BookOpen,
 };
 
 export default function HamburgerMenu({
@@ -410,6 +412,7 @@ function MobileSheet({ open, onClose, user, showAuth, logout, isAdmin, isStaff, 
               <div className="hm__navGroup">
                 <MobileMenuLink to="/" icon={Home} label={translateText('Početna')} onClose={onClose} />
                 <MobileMenuLink to="/catalog" icon={ShoppingBag} label={translateText('Prodavnica')} onClose={onClose} />
+                <MobileMenuLink to="/kolekcije-satova" icon={BookOpen} label={translateText('Brendovi i kolekcije')} onClose={onClose} />
                 <MobileMenuLink to="/usluge" icon={Briefcase} label={translateText('Usluge')} onClose={onClose} />
                 <MobileMenuLink to="/about" icon={Info} label={translateText('O nama')} onClose={onClose} />
               </div>

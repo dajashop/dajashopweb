@@ -1,7 +1,9 @@
 # Magazine photography
 
 Selected on 2026-11-03. Local WebP files are optimized copies for this website;
-640 px variants serve cards/mobile and 1600 px variants serve lead images.
+640 px variants serve cards, 960 px variants serve phone screens at higher
+pixel densities, and 1600 px variants serve large lead images. Responsive sizes
+match the single-column phone layout and small related-story thumbnails.
 The article figure captions link to each original photo and credit its author.
 
 | Local filename prefix | Photographer | Original photo |

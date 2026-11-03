@@ -20,11 +20,11 @@ import '../components/Collections.css';
 const brandPath=story=>`/magazin/brendovi/${story.slug}`;
 const brandPhotography={ORIENT:watchPhotography.movement,'ORIENT STAR':watchPhotography.calibre,CASIO:watchPhotography.gshock};
 
-function ArticleCard({item,date,compact=false,priority=false}){
+function ArticleCard({item,date,compact=false,priority=false,imageSizes}){
   const {t}=useStorefront();
   return <article className={compact?'magazine-story magazine-story--compact':'magazine-story'}>
     <Link className="magazine-story__image" to={articlePath(item)} aria-label={t(item.title)}>
-      <MagazineVisual photo={articlePhotography[item.slug]?.cover} brand={item.brand} product={item.cover} priority={priority} sizes="(max-width: 700px) 92vw, 45vw"/>
+      <MagazineVisual photo={articlePhotography[item.slug]?.cover} brand={item.brand} product={item.cover} priority={priority} sizes={compact?'100px':imageSizes||(priority?'(max-width: 900px) 92vw, 55vw':'(max-width: 700px) 92vw, (max-width: 900px) 44vw, 30vw')}/>
     </Link>
     <div className="magazine-story__copy"><div className="magazine-story__meta"><span>{item.brand}</span><time dateTime={item.published}>{date(item.published)}</time></div>
       <h3><Link to={articlePath(item)}>{t(item.title)}</Link></h3>
@@ -70,7 +70,7 @@ export default function Collections({kind='index'}){
       <nav className="magazine-nav" aria-label={t('Rubrike magazina')}><a href="#clanci">{t('Iz sveta satova')}</a><a href="#brendovi">{t('Upoznajte brendove')}</a><a href="#kolekcije">{t('Kolekcije')}</a></nav>
       <section id="clanci" className="magazine-feature" aria-label={t('Iz sveta satova')}>
         <ArticleCard item={watchArticles[0]} date={date} priority/>
-        <div className="magazine-feature__more">{watchArticles.slice(1).map(item=><ArticleCard key={item.slug} item={item} date={date}/>)}</div>
+        <div className="magazine-feature__more">{watchArticles.slice(1).map(item=><ArticleCard key={item.slug} item={item} date={date} imageSizes="(max-width: 760px) 110px, (max-width: 900px) 44vw, (max-width: 1100px) 38vw, 22vw"/>)}</div>
       </section>
       <section id="brendovi" className="magazine__section"><div className="magazine-section-heading"><h2>{t('Upoznajte brendove')}</h2><a href="#kolekcije">{t('Istražite kolekcije')}<ArrowDown size={16}/></a></div>
         <div className="magazine__brand-grid">{watchStories.map(item=>{
@@ -95,7 +95,7 @@ export default function Collections({kind='index'}){
             {(watchBrandGuides[story.slug]||[]).map(section=><section key={section.title}><h2>{t(section.title)}</h2><p>{t(section.text)}</p></section>)}
           </>:<>
             <p className="magazine__intro">{t(article.paragraphs[0])}</p>
-            <section className="magazine-inline-story"><MagazineVisual photo={photography?.detail} brand={article.brand} caption sizes="(max-width: 700px) 92vw, 35vw"/><div><h2>{t(photography?.headings[0]||'Pogled izbliza')}</h2><p>{t(article.paragraphs[1])}</p></div></section>
+            <section className="magazine-inline-story"><MagazineVisual photo={photography?.detail} brand={article.brand} caption sizes="(max-width: 900px) 92vw, (max-width: 1100px) 65vw, 35vw"/><div><h2>{t(photography?.headings[0]||'Pogled izbliza')}</h2><p>{t(article.paragraphs[1])}</p></div></section>
             <section><h2>{t(photography?.headings[1]||'Pogled izbliza')}</h2><p>{t(article.paragraphs[2])}</p></section>
           </>}
           {sourceLinks}
