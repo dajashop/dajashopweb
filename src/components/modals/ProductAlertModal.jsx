@@ -192,15 +192,6 @@ export default function ProductAlertModal({
                 onChange={() => setDeliveryChannel('email')}
                 disabled={submitting}
               />{translateText("Email")}</label>
-            <label>
-              <input
-                type="radio"
-                name="product-alert-channel"
-                value="sms"
-                checked={!isEmailChannel}
-                onChange={() => setDeliveryChannel('sms')}
-                disabled={submitting}
-              />{translateText("SMS")}</label>
           </fieldset>
 
           {translateText(isEmailChannel && reusableGuestEmail ? (

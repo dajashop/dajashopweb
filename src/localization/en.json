@@ -1,4 +1,7 @@
 {
+  "Unesite email adresu.": "Enter your email address.",
+  "SMS verifikacija trenutno nije dostupna. Koristite email ili Google prijavu.": "SMS verification is currently unavailable. Use email or Google sign-in.",
+  "SMS obaveštenja trenutno nisu dostupna. Izaberite email.": "SMS notifications are currently unavailable. Choose email.",
   "Možete dodati još slika dok traje otpremanje. Redosled dodavanja se čuva.": "You can add more images while uploads are in progress. The order you add them is preserved.",
   "Server nije vratio podatke slike.": "The server did not return the image details.",
   "Otpremanje nije uspelo.": "Upload failed.",

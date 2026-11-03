@@ -398,14 +398,7 @@ function ProfileSection({ user }) {
                 <span>{translateText("Verifikovan")}</span>
               </div>
             ) : (
-              !isEditingPhone && (
-                <button
-                  className="text-[var(--color-muted)] hover:text-[var(--color-text)] transition p-1 rounded-md hover:bg-[var(--color-surface)]"
-                  onClick={() => setIsEditingPhone(true)}
-                >
-                  <Plus size={14} />
-                </button>
-              )
+              null
             ))}
           </div>
 

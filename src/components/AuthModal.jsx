@@ -307,7 +307,7 @@ export default function AuthModal() {
     };
   }, []);
 
-  const isPhone = idType === 'phone';
+  const isPhone = false;
   const showPassword = !isPhone;
 
   // --- HANDLERS ---
@@ -401,7 +401,7 @@ export default function AuthModal() {
     const cleanVal = value ? value.trim() : '';
     switch (fieldName) {
       case 'identity': {
-        if (!cleanVal) return 'Unesite email ili broj telefona.';
+        if (!cleanVal) return 'Unesite email adresu.';
         const cleanIdentity = cleanVal.replace(/\s/g, '');
         if (isPhone) {
           if (!REGEX.phone.test(cleanIdentity))
@@ -884,7 +884,7 @@ export default function AuthModal() {
                               className="field"
                               ref={loginPane ? loginWrapperRef : regWrapperRef}
                             >
-                              <span>{translateText("Email ili telefon")}{loginPane && lastLogin?.provider === 'password' && (
+                              <span>{translateText("Email adresa")}{loginPane && lastLogin?.provider === 'password' && (
                                   <small className="last-used-field-note">{translateText("Poslednje korišćeno")}</small>
                                 )}
                               </span>
@@ -939,7 +939,7 @@ export default function AuthModal() {
                                   id={loginPane ? 'auth-login-identity' : 'auth-register-identity'}
                                   name="identity"
                                   type="text"
-                                  placeholder={translateText("Email ili Broj telefona")}
+                                  placeholder={translateText("Email adresa")}
                                   value={identity}
                                   onChange={handleIdentityChange}
                                   onKeyDown={handleKeyDown}
