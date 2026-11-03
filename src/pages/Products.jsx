@@ -30,6 +30,7 @@ import ProductSpecs from '../components/product/ProductSpecs.jsx';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import ProductJsonLd from '../components/seo/ProductJsonLd.jsx';
 import { productSeoImage } from '../utils/productSeoImage.js';
+import { isProcurementUnavailable } from '../utils/productAvailability.js';
 import BreadcrumbJsonLd from '../components/seo/BreadcrumbJsonLd.jsx';
 import { seoConfig } from '../config/seo.js';
 import { visibleProductFeatures } from '../utils/catalogPresentation.js';
@@ -146,6 +147,7 @@ export default function Product() {
   const insufficientBatteries = batteryChoices.length > 0 && Number(p.availability?.availableQuantity ?? p.availableQuantity ?? 0) < purchaseQuantity + batteryQuantityInCart;
 
   const handleAdd = () => {
+    if (isProcurementUnavailable(p)) return;
     if (insufficientBatteries) {
       flash('Nedovoljna količina', 'Izaberite manju količinu baterija.', 'error');
       return;
@@ -194,7 +196,7 @@ export default function Product() {
         keywords={seoKeywords}
         image={seoImage}
         type="product"
-        productPrice={p.price}
+        productPrice={Number(p.price) > 0 ? p.price : undefined}
         url={`${siteRoot}/product/${p.slug}`}
       />
       <ProductJsonLd product={p} reviews={p.reviews || []} relatedVariants={relatedVariants} groupId={variantGroupId} />
@@ -221,7 +223,7 @@ export default function Product() {
           <ProductActions
             key={p.id}
             product={purchaseView}
-            disabled={insufficientBatteries}
+            disabled={insufficientBatteries || isProcurementUnavailable(p)}
             onAdd={handleAdd}
             onWishlist={handleWishlist}
             isLiked={isLiked}

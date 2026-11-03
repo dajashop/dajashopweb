@@ -167,8 +167,8 @@ export async function applyPublicProductRealtimeEvent(event) {
   }
   try {
     const product = await catalogApi.getProductBySlug(slug, { realtime: true });
-    // The public API returns 200 + null for a hidden, unpublished or deleted
-    // slug. Treat that exactly like a missing product.
+    // Published hidden watches retain their detail page as unavailable.
+    // Other non-public/deleted slugs still return null on realtime refresh.
     if (product?.redirectTo) {
       const redirectedSlug = product.redirectTo.split('/').filter(Boolean).pop();
       if (redirectedSlug) {

@@ -2,6 +2,7 @@ import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React from 'react';
 import Breadcrumbs from '../Breadcrumbs.jsx';
 import { batteryPackaging } from '../../utils/batteryPackaging.js';
+import { isProcurementUnavailable } from '../../utils/productAvailability.js';
 
 import { storefrontFeatures } from '../../config/storefrontFeatures.js';
 import './ProductHeader.css'; // OBAVEZNO: Uvozi svoj CSS
@@ -10,6 +11,7 @@ export default function ProductHeader({ product, adminTools }) {
   const { t: translateText, money } = useStorefront();
 
   if (!product) return null;
+  const procurementUnavailable = isProcurementUnavailable(product);
   const legacyRegularPrice =
     product.regularPrice ??
     (product.salePrice !== null &&
@@ -52,7 +54,8 @@ export default function ProductHeader({ product, adminTools }) {
         <span className="model-name">{translateText(product.name)}</span>
       </h1>
 
-      <div className="price-tag">
+      {procurementUnavailable && Number(currentPrice) > 0 && <span className="product-last-price-label">{translateText('Poslednja poznata cena')}</span>}
+      <div className="price-tag" hidden={procurementUnavailable && !(Number(currentPrice) > 0)}>
         {translateText(hasSale ? (
           <>
             <span className="product-regular-price">
@@ -64,6 +67,8 @@ export default function ProductHeader({ product, adminTools }) {
           money(currentPrice)
         ))}
       </div>
+
+      {procurementUnavailable && <p className="product-procurement-unavailable" role="status">{translateText('Trenutno nije dostupan za nabavku')}</p>}
 
       {pack && (
         <div className="battery-pack-price">
@@ -80,7 +85,7 @@ export default function ProductHeader({ product, adminTools }) {
         </div>
       )}
 
-      {showStock && (
+      {showStock && !procurementUnavailable && (
         <p
           className={`product-stock ${inStock ? 'is-in-stock' : 'is-out-of-stock'}`}
         >

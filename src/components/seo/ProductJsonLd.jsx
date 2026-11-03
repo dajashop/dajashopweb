@@ -5,6 +5,7 @@ import { commerceSeoConfig, seoConfig } from '../../config/seo.js';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { localizedSiteUrl } from '../../localization/paths.js';
 import { productSeoImage } from '../../utils/productSeoImage.js';
+import { isProcurementUnavailable } from '../../utils/productAvailability.js';
 
 function collectProductImages(product) {
   const url = productSeoImage(product);
@@ -100,7 +101,7 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
         url: imageItem.url,
         name: imageItem.altText || seoImageAlt || productName,
       }));
-  const availability = product.availability?.inStock ?? product.inStock;
+  const availability = !isProcurementUnavailable(product) && (product.availability?.inStock ?? product.inStock);
   const productUrl = localizedSiteUrl(`/product/${encodeURIComponent(product.slug)}`, language, seoConfig.siteUrl);
 
   const schema = {
@@ -151,6 +152,8 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
       },
     },
   };
+
+  if (isProcurementUnavailable(product) && !(Number(product.price) > 0)) delete schema.offers;
 
   if (groupId && relatedVariants.length) {
     // Public grouping identity comes from the same resolver as the selector.

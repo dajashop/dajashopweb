@@ -10,6 +10,7 @@ import {
 import { storefrontFeatures } from '../../config/storefrontFeatures.js';
 import ProductAlertModal from '../modals/ProductAlertModal.jsx';
 import './ProductActions.css';
+import { isProcurementUnavailable } from '../../utils/productAvailability.js';
 
 export default function ProductActions({ product, onAdd, onWishlist, isLiked, disabled = false }) {
   const { t: translateText } = useStorefront();
@@ -19,6 +20,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked, di
   const [guestAlertType, setGuestAlertType] = useState(null);
   const [subscribedTypes, setSubscribedTypes] = useState([]);
   const inStock = product.availability?.inStock ?? product.inStock;
+  const procurementUnavailable = isProcurementUnavailable(product);
   const useStockAwareActions = storefrontFeatures.customerStockVisibility;
   const showPriceAlerts = storefrontFeatures.customerPriceAlerts;
   const outOfStockAlertType = subscribedTypes.includes('price_change')
@@ -28,7 +30,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked, di
 
   useEffect(() => {
     setGuestAlertType(null);
-    if (!useStockAwareActions && !showPriceAlerts) {
+    if (procurementUnavailable || (!useStockAwareActions && !showPriceAlerts)) {
       setSubscribedTypes([]);
       return undefined;
     }
@@ -64,7 +66,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked, di
     return () => {
       cancelled = true;
     };
-  }, [product.id, product.variantId, showPriceAlerts, useStockAwareActions, user?.email, user?.phoneNumber]);
+  }, [product.id, product.variantId, showPriceAlerts, useStockAwareActions, procurementUnavailable, user?.email, user?.phoneNumber]);
 
   const requestAlert = (type) => {
     if (subscribedTypes.includes(type)) return;
@@ -103,7 +105,9 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked, di
   return (
     <div className="product-actions">
       <div className="actions-container">
-        {useStockAwareActions && !inStock ? (
+        {procurementUnavailable ? (
+          <button type="button" className="cta-button" disabled>{translateText('Nedostupno za poručivanje')}</button>
+        ) : useStockAwareActions && !inStock ? (
           <button
             type="button"
             className={`stock-alert-button${outOfStockSubscribed ? ' is-subscribed' : ''}`}
@@ -135,7 +139,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked, di
             className={isLiked ? 'heart-icon active' : 'heart-icon'}
           />
         </button>
-        {showPriceAlerts && (
+        {showPriceAlerts && !procurementUnavailable && (
         <button
           type="button"
           className={`price-alert-button${subscribedTypes.includes('price_change') ? ' is-subscribed' : ''}`}
