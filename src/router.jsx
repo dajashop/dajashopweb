@@ -3,6 +3,7 @@ import { catalogLandings } from './data/catalogLandings.js';
 import React, { lazy } from 'react';
 import ClientOnly from './components/ClientOnly.jsx';
 import { AdminDashboardSkeleton } from './components/AdminSkeleton.jsx';
+import AccountSkeleton from './components/account/AccountSkeleton.jsx';
 import { useStorefront } from './localization/StorefrontContext.jsx';
 
 function LoadingMessage() {
@@ -24,7 +25,7 @@ const SearchResults = import.meta.env.SSR ? () => null : browserPage(() => impor
 import Product from './pages/Products.jsx';
 const Cart = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Cart.jsx'));
 const Checkout = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Checkout.jsx'));
-const Account = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Account.jsx'));
+const Account = import.meta.env.SSR ? AccountSkeleton : browserPage(() => import('./pages/Account.jsx'), <AccountSkeleton />);
 const Orders = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Orders.jsx'));
 import About from './pages/About.jsx';
 const AdminDashboard = import.meta.env.SSR ? AdminDashboardSkeleton : browserPage(() => import('./pages/Admin/AdminDashboard.jsx'), <AdminDashboardSkeleton />);

@@ -10,6 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom'; // <--- NOVO: Import
 
 // Uvezene izdvojene komponente
 import AccountNav from '../components/account/AccountNav.jsx';
+import AccountSkeleton from '../components/account/AccountSkeleton.jsx';
 import ProfileSection from '../components/account/ProfileSection.jsx';
 import AddressSection from '../components/account/AddressSection.jsx';
 import WishlistSection from '../components/account/WishlistSection.jsx';
@@ -24,7 +25,7 @@ const defaultTab = 'profile';
 export default function Account() {
   const { t: translateText } = useStorefront();
 
-  const { user, logout, showAuth } = useAuth();
+  const { user, authReady, logout, showAuth } = useAuth();
   const navigate = useNavigate();
   const { section } = useParams();
 
@@ -35,6 +36,8 @@ export default function Account() {
       navigate(`/account/${defaultTab}`, { replace: true });
     }
   }, [section, allowedTabs, navigate]);
+
+  if (!authReady) return <AccountSkeleton section={activeTab} />;
 
   if (!user) {
     return (

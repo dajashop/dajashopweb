@@ -2,12 +2,13 @@ import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { motion } from 'framer-motion';
-import { Package, Loader2 } from 'lucide-react';
+import { Package } from 'lucide-react';
 import './OrdersSection.css';
 import { ordersApi } from '../../services/dajaPlatform';
 
 // Uvozimo novu komponentu za prikaz pojedinačne porudžbine
 import OrderCard from './OrderCard';
+import { AccountSectionSkeleton } from './AccountSkeleton.jsx';
 
 function OrdersSection() {
   const { t: translateText } = useStorefront();
@@ -40,13 +41,7 @@ function OrdersSection() {
     };
   }, [user]);
 
-  if (loading)
-    return (
-      <div className="loading-state py-12 flex flex-col items-center justify-center text-[var(--color-muted)]">
-                <Loader2 className="animate-spin mb-4" size={32} />       {translateText(' ')}
-        <p>{translateText("Učitavanje Vaših porudžbina...")}</p>     {translateText(' ')}
-      </div>
-    );
+  if (loading) return <AccountSectionSkeleton section="orders" />;
 
   return (
     <motion.div

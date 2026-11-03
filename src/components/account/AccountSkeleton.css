@@ -1,0 +1,36 @@
+.account-skeleton-block {
+  display: block;
+  flex-shrink: 0;
+  max-width: 100%;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-text, #111) 9%, var(--color-bg, #fff));
+  position: relative;
+  overflow: hidden;
+}
+.account-skeleton-block::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 15%, color-mix(in srgb, var(--color-bg, #fff) 75%, transparent) 50%, transparent 85%);
+  transform: translateX(-100%);
+  animation: account-skeleton-shimmer 1.6s ease-in-out infinite;
+}
+.account-skeleton-avatar { border-radius: 50%; }
+.account-skeleton--content-only { grid-column: 1 / -1; }
+.account-skeleton-icon { border-radius: 14px; }
+.account-skeleton .profile-info .account-skeleton-block + .account-skeleton-block,
+.account-skeleton .info-card .account-skeleton-block + .account-skeleton-block,
+.account-skeleton .order-details .account-skeleton-block + .account-skeleton-block { margin-top: 8px; }
+.account-skeleton-card { display: flex; flex-direction: column; gap: 12px; padding: 20px; min-width: 0; }
+.account-skeleton-card.address-card { padding: 24px; }
+.account-skeleton-products { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.account-skeleton-product-image { aspect-ratio: 4 / 5; }
+@keyframes account-skeleton-shimmer { to { transform: translateX(100%); } }
+@media (max-width: 900px) {
+  .account-skeleton .profile-info { width: 100%; }
+  .account-skeleton .profile-info .account-skeleton-block { margin-inline: auto; }
+  .account-skeleton-products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .account-skeleton-block::after { animation: none; }
+}

@@ -1,6 +1,7 @@
+import { AccountSectionSkeleton } from './AccountSkeleton.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { useCallback, useEffect, useState } from 'react';
-import { BellOff, Check, Cookie, Loader2, Mail, Settings2, X } from 'lucide-react';
+import { BellOff, Check, Cookie, Mail, Settings2, X } from 'lucide-react';
 import { privacyApi, novostiApi } from '../../services/dajaPlatform.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 
@@ -96,9 +97,7 @@ export default function PrivacySection({ user }) {
     }
   };
 
-  if (loading) {
-    return <div className="privacy-section__loading"><Loader2 className="animate-spin" size={22} />{translateText(" Učitavanje podešavanja…")}</div>;
-  }
+  if (loading) return <AccountSectionSkeleton section="privacy" />;
 
   const newsletterActive = snapshot?.newsletter?.active === true;
   const alerts = Array.isArray(snapshot?.alerts) ? snapshot.alerts : [];

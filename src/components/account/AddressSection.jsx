@@ -1,3 +1,4 @@
+import { AccountSectionSkeleton } from './AccountSkeleton.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useFlash } from '../../hooks/useFlash.js';
@@ -571,10 +572,7 @@ function AddressSection({ user }) {
       </AnimatePresence>
       <div className="addresses-grid" style={{ zIndex: 0 }}>
         {translateText(loading ? (
-          <div className="loading-state">
-            <Loader2 className="animate-spin" size={32} />
-            <p>{translateText("Učitavanje...")}</p>
-          </div>
+          <AccountSectionSkeleton section="addresses" contentOnly />
         ) : addresses.length === 0 && !isAdding ? (
           <div className="empty-state">
             <MapPin size={48} className="text-muted" style={{ opacity: 0.3 }} />
