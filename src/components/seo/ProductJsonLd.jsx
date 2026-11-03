@@ -148,7 +148,9 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
           'https://schema.org/MerchantReturnFiniteReturnWindow',
         returnMethod: 'https://schema.org/ReturnByMail',
         merchantReturnDays: commerceSeoConfig.returnDays,
-        returnFees: 'https://schema.org/ReturnShippingFees',
+        // The customer arranges and pays the courier directly; we do not
+        // charge a fixed return shipping fee that could be reported as an amount.
+        returnFees: 'https://schema.org/ReturnFeesCustomerResponsibility',
       },
     },
   };
@@ -158,7 +160,9 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
   if (groupId && relatedVariants.length) {
     // Public grouping identity comes from the same resolver as the selector.
     // Manual group names and automatic matching rules are never exposed.
-    schema.inProductGroupWithID = groupId;
+    // Also normalize older API/SSR cache entries during the backend rollout.
+    const publicGroupId = String(groupId).slice(0, 40);
+    schema.inProductGroupWithID = publicGroupId;
     const members = [product, ...relatedVariants];
     let commonName = String(members[0].name || '');
     for (const member of members.slice(1)) {
@@ -168,10 +172,12 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
     const variesBy = ['color', 'material'].filter(key => traits.every(item => item[key]) && new Set(traits.map(item => item[key])).size > 1)
       .map(key => `https://schema.org/${key}`);
     const commonBrand = members.every(item => item.brand === product.brand) ? product.brand : null;
+    const groupName = [commonBrand, commonName.replace(/[\s\-_/]+$/, '')].filter(Boolean).join(' ') || t('Varijante proizvoda');
     schema.isVariantOf = {
       '@type': 'ProductGroup',
-      name: [commonBrand, commonName.replace(/[\s\-_/]+$/, '')].filter(Boolean).join(' ') || t('Varijante proizvoda'),
-      productGroupID: groupId,
+      name: groupName,
+      description: t('Grupa varijanti: {name}. Pojedinačni modeli, fotografije, specifikacije, cene i dostupnost prikazani su na njihovim stranicama.', { name: groupName }),
+      productGroupID: publicGroupId,
       ...(commonBrand ? { brand: { '@type': 'Brand', name: commonBrand } } : {}),
       ...(variesBy.length ? { variesBy } : {}),
       hasVariant: [

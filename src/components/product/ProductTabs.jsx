@@ -1,6 +1,6 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useState } from 'react';
-import { Truck, ShieldCheck, Package } from 'lucide-react';
+import { Truck, ShieldCheck, Package, RotateCcw } from 'lucide-react';
 import './ProductTabs.css';
 import { descriptionHtml } from '../description.js';
 import '../rich-description.css';
@@ -104,6 +104,13 @@ export default function ProductTabs({ product, hideSpecs = false }) {
               <div>
                 <h3>{translateText("DajaShop pakovanje")}</h3>
                 <p>{translateText("Sat stiže u DajaShop pakovanju, u kutiji i kesici.")}</p>
+              </div>
+            </div>
+            <div className="delivery-item">
+              <div className="del-icon"><RotateCcw size={20} /></div>
+              <div>
+                <h3>{translateText('Odustanak od kupovine u roku od {days} dana', { days: commerceSeoConfig.returnDays })}</h3>
+                <p>{translateText('Kod odustanka od kupovine, kupac organizuje povrat i plaća poštarinu direktno kuriru.')}</p>
               </div>
             </div>
           </div>
