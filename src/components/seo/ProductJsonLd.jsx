@@ -107,7 +107,9 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
   const seoImageAlt = (product.seo?.imageAltText || '').trim();
   const productName = `${product.brand || ''} ${product.name || ''}`.trim();
   const description = productSeoDescription(product, language);
-  const image = imageUrls.map((imageItem) => ({
+  // Only the primary photo represents this SKU in search. Detail shots remain
+  // in the gallery and merchant feed, rather than competing as its thumbnail.
+  const image = imageUrls.slice(0, 1).map((imageItem) => ({
         '@type': 'ImageObject',
         url: imageItem.url,
         name: imageItem.altText || seoImageAlt || productName,
@@ -135,7 +137,7 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
       '@type': 'Offer',
       url: productUrl,
       priceCurrency: 'RSD',
-      price: String(product.price ?? ''),
+      price: product.price != null && Number.isFinite(Number(product.price)) ? Number(product.price).toFixed(2) : '',
       availability: `https://schema.org/${availability ? 'InStock' : 'OutOfStock'}`,
       itemCondition: schemaCondition(product.itemCondition),
       ...(product.salePrice && product.saleValidUntil

@@ -10,6 +10,10 @@ Posle obrade OAuth prijave njen fragment se uklanja kroz React Router `navigate(
 
 Javne engleske stranice server odmah renderuje na engleskom. Svaka javna verzija ima svoj canonical i uzajamne sr/en/x-default hreflang veze. Backend sitemap uključuje obe verzije i odgovarajuće XHTML alternates. Privatne stranice, email linkovi i filtrirane stranice zadržavaju postojeća noindex/cache pravila i pod `/en`.
 
+Od 03.11.2026. javni HTML ulazi automatski biraju jezik prema Cloudflare zemlji: RS, ME, MK, BA, HR, BG, SI, AL, RO, HU, GR i XK koriste srpski, ostale poznate zemlje engleski. To je izbor prema lokaciji veze, ne prema državljanstvu. Nepoznata zemlja zadržava postojeći URL. Privremeni 302 čuva query parametre i ne kešira se. Ručni izbor zastavice pamti se u neophodnom kolačiću `daja_language_choice` godinu dana i ima prednost nad lokacijom. Privatne stranice, API i email linkovi se ne preusmeravaju. Prepoznati crawleri dobijaju zatraženu jezičku adresu radi indeksiranja obe verzije.
+
+SEO i sitemap navode `sr`, regionalne `sr-XX` oznake za podržane ISO zemlje iz ove liste, `en` i engleski `x-default` za ostatak publike. XK ostaje samo u pravilu lokacije, bez nepodržane hreflang regionalne oznake. Linkovi su neposredna deca Helmet komponente: grupisanje u Fragment može u postojećoj verziji biblioteke izgubiti alternate linkove. Google samostalno bira rezultat; ova podešavanja ne garantuju izbor jezika u svakom Google rezultatu.
+
 ## Novi tekstovi
 
 Prilikom svake izmene javnog interfejsa odmah dodati i engleski prevod. Srpski tekst je ključ u `src/localization/en.json`; vrednost je engleski prevod. Nema servisa za automatsko prevođenje u pregledaču: prevod se priprema zajedno sa izmenom koda.

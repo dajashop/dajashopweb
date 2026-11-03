@@ -198,6 +198,7 @@ export default function Product() {
         keywords={seoKeywords}
         image={seoImage}
         type="product"
+        productPrice={p.price}
         url={`${siteRoot}/product/${p.slug}`}
       />
       <ProductJsonLd product={p} reviews={p.reviews || []} relatedVariants={relatedVariants} groupId={variantGroupId} />

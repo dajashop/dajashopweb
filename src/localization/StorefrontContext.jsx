@@ -4,6 +4,7 @@ import { isNecessaryStorageAllowed, readStoredValue, writeStoredValue } from '..
 import { formatMoney } from '../utils/currency.js';
 import { translate } from './translate.js';
 import { localizedPath } from './paths.js';
+import { LANGUAGE_COOKIE } from './region.js';
 
 export const LANGUAGES = [
   { code: 'sr', label: 'Srpski', short: 'SR', flag: 'rs', locale: 'sr-RS' },
@@ -38,6 +39,7 @@ export function StorefrontProvider({ children, initialLanguage = 'sr' }) {
   const setLanguage = useCallback(code => {
     if (!LANGUAGES.some(item => item.code === code)) return;
     writeStoredValue(LANGUAGE_KEY, code);
+    document.cookie = `${LANGUAGE_COOKIE}=${code}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`;
     if (code !== language) {
       // Read the current address at the click, after any OAuth cleanup.
       const { pathname, search, hash } = window.location;

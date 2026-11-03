@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 import { seoConfig } from '../../config/seo.js';
 import { isEmailLinkPath } from '../../utils/emailLinkPrivacy.js';
 import { localizedSiteUrl } from '../../localization/paths.js';
+import { SERBIAN_HREFLANGS } from '../../localization/region.js';
 
 function ensureAbsoluteUrl(value) {
   if (!value) return '';
@@ -24,6 +25,7 @@ export default function SEOHead({
   noIndex = false,
   homeTitle,
   defer = true,
+  productPrice,
   children,
 }) {
   const { t: translateText, language } = useStorefront();
@@ -59,11 +61,13 @@ export default function SEOHead({
       <meta name="robots" content={robotsValue} />
       {sensitiveEmailLink && <meta name="referrer" content="no-referrer" />}
       <link rel="canonical" href={canonicalUrl} />
-      {!sensitiveEmailLink && !noIndex && <>
-        <link rel="alternate" hrefLang="sr" href={serbianUrl} />
-        <link rel="alternate" hrefLang="en" href={englishUrl} />
-        <link rel="alternate" hrefLang="x-default" href={serbianUrl} />
-      </>}
+      {!sensitiveEmailLink && !noIndex && SERBIAN_HREFLANGS.map(code => (
+        <link key={code} rel="alternate" hrefLang={code} href={serbianUrl} />
+      ))}
+      {!sensitiveEmailLink && !noIndex && <link rel="alternate" hrefLang="en" href={englishUrl} />}
+      {!sensitiveEmailLink && !noIndex && <link rel="alternate" hrefLang="x-default" href={englishUrl} />}
+      {productPrice != null && Number.isFinite(Number(productPrice)) && <meta property="product:price:amount" content={Number(productPrice).toFixed(2)} />}
+      {productPrice != null && Number.isFinite(Number(productPrice)) && <meta property="product:price:currency" content="RSD" />}
 
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={translatedDescription} />
