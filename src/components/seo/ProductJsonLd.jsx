@@ -179,19 +179,33 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
     };
   }
 
-  const avgRating = Number.isFinite(Number(product.reviewSummary?.averageRating))
+  const publishedReviews = reviews.filter(review =>
+    (!review.status || review.status === 'published') &&
+    Number(review.rating) >= 1 && Number(review.rating) <= 5);
+  const avgRating = product.reviewSummary?.averageRating != null && Number.isFinite(Number(product.reviewSummary.averageRating))
     ? Number(product.reviewSummary.averageRating)
-    : Array.isArray(reviews)
-      ? getAverageRating(reviews)
-      : null;
-  const reviewCount = Number(product.reviewSummary?.ratingCount || reviews.length);
-  if (avgRating !== null && reviewCount > 0) {
+    : getAverageRating(publishedReviews);
+  const reviewCount = Number(product.reviewSummary?.ratingCount ?? publishedReviews.length);
+  if (avgRating >= 1 && avgRating <= 5 && Number.isInteger(reviewCount) && reviewCount > 0) {
     schema.aggregateRating = {
       '@type': 'AggregateRating',
       ratingValue: String(avgRating),
       reviewCount: String(reviewCount),
+      bestRating: '5',
+      worstRating: '1',
     };
   }
+  const reviewItems = publishedReviews.filter(review => review.userName?.trim() && review.comment?.trim()).map(review => {
+    const date = new Date(review.createdAt?.seconds ? review.createdAt.seconds * 1000 : review.createdAt);
+    return {
+      '@type': 'Review',
+      author: { '@type': 'Person', name: review.userName.trim() },
+      reviewBody: review.comment.trim(),
+      reviewRating: { '@type': 'Rating', ratingValue: String(review.rating), bestRating: '5', worstRating: '1' },
+      ...(review.createdAt && !Number.isNaN(date.getTime()) ? { datePublished: date.toISOString() } : {}),
+    };
+  });
+  if (reviewItems.length) schema.review = reviewItems;
 
   return <JsonLd data={schema} defer={false} />;
 }

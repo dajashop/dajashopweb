@@ -70,10 +70,10 @@ export default function ProductTabs({ product, hideSpecs = false }) {
         )}
 
         {/* [NOVO] RECENZIJE */}
-        {activeTab === 'reviews' && <section>
+        <section hidden={activeTab !== 'reviews'}>
           <h2 className="sr-only">{translateText("Recenzije proizvoda")}</h2>
           <ProductReviews key={product.id} product={product} />
-        </section>}
+        </section>
 
         {/* ISPORUKA */}
         {(

@@ -14,8 +14,8 @@ export default function ProductReviews({ product }) {
   const { user, showAuth } = useAuth();
   const { flash } = useFlash();
 
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState(product.reviews || []);
+  const [loading, setLoading] = useState(!Array.isArray(product.reviews));
 
   // State za formu
   const [rating, setRating] = useState(0);
@@ -25,6 +25,12 @@ export default function ProductReviews({ product }) {
 
   // Učitavanje recenzija
   useEffect(() => {
+    if (Array.isArray(product.reviews)) {
+      setReviews(product.reviews);
+      setLoading(false);
+      if (Number(product.reviewSummary?.ratingCount) > product.reviews.length) loadReviews();
+      return;
+    }
     if (product?.id) {
       loadReviews();
     }
@@ -60,6 +66,7 @@ export default function ProductReviews({ product }) {
       setRating(0);
       setComment('');
       await loadReviews();
+      window.dispatchEvent(new Event('daja:products-changed'));
     } catch (err) {
       flash('Greška', 'Došlo je do greške prilikom slanja.', 'error');
     } finally {
@@ -67,11 +74,12 @@ export default function ProductReviews({ product }) {
     }
   };
 
-  const averageRating = reviews.length
+  const reviewCount = product.reviewSummary?.ratingCount ?? reviews.length;
+  const averageRating = product.reviewSummary?.averageRating ?? (reviews.length
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(
         1
       )
-    : 0;
+    : 0);
 
   const renderStars = (count, size = 16, interactive = false) => {
     return [...Array(5)].map((_, i) => {
@@ -110,7 +118,7 @@ export default function ProductReviews({ product }) {
           <div className="stars-row">
             {translateText(renderStars(Math.round(averageRating), 20))}
           </div>
-          <span className="total-reviews">{translateText("Na osnovu ")}{translateText(reviews.length)}{translateText(" recenzija")}</span>
+          <span className="total-reviews">{translateText("Na osnovu ")}{translateText(reviewCount)}{translateText(" recenzija")}</span>
         </div>
       </div>
 
@@ -124,10 +132,8 @@ export default function ProductReviews({ product }) {
               <div className="review-header">
                 <span className="reviewer-name">{rev.userName}</span>
                 <span className="review-date">
-                  {translateText(rev.createdAt?.seconds
-                    ? new Date(rev.createdAt.seconds * 1000).toLocaleDateString(
-                        'sr-RS'
-                      )
+                  {translateText(rev.createdAt
+                    ? new Date(rev.createdAt.seconds ? rev.createdAt.seconds * 1000 : rev.createdAt).toLocaleDateString('sr-RS')
                     : 'Upravo sada')}
                 </span>
               </div>
