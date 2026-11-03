@@ -119,6 +119,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
         active.current -= 1;
         if (!mounted.current) return;
         flushReady(); pump(); notify();
+        window.dispatchEvent(new Event('daja:media-status-changed'));
       });
     }
     notify();

@@ -76,6 +76,7 @@ const WorkforcePanel = adminPanel(() => import('./components/WorkforcePanel.jsx'
 const ExcelManager = adminPanel(() => import('./components/ExcelManager'));
 const PolicyPublicationPanel = adminPanel(() => import('./components/PolicyPublicationPanel.jsx'));
 const EmailDeliveryPanel = adminPanel(() => import('./components/EmailDeliveryPanel.jsx'));
+const MediaProcessingPanel = adminPanel(() => import('./components/MediaProcessingPanel.jsx'));
 const SupplierQueuePanel = adminPanel(() => import('./components/SupplierQueuePanel.jsx'));
 const PromotionManager = adminPanel(() => import('./components/PromotionManager.jsx'));
 const FilterManager = adminPanel(() => import('./components/FilterManager.jsx'));
@@ -1307,6 +1308,8 @@ function AdminDashboardContent() {
       </div>
 
       <div className="container mt-8">
+        {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) &&
+          <MediaProcessingPanel canRetry={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('media.upload'))} onOpenProduct={openEdit} />}
         {activeTab === 'variant-groups' && canManageVariantGroups && <VariantGroupsPanel onDirtyChange={onVariantGroupsDirty} />}
         {(activeTab === 'filters' || filtersVisited) && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
           <div hidden={activeTab !== 'filters'}><FilterManager visible={activeTab === 'filters'} products={completeCatalog.items} productsLoading={completeCatalog.loading} definitions={specs} departments={departments}
