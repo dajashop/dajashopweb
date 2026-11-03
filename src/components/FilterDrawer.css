@@ -168,7 +168,7 @@
 .fd-fab {
   position: fixed;
   right: 16px;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -178,18 +178,19 @@
   background: var(--color-surface, #f5f5f7);
   color: var(--color-text, #111);
   font-weight: 800;
-  box-shadow: var(--shadow-3, 0 10px 24px rgba(0, 0, 0, 0.16));
+  /* Keep the shadow close to the button, clear of Safari's bottom bar. */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
   cursor: pointer;
   z-index: 11000;
   transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 .fd-fab:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-3, 0 12px 28px rgba(0, 0, 0, 0.18));
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.16);
 }
 .fd-fab:active {
   transform: translateY(0);
-  box-shadow: var(--shadow-2, 0 6px 16px rgba(0, 0, 0, 0.12));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
 @media (min-width: 1031px) {
