@@ -98,10 +98,13 @@
 /* OAuth */
 .oauth-row {
   display: grid;
-  grid-auto-flow: column;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 8px;
   margin-bottom: 8px;
 }
+.oauth-row--register { grid-template-columns: minmax(0, 1fr); }
+.oauth-note { color: var(--color-muted, #6e6e73); font-size: 0.75rem; line-height: 1.5; }
 .oauth-row--has-last-used {
   padding-bottom: 34px;
 }
@@ -117,7 +120,15 @@
   background: var(--color-surface, #f5f5f7);
   cursor: pointer;
   font-size: 0.9rem;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  line-height: 1.2;
+  transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
+.btn-oauth svg { flex-shrink: 0; width: 18px; height: 18px; }
+.btn-oauth:hover:not(:disabled) { background: var(--color-bg, #fff); box-shadow: 0 3px 10px #00000008; }
+.btn-oauth:focus-visible { outline: 2px solid var(--color-text, #111); outline-offset: 3px; }
 .btn-oauth span {
   font-weight: 600;
 }
@@ -239,6 +250,7 @@
 }
 .auth-card .form-slider { min-width: 0; overflow: visible; }
 .auth-card .track {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;

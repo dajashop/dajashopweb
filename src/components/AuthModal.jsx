@@ -1,6 +1,6 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { AnimatePresence, motion as Motion } from 'framer-motion';
+import { AnimatePresence, motion as Motion, useReducedMotion } from 'framer-motion';
 import {
   Mail,
   Lock,
@@ -137,6 +137,9 @@ function PasswordResetRequest({
 
 export default function AuthModal() {
   const { t: translateText } = useStorefront();
+  const reduceMotion = useReducedMotion();
+  const trackRef = useRef(null);
+  const [formHeight, setFormHeight] = useState(null);
 
   const {
     user,
@@ -156,6 +159,19 @@ export default function AuthModal() {
   const { preferencesAllowed } = useConsent();
 
   const isLogin = mode === 'login';
+
+  useEffect(() => {
+    if (!authOpen || !trackRef.current) {
+      setFormHeight(null);
+      return;
+    }
+    const track = trackRef.current;
+    const measure = () => setFormHeight(track.getBoundingClientRect().height);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(track);
+    return () => observer.disconnect();
+  }, [authOpen]);
 
   function go(next) {
     setMode(next);
@@ -706,10 +722,10 @@ export default function AuthModal() {
               className="auth-card glass"
               role="dialog"
               aria-modal="true"
-              initial={{ y: 30, opacity: 0, scale: 0.98 }}
+              initial={{ y: reduceMotion ? 0 : 20, opacity: 0, scale: reduceMotion ? 1 : 0.98 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 20, opacity: 0, scale: 0.98 }}
-              transition={{ type: 'spring', stiffness: 220, damping: 20 }}
+              transition={{ duration: reduceMotion ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
               data-lenis-prevent
             >
               <button
@@ -788,11 +804,20 @@ export default function AuthModal() {
                 </Motion.button>
               </div>
 
-              <div className="form-slider">
-                <div className="track">
-                  {[true, false].map((loginPane) => (
-                    <div
-                      key={loginPane ? 'log' : 'reg'}
+              <Motion.div className="form-slider"
+                initial={false}
+                animate={{ height: formHeight ?? 'auto' }}
+                transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="track" ref={trackRef}>
+                  <AnimatePresence initial={false} mode="popLayout">
+                  {[isLogin].map((loginPane) => (
+                    <Motion.div
+                      key={loginPane ? 'login' : 'register'}
+                      initial={{ opacity: 0, x: reduceMotion ? 0 : loginPane ? -12 : 12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: reduceMotion ? 0 : loginPane ? -8 : 8, pointerEvents: 'none' }}
+                      transition={{ duration: reduceMotion ? 0 : 0.18, ease: 'easeOut' }}
                       className={`pane ${
                         isLogin === loginPane ? 'active' : 'inactive'
                       }`}
@@ -1037,7 +1062,7 @@ export default function AuthModal() {
                                 : 'Napravi nalog')}
                             </Motion.button>
                             <div
-                              className={`oauth-row ${
+                              className={`oauth-row ${!loginPane ? 'oauth-row--register' : ''} ${
                                 loginPane &&
                                 ['google', 'passkey'].includes(lastLogin?.provider)
                                   ? 'oauth-row--has-last-used'
@@ -1080,11 +1105,6 @@ export default function AuthModal() {
                                 }`}
                                 onClick={handlePasskey}
                                 disabled={loading}
-                                style={{
-                                  width: '100%',
-                                  justifyContent: 'center',
-                                  gap: '10px',
-                                }}
                               >
                                 <Fingerprint
                                   size={20}
@@ -1098,7 +1118,7 @@ export default function AuthModal() {
                                 )}
                               </button>
                               )}
-                              {!loginPane && <small>{translateText('Passkey možete dodati nakon prijave, u podešavanjima bezbednosti naloga.')}</small>}
+                              {!loginPane && <small className="oauth-note">{translateText('Passkey možete dodati nakon prijave, u podešavanjima bezbednosti naloga.')}</small>}
                             </div>
                           </form>
                         ) : pendingEmailVerify && !loginPane ? (
@@ -1133,10 +1153,11 @@ export default function AuthModal() {
                           </form>
                         ))}
                       </div>
-                    </div>
+                    </Motion.div>
                   ))}
+                  </AnimatePresence>
                 </div>
-              </div>
+              </Motion.div>
               <div id="recaptcha-container" />
             </Motion.div>
           </Motion.div>
