@@ -1,3 +1,4 @@
+import { requestFirebasePhone, confirmFirebasePhone } from './firebasePhone.js';
 import {
   API_BASE_URL,
   apiRequest,
@@ -366,18 +367,10 @@ export const authApi = {
     return data;
   },
   async requestPhoneOtp(phone) {
-    return apiRequest('/customer-auth/phone/start', {
-      method: 'POST',
-      auth: false,
-      body: { phone },
-    });
+    return requestFirebasePhone(phone, 'login');
   },
   async confirmPhoneOtp(phone, code) {
-    const data = await apiRequest('/customer-auth/phone/verify', {
-      method: 'POST',
-      auth: false,
-      body: { phone, code },
-    });
+    const data = await confirmFirebasePhone(phone, code, 'login');
     setAuthTokens(data);
     return normalizeUser(data);
   },
@@ -1087,16 +1080,10 @@ export const customerApi = {
     return apiRequest('/customer-auth/email/verification', { method: 'POST' });
   },
   requestPhoneLinkOtp(phone) {
-    return apiRequest('/customer-auth/phone/start', {
-      method: 'POST',
-      body: { phone, purpose: 'link' },
-    });
+    return requestFirebasePhone(phone, 'link');
   },
   verifyPhoneLinkOtp(phone, code) {
-    return apiRequest('/customer-auth/phone/verify', {
-      method: 'POST',
-      body: { phone, code, purpose: 'link' },
-    });
+    return confirmFirebasePhone(phone, code, 'link');
   },
   updatePassword({ currentPassword, newPassword }) {
     return apiRequest('/customer-auth/password', {

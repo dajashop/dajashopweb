@@ -1,4 +1,11 @@
 {
+  "SMS potvrda je trenutno dostupna samo za brojeve iz Srbije.": "SMS verification is currently available only for Serbian numbers.",
+  "Potvrdite bezbednosnu proveru i pokušajte ponovo.": "Complete the security check and try again.",
+  "SMS trenutno nije dostupan. Pokušajte kasnije.": "SMS is currently unavailable. Try again later.",
+  "Previše zahteva. Pokušajte kasnije.": "Too many requests. Try again later.",
+  "Poveži broj telefona": "Link a phone number",
+  "Sačekajte da se prethodno slanje završi.": "Wait for the previous request to finish.",
+  "Google obrađuje broj telefona radi SMS potvrde i zaštite od zloupotrebe.": "Google processes your phone number for SMS verification and abuse prevention.",
   "Unesite email adresu.": "Enter your email address.",
   "SMS verifikacija trenutno nije dostupna. Koristite email ili Google prijavu.": "SMS verification is currently unavailable. Use email or Google sign-in.",
   "SMS obaveštenja trenutno nisu dostupna. Izaberite email.": "SMS notifications are currently unavailable. Choose email.",

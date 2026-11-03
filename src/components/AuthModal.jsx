@@ -1,3 +1,4 @@
+import { useFirebasePhone } from '../hooks/useFirebasePhone.js';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useLayoutEffect, useMemo, useState, useRef } from 'react';
 import { AnimatePresence, motion as Motion, useReducedMotion } from 'framer-motion';
@@ -307,7 +308,8 @@ export default function AuthModal() {
     };
   }, []);
 
-  const isPhone = false;
+  const phoneAvailable = useFirebasePhone();
+  const isPhone = phoneAvailable && isLogin && idType === 'phone';
   const showPassword = !isPhone;
 
   // --- HANDLERS ---
@@ -884,7 +886,7 @@ export default function AuthModal() {
                               className="field"
                               ref={loginPane ? loginWrapperRef : regWrapperRef}
                             >
-                              <span>{translateText("Email adresa")}{loginPane && lastLogin?.provider === 'password' && (
+                              <span>{translateText(phoneAvailable && loginPane ? 'Email ili telefon' : 'Email adresa')}{loginPane && lastLogin?.provider === 'password' && (
                                   <small className="last-used-field-note">{translateText("Poslednje korišćeno")}</small>
                                 )}
                               </span>
@@ -939,7 +941,7 @@ export default function AuthModal() {
                                   id={loginPane ? 'auth-login-identity' : 'auth-register-identity'}
                                   name="identity"
                                   type="text"
-                                  placeholder={translateText("Email adresa")}
+                                  placeholder={translateText(phoneAvailable && loginPane ? "Email ili Broj telefona" : "Email adresa")}
                                   value={identity}
                                   onChange={handleIdentityChange}
                                   onKeyDown={handleKeyDown}
@@ -959,6 +961,7 @@ export default function AuthModal() {
                                 />
                               </div>
                               <ErrorMessage message={errors.identity} />
+                              {isPhone && <small>{translateText('Google obrađuje broj telefona radi SMS potvrde i zaštite od zloupotrebe.')}</small>}
                               <AnimatePresence>
                                 {showSuggestions && isLogin === loginPane && (
                                   <Motion.ul

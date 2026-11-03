@@ -1,3 +1,4 @@
+import { useFirebasePhone } from '../../hooks/useFirebasePhone.js';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // src/components/account/ProfileSection.jsx
 
@@ -35,6 +36,7 @@ import PhoneCountryPicker from '../ui/PhoneCountryPicker.jsx';
 import ErrorMessage from '../ui/ErrorMessage.jsx';
 
 function ProfileSection({ user }) {
+  const phoneAvailable = useFirebasePhone();
   const { t: translateText } = useStorefront();
 
   const { flash } = useFlash();
@@ -155,7 +157,7 @@ function ProfileSection({ user }) {
         'Greška',
         error.code === 'auth/invalid-phone-number'
           ? 'Nevažeći broj.'
-          : 'Greška pri slanju SMS-a.',
+          : error.message || 'Greška pri slanju SMS-a.',
         'error'
       );
     } finally {
@@ -398,7 +400,11 @@ function ProfileSection({ user }) {
                 <span>{translateText("Verifikovan")}</span>
               </div>
             ) : (
-              null
+              phoneAvailable && !isEditingPhone && (
+                <button onClick={() => setIsEditingPhone(true)} aria-label={translateText('Poveži broj telefona')}>
+                  <Plus size={14} />
+                </button>
+              )
             ))}
           </div>
 
@@ -411,6 +417,7 @@ function ProfileSection({ user }) {
                 exit={{ opacity: 0, y: -10 }}
                 className="mt-1"
               >
+                <p className="text-xs text-[var(--color-muted)]">{translateText('Google obrađuje broj telefona radi SMS potvrde i zaštite od zloupotrebe.')}</p>
                 {phoneStep === 'input' ? (
                   <div className="flex flex-col gap-3">
                     <div className="flex gap-2">

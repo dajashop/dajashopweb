@@ -17,6 +17,7 @@
     "@tailwindcss/vite": "^4.1.17",
     "entities": "^6.0.1",
     "fflate": "^0.8.2",
+    "firebase": "^13.2.0",
     "framer-motion": "^12.23.24",
     "lenis": "^1.3.15",
     "libphonenumber-js": "^1.13.12",
