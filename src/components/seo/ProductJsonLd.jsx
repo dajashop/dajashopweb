@@ -4,26 +4,12 @@ import JsonLd from './JsonLd.jsx';
 import { commerceSeoConfig, seoConfig } from '../../config/seo.js';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { localizedSiteUrl } from '../../localization/paths.js';
+import { productSeoImage } from '../../utils/productSeoImage.js';
 
 function collectProductImages(product) {
-  const list = [];
-
-  if (product?.mainImageUrl) {
-    list.push({ url: product.mainImageUrl, altText: product.seo?.imageAltText || '' });
-  }
-
-  if (Array.isArray(product?.images)) {
-    product.images.forEach((img) => {
-      if (typeof img === 'string' && img) list.push({ url: img, altText: '' });
-      if (img && typeof img === 'object' && img.url) {
-        list.push({ url: img.url, altText: img.altText || img.alt_text || '' });
-      }
-    });
-  }
-
-  if (product?.image) list.push({ url: product.image, altText: '' });
-
-  return [...new Map(list.filter((image) => image.url).map((image) => [image.url, image])).values()];
+  const url = productSeoImage(product);
+  const first = product?.images?.[0];
+  return url ? [{ url, altText: first?.altText || first?.alt_text || '' }] : [];
 }
 
 function gtinProperty(barcode) {
@@ -122,6 +108,11 @@ export default function ProductJsonLd({ product, reviews = [], relatedVariants =
     '@type': 'Product',
     '@id': `${productUrl}#product`,
     url: productUrl,
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': productUrl,
+      ...(image[0] ? { primaryImageOfPage: image[0] } : {}),
+    },
     name: productName,
     description,
     image,
