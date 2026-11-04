@@ -1,4 +1,5 @@
-import { useFirebasePhone } from '../../hooks/useFirebasePhone.js';
+import { usePhoneVerification } from '../../hooks/usePhoneVerification.js';
+import PhoneVerificationPicker from '../PhoneVerificationPicker.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 // src/components/account/ProfileSection.jsx
 
@@ -36,7 +37,9 @@ import PhoneCountryPicker from '../ui/PhoneCountryPicker.jsx';
 import ErrorMessage from '../ui/ErrorMessage.jsx';
 
 function ProfileSection({ user }) {
-  const phoneAvailable = useFirebasePhone();
+  const phoneChannels = usePhoneVerification();
+  const phoneAvailable = phoneChannels.sms || phoneChannels.whatsapp;
+  const [phoneChannel, setPhoneChannel] = useState('sms');
   const { t: translateText } = useStorefront();
 
   const { flash } = useFlash();
@@ -143,10 +146,10 @@ function ProfileSection({ user }) {
     }
     setLoading(true);
     try {
-      await customerApi.requestPhoneLinkOtp(fullNumber);
+      await customerApi.requestPhoneLinkOtp(fullNumber, phoneChannel);
       setVerificationId(fullNumber);
       setPhoneStep('verify');
-      flash('SMS Poslat', `Kod poslat na ${fullNumber}`, 'info');
+      flash(phoneChannel === 'whatsapp' ? 'WhatsApp kod poslat' : 'SMS Poslat', `Kod poslat na ${fullNumber}`, 'info');
     } catch (error) {
       console.error(error);
       if (window.recaptchaVerifier) {
@@ -157,7 +160,7 @@ function ProfileSection({ user }) {
         'Greška',
         error.code === 'auth/invalid-phone-number'
           ? 'Nevažeći broj.'
-          : error.message || 'Greška pri slanju SMS-a.',
+          : error.message || 'Slanje koda nije uspelo.',
         'error'
       );
     } finally {
@@ -173,7 +176,7 @@ function ProfileSection({ user }) {
     setLoading(true);
     try {
       const fullNumber = selectedCountry.dial + localPhone.replace(/\D/g, '').replace(/^0+/, '');
-      await customerApi.verifyPhoneLinkOtp(fullNumber, smsCode);
+      await customerApi.verifyPhoneLinkOtp(verificationId || fullNumber, smsCode, phoneChannel);
       await refreshUser();
       flash('Uspeh', 'Broj telefona povezan!', 'success');
       setIsEditingPhone(false);
@@ -417,7 +420,7 @@ function ProfileSection({ user }) {
                 exit={{ opacity: 0, y: -10 }}
                 className="mt-1"
               >
-                <p className="text-xs text-[var(--color-muted)]">{translateText('Google obrađuje broj telefona radi SMS potvrde i zaštite od zloupotrebe.')}</p>
+                {phoneStep === 'input' && <PhoneVerificationPicker value={phoneChannel} onChange={setPhoneChannel} channels={phoneChannels} disabled={loading} />}
                 {phoneStep === 'input' ? (
                   <div className="flex flex-col gap-3">
                     <div className="flex gap-2">
@@ -466,7 +469,7 @@ function ProfileSection({ user }) {
                       >{translateText("Otkaži")}</button>
                       <button
                         onClick={handleSendCode}
-                        disabled={loading}
+                        disabled={loading || !phoneChannels[phoneChannel]}
                         className="text-xs font-bold px-3 py-1.5 rounded-md bg-[var(--color-primary)] text-[var(--color-bg)] hover:opacity-90 transition flex items-center gap-1"
                       >
                         {translateText(loading ? (
@@ -482,6 +485,7 @@ function ProfileSection({ user }) {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
+                    <p className="text-xs font-semibold">{phoneChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'}</p>
                     <p className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider">{translateText("Kod poslat na ")}{translateText(selectedCountry.dial)} {translateText(localPhone)}
                     </p>
                     <div className="relative">
@@ -492,6 +496,9 @@ function ProfileSection({ user }) {
                       <input
                         type="text"
                         value={smsCode}
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        aria-label={translateText(phoneChannel === 'whatsapp' ? 'WhatsApp kod' : 'SMS kod')}
                         onChange={(e) => setSmsCode(e.target.value)}
                         className="w-full bg-white border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-gray-900 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all outline-none placeholder:text-gray-400"
                         placeholder="123456"

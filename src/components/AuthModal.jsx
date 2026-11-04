@@ -1,4 +1,5 @@
-import { useFirebasePhone } from '../hooks/useFirebasePhone.js';
+import { usePhoneVerification } from '../hooks/usePhoneVerification.js';
+import PhoneVerificationPicker from './PhoneVerificationPicker.jsx';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useLayoutEffect, useMemo, useState, useRef } from 'react';
 import { AnimatePresence, motion as Motion, useReducedMotion } from 'framer-motion';
@@ -215,6 +216,7 @@ export default function AuthModal() {
 
   const [awaitPhoneCode, setAwaitPhoneCode] = useState(false);
   const [smsCode, setSmsCode] = useState('');
+  const [phoneChannel, setPhoneChannel] = useState('sms');
   const [sentTo, setSentTo] = useState('');
 
   const [suggestions, setSuggestions] = useState([]);
@@ -308,7 +310,8 @@ export default function AuthModal() {
     };
   }, []);
 
-  const phoneAvailable = useFirebasePhone();
+  const phoneChannels = usePhoneVerification();
+  const phoneAvailable = phoneChannels.sms || phoneChannels.whatsapp;
   const isPhone = phoneAvailable && isLogin && idType === 'phone';
   const showPassword = !isPhone;
 
@@ -615,7 +618,7 @@ export default function AuthModal() {
     setLoading(true);
     try {
       if (isLogin) {
-        const r = await login({ identity, password });
+        const r = await login({ identity, password, phoneChannel });
         if (r === 'phone-code') {
           setAwaitPhoneCode(true);
           setSentTo(identity);
@@ -961,7 +964,6 @@ export default function AuthModal() {
                                 />
                               </div>
                               <ErrorMessage message={errors.identity} />
-                              {isPhone && <small>{translateText('Google obrađuje broj telefona radi SMS potvrde i zaštite od zloupotrebe.')}</small>}
                               <AnimatePresence>
                                 {showSuggestions && isLogin === loginPane && (
                                   <Motion.ul
@@ -999,6 +1001,7 @@ export default function AuthModal() {
                                 )}
                               </AnimatePresence>
                             </label>
+                            {isPhone && loginPane && <PhoneVerificationPicker value={phoneChannel} onChange={setPhoneChannel} channels={phoneChannels} disabled={loading} />}
 
                             {showPassword && (
                               <label className="field">
@@ -1069,7 +1072,7 @@ export default function AuthModal() {
                             )}
                             <Motion.button
                               className="btn-primary w-full"
-                              disabled={loading}
+                              disabled={loading || (isPhone && !phoneChannels[phoneChannel])}
                               whileTap={{ scale: 0.97 }}
                             >
                               {translateText(loading
@@ -1149,14 +1152,16 @@ export default function AuthModal() {
                           </div>
                         ) : (
                           <form className="form" onSubmit={onConfirmCode}>
-                            <div className="verify-box">{translateText("Na broj ")}{translateText(sentTo || 'telefona')}{translateText(" poslali smo SMS kod.")}</div>
+                            <div className="verify-box">{translateText("Na broj ")}{translateText(sentTo || 'telefona')}{translateText(phoneChannel === 'whatsapp' ? " poslali smo WhatsApp kod." : " poslali smo SMS kod.")}</div>
                             <label className="field">
-                              <span>{translateText("SMS kod")}</span>
+                              <span>{translateText(phoneChannel === 'whatsapp' ? "WhatsApp kod" : "SMS kod")}</span>
                               <div className="input">
                                 <ShieldCheck className="ico" size={18} />
                                 <input
                                   type="text"
                                   inputMode="numeric"
+                                  autoComplete="one-time-code"
+                                  pattern="[0-9]{6}"
                                   placeholder="123456"
                                   value={smsCode}
                                   onChange={(e) => setSmsCode(e.target.value)}

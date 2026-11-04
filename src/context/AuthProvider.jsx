@@ -232,11 +232,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(
-    async ({ identity, password }) => {
+    async ({ identity, password, phoneChannel = 'sms' }) => {
       const id = detectIdentity(identity);
       if (id.type === 'phone') {
-        await authApi.requestPhoneOtp(id.value);
-        setPendingPhone(id.value);
+        await authApi.requestPhoneOtp(id.value, phoneChannel);
+        setPendingPhone({ phone: id.value, channel: phoneChannel });
         return 'phone-code';
       }
       if (id.type === 'unknown') {
@@ -258,7 +258,7 @@ export function AuthProvider({ children }) {
   const confirmPhoneCode = useCallback(
     async (code) => {
       if (!pendingPhone) throw new Error('Nema aktivne telefonske sesije.');
-      const me = await authApi.confirmPhoneOtp(pendingPhone, code);
+      const me = await authApi.confirmPhoneOtp(pendingPhone.phone, code, pendingPhone.channel);
       setPendingPhone(null);
       setUser(me);
       await loadMe();

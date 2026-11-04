@@ -1,4 +1,4 @@
-import { requestFirebasePhone, confirmFirebasePhone } from './firebasePhone.js';
+import { requestPhoneCode, confirmPhoneCode } from './phoneVerification.js';
 import {
   API_BASE_URL,
   apiRequest,
@@ -366,11 +366,11 @@ export const authApi = {
     setStaffAccessToken(BROWSER_SESSIONS_ENABLED ? data?.staffSession === true : data?.accessToken || data?.access_token || null, data?.expiresIn);
     return data;
   },
-  async requestPhoneOtp(phone) {
-    return requestFirebasePhone(phone, 'login');
+  async requestPhoneOtp(phone, channel = 'sms') {
+    return requestPhoneCode(phone, 'login', channel);
   },
-  async confirmPhoneOtp(phone, code) {
-    const data = await confirmFirebasePhone(phone, code, 'login');
+  async confirmPhoneOtp(phone, code, channel = 'sms') {
+    const data = await confirmPhoneCode(phone, code, 'login', channel);
     setAuthTokens(data);
     return normalizeUser(data);
   },
@@ -1079,11 +1079,11 @@ export const customerApi = {
   requestEmailVerification() {
     return apiRequest('/customer-auth/email/verification', { method: 'POST' });
   },
-  requestPhoneLinkOtp(phone) {
-    return requestFirebasePhone(phone, 'link');
+  requestPhoneLinkOtp(phone, channel = 'sms') {
+    return requestPhoneCode(phone, 'link', channel);
   },
-  verifyPhoneLinkOtp(phone, code) {
-    return confirmFirebasePhone(phone, code, 'link');
+  verifyPhoneLinkOtp(phone, code, channel = 'sms') {
+    return confirmPhoneCode(phone, code, 'link', channel);
   },
   updatePassword({ currentPassword, newPassword }) {
     return apiRequest('/customer-auth/password', {
