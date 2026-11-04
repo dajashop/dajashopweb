@@ -1,6 +1,7 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { usePreventScroll } from '@react-aria/overlays';
 import { Bell, BellRing, Check, Image as ImageIcon, LoaderCircle, ShieldCheck, X } from 'lucide-react';
 import {
   productAlertSubscriptions,
@@ -22,6 +23,7 @@ export default function ProductAlertModal({
   onSubscribed,
 }) {
   const dialogRef = useRef(null);
+  usePreventScroll({ isDisabled: !isOpen || !product?.id || !product?.variantId || !type });
   const { t: translateText, localizePath, money } = useStorefront();
 
   const { policy } = useConsent();
@@ -89,7 +91,6 @@ export default function ProductAlertModal({
     const viewport = window.visualViewport;
     let restingHeight = viewport?.height ?? window.innerHeight;
     let restingWidth = window.innerWidth;
-    let restingScreenTop = 0;
     let panelHeight = 0;
     let keyboardOpen = false;
     const measurePanel = () => {
@@ -103,15 +104,6 @@ export default function ProductAlertModal({
       dialog.style.setProperty('--resting-panel-height', `${panelHeight}px`);
       overlay.style.height = `${restingHeight}px`;
       overlay.style.setProperty('--modal-gap', `${Math.max(8, (restingHeight - panelHeight) / 2)}px`);
-      restingScreenTop = dialog.getBoundingClientRect().top - (viewport?.offsetTop ?? 0);
-    };
-    const anchorFrameToScreen = () => {
-      // Compare actual screen coordinates rather than guessing from keyboard height.
-      const currentScreenTop = dialog.getBoundingClientRect().top - (viewport?.offsetTop ?? 0);
-      const correction = restingScreenTop - currentScreenTop;
-      if (Math.abs(correction) > 0.25) {
-        overlay.style.top = `${(parseFloat(overlay.style.top) || 0) + correction}px`;
-      }
     };
     const updateViewport = () => {
       const height = viewport?.height ?? window.innerHeight;
@@ -125,9 +117,9 @@ export default function ProductAlertModal({
       }
       const wasOpen = keyboardOpen;
       keyboardOpen = restingHeight - height > (wasOpen ? 20 : 100) && (editing || wasOpen);
-      anchorFrameToScreen();
       // The shell's measured height/top remain frozen throughout opening and closing.
-      const available = Math.max(0, Math.min(panelHeight, height - restingScreenTop));
+      const viewportBottom = (viewport?.offsetTop ?? 0) + height;
+      const available = Math.max(0, Math.min(panelHeight, viewportBottom - dialog.getBoundingClientRect().top));
       dialog.style.setProperty('--keyboard-content-height', `${keyboardOpen ? available : panelHeight}px`);
       dialog.classList.toggle('is-keyboard-open', keyboardOpen);
       if (wasOpen && !keyboardOpen) content.scrollTop = 0;
@@ -162,15 +154,6 @@ export default function ProductAlertModal({
   useLayoutEffect(() => {
     if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
     const previousFocus = document.activeElement;
-    const scrollPosition = { x: window.scrollX, y: window.scrollY };
-    const body = document.body;
-    const properties = ['position', 'top', 'left', 'width', 'overflow'];
-    const previousStyles = properties.map((property) => [property, body.style[property]]);
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollPosition.y}px`;
-    body.style.left = `-${scrollPosition.x}px`;
-    body.style.width = '100%';
-    body.style.overflow = 'hidden';
     dialogRef.current?.focus({ preventScroll: true });
     const handleKey = (event) => {
       if (event.key === 'Escape') closeFromKeyboard();
@@ -187,8 +170,6 @@ export default function ProductAlertModal({
     };
     document.addEventListener('keydown', handleKey);
     return () => {
-      previousStyles.forEach(([property, value]) => { body.style[property] = value; });
-      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'instant' });
       document.removeEventListener('keydown', handleKey);
       previousFocus?.focus?.({ preventScroll: true });
     };
