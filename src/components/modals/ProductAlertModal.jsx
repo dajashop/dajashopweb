@@ -1,5 +1,5 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
-import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
+import React, { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Bell, BellRing, Check, Image as ImageIcon, LoaderCircle, ShieldCheck, X } from 'lucide-react';
 import {
@@ -80,7 +80,7 @@ export default function ProductAlertModal({
     };
   }, [authenticated, initialEmail, initialPhone, isOpen, product?.id, product?.variantId, type]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
     const dialog = dialogRef.current;
     if (!dialog) return undefined;
@@ -89,7 +89,6 @@ export default function ProductAlertModal({
     const viewport = window.visualViewport;
     let restingHeight = viewport?.height ?? window.innerHeight;
     let keyboardOpen = false;
-    let settleTimer;
     let viewportFrame;
     const alignViewport = () => {
       // Match Safari's visual origin without changing the panel's resting top gap.
@@ -102,28 +101,26 @@ export default function ProductAlertModal({
     const revealFocusedField = () => {
       const active = document.activeElement;
       if (!keyboardOpen || !dialog.contains(active) || !active.matches('input[type="email"], input[type="tel"]')) return;
-      const bounds = active.getBoundingClientRect();
-      const scrollArea = content.getBoundingClientRect();
-      const visibleBottom = scrollArea.bottom - 12;
-      const targetBottom = bounds.bottom;
-      if (targetBottom > visibleBottom) {
-        content.scrollTo({
-          top: content.scrollTop + targetBottom - visibleBottom,
-          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
-        });
-      }
+      const field = active.getBoundingClientRect();
+      const area = content.getBoundingClientRect();
+      const note = content.querySelector('.product-alert-modal__footnote').getBoundingClientRect();
+      // Keep the end of the form above the keyboard when it fits with the email.
+      const endFits = note.bottom - field.top + 20 <= content.clientHeight;
+      const targetBottom = endFits ? note.bottom : field.bottom;
+      const delta = targetBottom - (area.bottom - 8);
+      if (delta > 0) content.scrollTop += delta;
     };
     const updateViewport = () => {
       const height = viewport?.height ?? window.innerHeight;
       const active = document.activeElement;
       const editing = dialog.contains(active) && active.matches('input[type="email"], input[type="tel"]');
-      const nextKeyboardOpen = restingHeight - height > 100 && (editing || keyboardOpen);
+      const nextKeyboardOpen = restingHeight - height > (keyboardOpen ? 20 : 100) && (editing || keyboardOpen);
       if (!nextKeyboardOpen) {
-        if (!editing) restingHeight = height;
+        if (!editing && !keyboardOpen) restingHeight = height;
         dialog.classList.remove('is-keyboard-open');
         dialog.style.maxHeight = `${Math.max(1, restingHeight - 16)}px`;
         dialog.classList.remove('is-height-constrained');
-        dialog.classList.toggle('is-height-constrained', content.scrollHeight + dialog.querySelector('.product-alert-modal__footer').offsetHeight > restingHeight - 16);
+        dialog.classList.toggle('is-height-constrained', content.scrollHeight > restingHeight - 16);
         overlay.style.setProperty('--modal-gap', `${Math.max(8, (restingHeight - dialog.offsetHeight) / 2)}px`);
         dialog.style.setProperty('--resting-panel-height', `${dialog.offsetHeight}px`);
         if (keyboardOpen) content.scrollTop = 0;
@@ -134,9 +131,7 @@ export default function ProductAlertModal({
       keyboardOpen = nextKeyboardOpen;
       overlay.style.height = `${restingHeight}px`;
       alignViewport();
-      clearTimeout(settleTimer);
-      // Wait for Safari's keyboard animation and native focus scrolling to settle.
-      if (keyboardOpen) settleTimer = setTimeout(revealFocusedField, 180);
+      if (keyboardOpen) revealFocusedField();
     };
     const handleViewportScroll = () => {
       cancelAnimationFrame(viewportFrame);
@@ -149,7 +144,6 @@ export default function ProductAlertModal({
     viewport?.addEventListener('scroll', handleViewportScroll);
     updateViewport();
     return () => {
-      clearTimeout(settleTimer);
       cancelAnimationFrame(viewportFrame);
       dialog.removeEventListener('focusin', updateViewport);
       dialog.removeEventListener('focusout', updateViewport);
@@ -163,7 +157,7 @@ export default function ProductAlertModal({
     if (!submitting) onClose();
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
     const previousFocus = document.activeElement;
     const scrollPosition = { x: window.scrollX, y: window.scrollY };
@@ -396,13 +390,13 @@ export default function ProductAlertModal({
 
           {error && <p role="alert" className="product-alert-modal__error">{translateText(error)}</p>}
         </form>
-        </div>
         <div className="product-alert-modal__footer">
           <button type="submit" form="product-alert-subscription-form" disabled={submitting || !notificationChannelAvailable(deliveryChannel)}>
             {submitting ? <LoaderCircle size={19} aria-hidden="true" /> : <Bell size={19} aria-hidden="true" />}
             {translateText(submitting ? 'Čuvamo…' : 'Uključi obaveštenje')}
           </button>
           <p className="product-alert-modal__footnote"><Check size={14} aria-hidden="true" />{translateText('Novosti i ponude su opcione. Vi birate šta primate.')}</p>
+        </div>
         </div>
         </div>
       </div>

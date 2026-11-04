@@ -305,7 +305,7 @@
   max-height: none;
   overflow-x: hidden;
   overflow-y: auto;
-  padding-bottom: 18px;
+  padding-bottom: 8px;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -327,8 +327,7 @@
   flex-shrink: 0;
   display: grid;
   gap: 10px;
-  padding: var(--content-padding);
-  padding-top: 0;
+  margin-top: 14px;
+  padding: 0;
   background: #fff;
 }
-.product-alert-modal.is-keyboard-open .product-alert-modal__footer { padding-bottom: 8px; }
