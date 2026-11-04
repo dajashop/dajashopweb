@@ -27,7 +27,6 @@ export default function NotificationChannelPicker({ value, onChange, disabled, c
             <input type="radio" name={id} value={channel} checked={value === channel} disabled={!available} onChange={() => onChange(channel)} />
             <Icon size={23} aria-hidden="true" />
             <strong>{t(notificationChannelLabels[channel])}</strong>
-            <small>{t(available ? 'Dostupno' : 'Nije dostupno')}</small>
             {value === channel && <Check className="alert-channel-cards__check" size={14} aria-hidden="true" />}
           </label>;
         })}
