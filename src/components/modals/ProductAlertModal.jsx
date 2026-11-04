@@ -1,7 +1,6 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { usePreventScroll } from '@react-aria/overlays';
 import { Bell, BellRing, Check, Image as ImageIcon, LoaderCircle, ShieldCheck, X } from 'lucide-react';
 import {
   productAlertSubscriptions,
@@ -23,7 +22,6 @@ export default function ProductAlertModal({
   onSubscribed,
 }) {
   const dialogRef = useRef(null);
-  usePreventScroll({ isDisabled: !isOpen || !product?.id || !product?.variantId || !type });
   const { t: translateText, localizePath, money } = useStorefront();
 
   const { policy } = useConsent();
@@ -89,12 +87,36 @@ export default function ProductAlertModal({
     const overlay = dialog.parentElement;
     const content = dialog.querySelector('.product-alert-modal__content');
     const viewport = window.visualViewport;
+    const root = document.documentElement;
+    const body = document.body;
+    const pageX = window.scrollX;
+    const pageY = window.scrollY;
+    const bodyStyle = body.getAttribute('style');
+    const rootOverflow = root.style.overflow;
+    const rootScrollBehavior = root.style.scrollBehavior;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     let restingHeight = viewport?.height ?? window.innerHeight;
     let restingWidth = window.innerWidth;
     let panelHeight = 0;
+    let panelTop = 0;
     let keyboardOpen = false;
+    let restoreInputFrame = 0;
+    let hiddenInput = null;
+    let inputOpacity = '';
+    root.style.overflow = 'hidden';
+    root.style.scrollBehavior = 'auto';
+    Object.assign(body.style, {
+      position: 'fixed', top: `${-pageY}px`, left: `${-pageX}px`, width: '100%',
+    });
+
+    // Safari may pan the visual viewport even when the document is locked.
+    // Cancel only that pan, never the keyboard height. The shell's screen top
+    // is therefore always panelTop: offsetTop + panelTop - offsetTop.
+    const anchorShell = () => {
+      overlay.style.transform = `translate3d(${viewport?.offsetLeft ?? 0}px, ${viewport?.offsetTop ?? 0}px, 0)`;
+    };
     const measurePanel = () => {
-      overlay.style.top = '0px';
       dialog.style.height = '';
       dialog.classList.remove('is-keyboard-open', 'is-height-constrained');
       dialog.style.maxHeight = `${Math.max(1, restingHeight - 16)}px`;
@@ -103,9 +125,11 @@ export default function ProductAlertModal({
       dialog.style.height = `${panelHeight}px`;
       dialog.style.setProperty('--resting-panel-height', `${panelHeight}px`);
       overlay.style.height = `${restingHeight}px`;
-      overlay.style.setProperty('--modal-gap', `${Math.max(8, (restingHeight - panelHeight) / 2)}px`);
+      panelTop = Math.max(8, (restingHeight - panelHeight) / 2);
+      overlay.style.setProperty('--modal-gap', `${panelTop}px`);
     };
     const updateViewport = () => {
+      anchorShell();
       const height = viewport?.height ?? window.innerHeight;
       const active = document.activeElement;
       const editing = dialog.contains(active) && active.matches('input[type="email"], input[type="tel"]');
@@ -117,9 +141,9 @@ export default function ProductAlertModal({
       }
       const wasOpen = keyboardOpen;
       keyboardOpen = restingHeight - height > (wasOpen ? 20 : 100) && (editing || wasOpen);
-      // The shell's measured height/top remain frozen throughout opening and closing.
-      const viewportBottom = (viewport?.offsetTop ?? 0) + height;
-      const available = Math.max(0, Math.min(panelHeight, viewportBottom - dialog.getBoundingClientRect().top));
+      // Only the inner viewport responds to the keyboard. Do not measure a
+      // moving DOM rect to position the shell or feed scrolling back into it.
+      const available = Math.max(0, Math.min(panelHeight - 2, height - panelTop - 8));
       dialog.style.setProperty('--keyboard-content-height', `${keyboardOpen ? available : panelHeight}px`);
       dialog.classList.toggle('is-keyboard-open', keyboardOpen);
       if (wasOpen && !keyboardOpen) content.scrollTop = 0;
@@ -131,19 +155,54 @@ export default function ProductAlertModal({
       const delta = target - area.bottom + 8;
       if (delta > 0) content.scrollTop += delta;
     };
+    const restoreInput = () => {
+      if (hiddenInput) hiddenInput.style.opacity = inputOpacity;
+      hiddenInput = null;
+    };
+    const focusInput = (event) => {
+      const input = event.target.closest('input[type="email"], input[type="tel"]');
+      if (!isIOS || !input || input.disabled || document.activeElement === input) return;
+      // Focus during the actual touch gesture so iOS opens the keyboard.
+      // An invisible input does not trigger Safari's native page-centering pan.
+      // Restore it on the next frame; never hide/transform the modal itself.
+      event.preventDefault();
+      cancelAnimationFrame(restoreInputFrame);
+      restoreInput();
+      hiddenInput = input;
+      inputOpacity = input.style.opacity;
+      input.style.opacity = '0';
+      input.focus({ preventScroll: true });
+      restoreInputFrame = requestAnimationFrame(restoreInput);
+    };
+    const preventBackgroundPan = (event) => {
+      if (event.touches.length > 1) return;
+      if (!keyboardOpen || !content.contains(event.target)) event.preventDefault();
+    };
     measurePanel();
     updateViewport();
+    dialog.addEventListener('touchend', focusInput, { passive: false });
+    overlay.addEventListener('touchmove', preventBackgroundPan, { passive: false });
     dialog.addEventListener('focusin', updateViewport);
     dialog.addEventListener('focusout', updateViewport);
     window.addEventListener('resize', updateViewport);
     viewport?.addEventListener('resize', updateViewport);
     viewport?.addEventListener('scroll', updateViewport);
     return () => {
+      cancelAnimationFrame(restoreInputFrame);
+      restoreInput();
+      dialog.removeEventListener('touchend', focusInput);
+      overlay.removeEventListener('touchmove', preventBackgroundPan);
       dialog.removeEventListener('focusin', updateViewport);
       dialog.removeEventListener('focusout', updateViewport);
       window.removeEventListener('resize', updateViewport);
       viewport?.removeEventListener('resize', updateViewport);
       viewport?.removeEventListener('scroll', updateViewport);
+      if (dialog.contains(document.activeElement)) document.activeElement.blur();
+      if (bodyStyle === null) body.removeAttribute('style');
+      else body.setAttribute('style', bodyStyle);
+      root.style.overflow = rootOverflow;
+      window.scrollTo({ left: pageX, top: pageY, behavior: 'instant' });
+      root.style.scrollBehavior = rootScrollBehavior;
     };
   }, [isOpen, product?.id, product?.variantId, type]);
 
@@ -257,7 +316,7 @@ export default function ProductAlertModal({
   };
 
   return createPortal(
-    <div className="product-alert-modal__overlay" role="presentation">
+    <div className="product-alert-modal__overlay" role="presentation" data-lenis-prevent>
       <div
         className="product-alert-modal"
         ref={dialogRef}
