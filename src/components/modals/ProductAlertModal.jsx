@@ -84,6 +84,8 @@ export default function ProductAlertModal({
     if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
     const dialog = dialogRef.current;
     if (!dialog) return undefined;
+    let focusFrame;
+    const initialHeight = window.visualViewport?.height ?? window.innerHeight;
     const fitToViewport = () => {
       const viewport = window.visualViewport;
       const viewportHeight = viewport?.height ?? window.innerHeight;
@@ -91,12 +93,33 @@ export default function ProductAlertModal({
       dialog.parentElement.style.top = `${viewport?.offsetTop ?? 0}px`;
       const availableHeight = viewportHeight - 16;
       dialog.style.maxHeight = `${Math.max(1, availableHeight)}px`;
+      const active = document.activeElement;
+      const editing = dialog.contains(active) && active.matches('input[type="email"], input[type="tel"]');
+      dialog.classList.toggle('is-editing', editing && (window.matchMedia('(max-width: 600px)').matches || viewportHeight < initialHeight - 100));
+      cancelAnimationFrame(focusFrame);
+      focusFrame = requestAnimationFrame(() => {
+        if (!editing) return;
+        const fieldBounds = active.getBoundingClientRect();
+        const dialogBounds = dialog.getBoundingClientRect();
+        const visibleBottom = Math.min(dialogBounds.bottom, (viewport?.offsetTop ?? 0) + viewportHeight) - 18;
+        const visibleTop = dialogBounds.top + 18;
+        if (fieldBounds.bottom > visibleBottom) dialog.scrollTop += fieldBounds.bottom - visibleBottom;
+        else if (fieldBounds.top < visibleTop) dialog.scrollTop -= visibleTop - fieldBounds.top;
+      });
     };
+    const handleFocusChange = () => {
+      requestAnimationFrame(fitToViewport);
+    };
+    dialog.addEventListener('focusin', handleFocusChange);
+    dialog.addEventListener('focusout', handleFocusChange);
     window.addEventListener('resize', fitToViewport);
     window.visualViewport?.addEventListener('resize', fitToViewport);
     window.visualViewport?.addEventListener('scroll', fitToViewport);
     fitToViewport();
     return () => {
+      cancelAnimationFrame(focusFrame);
+      dialog.removeEventListener('focusin', handleFocusChange);
+      dialog.removeEventListener('focusout', handleFocusChange);
       window.removeEventListener('resize', fitToViewport);
       window.visualViewport?.removeEventListener('resize', fitToViewport);
       window.visualViewport?.removeEventListener('scroll', fitToViewport);
