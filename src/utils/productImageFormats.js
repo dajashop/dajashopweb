@@ -1,6 +1,8 @@
-// Only four-file assets carry this marker. Legacy images retain their original URLs.
+// Both layouts identify paired AVIF/WebP outputs. Unrelated legacy URLs stay unchanged.
+const versionFolder = '[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}';
+const cleanImageLayout = new RegExp(`/${versionFolder}/${versionFolder}/[^/?#]+\\.webp(?:[?#]|$)`, 'i');
 export function avifImageUrl(url) {
-  return typeof url === 'string' && /-avif65-webp75-(?:main|thumb)\.webp(?:[?#]|$)/.test(url)
+  return typeof url === 'string' && (/-avif65-webp75-(?:main|thumb)\.webp(?:[?#]|$)/.test(url) || cleanImageLayout.test(url))
     ? url.replace(/\.webp(?=[?#]|$)/, '.avif') : undefined;
 }
 export function avifImageSrcSet(srcSet) {
