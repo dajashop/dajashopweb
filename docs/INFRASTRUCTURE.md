@@ -5,10 +5,13 @@
 - Brisanje artikla uklanja njegove media veze i u istoj transakciji tombstonuje
   slike koje više nisu korišćene, uklanja noćni posao i zakazuje R2 brisanje.
   Aktivna obrada proverava lease i stanje asset-a pre objave.
-- Red za fajlove postoji u memoriji taba. Ako se tab/računar ugasi pre završetka,
-  nezavršeni fajl mora ponovo da se izabere; server čisti napušten `pending_upload`
-  posle 24 h, nakon isteka 15-minutnog PUT URL-a. Završeni asset-i i noćni poslovi
-  su server-side, a sačuvani nacrt novog artikla sadrži završene media ID-jeve.
+- Red fajlova i izabrani fajlovi čuvaju se u IndexedDB pregledača po adminu i
+  artiklu/nacrtu. Posle restarta taba upload nastavlja istim media ID-jem uz novi
+  kratkotrajni PUT URL; bez interneta čeka browser `online` događaj. Ako IndexedDB
+  nije dostupan, upload se ne pokreće.
+- Nezavršeni upload asset-i bez kataloške veze ili noćnog posla brišu se posle
+  24 h. Noćni poslovi ostaju server-side i oporavljaju se po isteku lease-a.
+  Link-import koristi idempotency ID pa izgubljen odgovor ne pravi duplikat.
 - Noćna obrada staje posle 8 neuspešnih pokušaja i čeka ručni retry iz admin
   kartice. Svaki pokušaj ima jedinstvene WebP ključeve, a neuspeo R2 cleanup se
   čuva u trajnom redu. Kod nije runtime/deploy potvrda.

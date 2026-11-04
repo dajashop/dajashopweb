@@ -6,19 +6,24 @@ import { generateSlug } from '../utils/generators';
 import { uploadProductImage } from '../../../services/r2ImageService';
 import { resizeToWebP, generateSeoFilename } from '../../../utils/imageProcessing';
 import { mediaApi } from '../../../services/dajaPlatform';
+import { listMediaUploadJobs, removeMediaUploadJob, saveMediaUploadJob, saveMediaUploadJobs } from '../../../services/mediaUploadQueueStorage';
 
 const MAX_CONCURRENT_UPLOADS = 1;
 
 export default function ImageManager({ images, onChange, onImageClick, productSlug, productName,
-  department, onRemoteUploadSuccess, disabled = false, onBusyChange }) {
+  department, onRemoteUploadSuccess, disabled = false, onBusyChange, uploadQueueScope }) {
   const { t } = useStorefront();
   const fileInputRef = useRef(null);
   const [urlInput, setUrlInput] = useState('');
   const [jobs, setJobs] = useState([]);
+  const [hydrated, setHydrated] = useState(false);
+  const [storageError, setStorageError] = useState('');
   const queue = useRef([]);
   const active = useRef(0);
   const nextPosition = useRef(images.length);
   const mounted = useRef(true);
+  const hydratedRef = useRef(false);
+  const pumpRef = useRef(null);
   const current = useRef({});
   current.current = { images, onChange, onRemoteUploadSuccess, onBusyChange };
   const imagesRef = useRef(images);
@@ -41,16 +46,20 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     mounted.current = true;
     return () => {
       mounted.current = false;
-      for (const job of queue.current) {
-        releasePreview(job);
-        if (job.status === 'ready') discard(job.image);
-      }
-      queue.current = [];
+      for (const job of queue.current) releasePreview(job);
     };
   }, []);
 
   // Update refs before notifying the parent: two completions can share one render.
   const publishImages = nextImages => {
+    const retainedIds = new Set(nextImages.map(image => image.mediaId).filter(Boolean));
+    const removedIds = imagesRef.current.map(image => image.mediaId).filter(id => id && !retainedIds.has(id));
+    if (removedIds.length && uploadQueueScope) {
+      void listMediaUploadJobs(uploadQueueScope).then(saved => Promise.all(saved
+        .filter(job => job.image?.mediaId && removedIds.includes(job.image.mediaId))
+        .map(job => removeMediaUploadJob(job.id))))
+        .catch(error => setStorageError(error.message));
+    }
     imagesRef.current = nextImages;
     current.current.onChange(nextImages);
   };
@@ -58,7 +67,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     if (!mounted.current) return;
     setJobs(queue.current.map(job => ({ ...job })));
     // Failed slots must be retried or removed before the product can be saved.
-    current.current.onBusyChange?.(active.current > 0 || queue.current.length > 0);
+    current.current.onBusyChange?.(!hydratedRef.current || active.current > 0 || queue.current.length > 0);
   };
   const flushReady = () => {
     const ready = [];
@@ -77,6 +86,9 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
       }
     }
   };
+  const persistJob = async job => {
+    await saveMediaUploadJob({ ...job, scope: uploadQueueScope, preview: undefined });
+  };
   const uploadJob = async job => {
     if (job.file) {
       let file = job.file;
@@ -84,13 +96,26 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
         const blob = await resizeToWebP(file, 2400, 0.85, { square: true });
         file = new File([blob], generateSeoFilename(job.slug, job.position, 'original'), { type: 'image/webp' });
       }
-      return uploadProductImage(job.slug, file, job.position);
+      return uploadProductImage(job.slug, file, job.position, {
+        mediaId: job.mediaId,
+        onMediaId: async mediaId => {
+          job.mediaId = mediaId;
+          await persistJob(job);
+          if (['cancelled', 'removing'].includes(job.status)) {
+            if (mediaId) await mediaApi.discardUpload(mediaId).catch(() => {});
+            await removeMediaUploadJob(job.id).catch(() => {});
+            throw new DOMException('Upload cancelled', 'AbortError');
+          }
+        }
+      });
     }
     let asset;
     for (let attempt = 0; attempt < 4; attempt += 1) {
       if (!mounted.current || job.status === 'cancelled') return null;
       try {
-        asset = await mediaApi.registerExternal(job.sourceUrl, { productSlug: job.slug, imageIndex: job.position + 1 });
+        asset = await mediaApi.registerExternal(job.sourceUrl, {
+          productSlug: job.slug, imageIndex: job.position + 1, clientRequestId: job.id
+        });
         break;
       } catch (error) {
         if (attempt === 3 || ![429, 503].includes(error.status)) throw error;
@@ -108,13 +133,18 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
       const job = queue.current.find(item => item.status === 'queued');
       if (!job) break;
       job.status = 'uploading'; active.current += 1;
-      void uploadJob(job).then(image => {
-        if (!mounted.current || job.status === 'cancelled' || !queue.current.includes(job)) {
-          discard(image); return;
-        }
-        job.image = image; job.status = 'ready';
+      void persistJob(job).then(() => uploadJob(job)).then(async image => {
+        if (job.status === 'cancelled' || !queue.current.includes(job)) { discard(image); return; }
+        job.image = image; job.status = 'ready'; job.error = null;
+        await persistJob(job);
       }).catch(error => {
-        if (job.status !== 'cancelled') { job.status = 'failed'; job.error = error?.message || t('Otpremanje nije uspelo.'); }
+        if (!['cancelled', 'removing'].includes(job.status)) {
+          job.status = !navigator.onLine || error instanceof TypeError ? 'offline' : 'failed';
+          job.error = job.status === 'offline'
+            ? t('Veza je prekinuta. Red je sačuvan i nastaviće se kada se internet vrati.')
+            : error?.message || t('Otpremanje nije uspelo.');
+          void persistJob(job).catch(storageError => setStorageError(storageError.message));
+        }
       }).finally(() => {
         active.current -= 1;
         if (!mounted.current) return;
@@ -124,19 +154,87 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     }
     notify();
   };
-  const enqueue = entries => {
+  pumpRef.current = pump;
+
+  useEffect(() => {
+    if (disabled || !uploadQueueScope || hydratedRef.current) return undefined;
+    let cancelled = false;
+    void listMediaUploadJobs(uploadQueueScope).then(async saved => {
+      if (cancelled) return;
+      const currentMediaIds = new Set(imagesRef.current.map(image => image.mediaId).filter(Boolean));
+      const restored = [];
+      for (const savedJob of saved) {
+        if (savedJob.image?.mediaId && currentMediaIds.has(savedJob.image.mediaId)) {
+          await removeMediaUploadJob(savedJob.id);
+          continue;
+        }
+        const status = savedJob.operation === 'remove' ? 'offline'
+          : savedJob.status === 'ready' ? 'ready'
+            : savedJob.status === 'failed' ? 'failed'
+              : navigator.onLine ? 'queued' : 'offline';
+        const job = { ...savedJob, status, preview: savedJob.file ? URL.createObjectURL(savedJob.file) : null };
+        restored.push(job);
+      }
+      if (cancelled) { restored.forEach(releasePreview); return; }
+      queue.current.push(...restored);
+      nextPosition.current = Math.max(nextPosition.current, ...restored.map(job => job.position + 1), imagesRef.current.length);
+      hydratedRef.current = true;
+      setHydrated(true);
+      setStorageError('');
+      if (navigator.onLine) {
+        for (const job of restored) if (job.operation === 'remove') void removeJob(job.id);
+      }
+      flushReady(); pumpRef.current?.(); notify();
+    }).catch(error => {
+      if (cancelled) return;
+      setStorageError(error?.message || t('Sačuvani red slika nije mogao da se učita.'));
+      // Do not start uploads when the browser cannot guarantee recovery.
+      current.current.onBusyChange?.(true);
+    });
+    return () => { cancelled = true; };
+  }, [disabled, uploadQueueScope]);
+
+  useEffect(() => {
+    const resumeOffline = () => {
+      for (const job of queue.current) {
+        if (job.status === 'offline') {
+          if (job.operation === 'remove') void removeJob(job.id);
+          else { job.status = 'queued'; job.error = null; void persistJob(job).catch(error => setStorageError(error.message)); }
+        }
+      }
+      if (mounted.current) { pumpRef.current?.(); notify(); }
+    };
+    window.addEventListener('online', resumeOffline);
+    return () => window.removeEventListener('online', resumeOffline);
+  }, [uploadQueueScope]);
+  const enqueue = async entries => {
     if (disabled || !entries.length) return;
+    if (!hydratedRef.current) { alert(t('Sačekajte da se proveri sačuvani red slika.')); return; }
     const slug = productSlug || (productName ? generateSlug(productName) : '');
     if (!slug) { alert(t('Unesite naziv ili slug pre dodavanja slika.')); return; }
     nextPosition.current = Math.max(nextPosition.current, imagesRef.current.length);
+    const added = [];
     for (const entry of entries) {
-      queue.current.push({ ...entry, id: crypto.randomUUID(), slug, department,
+      const job = { ...entry, id: crypto.randomUUID(), scope: uploadQueueScope, slug, department,
         position: nextPosition.current++, status: 'queued', error: null, altText: '',
-        preview: entry.file ? URL.createObjectURL(entry.file) : null });
+        preview: entry.file ? URL.createObjectURL(entry.file) : null };
+      added.push(job);
+      queue.current.push(job);
     }
     // Reserve the slots and block Save synchronously, before either request starts.
     current.current.onBusyChange?.(true);
-    pump();
+    try {
+      await saveMediaUploadJobs(added.map(job => ({ ...job, scope: uploadQueueScope })));
+      setStorageError('');
+      pump();
+    } catch (error) {
+      for (const job of added) {
+        job.status = 'failed';
+        job.error = error?.message || t('Nije moguće sačuvati red slika na ovom uređaju.');
+      }
+      setStorageError(t('Red slika nije mogao da se sačuva. Otpremanje nije pokrenuto. Oslobodite prostor ili ponovo otvorite admin.'));
+      notify();
+    }
   };
   const handleUpload = event => {
     const files = Array.from(event.target.files || []);
@@ -151,28 +249,52 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     enqueue(sourceUrls.map(sourceUrl => ({ sourceUrl })));
     setUrlInput('');
   };
-  const removeJob = id => {
+  const removeJob = async id => {
     const job = queue.current.find(item => item.id === id);
     if (!job) return;
-    if (job.status === 'ready') discard(job.image);
-    job.status = 'cancelled'; releasePreview(job);
+    if (job.mediaId || job.image?.mediaId) {
+      job.operation = 'remove'; job.status = 'removing';
+      await persistJob(job).catch(error => setStorageError(error.message));
+      try {
+        await mediaApi.discardUpload(job.mediaId || job.image.mediaId).catch(error => {
+          if (![404, 410].includes(error.status)) throw error;
+        });
+        await removeMediaUploadJob(job.id);
+        queue.current = queue.current.filter(item => item !== job);
+        releasePreview(job);
+      } catch (error) {
+        job.status = !navigator.onLine || error instanceof TypeError ? 'offline' : 'failed';
+        job.error = t('Brisanje čeka vezu sa serverom. Red je sačuvan.');
+        await persistJob(job).catch(storageError => setStorageError(storageError.message));
+      }
+    } else {
+      job.status = 'cancelled';
+      queue.current = queue.current.filter(item => item !== job);
+      releasePreview(job);
+      await removeMediaUploadJob(job.id).catch(error => setStorageError(error.message));
+    }
     flushReady(); pump(); notify();
   };
-  const retryJob = id => {
+  const retryJob = async id => {
     const job = queue.current.find(item => item.id === id);
-    if (!job || job.status !== 'failed') return;
-    job.status = 'queued'; job.error = null; pump();
+    if (!job || !['failed', 'offline'].includes(job.status)) return;
+    if (job.operation === 'remove') return removeJob(id);
+    job.status = 'queued'; job.error = null;
+    await persistJob(job).then(pump).catch(error => {
+      job.status = 'failed'; job.error = error.message; setStorageError(error.message); notify();
+    });
   };
   const updateJobAlt = (id, altText) => {
     const job = queue.current.find(item => item.id === id);
     if (!job || job.status === 'cancelled') return;
     job.altText = altText;
+    void persistJob(job).catch(error => setStorageError(error.message));
     notify();
   };
   const visibleJobs = jobs.filter(job => job.status !== 'cancelled');
-  const busy = jobs.length > 0;
+  const busy = jobs.length > 0 || !hydrated;
 
-  return <fieldset className="space-y-4 min-w-0" disabled={disabled}
+  return <fieldset className="space-y-4 min-w-0" disabled={disabled || !hydrated}
     onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.preventDefault(); }}
     onDrop={event => {
       if (!event.dataTransfer.types.includes('Files')) return;
@@ -187,7 +309,9 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
       </button>
       <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleUpload} />
     </div>
-    <p className="text-xs text-neutral-500">{t('Izaberite ili prevucite sve slike odjednom. Obrađuju se redom, jedna po jedna.')}</p>
+    <p className="text-xs text-neutral-500">{t('Izaberite ili prevucite sve slike odjednom. Red se čuva u ovom pregledaču i nastavlja posle osvežavanja kada se veza vrati.')}</p>
+    {storageError && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">{storageError}</p>}
+    {!hydrated && !storageError && <p role="status" className="text-xs text-neutral-500">{t('Proveravam sačuvani red slika…')}</p>}
     <p className="text-xs text-neutral-500">{t('Pri dodavanju se priprema velika AVIF slika. Ostale tri verzije obrađuju se od 03:00 do 07:00 po vremenu u Srbiji.')}</p>
     <div className="flex gap-2 items-center">
       <div className="relative flex-1">
@@ -237,7 +361,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
         <div className="min-w-0 flex-1 text-xs">
           <p className="truncate font-semibold">{job.file?.name || `${t('Slika sa linka')} ${images.length + index + 1}`}</p>
           {!images.length && index === 0 && <p className="font-semibold text-emerald-700">{t('Rezervisano mesto glavne slike')}</p>}
-          <p>{t(job.status === 'uploading' ? 'Otpremanje i obrada slike…' : job.status === 'ready' ? 'Spremna — čeka prethodnu sliku.' : job.status === 'failed' ? 'Otpremanje nije uspelo. Pokušajte ponovo ili uklonite sliku.' : 'Čeka početak otpremanja…')}</p>
+          <p>{t(job.status === 'uploading' ? 'Otpremanje i obrada slike…' : job.status === 'ready' ? 'Spremna — čeka prethodnu sliku.' : job.status === 'offline' ? 'Nema veze sa serverom. Red će nastaviti kada internet proradi.' : job.status === 'removing' ? 'Čeka potvrdu brisanja sa servera…' : job.status === 'failed' ? 'Otpremanje nije uspelo. Pokušajte ponovo ili uklonite sliku.' : 'Čeka početak otpremanja…')}</p>
           {job.status === 'failed' && job.error && <p className="mt-1 break-words text-red-700">{job.error}</p>}
           <input value={job.altText || ''} placeholder={`${t('Alt tekst slike')} ${images.length + index + 1}`}
             aria-label={`${t('Alt tekst slike')} ${images.length + index + 1}`} maxLength={240}
@@ -245,8 +369,8 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
             className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs text-neutral-700" />
         </div>
         {job.status === 'uploading' && <Loader2 size={16} className="animate-spin text-blue-600" />}
-        {job.status === 'failed' && <button type="button" onClick={() => retryJob(job.id)} title={t('Pokušaj ponovo')} className="p-2 text-blue-700"><RotateCcw size={16} /></button>}
-        <button type="button" onClick={() => removeJob(job.id)} title={t('Ukloni sliku')} className="p-2 text-neutral-400 hover:text-red-600"><Trash2 size={16} /></button>
+        {(job.status === 'failed' || job.status === 'offline') && <button type="button" onClick={() => retryJob(job.id)} title={t('Pokušaj ponovo')} className="p-2 text-blue-700"><RotateCcw size={16} /></button>}
+        <button type="button" disabled={job.status === 'removing'} onClick={() => void removeJob(job.id)} title={t('Ukloni sliku')} className="p-2 text-neutral-400 hover:text-red-600 disabled:opacity-50"><Trash2 size={16} /></button>
       </div>)}
     </div>}
     {!images.length && !visibleJobs.length && <button type="button" onClick={() => fileInputRef.current?.click()}

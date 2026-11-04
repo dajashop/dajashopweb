@@ -1394,6 +1394,12 @@ export const mediaApi = {
       { method: 'POST', staff: true },
     );
   },
+  resumeUpload(mediaId) {
+    return apiRequest(
+      `/media/uploads/${encodeURIComponent(mediaId)}/resume`,
+      { method: 'POST', staff: true },
+    );
+  },
   discardUpload(mediaId) {
     return apiRequest(`/media/uploads/${encodeURIComponent(mediaId)}`, {
       method: 'DELETE',

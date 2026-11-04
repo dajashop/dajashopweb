@@ -26,6 +26,7 @@ import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
 import ImageGalleryModal from '../../../components/modals/ImageGalleryModal.jsx';
 import ImageManager from './ImageManager.jsx';
+import { clearMediaUploadJobs } from '../../../services/mediaUploadQueueStorage.js';
 import { generateSlug } from '../utils/generators.js';
 import { findSimilarProducts } from '../utils/productNameSimilarity.js';
 import CustomSelect from './CustomSelect.jsx';
@@ -123,7 +124,9 @@ export default function AdminProductModal({
   reviewContext,
   draft: productDraft,
   onDraftChange,
+  uploadQueueOwnerId = 'admin',
 }) {
+  const uploadQueueScope = `user:${uploadQueueOwnerId}:${product?.id ? `product:${product.id}` : 'new-product-draft'}`;
   const workTiming = useWorkTiming({ product, draft: productDraft, reviewContext });
   const timingHasDraft = useRef(Boolean(productDraft));
   const buildSeoDefaults = (baseProduct = {}) => {
@@ -1526,6 +1529,9 @@ export default function AdminProductModal({
       }
       }
       pendingUploadIdsRef.current.clear();
+      await clearMediaUploadJobs(uploadQueueScope).catch((error) =>
+        console.error('Čišćenje završenog reda slika nije uspelo:', error),
+      );
       if (!product) {
         successfullySavedRef.current = true;
         nameCheckRef.current = { name: '', matches: [], unavailable: false };
@@ -2293,6 +2299,7 @@ export default function AdminProductModal({
                   productSlug={form.slug} // <--- Dodato
                   productName={form.name} // <--- Dodato
                   onRemoteUploadSuccess={handleRemoteImageSuccess}
+                  uploadQueueScope={uploadQueueScope}
                 />
                 <div className="mt-4 p-3 bg-blue-50 text-blue-700 text-xs rounded-lg border border-blue-100">
                   <p className="flex gap-2 items-start">

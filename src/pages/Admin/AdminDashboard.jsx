@@ -753,6 +753,7 @@ function AdminDashboardContent() {
     );
   }, [user?.id]);
   const { openEditor, editors, hasEditors: modalOpen, hasDraftEditor } = useProductEditors({
+    uploadQueueOwnerId: user?.id || 'admin',
     existingProducts: completeCatalogRequested ? completeCatalog.items : products,
     taxonomy: { brands: taxonomyLoading.brands ? undefined : brands, categories: taxonomyLoading.categories ? undefined : categories, departments: departments.length ? departments : undefined },
     catalogLoading: completeCatalogRequested ? completeCatalog.loading : productsLoading,
