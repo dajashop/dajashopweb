@@ -92,19 +92,20 @@ export default function ProductAlertModal({
     let settleTimer;
     let viewportFrame;
     const alignViewport = () => {
-      // Safari may pan its visual viewport independently of the locked document.
+      // Match Safari's visual origin without changing the panel's resting top gap.
       overlay.style.top = `${viewport?.offsetTop ?? 0}px`;
+      if (keyboardOpen) {
+        const gap = parseFloat(overlay.style.getPropertyValue('--modal-gap')) || 8;
+        dialog.style.setProperty('--keyboard-panel-height', `${Math.max(1, (viewport?.height ?? window.innerHeight) - gap)}px`);
+      }
     };
     const revealFocusedField = () => {
       const active = document.activeElement;
       if (!keyboardOpen || !dialog.contains(active) || !active.matches('input[type="email"], input[type="tel"]')) return;
       const bounds = active.getBoundingClientRect();
-      const panel = dialog.getBoundingClientRect();
-      const visibleTop = Math.max(panel.top, viewport?.offsetTop ?? 0) + 18;
-      const visibleBottom = Math.min(panel.bottom, (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight)) - 18;
-      const formBottom = content.querySelector('form').getBoundingClientRect().bottom;
-      // Show the email and confirmation together whenever they fit in the visible panel.
-      const targetBottom = formBottom - bounds.top <= visibleBottom - visibleTop ? formBottom : bounds.bottom;
+      const scrollArea = content.getBoundingClientRect();
+      const visibleBottom = scrollArea.bottom - 12;
+      const targetBottom = bounds.bottom;
       if (targetBottom > visibleBottom) {
         content.scrollTo({
           top: content.scrollTop + targetBottom - visibleBottom,
@@ -122,7 +123,7 @@ export default function ProductAlertModal({
         dialog.classList.remove('is-keyboard-open');
         dialog.style.maxHeight = `${Math.max(1, restingHeight - 16)}px`;
         dialog.classList.remove('is-height-constrained');
-        dialog.classList.toggle('is-height-constrained', content.scrollHeight > restingHeight - 16);
+        dialog.classList.toggle('is-height-constrained', content.scrollHeight + dialog.querySelector('.product-alert-modal__footer').offsetHeight > restingHeight - 16);
         overlay.style.setProperty('--modal-gap', `${Math.max(8, (restingHeight - dialog.offsetHeight) / 2)}px`);
         if (keyboardOpen) content.scrollTop = 0;
       } else {
@@ -132,9 +133,6 @@ export default function ProductAlertModal({
       keyboardOpen = nextKeyboardOpen;
       overlay.style.height = `${restingHeight}px`;
       alignViewport();
-      const panelTop = dialog.getBoundingClientRect().top;
-      const viewportBottom = (viewport?.offsetTop ?? 0) + height;
-      dialog.style.setProperty('--keyboard-panel-height', `${Math.max(1, viewportBottom - panelTop - 8)}px`);
       clearTimeout(settleTimer);
       // Wait for Safari's keyboard animation and native focus scrolling to settle.
       if (keyboardOpen) settleTimer = setTimeout(revealFocusedField, 180);
@@ -320,7 +318,7 @@ export default function ProductAlertModal({
           </div>
         </div>
         </div>
-        <form onSubmit={handleSubmit}>
+        <form id="product-alert-subscription-form" onSubmit={handleSubmit}>
           <NotificationChannelPicker variant="cards" value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setError(''); }} disabled={submitting} />
 
           {isEmailChannel && reusableGuestEmail ? (
@@ -395,12 +393,14 @@ export default function ProductAlertModal({
           )}
 
           {error && <p role="alert" className="product-alert-modal__error">{translateText(error)}</p>}
-          <button type="submit" disabled={submitting || !notificationChannelAvailable(deliveryChannel)}>
+        </form>
+        </div>
+        <div className="product-alert-modal__footer">
+          <button type="submit" form="product-alert-subscription-form" disabled={submitting || !notificationChannelAvailable(deliveryChannel)}>
             {submitting ? <LoaderCircle size={19} aria-hidden="true" /> : <Bell size={19} aria-hidden="true" />}
             {translateText(submitting ? 'Čuvamo…' : 'Uključi obaveštenje')}
           </button>
           <p className="product-alert-modal__footnote"><Check size={14} aria-hidden="true" />{translateText('Novosti i ponude su opcione. Vi birate šta primate.')}</p>
-        </form>
         </div>
       </div>
     </div>,

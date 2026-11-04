@@ -24,6 +24,8 @@
 
 .product-alert-modal {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(100%, 500px);
   margin-inline: auto;
   flex-shrink: 0;
@@ -44,8 +46,9 @@
 
 .product-alert-modal__content {
   box-sizing: border-box;
-  max-height: inherit;
+  min-height: 0;
   padding: var(--content-padding);
+  padding-bottom: 14px;
   overflow: hidden;
   overscroll-behavior: contain;
   scroll-padding-block: 24px;
@@ -193,7 +196,7 @@
   font-size: 0.84rem;
 }
 
-.product-alert-modal form > button {
+.product-alert-modal__footer > button {
   min-height: 46px;
   border: 0;
   border-radius: 10px;
@@ -208,7 +211,7 @@
   cursor: pointer;
 }
 
-.product-alert-modal form > button:disabled,
+.product-alert-modal__footer > button:disabled,
 .product-alert-modal__close:disabled {
   opacity: 0.65;
   cursor: wait;
@@ -231,13 +234,13 @@
 .product-alert-modal__check { cursor: pointer; padding: 10px 0; }
 .product-alert-modal__check input { width: 17px; height: 17px; flex-shrink: 0; }
 .product-alert-modal__footnote { display: flex; justify-content: center; align-items: center; gap: 6px; margin: 0; color: #666; text-align: center; font-size: .7rem; line-height: 1.5; }
-.product-alert-modal form > button:hover:not(:disabled) { background: #333; }
+.product-alert-modal__footer > button:hover:not(:disabled) { background: #333; }
 .product-alert-modal :is(button, input, a):focus-visible { outline: 3px solid #777; outline-offset: 3px; }
 .product-alert-modal input:focus-visible { border-color: var(--color-text, #111); }
-.product-alert-modal form > button:disabled { cursor: default; }
-.product-alert-modal form > button:disabled svg { animation: alert-spin 1s linear infinite; }
+.product-alert-modal__footer > button:disabled { cursor: default; }
+.product-alert-modal__footer > button:disabled svg { animation: alert-spin 1s linear infinite; }
 @keyframes alert-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .product-alert-modal form > button:disabled svg { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .product-alert-modal__footer > button:disabled svg { animation: none; } }
 @media (max-width: 480px) {
   .product-alert-modal { --content-padding: 22px 18px; border-radius: 20px;  }
   .product-alert-modal__hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: 6px; min-height: 290px; }
@@ -265,7 +268,7 @@
   .product-alert-modal .product-alert-modal__privacy-note { font-size: .67rem; line-height: 1.35; }
   .product-alert-modal__check { margin: 0; padding: 3px 0; font-size: .71rem; }
   .product-alert-modal__footnote { font-size: .63rem; }
-  .product-alert-modal form > button { min-height: 42px; font-size: .85rem; }
+  .product-alert-modal__footer > button { min-height: 42px; font-size: .85rem; }
   .product-alert-modal .alert-channel-cards legend { margin-bottom: 7px; font-size: .79rem; }
   .product-alert-modal .alert-channel-cards__grid { gap: 6px; }
   .product-alert-modal .alert-channel-cards__option { padding: 7px 4px; gap: 4px; }
@@ -285,8 +288,9 @@
   max-height: var(--keyboard-panel-height);
 }
 .product-alert-modal.is-keyboard-open .product-alert-modal__content {
-  height: 100%;
-  max-height: 100%;
+  flex: 1;
+  min-height: 0;
+  max-height: none;
   overflow-x: hidden;
   overflow-y: auto;
   padding-bottom: 18px;
@@ -306,3 +310,13 @@
 .product-alert-modal.is-height-constrained .product-alert-modal__check { padding: 0; }
 .product-alert-modal.is-height-constrained .alert-channel-cards legend { margin-bottom: 5px; }
 .product-alert-modal.is-height-constrained .alert-channel-cards__option { padding-block: 5px; }
+
+.product-alert-modal__footer {
+  flex-shrink: 0;
+  display: grid;
+  gap: 10px;
+  padding: var(--content-padding);
+  padding-top: 0;
+  background: #fff;
+}
+.product-alert-modal.is-keyboard-open .product-alert-modal__footer { padding-bottom: 8px; }
