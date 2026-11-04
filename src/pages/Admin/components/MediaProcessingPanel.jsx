@@ -152,9 +152,13 @@ export default function MediaProcessingPanel({ visible, canRetry, onOpenProduct,
     catch (caught) { setError(caught.message || t('Zatvaranje poruke nije uspelo.')); }
     finally { setBusy(''); }
   };
-  const openProduct = async item => {
+  const openProduct = async (item, addImage = false) => {
     setBusy(item.mediaId); setError('');
-    try { onOpenProduct?.(await adminCatalogApi.getProduct(item.productId)); }
+    try {
+      const product = await adminCatalogApi.getProduct(item.productId);
+      if (addImage) setNotice(t('U galeriji proizvoda dodajte sliku sa računara ili nalepite njen link, pa sačuvajte promene.'));
+      onOpenProduct?.(product);
+    }
     catch (caught) { setError(caught.message || t('Otvaranje proizvoda nije uspelo.')); }
     finally { setBusy(''); }
   };
@@ -246,19 +250,29 @@ export default function MediaProcessingPanel({ visible, canRetry, onOpenProduct,
                 <p className={`mt-1 text-xs font-semibold ${['failed','interrupted','upload_again'].includes(item.status) ? 'text-red-700' : 'text-blue-700'}`}>
                   {t(statusLabels[item.status] || 'Čeka noćnu obradu')}{item.phase === 'overnight' ? ` · ${t('Noćna obrada')}` : ` · ${t('Dodavanje slike')}`}
                 </p>
-                {item.message && <p className="mt-1 break-words text-neutral-700">{t(item.message)}</p>}
+                {item.message && <p className="mt-1 break-words text-neutral-700">{item.resolvedAt && item.phase === 'upload'
+                  ? t('Prethodni pokušaj dodavanja nije uspeo. Ova poruka je sačuvana u istoriji.') : t(item.message)}</p>}
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500">
                   {item.lastFailureAt && <span>{t('Poslednja greška:')} {date(item.lastFailureAt)}</span>}
                   <span>{t('Broj pokušaja:')} {item.attempts ?? item.occurrences ?? 0}</span>
                   {item.retryRequestedAt && !item.resolvedAt && <span>{t('Ponovo zakazano:')} {date(item.retryRequestedAt)}</span>}
                   {item.resolvedAt && <span>{t('Zatvoreno:')} {date(item.resolvedAt)}</span>}
                 </div>
-                {item.phase === 'upload' && !item.resolvedAt && <p className="mt-2 text-xs text-neutral-500">{t('Za neuspešno dodavanje otvorite proizvod i ponovo dodajte izvorni fajl.')}</p>}
+                {item.phase === 'upload' && !item.canRetry && <p className="mt-2 text-xs text-neutral-500">{t('Automatsko ponavljanje ovog dodavanja nije dostupno. Dodajte izvorni fajl ili link ponovo u galeriji proizvoda. Postojeće slike ostaju sačuvane.')}</p>}
               </div>
             </div>
             <div className="mt-3 flex flex-wrap justify-end gap-2">
               {/^https?:\/\//i.test(item.previewUrl || '') && <a className={button} href={item.previewUrl} target="_blank" rel="noopener noreferrer">{t('Otvori sliku')}</a>}
               {item.productId && <button type="button" className={button} disabled={Boolean(busy)} onClick={() => openProduct(item)}><ExternalLink size={14} />{t('Otvori proizvod')}</button>}
+              {canRetry && item.productId && item.phase === 'upload' && !item.canRetry && <button type="button" className={`${button} text-blue-700`} disabled={Boolean(busy)} onClick={() => openProduct(item, true)}>
+                {busy === item.mediaId ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}{t('Dodaj sliku ponovo')}
+              </button>}
+              {view !== 'queue' && !item.isRead && item.eventKey && <button type="button" className={button} disabled={Boolean(busy)} onClick={async () => {
+                setBusy(item.mediaId); setError('');
+                try { await markRead([item]); refresh(); }
+                catch (caught) { setError(caught.message || t('Označavanje poruka nije uspelo.')); }
+                finally { setBusy(''); }
+              }}><Check size={14} />{t('Označi kao pročitano')}</button>}
               {canRetry && item.phase === 'upload' && !item.resolvedAt && <button type="button" className={button} disabled={Boolean(busy)} onClick={() => closeAlert(item)}>{t('Zatvori poruku')}</button>}
               {canRetry && item.canRetry && <button type="button" className={`${button} text-blue-700`} disabled={Boolean(busy)} onClick={() => retry(item)}>
                 {busy === item.mediaId ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}{t('Pokušaj ponovo')}

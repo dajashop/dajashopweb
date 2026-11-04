@@ -1,4 +1,9 @@
 {
+  "U galeriji proizvoda dodajte sliku sa računara ili nalepite njen link, pa sačuvajte promene.": "In the product gallery, upload the image or paste its link, then save your changes.",
+  "Prethodni pokušaj dodavanja nije uspeo. Ova poruka je sačuvana u istoriji.": "The previous upload attempt failed. This message is kept in the history.",
+  "Automatsko ponavljanje ovog dodavanja nije dostupno. Dodajte izvorni fajl ili link ponovo u galeriji proizvoda. Postojeće slike ostaju sačuvane.": "Automatic retry is unavailable for this upload. Add the original file or link again in the product gallery. Existing images are kept.",
+  "Dodaj sliku ponovo": "Add image again",
+  "Označi kao pročitano": "Mark as read",
   "Pratite cenu bez proveravanja": "Keep track of the price",
   "Saznajte kada se vrati na stanje": "Know when it is back in stock",
   "Mi pratimo cenu. Vama stiže obaveštenje čim se promeni.": "We keep an eye on the price and notify you when it changes.",
