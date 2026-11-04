@@ -165,7 +165,7 @@ export default function MediaProcessingPanel({ visible, canRetry, onOpenProduct,
 
   return <>{visible && <section className="mb-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm" aria-label={t('Obaveštenja o slikama')}>
     <div className="border-b border-neutral-100 p-5 sm:p-6">
-      <h2 className="flex items-center gap-2 text-xl font-bold"><BellRing size={22} />{t('Slike i obaveštenja')}</h2>
+      <h2 className="flex items-center gap-2 text-xl font-bold"><BellRing size={22} />{t('Slike')}</h2>
       <p className="mt-1 text-sm text-neutral-500">{t('Noćna obrada: 03:00–07:00, vreme u Srbiji.')}</p>
       <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-live="polite">
         {[

@@ -1,4 +1,5 @@
 import ProgressiveImage from '../../components/ui/ProgressiveImage.jsx';
+import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import AdminSkeleton, { AdminDashboardSkeleton, AdminTableSkeleton, AdminModalSkeleton } from '../../components/AdminSkeleton.jsx';
 import LoadErrorBoundary from '../../components/LoadErrorBoundary.jsx';
 import { specificationEditorApi } from '../../services/dajaPlatform';
@@ -576,9 +577,19 @@ const getAuditDetailTabs = (event) => {
   })).filter((tab) => tab.changes.length > 0);
 };
 
+const contributorTabs = new Set(['products', 'brands', 'categories', 'specs', 'variant-groups', 'my-workforce']);
+
 function AdminDashboardContent() {
   const { user } = useAuth();
-  const [activeTab, updateActiveTab] = useState('products');
+  const [staffAccess, setStaffAccess] = useState(null);
+  const [staffAccessLoaded, setStaffAccessLoaded] = useState(false);
+  const canManageSupplierChecks = Boolean(staffAccess?.isOwner || staffAccess?.canManageSupplierChecks);
+  const canManageVariantGroups = Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.variant_groups.manage'));
+  const isCatalogContributor = Boolean(
+    !staffAccess?.isOwner && staffAccess?.roles?.includes('Unosilac kataloga'),
+  );
+  const [requestedTab, updateActiveTab] = useState('products');
+  const activeTab = !staffAccessLoaded || !staffAccess || (isCatalogContributor && !contributorTabs.has(requestedTab)) ? 'products' : requestedTab;
   const [mediaSummary, setMediaSummary] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFilters, setSearchFilters] = useState([]);
@@ -619,11 +630,12 @@ function AdminDashboardContent() {
   const variantGroupsDirty = useRef(false);
   const onVariantGroupsDirty = useCallback(value => { variantGroupsDirty.current = value; }, []);
   const setActiveTab = useCallback(next => {
+    if (!staffAccessLoaded || !staffAccess || (isCatalogContributor && !contributorTabs.has(next))) return;
     if (next === activeTab) return;
     if (variantGroupsDirty.current && !window.confirm('Postoje nesnimljene izmene grupe. Odbaciti ih?')) return;
     variantGroupsDirty.current = false;
     updateActiveTab(next);
-  }, [activeTab]);
+  }, [activeTab, staffAccessLoaded, staffAccess, isCatalogContributor]);
   useEffect(() => { if (activeTab === 'filters') setFiltersVisited(true); }, [activeTab]);
   useEffect(() => {
     const refreshIfVisible = () => {
@@ -646,13 +658,6 @@ function AdminDashboardContent() {
     }, 30_000);
     return () => window.clearInterval(timer);
   }, [activeTab, products, productsLoading, refreshProducts]);
-  const [staffAccess, setStaffAccess] = useState(null);
-  const [staffAccessLoaded, setStaffAccessLoaded] = useState(false);
-  const canManageSupplierChecks = Boolean(staffAccess?.isOwner || staffAccess?.canManageSupplierChecks);
-  const canManageVariantGroups = Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.variant_groups.manage'));
-  const isCatalogContributor = Boolean(
-    !staffAccess?.isOwner && staffAccess?.roles?.includes('Unosilac kataloga'),
-  );
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef(null);
 
@@ -687,11 +692,7 @@ function AdminDashboardContent() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    if (isCatalogContributor && !(activeTab === 'variant-groups' && canManageVariantGroups) && !['products', 'brands', 'categories', 'specs', 'filters', 'search-settings', 'suppliers', 'my-workforce', 'media'].includes(activeTab)) {
-      setActiveTab('products');
-    }
-  }, [activeTab, isCatalogContributor, canManageVariantGroups, setActiveTab]);
+
 
   // ... (Ostali state-ovi za brendove, kategorije...)
   const [taxonomyLoading, setTaxonomyLoading] = useState({ brands: true, categories: true, specs: true });
@@ -1278,17 +1279,13 @@ function AdminDashboardContent() {
               icon={List}
               label="Specifikacije"
             />
-            {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
+            {staffAccessLoaded && !isCatalogContributor && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
               <TabButton active={activeTab === 'filters'} onClick={() => setActiveTab('filters')} icon={Filter} label="Filteri" />
             )}
-            {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && <TabButton active={activeTab === 'search-settings'} onClick={() => setActiveTab('search-settings')} icon={Search} label="Pretraga" />}
-            {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) &&
-              <TabButton active={activeTab === 'media'} onClick={() => setActiveTab('media')} icon={BellRing}
-                label="Slike i obaveštenja" badge={mediaSummary?.unread} />}
+            {staffAccessLoaded && !isCatalogContributor && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && <TabButton active={activeTab === 'search-settings'} onClick={() => setActiveTab('search-settings')} icon={Search} label="Pretraga" />}
+
             {staffAccessLoaded && canManageVariantGroups && <TabButton active={activeTab === 'variant-groups'} onClick={() => setActiveTab('variant-groups')} icon={Layers} label="Grupe varijanti" />}
-            {staffAccessLoaded && isCatalogContributor && staffAccess?.permissions?.includes('catalog.read') && (
-              <TabButton active={activeTab === 'suppliers'} onClick={() => setActiveTab('suppliers')} icon={Truck} label="Dobavljači" />
-            )}
+
             {staffAccessLoaded && isCatalogContributor && (
               <TabButton
                 active={activeTab === 'my-workforce'}
@@ -1309,16 +1306,19 @@ function AdminDashboardContent() {
                 <TabButton active={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} icon={Ticket} label="Promo kodovi" />
               </>
             )}
+            {staffAccessLoaded && !isCatalogContributor && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) &&
+              <TabButton active={activeTab === 'media'} onClick={() => setActiveTab('media')} icon={BellRing}
+                label="Slike" badge={mediaSummary?.unread} />}
           </div>
         </div>
       </div>
 
       <div className="container mt-8">
-        {staffAccessLoaded && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) &&
+        {staffAccessLoaded && !isCatalogContributor && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) &&
           <LoadErrorBoundary><Suspense fallback={activeTab === 'media' ? <AdminSkeleton /> : null}><MediaProcessingPanel visible={activeTab === 'media'} onActivate={() => setActiveTab('media')} onSummary={setMediaSummary}
             canRetry={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('media.upload'))} onOpenProduct={openEdit} /></Suspense></LoadErrorBoundary>}
         {activeTab === 'variant-groups' && canManageVariantGroups && <VariantGroupsPanel onDirtyChange={onVariantGroupsDirty} />}
-        {(activeTab === 'filters' || filtersVisited) && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
+        {!isCatalogContributor && (activeTab === 'filters' || filtersVisited) && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
           <div hidden={activeTab !== 'filters'}><FilterManager visible={activeTab === 'filters'} products={completeCatalog.items} productsLoading={completeCatalog.loading} definitions={specs} departments={departments}
             canWrite={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))} /></div>
         )}
@@ -2687,6 +2687,7 @@ export default function AdminDashboard() {
 
 // Helper komponenta za tabove
 function TabButton({ active, onClick, icon: Icon, label, badge }) {
+  const { t } = useStorefront();
   return (
     <button
       onClick={onClick}
@@ -2697,7 +2698,7 @@ function TabButton({ active, onClick, icon: Icon, label, badge }) {
       }`}
     >
       {' '}
-      <Icon size={18} /> {label}{' '}
+      <Icon size={18} /> {t(label)}{' '}
       {badge > 0 && <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">{badge > 99 ? '99+' : badge}</span>}
     </button>
   );
