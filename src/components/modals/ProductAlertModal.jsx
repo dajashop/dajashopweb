@@ -90,18 +90,13 @@ export default function ProductAlertModal({
       dialog.parentElement.style.height = `${viewportHeight}px`;
       dialog.parentElement.style.top = `${viewport?.offsetTop ?? 0}px`;
       const availableHeight = viewportHeight - 16;
-      const availableWidth = (viewport?.width ?? window.innerWidth) - 16;
-      const scale = Math.min(1, availableHeight / dialog.offsetHeight, availableWidth / dialog.offsetWidth);
-      dialog.style.setProperty('--alert-scale', String(Math.max(0.1, scale)));
+      dialog.style.maxHeight = `${Math.max(1, availableHeight)}px`;
     };
-    const observer = new ResizeObserver(fitToViewport);
-    observer.observe(dialog);
     window.addEventListener('resize', fitToViewport);
     window.visualViewport?.addEventListener('resize', fitToViewport);
     window.visualViewport?.addEventListener('scroll', fitToViewport);
     fitToViewport();
     return () => {
-      observer.disconnect();
       window.removeEventListener('resize', fitToViewport);
       window.visualViewport?.removeEventListener('resize', fitToViewport);
       window.visualViewport?.removeEventListener('scroll', fitToViewport);
@@ -149,6 +144,8 @@ export default function ProductAlertModal({
   const needsEmailInput = isEmailChannel && (authenticated || !reusableGuestEmail);
   const selectedEmail = String(email || '').trim();
   const selectedPhone = String(phone || '').trim();
+  const useAccountContact = authenticated && (!isEmailChannel || selectedEmail.toLowerCase() === String(initialEmail).trim().toLowerCase());
+  const emailAlreadySubscribed = newsletterSubscribed && (!authenticated || useAccountContact);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -172,25 +169,25 @@ export default function ProductAlertModal({
           variantId: product.variantId,
           deliveryChannel,
           ...(isEmailChannel
-            ? (authenticated
+            ? (useAccountContact
               ? {}
               : (reusableGuestEmail ? { managementToken } : { email: selectedEmail }))
             : { phone: selectedPhone }),
           acceptedSmsMarketing: !isEmailChannel && subscribeToSmsMarketing,
           ...(policy?.version ? { policyVersion: policy.version } : {}),
         },
-        { auth: authenticated },
+        { auth: useAccountContact },
       );
 
       let newsletterWarning = false;
-      if (isEmailChannel && !newsletterSubscribed && subscribeToEmailMarketing) {
+      if (isEmailChannel && !emailAlreadySubscribed && subscribeToEmailMarketing) {
         try {
           await novostiApi.subscribe(
             reusableGuestEmail ? undefined : selectedEmail,
             {
               source: 'product_alert',
               acceptedMarketing: true,
-              authenticated,
+              authenticated: useAccountContact,
               ...(reusableGuestEmail ? { managementToken } : {}),
               ...(policy?.version ? { policyVersion: policy.version } : {}),
             },
@@ -284,9 +281,7 @@ export default function ProductAlertModal({
                 placeholder={translateText("vas@email.com")}
                 autoComplete="email"
                 required={needsEmailInput}
-                readOnly={authenticated}
                 disabled={submitting}
-                autoFocus
               />
             </>
           ) : (
@@ -302,7 +297,6 @@ export default function ProductAlertModal({
                 inputMode="tel"
                 required
                 disabled={submitting}
-                autoFocus
               />
             </>
           )}
@@ -310,7 +304,7 @@ export default function ProductAlertModal({
           <p className="product-alert-modal__privacy-note"><ShieldCheck size={17} aria-hidden="true" /><span>{translateText("Potvrdom tražite ovo obaveštenje putem ")}{translateText(isEmailChannel ? 'emaila' : deliveryChannel === 'whatsapp' ? 'WhatsApp-a' : 'SMS-a')}{translateText(". Kontakt koristimo samo za tu svrhu; detalji su u ")}<a href={localizePath('/privacy')}>{translateText("politici privatnosti")}</a>.</span>
           </p>
 
-          {isEmailChannel && !newsletterSubscribed && (
+          {isEmailChannel && !emailAlreadySubscribed && (
             <label className="product-alert-modal__check">
               <input
                 type="checkbox"

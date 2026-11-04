@@ -16,9 +16,9 @@
   position: relative;
   width: min(100%, 500px);
   flex-shrink: 0;
-  overflow: hidden;
-  transform: scale(var(--alert-scale, 1));
-  transform-origin: center;
+  max-height: calc(100dvh - 16px);
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
   box-sizing: border-box;
   padding: 30px;
@@ -95,6 +95,7 @@
   min-height: 48px;
   color: inherit;
   font: inherit;
+  font-size: 1rem;
 }
 
 .product-alert-modal input[readonly] {
@@ -222,7 +223,7 @@
   .product-alert-modal h2 { font-size: clamp(1.15rem, 4.7vw, 1.4rem); }
 }
 
-/* Compact the content first; viewport fitting handles exceptionally short screens. */
+/* Compact the content without scaling text or input controls. */
 @media (max-width: 600px), (max-height: 760px) {
   .product-alert-modal { padding: 18px; border-radius: 18px; }
   .product-alert-modal__hero { min-height: 0; row-gap: 10px; margin: 0 0 12px; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
@@ -237,7 +238,7 @@
   .product-alert-modal__product-info strong, .product-alert-modal__product-info .product-alert-modal__price { font-size: .82rem; }
   .product-alert-modal__product-info > span:first-child, .product-alert-modal__price small { font-size: .66rem; }
   .product-alert-modal form { gap: 9px; }
-  .product-alert-modal input[type='email'], .product-alert-modal input[type='tel'] { min-height: 42px; padding: 9px 10px; font-size: 16px; }
+  .product-alert-modal input[type='email'], .product-alert-modal input[type='tel'] { min-height: 42px; padding: 9px 10px; font-size: 1rem; }
   .product-alert-modal .product-alert-modal__privacy-note { font-size: .67rem; line-height: 1.35; }
   .product-alert-modal__check { margin: 0; padding: 3px 0; font-size: .71rem; }
   .product-alert-modal__footnote { font-size: .63rem; }
