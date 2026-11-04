@@ -662,7 +662,7 @@ export default function AdminProductModal({
   };
 
   const closeModal = () => {
-    if (submittingRef.current || imageBusy || addingSpecRef.current) return;
+    if (submittingRef.current || addingSpecRef.current) return;
     workTiming.close(!product && Boolean(onDraftChange) && timingHasDraft.current);
     // A new product draft may contain images already uploaded to R2. Keep
     // them attached to the draft when the user uses Back or closes the modal.
@@ -2291,7 +2291,8 @@ export default function AdminProductModal({
                 {/* PROSLEĐUJEMO onImageClick */}
                 <ImageManager
                   department={form.department}
-                  disabled={loading || !mediaReady}
+                  disabled={loading}
+                  galleryReady={mediaReady}
                   onBusyChange={setImageBusy}
                   images={form.images}
                   onChange={handleImageChange} // KORISTIMO DEDICIRANI HANDLER

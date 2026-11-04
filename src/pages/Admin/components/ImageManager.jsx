@@ -4,10 +4,10 @@ import { UploadCloud, Trash2, GripHorizontal, Plus, Loader2, ImageIcon, LinkIcon
 import { useStorefront } from '../../../localization/StorefrontContext.jsx';
 import { generateSlug } from '../utils/generators';
 import { removeMediaUploadJob } from '../../../services/mediaUploadQueueStorage';
-import { imageQueue, loadImageQueue, subscribeImageQueues, enqueueImages, retryImageJob, removeImageJob, updateImageJobAlt } from '../../../services/backgroundImageQueue';
+import { imageQueue, loadImageQueue, reloadImageQueue, subscribeImageQueues, enqueueImages, retryImageJob, removeImageJob, updateImageJobAlt } from '../../../services/backgroundImageQueue';
 
 export default function ImageManager({ images, onChange, onImageClick, productSlug, productName,
-  department, onRemoteUploadSuccess, disabled = false, onBusyChange, uploadQueueScope }) {
+  department, onRemoteUploadSuccess, disabled = false, galleryReady = true, onBusyChange, uploadQueueScope }) {
   const { t } = useStorefront();
   const fileInputRef = useRef(null);
   const [urlInput, setUrlInput] = useState('');
@@ -26,7 +26,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     current.current.onChange(next);
   };
   useEffect(() => {
-    if (disabled) return undefined;
+    if (disabled || !galleryReady) return undefined;
     // A reopened editor starts from server/draft images, not the previous
     // component's unpublished gallery state.
     imageQueue(uploadQueueScope).jobs.forEach(job => { job.published = false; });
@@ -55,9 +55,9 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     const unsubscribe = subscribeImageQueues(update);
     void loadImageQueue(uploadQueueScope).then(update).catch(update);
     return unsubscribe;
-  }, [uploadQueueScope, disabled]);
+  }, [uploadQueueScope, disabled, galleryReady]);
   const enqueue = async entries => {
-    if (disabled || !entries.length) return;
+    if (disabled || !galleryReady || !hydrated || !entries.length) return;
     const slug = productSlug || (productName ? generateSlug(productName) : '');
     if (!slug) { alert(t('Unesite naziv ili slug pre dodavanja slika.')); return; }
     try { await enqueueImages(uploadQueueScope, entries, { slug, department, productName, imageCount: images.length }); }
@@ -78,10 +78,14 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
   const retryJob = id => action(retryImageJob(uploadQueueScope, id));
   const removeJob = id => action(removeImageJob(uploadQueueScope, id));
   const updateJobAlt = (id, text) => action(updateImageJobAlt(uploadQueueScope, id, text));
+  const reloadQueue = () => action(reloadImageQueue(uploadQueueScope).then(() => {
+    onBusyChange?.(Boolean(imageQueue(uploadQueueScope).error));
+    render(value => value + 1);
+  }));
   const visibleJobs = jobs.filter(job => !job.published);
   const busy = visibleJobs.length > 0 || !hydrated;
 
-  return <fieldset className="space-y-4 min-w-0" disabled={disabled || !hydrated}
+  return <fieldset className="space-y-4 min-w-0" disabled={disabled}
     onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.preventDefault(); }}
     onDrop={event => {
       if (!event.dataTransfer.types.includes('Files')) return;
@@ -90,14 +94,16 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     }}>
     <div className="flex items-center justify-between">
       <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">{t('Galerija')}</span>
-      <button type="button" onClick={() => fileInputRef.current?.click()}
+      <button type="button" disabled={!hydrated || !galleryReady} onClick={() => fileInputRef.current?.click()}
         className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
         <UploadCloud size={14} />{t('Dodaj sa računara')}
       </button>
       <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleUpload} />
     </div>
     <p className="text-xs text-neutral-500">{t('Izaberite ili prevucite sve slike odjednom. Red se čuva u ovom pregledaču i nastavlja posle osvežavanja kada se veza vrati.')}</p>
-    {storageError && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">{storageError}</p>}
+    {storageError && <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+      <p>{t(storageError)}</p><button type="button" onClick={reloadQueue} className="mt-2 font-semibold underline">{t('Pokušaj ponovo')}</button>
+    </div>}
     {!hydrated && !storageError && <p role="status" className="text-xs text-neutral-500">{t('Proveravam sačuvani red slika…')}</p>}
     <p className="text-xs text-neutral-500">{t('Pri dodavanju se priprema velika AVIF slika. Ostale tri verzije obrađuju se od 03:00 do 07:00 po vremenu u Srbiji.')}</p>
     <div className="flex gap-2 items-center">
@@ -107,7 +113,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
           placeholder={t('Nalepi linkove slika, svaki u novom redu (http...)')}
           className="w-full bg-neutral-50 border border-neutral-200 rounded-xl pl-9 pr-3 py-2.5 text-xs outline-none" />
       </div>
-      <button type="button" onClick={handleUrlUpload} disabled={!urlInput.trim()}
+      <button type="button" onClick={handleUrlUpload} disabled={!urlInput.trim() || !hydrated || !galleryReady}
         className="bg-neutral-900 text-white p-2.5 rounded-xl disabled:opacity-50" title={t('Preuzmi sliku')}>
         <Plus size={16} />
       </button>

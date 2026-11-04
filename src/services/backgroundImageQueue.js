@@ -39,6 +39,14 @@ export async function loadImageQueue(scope) {
     .catch(error => { q.error = error.message; q.loading = null; emit(); throw error; });
   return q.loading;
 }
+export async function reloadImageQueue(scope) {
+  const q = imageQueue(scope);
+  q.loading = null; q.error = '';
+  // Keep hydrated in-memory jobs; a storage failure must not discard them.
+  const loaded = await loadImageQueue(scope);
+  emit(); void pump();
+  return loaded;
+}
 export async function resumeBackgroundImages(ownerId) {
   owner = String(ownerId);
   const saved = await listAllMediaUploadJobs();

@@ -7,13 +7,21 @@ function openDatabase() {
   if (!databasePromise) {
     databasePromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(DATABASE_NAME, 1);
+      let settled = false;
+      const fail = error => { if (!settled) { settled = true; clearTimeout(timer); reject(error); } };
+      const timer = setTimeout(() => fail(new Error('Čuvanje reda slika je zastalo. Pokušajte ponovo.')), 15_000);
       request.onupgradeneeded = () => {
         const store = request.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
         store.createIndex('scope', 'scope', { unique: false });
       };
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error || new Error('Red slika nije mogao da se otvori.'));
-      request.onblocked = () => reject(new Error('Zatvorite drugi DAJA admin tab da bi se red slika otvorio.'));
+      request.onsuccess = () => {
+        if (settled) { request.result.close(); return; }
+        settled = true; clearTimeout(timer);
+        request.result.onversionchange = () => { request.result.close(); databasePromise = null; };
+        resolve(request.result);
+      };
+      request.onerror = () => fail(request.error || new Error('Red slika nije mogao da se otvori.'));
+      request.onblocked = () => fail(new Error('Zatvorite drugi DAJA admin tab da bi se red slika otvorio.'));
     }).catch(error => {
       databasePromise = null;
       throw error;
@@ -23,10 +31,18 @@ function openDatabase() {
 }
 
 function transactionDone(transaction) {
-  return new Promise((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-    transaction.onabort = transaction.onerror = () => reject(transaction.error || new Error('Čuvanje reda slika nije uspelo.'));
+  const done = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      try { transaction.abort(); } catch { /* already completed */ }
+      reject(new Error('Čuvanje reda slika je zastalo. Pokušajte ponovo.'));
+    }, 15_000);
+    transaction.oncomplete = () => { clearTimeout(timer); resolve(); };
+    transaction.onabort = transaction.onerror = () => { clearTimeout(timer); reject(transaction.error || new Error('Čuvanje reda slika nije uspelo.')); };
   });
+  // Reads await their request before the transaction. Handle early aborts
+  // immediately while preserving rejection for the eventual await.
+  void done.catch(() => {});
+  return done;
 }
 
 export async function saveMediaUploadJob(job) {
@@ -50,12 +66,13 @@ export async function saveMediaUploadJobs(jobs) {
 export async function listMediaUploadJobs(scope) {
   const database = await openDatabase();
   const transaction = database.transaction(STORE_NAME, 'readonly');
+  const done = transactionDone(transaction);
   const request = transaction.objectStore(STORE_NAME).index('scope').getAll(scope);
   const rows = await new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result || []);
     request.onerror = () => reject(request.error || new Error('Sačuvani red slika nije mogao da se učita.'));
   });
-  await transactionDone(transaction);
+  await done;
   return rows;
 }
 
