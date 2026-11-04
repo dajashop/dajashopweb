@@ -1,4 +1,12 @@
 .notification-channel { margin: 10px 0; min-width: 0; }
+.phone-verification-options { display: flex; flex-wrap: wrap; gap: 8px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.phone-verification-options legend { padding: 0; margin-bottom: 7px; font-size: .85rem; font-weight: 700; }
+.phone-verification-options label { display: inline-flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 999px; font-size: .85rem; cursor: pointer; }
+.phone-verification-options label.is-selected { border-color: #168a50; background: #effaf3; box-shadow: 0 0 0 1px #168a50; }
+.phone-verification-options input[type='radio'] { appearance: auto; width: 16px; height: 16px; margin: 0; accent-color: #168a50; flex-shrink: 0; }
+.phone-verification-options label.is-unavailable { color: #999; cursor: not-allowed; }
+.phone-verification-options:disabled label { opacity: .65; cursor: default; }
+.phone-verification-options label:has(input:focus-visible) { outline: 2px solid #777; outline-offset: 3px; }
 .alert-channel-cards { border: 0; padding: 0; margin: 0 0 2px; min-width: 0; }
 .alert-channel-cards legend { padding: 0; margin-bottom: 6px; font-size: .75rem; font-weight: 500; color: #666; }
 .alert-channel-cards__grid { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
