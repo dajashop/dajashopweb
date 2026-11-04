@@ -281,15 +281,15 @@
 
 /* The shell stays fixed; only its contents scroll while the keyboard is open. */
 .product-alert-modal.is-keyboard-open {
-  height: var(--resting-panel-height);
-  max-height: var(--resting-panel-height);
+  height: var(--keyboard-panel-height);
+  max-height: var(--keyboard-panel-height);
 }
 .product-alert-modal.is-keyboard-open .product-alert-modal__content {
   height: 100%;
   max-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-  padding-bottom: calc(18px + var(--keyboard-overlap, 0px));
+  padding-bottom: 18px;
   -webkit-overflow-scrolling: touch;
 }
 

@@ -99,12 +99,15 @@ export default function ProductAlertModal({
       const active = document.activeElement;
       if (!keyboardOpen || !dialog.contains(active) || !active.matches('input[type="email"], input[type="tel"]')) return;
       const bounds = active.getBoundingClientRect();
-      const visibleTop = (viewport?.offsetTop ?? 0) + 18;
-      const visibleBottom = visibleTop + (viewport?.height ?? window.innerHeight) - 36;
-      // Only reveal an obscured field. Never pull a user's scroll back toward the top.
-      if (bounds.bottom > visibleBottom) {
+      const panel = dialog.getBoundingClientRect();
+      const visibleTop = Math.max(panel.top, viewport?.offsetTop ?? 0) + 18;
+      const visibleBottom = Math.min(panel.bottom, (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight)) - 18;
+      const formBottom = content.querySelector('form').getBoundingClientRect().bottom;
+      // Show the email and confirmation together whenever they fit in the visible panel.
+      const targetBottom = formBottom - bounds.top <= visibleBottom - visibleTop ? formBottom : bounds.bottom;
+      if (targetBottom > visibleBottom) {
         content.scrollTo({
-          top: content.scrollTop + bounds.bottom - visibleBottom,
+          top: content.scrollTop + targetBottom - visibleBottom,
           behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
         });
       }
@@ -121,7 +124,6 @@ export default function ProductAlertModal({
         dialog.classList.remove('is-height-constrained');
         dialog.classList.toggle('is-height-constrained', content.scrollHeight > restingHeight - 16);
         overlay.style.setProperty('--modal-gap', `${Math.max(8, (restingHeight - dialog.offsetHeight) / 2)}px`);
-        dialog.style.setProperty('--resting-panel-height', `${dialog.offsetHeight}px`);
         if (keyboardOpen) content.scrollTop = 0;
       } else {
         dialog.style.maxHeight = '';
@@ -130,8 +132,9 @@ export default function ProductAlertModal({
       keyboardOpen = nextKeyboardOpen;
       overlay.style.height = `${restingHeight}px`;
       alignViewport();
+      const panelTop = dialog.getBoundingClientRect().top;
       const viewportBottom = (viewport?.offsetTop ?? 0) + height;
-      dialog.style.setProperty('--keyboard-overlap', `${keyboardOpen ? Math.max(0, dialog.getBoundingClientRect().bottom - viewportBottom) + 24 : 0}px`);
+      dialog.style.setProperty('--keyboard-panel-height', `${Math.max(1, viewportBottom - panelTop - 8)}px`);
       clearTimeout(settleTimer);
       // Wait for Safari's keyboard animation and native focus scrolling to settle.
       if (keyboardOpen) settleTimer = setTimeout(revealFocusedField, 180);
