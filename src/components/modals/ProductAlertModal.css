@@ -20,6 +20,7 @@
   background: rgba(0, 0, 0, .48);
   backdrop-filter: blur(6px);
   pointer-events: none;
+  animation: product-alert-fade-in 220ms ease-out;
 }
 
 .product-alert-modal {
@@ -42,7 +43,7 @@
   background: #fff;
   color: var(--color-text, #111);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
-  animation: product-alert-appear 140ms ease-out;
+  animation: product-alert-fade-in 220ms ease-out;
 }
 
 .product-alert-modal__body {
@@ -333,5 +334,10 @@
   background: #fff;
 }
 
-@keyframes product-alert-appear { from { opacity: 0; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .product-alert-modal { animation: none; } }
+@keyframes product-alert-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-alert-modal, .product-alert-modal__overlay::before { animation: none; }
+}

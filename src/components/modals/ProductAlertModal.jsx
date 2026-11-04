@@ -88,66 +88,68 @@ export default function ProductAlertModal({
     const content = dialog.querySelector('.product-alert-modal__content');
     const viewport = window.visualViewport;
     let restingHeight = viewport?.height ?? window.innerHeight;
-    let restingWidth = window.innerWidth;
-    let panelHeight = 0;
     let keyboardOpen = false;
-    let frame;
-    const measureRestingPanel = () => {
-      // Only opening/orientation changes may change the frame geometry.
-      dialog.style.height = '';
-      dialog.style.maxHeight = `${Math.max(1, restingHeight - 16)}px`;
-      dialog.classList.remove('is-keyboard-open', 'is-height-constrained');
-      dialog.classList.toggle('is-height-constrained', content.scrollHeight > restingHeight - 16);
-      panelHeight = dialog.offsetHeight;
-      dialog.style.height = `${panelHeight}px`;
-      dialog.style.setProperty('--resting-panel-height', `${panelHeight}px`);
-      overlay.style.setProperty('--modal-gap', `${Math.max(8, (restingHeight - panelHeight) / 2)}px`);
-      overlay.style.height = `${restingHeight}px`;
-    };
-    const updateContent = () => {
-      const height = viewport?.height ?? window.innerHeight;
-      const active = document.activeElement;
-      const editing = dialog.contains(active) && active.matches('input[type="email"], input[type="tel"]');
-      if (Math.abs(window.innerWidth - restingWidth) > 1) {
-        restingWidth = window.innerWidth;
-        restingHeight = height;
-        keyboardOpen = false;
-        measureRestingPanel();
+    const alignViewport = () => {
+      // Safari can retain offsetTop briefly after keyboard height has recovered.
+      // Never apply that stale offset to the resting modal.
+      const remainingKeyboardHeight = Math.max(0, restingHeight - (viewport?.height ?? window.innerHeight));
+      const viewportOffset = keyboardOpen ? Math.min(viewport?.offsetTop ?? 0, remainingKeyboardHeight) : 0;
+      overlay.style.top = `${viewportOffset}px`;
+      if (keyboardOpen) {
+        const gap = parseFloat(overlay.style.getPropertyValue('--modal-gap')) || 8;
+        dialog.style.setProperty('--keyboard-content-height', `${Math.max(1, (viewport?.height ?? window.innerHeight) - gap)}px`);
       }
-      const wasOpen = keyboardOpen;
-      keyboardOpen = restingHeight - height > (wasOpen ? 20 : 100) && (editing || wasOpen);
-      // Never write the overlay top, panel height, or top gap during keyboard animation.
-      const viewportBottom = (viewport?.offsetTop ?? 0) + height;
-      const available = Math.min(panelHeight, Math.max(0, viewportBottom - dialog.getBoundingClientRect().top - 8));
-      dialog.style.setProperty('--keyboard-content-height', `${keyboardOpen ? available : panelHeight}px`);
-      dialog.classList.toggle('is-keyboard-open', keyboardOpen);
-      if (wasOpen && !keyboardOpen) content.scrollTop = 0;
-      if (!keyboardOpen || !editing) return;
+    };
+    const revealFocusedField = () => {
+      const active = document.activeElement;
+      if (!keyboardOpen || !dialog.contains(active) || !active.matches('input[type="email"], input[type="tel"]')) return;
       const field = active.getBoundingClientRect();
       const area = content.getBoundingClientRect();
       const note = content.querySelector('.product-alert-modal__footnote').getBoundingClientRect();
-      const target = note.bottom - field.top + 20 <= content.clientHeight ? note.bottom : field.bottom;
-      const delta = target - area.bottom + 8;
+      // Keep the end of the form above the keyboard when it fits with the email.
+      const endFits = note.bottom - field.top + 20 <= content.clientHeight;
+      const targetBottom = endFits ? note.bottom : field.bottom;
+      const delta = targetBottom - (area.bottom - 8);
       if (delta > 0) content.scrollTop += delta;
     };
-    const scheduleUpdate = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(updateContent);
+    const updateViewport = () => {
+      const height = viewport?.height ?? window.innerHeight;
+      const active = document.activeElement;
+      const editing = dialog.contains(active) && active.matches('input[type="email"], input[type="tel"]');
+      const nextKeyboardOpen = restingHeight - height > (keyboardOpen ? 20 : 100) && (editing || keyboardOpen);
+      if (!nextKeyboardOpen) {
+        if (!editing && !keyboardOpen) restingHeight = height;
+        dialog.classList.remove('is-keyboard-open');
+        dialog.style.maxHeight = `${Math.max(1, restingHeight - 16)}px`;
+        dialog.classList.remove('is-height-constrained');
+        dialog.classList.toggle('is-height-constrained', content.scrollHeight > restingHeight - 16);
+        overlay.style.setProperty('--modal-gap', `${Math.max(8, (restingHeight - dialog.offsetHeight) / 2)}px`);
+        dialog.style.setProperty('--resting-panel-height', `${dialog.offsetHeight}px`);
+        if (keyboardOpen) content.scrollTop = 0;
+      } else {
+        dialog.style.maxHeight = '';
+        dialog.classList.add('is-keyboard-open');
+      }
+      keyboardOpen = nextKeyboardOpen;
+      overlay.style.height = `${restingHeight}px`;
+      alignViewport();
+      if (keyboardOpen) revealFocusedField();
     };
-    measureRestingPanel();
-    updateContent();
-    dialog.addEventListener('focusin', scheduleUpdate);
-    dialog.addEventListener('focusout', scheduleUpdate);
-    window.addEventListener('resize', scheduleUpdate);
-    viewport?.addEventListener('resize', scheduleUpdate);
-    viewport?.addEventListener('scroll', scheduleUpdate);
+    const handleViewportScroll = () => {
+      alignViewport();
+    };
+    dialog.addEventListener('focusin', updateViewport);
+    dialog.addEventListener('focusout', updateViewport);
+    window.addEventListener('resize', updateViewport);
+    viewport?.addEventListener('resize', updateViewport);
+    viewport?.addEventListener('scroll', handleViewportScroll);
+    updateViewport();
     return () => {
-      cancelAnimationFrame(frame);
-      dialog.removeEventListener('focusin', scheduleUpdate);
-      dialog.removeEventListener('focusout', scheduleUpdate);
-      window.removeEventListener('resize', scheduleUpdate);
-      viewport?.removeEventListener('resize', scheduleUpdate);
-      viewport?.removeEventListener('scroll', scheduleUpdate);
+      dialog.removeEventListener('focusin', updateViewport);
+      dialog.removeEventListener('focusout', updateViewport);
+      window.removeEventListener('resize', updateViewport);
+      viewport?.removeEventListener('resize', updateViewport);
+      viewport?.removeEventListener('scroll', handleViewportScroll);
     };
   }, [isOpen, product?.id, product?.variantId, type]);
 
