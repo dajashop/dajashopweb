@@ -59,6 +59,32 @@ export async function listMediaUploadJobs(scope) {
   return rows;
 }
 
+export async function listAllMediaUploadJobs() {
+  const database = await openDatabase();
+  const transaction = database.transaction(STORE_NAME, 'readonly');
+  const done = transactionDone(transaction);
+  const request = transaction.objectStore(STORE_NAME).getAll();
+  const rows = await new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  });
+  await done;
+  return rows;
+}
+
+export async function getMediaUploadJob(id) {
+  const database = await openDatabase();
+  const transaction = database.transaction(STORE_NAME, 'readonly');
+  const done = transactionDone(transaction);
+  const request = transaction.objectStore(STORE_NAME).get(id);
+  const row = await new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  await done;
+  return row;
+}
+
 export async function removeMediaUploadJob(id) {
   const database = await openDatabase();
   const transaction = database.transaction(STORE_NAME, 'readwrite');

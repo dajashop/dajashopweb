@@ -26,7 +26,7 @@ import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
 import ImageGalleryModal from '../../../components/modals/ImageGalleryModal.jsx';
 import ImageManager from './ImageManager.jsx';
-import { clearMediaUploadJobs } from '../../../services/mediaUploadQueueStorage.js';
+import { beginImageQueueSave, cancelImageQueueSave, commitImageQueue, imageQueue } from '../../../services/backgroundImageQueue.js';
 import { generateSlug } from '../utils/generators.js';
 import { findSimilarProducts } from '../utils/productNameSimilarity.js';
 import CustomSelect from './CustomSelect.jsx';
@@ -666,7 +666,7 @@ export default function AdminProductModal({
     workTiming.close(!product && Boolean(onDraftChange) && timingHasDraft.current);
     // A new product draft may contain images already uploaded to R2. Keep
     // them attached to the draft when the user uses Back or closes the modal.
-    if (product) discardPendingUploads();
+    if (product && !imageQueue(uploadQueueScope).jobs.length) discardPendingUploads();
     onClose();
   };
 
@@ -1123,6 +1123,7 @@ export default function AdminProductModal({
     setSaveError('');
     setLoading(true);
     try {
+      beginImageQueueSave(uploadQueueScope);
       onSaveStart?.({ name: form.name });
       // Validate price dates before POST/PATCH. This prevents a product from
       // being saved when its accompanying sale is invalid.
@@ -1529,9 +1530,7 @@ export default function AdminProductModal({
       }
       }
       pendingUploadIdsRef.current.clear();
-      await clearMediaUploadJobs(uploadQueueScope).catch((error) =>
-        console.error('Čišćenje završenog reda slika nije uspelo:', error),
-      );
+      await commitImageQueue(uploadQueueScope, savedProductId, completed?.images || form.images || [], form.name);
       if (!product) {
         successfullySavedRef.current = true;
         nameCheckRef.current = { name: '', matches: [], unavailable: false };
@@ -1552,6 +1551,7 @@ export default function AdminProductModal({
       }, 500);
       return true;
     } catch (err) {
+      cancelImageQueueSave(uploadQueueScope);
       console.error(err);
       setSaveError(err?.message || 'Čuvanje nije uspelo.');
       onSaveError?.(err);

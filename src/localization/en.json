@@ -1,4 +1,9 @@
 {
+  "Sačekajte da se proveri sačuvani red slika.": "Please wait while the saved image queue is checked.",
+  "Slike u pozadini": "Background images",
+  "Proizvod je sačuvan. Slike se dodaju automatski kada obrada završi.": "The product is saved. Images are added automatically when processing finishes.",
+  "Povezivanje slike sa proizvodom…": "Attaching the image to the product…",
+  "Možete sačuvati proizvod dok se slike obrađuju. Napredak i greške prikazuju se pri dnu ekrana.": "You can save the product while images are processing. Progress and errors appear at the bottom of the screen.",
   "U galeriji proizvoda dodajte sliku sa računara ili nalepite njen link, pa sačuvajte promene.": "In the product gallery, upload the image or paste its link, then save your changes.",
   "Prethodni pokušaj dodavanja nije uspeo. Ova poruka je sačuvana u istoriji.": "The previous upload attempt failed. This message is kept in the history.",
   "Automatsko ponavljanje ovog dodavanja nije dostupno. Dodajte izvorni fajl ili link ponovo u galeriji proizvoda. Postojeće slike ostaju sačuvane.": "Automatic retry is unavailable for this upload. Add the original file or link again in the product gallery. Existing images are kept.",

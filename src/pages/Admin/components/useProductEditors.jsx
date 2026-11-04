@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { CheckCircle2, CircleAlert, LoaderCircle, X } from 'lucide-react';
 import { AdminModalSkeleton } from '../../../components/AdminSkeleton.jsx';
 import LoadErrorBoundary from '../../../components/LoadErrorBoundary.jsx';
+import { useAuth } from '../../../hooks/useAuth.js';
 
 const loadEditor = () => import('./AdminProductModal.jsx');
 const ProductEditor = lazy(loadEditor);
@@ -32,7 +33,8 @@ function SaveNotice({ notice, onDismiss, onRestore }) {
 
 // Keep each form mounted until its own request finishes, even when another
 // product is opened or the administrator switches dashboard sections.
-export default function useProductEditors(sharedProps) {
+export default function useProductEditors(sharedProps = {}) {
+  const { user } = useAuth();
   const [sessions, setSessions] = useState([]);
   const [notices, setNotices] = useState([]);
   const sessionsRef = useRef(sessions);
@@ -72,6 +74,7 @@ export default function useProductEditors(sharedProps) {
         <ProductEditor
           {...sharedProps}
           {...session.props}
+          uploadQueueOwnerId={sharedProps.uploadQueueOwnerId || user?.id || 'admin'}
           stackOrder={index}
           onClose={() => { close(session.id); dismissNotice(session.id); session.props.onClose?.(); }}
           onSaveStart={({ name }) => updateNotice(session.id, { status: 'pending', name })}

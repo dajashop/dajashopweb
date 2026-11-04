@@ -6,13 +6,16 @@ import Footer from './components/Footer.jsx';
 import AuthModal from './components/AuthModal.jsx';
 import { useLocation, useNavigationType } from 'react-router-dom';
 import NewsletterModal from './components/modals/NewsletterModal.jsx';
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
+import { useAuth } from './hooks/useAuth.js';
 import OrganizationJsonLd from './components/seo/OrganizationJsonLd.jsx';
 import WebSiteJsonLd from './components/seo/WebSiteJsonLd.jsx';
 import PageStatus from './pages/PageStatus.jsx';
 import { usePageData } from './ssr/PageData.jsx';
+const BackgroundImageStatus = lazy(() => import('./pages/Admin/components/BackgroundImageStatus.jsx'));
 
 export default function App() {
+  const { user, staffReady } = useAuth();
   const { pathname, state } = useLocation();
   const previousPath = useRef(pathname);
   const navType = useNavigationType();
@@ -57,6 +60,7 @@ export default function App() {
       <WebSiteJsonLd />
       <Header />
       <EngravingSync />
+      {user && staffReady && <Suspense fallback={null}><BackgroundImageStatus /></Suspense>}
       <main
         className={isWidePage ? 'w-full' : 'container'}
         style={isFullBleedPage ? undefined : { padding: '20px 0 48px' }}
