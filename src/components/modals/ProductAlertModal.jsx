@@ -114,7 +114,7 @@ export default function ProductAlertModal({
   if (!isOpen || !product?.id || !product?.variantId || !type) return null;
 
   const firstImage = product.images?.[0];
-  const productImage = product.thumbnailUrl || (typeof firstImage === 'string' ? firstImage : firstImage?.url) || product.image;
+  const productImage = (typeof firstImage === 'string' ? firstImage : firstImage?.url) || product.image || product.thumbnailUrl;
   const currentPrice = product.salePrice ?? product.price;
   const isEmailChannel = deliveryChannel === 'email';
   const reusableGuestEmail = isEmailChannel && !authenticated && managementToken && !useAnotherEmail;
