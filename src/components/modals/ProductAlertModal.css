@@ -185,12 +185,13 @@
   cursor: wait;
 }
 
-.product-alert-modal__header { padding-right: 14px; }
+.product-alert-modal__hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 16px; row-gap: 22px; min-height: 350px; margin: 8px 0 26px; }
+.product-alert-modal__header { grid-column: 1; grid-row: 1; min-width: 0; }
 .product-alert-modal__header p { margin: 0; color: #586774; font-size: .9rem; line-height: 1.6; }
-.product-alert-modal__product { display: flex; align-items: center; gap: 16px; margin: 22px 0; padding: 14px; background: #f3f7f8; border-radius: 16px; }
-.product-alert-modal__photo { display: grid; place-items: center; order: 2; flex: 0 0 144px; height: 164px; border-radius: 10px; background: #fff; color: #77919c; overflow: hidden; }
+.product-alert-modal__product { grid-column: 1; grid-row: 2; align-self: start; min-width: 0; }
+.product-alert-modal__photo { position: relative; grid-column: 2; grid-row: 1 / 3; display: grid; place-items: center; min-width: 0; color: #77919c; }
 .product-alert-modal__photo > * { grid-area: 1 / 1; }
-.product-alert-modal__photo img { background: #fff; width: 100%; height: 100%; object-fit: contain; }
+.product-alert-modal__photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .product-alert-modal__product-info { flex: 1; display: grid; gap: 5px; min-width: 0; }
 .product-alert-modal__product-info > span:first-child { font-size: .76rem; color: #586774; }
 .product-alert-modal__product-info strong { font-size: .95rem; line-height: 1.4; overflow-wrap: anywhere; }
@@ -211,5 +212,7 @@
 @media (max-width: 480px) {
   .product-alert-modal__overlay { padding: 12px; }
   .product-alert-modal { padding: 22px 18px; border-radius: 20px; max-height: calc(100dvh - 24px); }
-  .product-alert-modal__photo { flex-basis: 120px; height: 144px; }
+  .product-alert-modal__hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: 10px; min-height: 310px; }
+  .product-alert-modal__header p { font-size: .82rem; }
+  .product-alert-modal h2 { font-size: clamp(1.15rem, 4.7vw, 1.4rem); }
 }

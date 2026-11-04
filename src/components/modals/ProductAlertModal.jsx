@@ -211,21 +211,23 @@ export default function ProductAlertModal({
           <X size={20} />
         </button>
 
+        <div className="product-alert-modal__hero">
         <header className="product-alert-modal__header">
           <div className="product-alert-modal__icon"><BellRing size={25} aria-hidden="true" /></div>
           <h2 id="product-alert-modal-title">{translateText(type === 'price_change' ? 'Pratite cenu bez proveravanja' : 'Saznajte kada se vrati na stanje')}</h2>
           <p id="product-alert-modal-description">{translateText(type === 'price_change' ? 'Mi pratimo cenu. Vama stiže obaveštenje čim se promeni.' : 'Javićemo vam čim ovaj proizvod ponovo bude dostupan.')}</p>
         </header>
-        <div className="product-alert-modal__product">
           <div className="product-alert-modal__photo">
             <ImageIcon size={30} aria-hidden="true" />
             {productImage && <img src={productImage} alt={product.name || ''} onError={(event) => { event.currentTarget.hidden = true; }} />}
           </div>
+        <div className="product-alert-modal__product">
           <div className="product-alert-modal__product-info">
             {product.brand && <span>{product.brand}</span>}
             <strong>{product.name}</strong>
             {Number.isFinite(currentPrice) && <span className="product-alert-modal__price">{money(currentPrice)} <small>{translateText('Trenutna cena')}</small></span>}
           </div>
+        </div>
         </div>
         <form onSubmit={handleSubmit}>
           <NotificationChannelPicker variant="cards" value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setError(''); }} disabled={submitting} />
