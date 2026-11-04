@@ -44,6 +44,13 @@
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
 }
 
+.product-alert-modal__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: inherit;
+}
+
 .product-alert-modal__content {
   box-sizing: border-box;
   min-height: 0;
@@ -284,8 +291,13 @@
 
 /* The shell stays fixed; only its contents scroll while the keyboard is open. */
 .product-alert-modal.is-keyboard-open {
-  height: var(--keyboard-panel-height);
-  max-height: var(--keyboard-panel-height);
+  height: var(--resting-panel-height);
+  max-height: var(--resting-panel-height);
+}
+.product-alert-modal.is-keyboard-open .product-alert-modal__body {
+  flex: none;
+  height: var(--keyboard-content-height);
+  max-height: 100%;
 }
 .product-alert-modal.is-keyboard-open .product-alert-modal__content {
   flex: 1;

@@ -96,7 +96,7 @@ export default function ProductAlertModal({
       overlay.style.top = `${viewport?.offsetTop ?? 0}px`;
       if (keyboardOpen) {
         const gap = parseFloat(overlay.style.getPropertyValue('--modal-gap')) || 8;
-        dialog.style.setProperty('--keyboard-panel-height', `${Math.max(1, (viewport?.height ?? window.innerHeight) - gap)}px`);
+        dialog.style.setProperty('--keyboard-content-height', `${Math.max(1, (viewport?.height ?? window.innerHeight) - gap)}px`);
       }
     };
     const revealFocusedField = () => {
@@ -125,6 +125,7 @@ export default function ProductAlertModal({
         dialog.classList.remove('is-height-constrained');
         dialog.classList.toggle('is-height-constrained', content.scrollHeight + dialog.querySelector('.product-alert-modal__footer').offsetHeight > restingHeight - 16);
         overlay.style.setProperty('--modal-gap', `${Math.max(8, (restingHeight - dialog.offsetHeight) / 2)}px`);
+        dialog.style.setProperty('--resting-panel-height', `${dialog.offsetHeight}px`);
         if (keyboardOpen) content.scrollTop = 0;
       } else {
         dialog.style.maxHeight = '';
@@ -299,6 +300,7 @@ export default function ProductAlertModal({
           <X size={20} />
         </button>
 
+        <div className="product-alert-modal__body">
         <div className="product-alert-modal__content">
         <div className="product-alert-modal__hero">
         <header className="product-alert-modal__header">
@@ -401,6 +403,7 @@ export default function ProductAlertModal({
             {translateText(submitting ? 'Čuvamo…' : 'Uključi obaveštenje')}
           </button>
           <p className="product-alert-modal__footnote"><Check size={14} aria-hidden="true" />{translateText('Novosti i ponude su opcione. Vi birate šta primate.')}</p>
+        </div>
         </div>
       </div>
     </div>,
