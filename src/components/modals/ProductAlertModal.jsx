@@ -85,17 +85,20 @@ export default function ProductAlertModal({
     const dialog = dialogRef.current;
     if (!dialog) return undefined;
     let focusFrame;
+    const overlay = dialog.parentElement;
+    const isIPhone = /iPhone|iPod/i.test(navigator.userAgent);
     const initialHeight = window.visualViewport?.height ?? window.innerHeight;
     const fitToViewport = () => {
       const viewport = window.visualViewport;
       const viewportHeight = viewport?.height ?? window.innerHeight;
-      dialog.parentElement.style.height = `${viewportHeight}px`;
-      dialog.parentElement.style.top = `${viewport?.offsetTop ?? 0}px`;
-      const availableHeight = viewportHeight - 16;
-      dialog.style.maxHeight = `${Math.max(1, availableHeight)}px`;
       const active = document.activeElement;
       const editing = dialog.contains(active) && active.matches('input[type="email"], input[type="tel"]');
-      dialog.classList.toggle('is-editing', editing && (window.matchMedia('(max-width: 600px)').matches || viewportHeight < initialHeight - 100));
+      const iphoneKeyboardOpen = isIPhone && editing && viewportHeight < initialHeight - 100;
+      overlay.classList.toggle('is-iphone-keyboard', iphoneKeyboardOpen);
+      overlay.style.setProperty('--keyboard-viewport-top', `${viewport?.offsetTop ?? 0}px`);
+      overlay.style.setProperty('--keyboard-modal-height', `${Math.max(1, viewportHeight - 8)}px`);
+      dialog.classList.toggle('is-editing', iphoneKeyboardOpen);
+      dialog.style.maxHeight = iphoneKeyboardOpen ? '' : `${Math.max(1, viewportHeight - 16)}px`;
       cancelAnimationFrame(focusFrame);
       focusFrame = requestAnimationFrame(() => {
         if (!editing) return;

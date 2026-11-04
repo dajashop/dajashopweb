@@ -269,3 +269,15 @@
 .product-alert-modal.is-editing .product-alert-modal__product-info { gap: 2px; }
 .product-alert-modal.is-editing input[type='email'],
 .product-alert-modal.is-editing input[type='tel'] { font-size: 1rem; scroll-margin-block: 18px; }
+
+/* Keep the backdrop full-screen; only the iPhone dialog follows the keyboard. */
+.product-alert-modal__overlay.is-iphone-keyboard {
+  align-items: flex-start;
+  padding: calc(var(--keyboard-viewport-top, 0px) + 8px) 8px 0;
+}
+.product-alert-modal__overlay.is-iphone-keyboard .product-alert-modal {
+  height: var(--keyboard-modal-height);
+  max-height: var(--keyboard-modal-height);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
