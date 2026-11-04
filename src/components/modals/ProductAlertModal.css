@@ -285,10 +285,6 @@
   .product-alert-modal__footnote { font-size: .63rem; }
   .product-alert-modal__footer > button { min-height: 42px; font-size: .85rem; }
   .product-alert-modal .alert-channel-cards legend { margin-bottom: 7px; font-size: .79rem; }
-  .product-alert-modal .alert-channel-cards__grid { gap: 6px; }
-  .product-alert-modal .alert-channel-cards__option { padding: 7px 4px; gap: 4px; }
-  .product-alert-modal .alert-channel-cards__option > svg:not(.alert-channel-cards__check) { width: 18px; height: 18px; padding: 4px; }
-  .product-alert-modal .alert-channel-cards__option strong { font-size: .7rem; }
 }
 @media (max-height: 540px) {
   .product-alert-modal__icon { display: none; }
