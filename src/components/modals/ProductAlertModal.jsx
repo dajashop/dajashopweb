@@ -86,52 +86,51 @@ export default function ProductAlertModal({
     if (!dialog) return undefined;
     let focusFrame;
     const overlay = dialog.parentElement;
-    const isIPhone = /iPhone|iPod/i.test(navigator.userAgent);
-    const initialHeight = window.visualViewport?.height ?? window.innerHeight;
-    const fitToViewport = () => {
-      const viewport = window.visualViewport;
-      const viewportHeight = viewport?.height ?? window.innerHeight;
-      const active = document.activeElement;
-      const editing = dialog.contains(active) && active.matches('input[type="email"], input[type="tel"]');
-      const keyboardOpen = viewportHeight < initialHeight - 100 && (editing || dialog.classList.contains('is-keyboard-open'));
-      const iphoneKeyboardOpen = isIPhone && keyboardOpen;
-      overlay.classList.toggle('is-iphone-keyboard', iphoneKeyboardOpen);
-      dialog.classList.toggle('is-keyboard-open', keyboardOpen);
-      overlay.style.setProperty('--keyboard-modal-height', `${Math.max(1, initialHeight - 16)}px`);
-      overlay.style.setProperty('--keyboard-overlap', `${Math.max(0, initialHeight - viewportHeight)}px`);
-      dialog.style.maxHeight = iphoneKeyboardOpen ? '' : `${Math.max(1, viewportHeight - 16)}px`;
-      dialog.classList.remove('is-height-constrained');
-      if (!keyboardOpen) {
-        dialog.classList.toggle('is-height-constrained', dialog.scrollHeight > viewportHeight - 16);
-        dialog.scrollTop = 0;
-      }
+    let restingHeight = window.visualViewport?.height ?? window.innerHeight;
+    let keyboardWasOpen = false;
+    const updateViewport = () => {
       cancelAnimationFrame(focusFrame);
       focusFrame = requestAnimationFrame(() => {
-        if (!editing || !keyboardOpen) return;
-        const fieldBounds = active.getBoundingClientRect();
-        const dialogBounds = dialog.getBoundingClientRect();
-        const visibleBottom = Math.min(dialogBounds.bottom, (viewport?.offsetTop ?? 0) + viewportHeight) - 18;
-        const visibleTop = dialogBounds.top + 18;
-        if (fieldBounds.bottom > visibleBottom) dialog.scrollTop += fieldBounds.bottom - visibleBottom;
-        else if (fieldBounds.top < visibleTop) dialog.scrollTop -= visibleTop - fieldBounds.top;
+        const viewport = window.visualViewport;
+        const viewportHeight = viewport?.height ?? window.innerHeight;
+        const active = document.activeElement;
+        const editing = dialog.contains(active) && active.matches('input[type="email"], input[type="tel"]');
+        const keyboardOpen = restingHeight - viewportHeight > 100 && (editing || keyboardWasOpen);
+        overlay.classList.toggle('is-keyboard-open', keyboardOpen);
+        overlay.style.setProperty('--keyboard-overlap', `${Math.max(0, restingHeight - viewportHeight)}px`);
+        if (!keyboardOpen) {
+          if (!editing) restingHeight = viewportHeight;
+          dialog.style.maxHeight = `${Math.max(1, restingHeight - 16)}px`;
+          dialog.classList.remove('is-height-constrained');
+          dialog.classList.toggle('is-height-constrained', dialog.scrollHeight > restingHeight - 16);
+          overlay.scrollTop = 0;
+        } else {
+          // The dialog keeps its natural height and scrolls as one piece behind the keyboard.
+          dialog.style.maxHeight = 'none';
+          if (editing) {
+            const field = active.getBoundingClientRect();
+            const visibleTop = (viewport?.offsetTop ?? 0) + 18;
+            const visibleBottom = visibleTop + viewportHeight - 36;
+            if (field.bottom > visibleBottom) overlay.scrollTop += field.bottom - visibleBottom;
+            else if (field.top < visibleTop) overlay.scrollTop -= visibleTop - field.top;
+          }
+        }
+        keyboardWasOpen = keyboardOpen;
       });
     };
-    const handleFocusChange = () => {
-      requestAnimationFrame(fitToViewport);
-    };
-    dialog.addEventListener('focusin', handleFocusChange);
-    dialog.addEventListener('focusout', handleFocusChange);
-    window.addEventListener('resize', fitToViewport);
-    window.visualViewport?.addEventListener('resize', fitToViewport);
-    window.visualViewport?.addEventListener('scroll', fitToViewport);
-    fitToViewport();
+    dialog.addEventListener('focusin', updateViewport);
+    dialog.addEventListener('focusout', updateViewport);
+    window.addEventListener('resize', updateViewport);
+    window.visualViewport?.addEventListener('resize', updateViewport);
+    window.visualViewport?.addEventListener('scroll', updateViewport);
+    updateViewport();
     return () => {
       cancelAnimationFrame(focusFrame);
-      dialog.removeEventListener('focusin', handleFocusChange);
-      dialog.removeEventListener('focusout', handleFocusChange);
-      window.removeEventListener('resize', fitToViewport);
-      window.visualViewport?.removeEventListener('resize', fitToViewport);
-      window.visualViewport?.removeEventListener('scroll', fitToViewport);
+      dialog.removeEventListener('focusin', updateViewport);
+      dialog.removeEventListener('focusout', updateViewport);
+      window.removeEventListener('resize', updateViewport);
+      window.visualViewport?.removeEventListener('resize', updateViewport);
+      window.visualViewport?.removeEventListener('scroll', updateViewport);
     };
   }, [isOpen, product?.id, product?.variantId, type]);
 
@@ -142,9 +141,16 @@ export default function ProductAlertModal({
   useEffect(() => {
     if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
     const previousFocus = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    dialogRef.current?.focus();
+    const scrollPosition = { x: window.scrollX, y: window.scrollY };
+    const body = document.body;
+    const properties = ['position', 'top', 'left', 'width', 'overflow'];
+    const previousStyles = properties.map((property) => [property, body.style[property]]);
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollPosition.y}px`;
+    body.style.left = `-${scrollPosition.x}px`;
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+    dialogRef.current?.focus({ preventScroll: true });
     const handleKey = (event) => {
       if (event.key === 'Escape') closeFromKeyboard();
       if (event.key !== 'Tab') return;
@@ -160,9 +166,10 @@ export default function ProductAlertModal({
     };
     document.addEventListener('keydown', handleKey);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      previousStyles.forEach(([property, value]) => { body.style[property] = value; });
+      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'instant' });
       document.removeEventListener('keydown', handleKey);
-      previousFocus?.focus?.();
+      previousFocus?.focus?.({ preventScroll: true });
     };
   }, [isOpen, product?.id, product?.variantId, type]);
 
