@@ -12,9 +12,17 @@ export const notificationChannelNotice = (channel) => channel === 'whatsapp'
   ? 'WhatsApp obaveštenja još nisu dostupna. Za sada izaberite Email.'
   : 'SMS obaveštenja još nisu dostupna. Za sada izaberite Email.';
 
-export function ChannelOptions({ value, onChange, disabled, channels, available, title }) {
+export function ChannelOptions({ value, onChange, disabled, channels, available, title, compact = false }) {
   const { t } = useStorefront();
   const id = useId();
+  if (compact) return <fieldset className="phone-verification-options" disabled={disabled}>
+    <legend>{t(title)}</legend>
+    {channels.map(channel => <label key={channel} className={`${value === channel ? 'is-selected' : ''} ${!available(channel) ? 'is-unavailable' : ''}`}>
+      <input type="radio" name={id} value={channel} checked={value === channel}
+        disabled={!available(channel)} onChange={() => onChange(channel)} />
+      <span>{t(notificationChannelLabels[channel])}</span>
+    </label>)}
+  </fieldset>;
   const icons = { email: Mail, whatsapp: MessageCircle, sms: MessageSquare };
   return <fieldset disabled={disabled} className="alert-channel-cards">
     <legend>{t(title)}</legend>
@@ -36,6 +44,7 @@ export function ChannelOptions({ value, onChange, disabled, channels, available,
 export default function NotificationChannelPicker({ value, onChange, disabled, variant }) {
   return <div className={variant === 'cards' ? undefined : 'notification-channel'}>
     <ChannelOptions value={value} onChange={onChange} disabled={disabled}
+      compact={variant !== 'cards'}
       channels={['email', 'whatsapp', 'sms']} available={notificationChannelAvailable}
       title={variant === 'cards' ? 'Gde da vam javimo?' : 'Način obaveštavanja'} />
   </div>;
