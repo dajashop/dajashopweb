@@ -6,6 +6,7 @@ import { privacyApi, novostiApi } from '../../services/dajaPlatform.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 
 import './PrivacySection.css';
+import NotificationChannelPicker, { notificationChannelAvailable, notificationChannelNotice } from '../NotificationChannelPicker.jsx';
 
 const alertLabel = {
   price_change: 'Promena cene',
@@ -20,6 +21,7 @@ export default function PrivacySection({ user }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [deliveryChannel, setDeliveryChannel] = useState('whatsapp');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [preview, setPreview] = useState(null);
@@ -63,6 +65,7 @@ export default function PrivacySection({ user }) {
   };
 
   const prijaviNaNovosti = async () => {
+    if (!notificationChannelAvailable(deliveryChannel)) { setError(notificationChannelNotice(deliveryChannel)); return; }
     if (!marketingOptIn) {
       setError('Potvrdite da želite da primate novosti emailom.');
       return;
@@ -72,6 +75,7 @@ export default function PrivacySection({ user }) {
       const subscription = await novostiApi.subscribe(user.email, {
         source: 'account_privacy',
         policyVersion: policy?.version,
+        deliveryChannel,
         acceptedMarketing: true,
         authenticated: true,
       });
@@ -130,7 +134,7 @@ export default function PrivacySection({ user }) {
 
       <div className="privacy-section__grid">
       <article className="privacy-section__card card glass">
-        <div className="privacy-section__title"><span className="privacy-section__icon"><Mail size={24} /></span><h4>{translateText("Novosti emailom")}</h4></div>
+        <div className="privacy-section__title"><span className="privacy-section__icon"><Mail size={24} /></span><h4>{translateText("DajaShop novosti")}</h4></div>
         {translateText(!hasEmail ? (
           <p>{translateText("Dodajte email adresu u profilu da biste mogli da upravljate novostima emailom.")}</p>
         ) : newsletterActive ? (
@@ -143,11 +147,12 @@ export default function PrivacySection({ user }) {
         ) : (
           <>
             <p>{translateText("Niste prijavljeni na novosti.")}</p>
+            <NotificationChannelPicker value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setMarketingOptIn(false); setError(''); }} disabled={busy === 'newsletter'} contact={deliveryChannel === 'email' ? user.email : user.phoneNumber || ''} />
             <label className="privacy-section__check">
               <input type="checkbox" checked={marketingOptIn} onChange={(event) => setMarketingOptIn(event.target.checked)} disabled={busy === 'newsletter'} />
-              <span>{translateText("Želim da primam novosti, ponude i savete emailom.")}</span>
+              <span>{translateText("Želim da primam novosti i ponude putem izabranog kanala.")}</span>
             </label>
-            <button type="button" className="privacy-section__primary" onClick={() => void prijaviNaNovosti()} disabled={busy === 'newsletter'}>
+            <button type="button" className="privacy-section__primary" onClick={() => void prijaviNaNovosti()} disabled={busy === 'newsletter' || !notificationChannelAvailable(deliveryChannel)}>
               {translateText(busy === 'newsletter' ? 'Prijavljujemo…' : 'Prijavi me na novosti')}
             </button>
           </>

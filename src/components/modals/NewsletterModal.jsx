@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import './NewsletterModal.css';
+import NotificationChannelPicker, { notificationChannelAvailable, notificationChannelNotice } from '../NotificationChannelPicker.jsx';
 import { novostiApi } from '../../services/dajaPlatform';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
@@ -13,6 +14,9 @@ export default function NewsletterModal() {
   const { preferencesAllowed, policy } = useConsent();
   const [isVisible, setIsVisible] = useState(false);
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [deliveryChannel, setDeliveryChannel] = useState('whatsapp');
+  const isEmailChannel = deliveryChannel === 'email';
   const [status, setStatus] = useState('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const panelRef = useRef(null);
@@ -71,6 +75,7 @@ export default function NewsletterModal() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!notificationChannelAvailable(deliveryChannel)) { setErrorMsg(notificationChannelNotice(deliveryChannel)); return; }
     if (!email || !email.includes('@')) {
       setErrorMsg('Molimo unesite validnu email adresu.');
       emailRef.current?.focus();
@@ -84,6 +89,7 @@ export default function NewsletterModal() {
       const subscription = await novostiApi.subscribe(email, {
         source: 'prozor_novosti',
         policyVersion: policy?.version,
+        deliveryChannel,
         acceptedMarketing: true,
       });
       if (subscription?.requiresConfirmation) {
@@ -180,27 +186,28 @@ export default function NewsletterModal() {
                 <h2 id={titleId}>{translateText("Budite u toku")}</h2>
                 <p>{translateText("Prijavite se na DajaShop novosti i primajte informacije o dostupnosti, novitetima i savetima o satovima.")}</p>
                 <form className="newsletter-form" onSubmit={handleSubmit}>
+                  <NotificationChannelPicker value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setErrorMsg(''); if (status === 'error') setStatus('idle'); }} disabled={status === 'loading'} contact={isEmailChannel ? email : phone} />
                   <input
                     ref={emailRef}
-                    type="email"
-                    autoComplete="email"
-                    aria-label={translateText("Vaša email adresa")}
+                    type={isEmailChannel ? "email" : "tel"}
+                    autoComplete={isEmailChannel ? "email" : "tel"}
+                    aria-label={translateText(isEmailChannel ? "Vaša email adresa" : "Broj telefona")}
                     aria-invalid={Boolean(errorMsg)}
                     aria-describedby={errorMsg ? errorId : undefined}
-                    placeholder={translateText("Vaša email adresa")}
+                    placeholder={isEmailChannel ? translateText("Vaša email adresa") : "+381601234567"}
                     className="newsletter-input"
-                    value={email}
-                    onChange={(event) => { setEmail(event.target.value); setErrorMsg(''); if (status === 'error') setStatus('idle'); }}
+                    value={isEmailChannel ? email : phone}
+                    onChange={(event) => { (isEmailChannel ? setEmail : setPhone)(event.target.value); setErrorMsg(''); if (status === 'error') setStatus('idle'); }}
                     disabled={status === 'loading'}
                   />
-                  <p className="newsletter-consent-notice">{translateText("Klikom na „Prijavi me” saglasni ste da vam DajaShop šalje email obaveštenja o akcijama i ponudama. Više u ")}<a href={localizePath('/privacy')}>{translateText("Politici privatnosti")}</a>.
+                  <p className="newsletter-consent-notice">{translateText("Klikom na „Prijavi me” pristajete na novosti i ponude putem izabranog kanala. Više u ")}<a href={localizePath('/privacy')}>{translateText("Politici privatnosti")}</a>.
                   </p>
                   {(errorMsg || status === 'error') && (
                     <span id={errorId} role="alert" className="newsletter-message error-message">
                       {translateText(errorMsg || 'Greška pri slanju. Pokušajte ponovo.')}
                     </span>
                   )}
-                  <button type="submit" className="newsletter-submit" disabled={status === 'loading'}>
+                  <button type="submit" className="newsletter-submit" disabled={status === 'loading' || !notificationChannelAvailable(deliveryChannel)}>
                     {translateText(status === 'loading' ? 'Slanje...' : 'Prijavi me')}
                   </button>
                 </form>

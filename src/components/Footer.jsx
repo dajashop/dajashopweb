@@ -12,6 +12,7 @@ import {
   Unlock,
 } from 'lucide-react';
 import './Footer.css';
+import NotificationChannelPicker, { notificationChannelAvailable, notificationChannelNotice } from './NotificationChannelPicker.jsx';
 import SocialLinks from './SocialLinks.jsx';
 import { useFlash } from '../hooks/useFlash';
 import { novostiApi } from '../services/dajaPlatform';
@@ -25,11 +26,15 @@ export default function Footer() {
   const { policy, openSettings } = useConsent();
 
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [deliveryChannel, setDeliveryChannel] = useState('whatsapp');
+  const isEmailChannel = deliveryChannel === 'email';
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!notificationChannelAvailable(deliveryChannel)) { flash('Greška', notificationChannelNotice(deliveryChannel), 'info'); return; }
     if (!email || !email.includes('@')) {
       flash('Greška', 'Molimo unesite validnu email adresu.', 'error');
       return;
@@ -39,6 +44,7 @@ export default function Footer() {
       const subscription = await novostiApi.subscribe(email, {
         source: 'footer',
         policyVersion: policy?.version,
+        deliveryChannel,
         acceptedMarketing: true,
       });
 
@@ -102,18 +108,20 @@ export default function Footer() {
           </div>
 
           <form className="footer-newsletter-form" onSubmit={handleSubmit}>
+            <NotificationChannelPicker value={deliveryChannel} onChange={setDeliveryChannel} disabled={loading || success} contact={isEmailChannel ? email : phone} />
             <div
               className={`footer-input-wrapper ${
                 success ? 'border-green-500' : ''
               }`}
             >
-              <Mail className="footer-input-icon" size={18} />
+              {isEmailChannel ? <Mail className="footer-input-icon" size={18} /> : <Phone className="footer-input-icon" size={18} />}
               <input
-                type="email"
-                placeholder={translateText("Vaša email adresa...")}
-                aria-label={translateText("Email adresa")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type={isEmailChannel ? "email" : "tel"}
+                autoComplete={isEmailChannel ? "email" : "tel"}
+                placeholder={isEmailChannel ? translateText("Vaša email adresa...") : "+381601234567"}
+                aria-label={translateText(isEmailChannel ? "Email adresa" : "Broj telefona")}
+                value={isEmailChannel ? email : phone}
+                onChange={(e) => (isEmailChannel ? setEmail : setPhone)(e.target.value)}
                 disabled={loading || success}
                 required
               />
@@ -121,7 +129,7 @@ export default function Footer() {
                 type="submit"
                 className="footer-submit-btn"
                 aria-label={translateText("Prijavi me")}
-                disabled={loading || success}
+                disabled={loading || success || !notificationChannelAvailable(deliveryChannel)}
                 style={
                   success
                     ? {
@@ -147,7 +155,7 @@ export default function Footer() {
                 ))}
               </button>
             </div>
-            <p className="footer-newsletter-consent-notice">{translateText("Klikom na „Prijavi me” saglasni ste da vam DajaShop šalje email obaveštenja o akcijama i ponudama. Više u ")}<Link to="/privacy">{translateText("Politici privatnosti")}</Link>.
+            <p className="footer-newsletter-consent-notice">{translateText("Klikom na „Prijavi me” pristajete na novosti i ponude putem izabranog kanala. Više u ")}<Link to="/privacy">{translateText("Politici privatnosti")}</Link>.
             </p>
           </form>
         </div>

@@ -9,6 +9,7 @@ import {
 } from '../../services/dajaPlatform.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import './ProductAlertModal.css';
+import NotificationChannelPicker, { notificationChannelAvailable, notificationChannelNotice } from '../NotificationChannelPicker.jsx';
 
 const ALERT_LABELS = {
   back_in_stock: 'kada proizvod ponovo bude na stanju',
@@ -28,7 +29,7 @@ export default function ProductAlertModal({
   const { t: translateText, localizePath } = useStorefront();
 
   const { policy } = useConsent();
-  const [deliveryChannel, setDeliveryChannel] = useState('email');
+  const [deliveryChannel, setDeliveryChannel] = useState('whatsapp');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [managementToken, setManagementToken] = useState('');
@@ -44,7 +45,7 @@ export default function ProductAlertModal({
     if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
     const storedContact = authenticated ? {} : productAlertSubscriptions.contact();
     const token = storedContact.managementToken || '';
-    setDeliveryChannel('email');
+    setDeliveryChannel('whatsapp');
     setEmail(String(initialEmail || '').trim());
     setPhone(String(initialPhone || '').trim());
     setManagementToken(token);
@@ -93,6 +94,7 @@ export default function ProductAlertModal({
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!notificationChannelAvailable(deliveryChannel)) { setError(notificationChannelNotice(deliveryChannel)); return; }
     if (needsEmailInput && !selectedEmail) {
       setError('Unesite email adresu za obaveštenje.');
       return;
@@ -181,18 +183,8 @@ export default function ProductAlertModal({
         <p>{translateText("Javićemo vam ")}{translateText(ALERT_LABELS[type])}.</p>
 
         <form onSubmit={handleSubmit}>
-          <fieldset className="product-alert-modal__channels">
-            <legend>{translateText("Način obaveštavanja")}</legend>
-            <label>
-              <input
-                type="radio"
-                name="product-alert-channel"
-                value="email"
-                checked={isEmailChannel}
-                onChange={() => setDeliveryChannel('email')}
-                disabled={submitting}
-              />{translateText("Email")}</label>
-          </fieldset>
+          <NotificationChannelPicker value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setError(''); }} disabled={submitting}
+            contact={isEmailChannel ? (reusableGuestEmail ? maskedEmail : selectedEmail) : selectedPhone} />
 
           {translateText(isEmailChannel && reusableGuestEmail ? (
             <div className="product-alert-modal__saved-contact">
@@ -241,7 +233,7 @@ export default function ProductAlertModal({
             </>
           ))}
 
-          <p className="product-alert-modal__privacy-note">{translateText("Potvrdom tražite ovo obaveštenje putem ")}{translateText(isEmailChannel ? 'emaila' : 'SMS-a')}{translateText(". Kontakt koristimo samo za tu svrhu; detalji su u ")}<a href={localizePath('/privacy')}>{translateText("politici privatnosti")}</a>.
+          <p className="product-alert-modal__privacy-note">{translateText("Potvrdom tražite ovo obaveštenje putem ")}{translateText(isEmailChannel ? 'emaila' : deliveryChannel === 'whatsapp' ? 'WhatsApp-a' : 'SMS-a')}{translateText(". Kontakt koristimo samo za tu svrhu; detalji su u ")}<a href={localizePath('/privacy')}>{translateText("politici privatnosti")}</a>.
           </p>
 
           {isEmailChannel && !newsletterSubscribed && (
@@ -256,7 +248,7 @@ export default function ProductAlertModal({
             </label>
           )}
 
-          {!isEmailChannel && (
+          {deliveryChannel === 'sms' && (
             <label className="product-alert-modal__check">
               <input
                 type="checkbox"
@@ -269,7 +261,7 @@ export default function ProductAlertModal({
           )}
 
           {error && <p className="product-alert-modal__error">{translateText(error)}</p>}
-          <button type="submit" disabled={submitting}>
+          <button type="submit" disabled={submitting || !notificationChannelAvailable(deliveryChannel)}>
             {translateText(submitting ? 'Čuvamo…' : 'Potvrdi obaveštenje')}
           </button>
         </form>

@@ -1546,11 +1546,13 @@ export const reviewsApi = {
 export const novostiApi = {
   async subscribe(email, {
     source = 'site',
+    deliveryChannel = 'email',
     policyVersion,
     managementToken,
     acceptedMarketing = false,
     authenticated = false,
   } = {}) {
+    if (deliveryChannel !== 'email') throw new Error(deliveryChannel === 'whatsapp' ? 'WhatsApp obaveštenja još nisu dostupna. Za sada izaberite Email.' : 'SMS obaveštenja još nisu dostupna. Za sada izaberite Email.');
     if (!acceptedMarketing) {
       throw new Error('Potvrdite saglasnost za prijavu na novosti.');
     }
@@ -1561,6 +1563,7 @@ export const novostiApi = {
         ...(email ? { email } : {}),
         ...(managementToken ? { managementToken } : {}),
         source,
+        deliveryChannel,
         acceptedMarketing,
         ...(policyVersion ? { policyVersion } : {}),
       },
