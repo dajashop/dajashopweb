@@ -1,7 +1,7 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Bell, X } from 'lucide-react';
+import { Bell, BellRing, Check, Image as ImageIcon, LoaderCircle, ShieldCheck, X } from 'lucide-react';
 import {
   productAlertSubscriptions,
   productAlertsApi,
@@ -10,11 +10,6 @@ import {
 import { useConsent } from '../../context/ConsentContext.jsx';
 import './ProductAlertModal.css';
 import NotificationChannelPicker, { notificationChannelAvailable, notificationChannelNotice } from '../NotificationChannelPicker.jsx';
-
-const ALERT_LABELS = {
-  back_in_stock: 'kada proizvod ponovo bude na stanju',
-  price_change: 'kada se cena proizvoda promeni',
-};
 
 export default function ProductAlertModal({
   isOpen,
@@ -26,10 +21,11 @@ export default function ProductAlertModal({
   authenticated = false,
   onSubscribed,
 }) {
-  const { t: translateText, localizePath } = useStorefront();
+  const dialogRef = useRef(null);
+  const { t: translateText, localizePath, money } = useStorefront();
 
   const { policy } = useConsent();
-  const [deliveryChannel, setDeliveryChannel] = useState('whatsapp');
+  const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [managementToken, setManagementToken] = useState('');
@@ -45,7 +41,7 @@ export default function ProductAlertModal({
     if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
     const storedContact = authenticated ? {} : productAlertSubscriptions.contact();
     const token = storedContact.managementToken || '';
-    setDeliveryChannel('whatsapp');
+    setDeliveryChannel('email');
     setEmail(String(initialEmail || '').trim());
     setPhone(String(initialPhone || '').trim());
     setManagementToken(token);
@@ -84,8 +80,42 @@ export default function ProductAlertModal({
     };
   }, [authenticated, initialEmail, initialPhone, isOpen, product?.id, product?.variantId, type]);
 
+  const closeFromKeyboard = useEffectEvent(() => {
+    if (!submitting) onClose();
+  });
+
+  useEffect(() => {
+    if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    dialogRef.current?.focus();
+    const handleKey = (event) => {
+      if (event.key === 'Escape') closeFromKeyboard();
+      if (event.key !== 'Tab') return;
+      const elements = dialogRef.current?.querySelectorAll('button:not(:disabled), input:not(:disabled), a[href]');
+      if (!elements?.length) return;
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialogRef.current)) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKey);
+      previousFocus?.focus?.();
+    };
+  }, [isOpen, product?.id, product?.variantId, type]);
+
   if (!isOpen || !product?.id || !product?.variantId || !type) return null;
 
+  const firstImage = product.images?.[0];
+  const productImage = product.thumbnailUrl || (typeof firstImage === 'string' ? firstImage : firstImage?.url) || product.image;
+  const currentPrice = product.salePrice ?? product.price;
   const isEmailChannel = deliveryChannel === 'email';
   const reusableGuestEmail = isEmailChannel && !authenticated && managementToken && !useAnotherEmail;
   const needsEmailInput = isEmailChannel && (authenticated || !reusableGuestEmail);
@@ -164,9 +194,12 @@ export default function ProductAlertModal({
     <div className="product-alert-modal__overlay" role="presentation">
       <div
         className="product-alert-modal"
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="product-alert-modal-title"
+        aria-describedby="product-alert-modal-description"
       >
         <button
           type="button"
@@ -178,15 +211,26 @@ export default function ProductAlertModal({
           <X size={20} />
         </button>
 
-        <div className="product-alert-modal__icon"><Bell size={22} /></div>
-        <h2 id="product-alert-modal-title">{translateText("Obavesti me")}</h2>
-        <p>{translateText("Javićemo vam ")}{translateText(ALERT_LABELS[type])}.</p>
-
+        <header className="product-alert-modal__header">
+          <div className="product-alert-modal__icon"><BellRing size={25} aria-hidden="true" /></div>
+          <h2 id="product-alert-modal-title">{translateText(type === 'price_change' ? 'Pratite cenu bez proveravanja' : 'Saznajte kada se vrati na stanje')}</h2>
+          <p id="product-alert-modal-description">{translateText(type === 'price_change' ? 'Mi pratimo cenu. Vama stiže obaveštenje čim se promeni.' : 'Javićemo vam čim ovaj proizvod ponovo bude dostupan.')}</p>
+        </header>
+        <div className="product-alert-modal__product">
+          <div className="product-alert-modal__photo">
+            <ImageIcon size={30} aria-hidden="true" />
+            {productImage && <img src={productImage} alt={product.name || ''} onError={(event) => { event.currentTarget.hidden = true; }} />}
+          </div>
+          <div className="product-alert-modal__product-info">
+            {product.brand && <span>{product.brand}</span>}
+            <strong>{product.name}</strong>
+            {Number.isFinite(currentPrice) && <span className="product-alert-modal__price">{money(currentPrice)} <small>{translateText('Trenutna cena')}</small></span>}
+          </div>
+        </div>
         <form onSubmit={handleSubmit}>
-          <NotificationChannelPicker value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setError(''); }} disabled={submitting}
-            contact={isEmailChannel ? (reusableGuestEmail ? maskedEmail : selectedEmail) : selectedPhone} />
+          <NotificationChannelPicker variant="cards" value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setError(''); }} disabled={submitting} />
 
-          {translateText(isEmailChannel && reusableGuestEmail ? (
+          {isEmailChannel && reusableGuestEmail ? (
             <div className="product-alert-modal__saved-contact">
               <strong>{translateText("Email za obaveštenje")}</strong>
               <span>{translateText(maskedEmail || 'Sačuvana email adresa')}</span>
@@ -231,9 +275,9 @@ export default function ProductAlertModal({
                 autoFocus
               />
             </>
-          ))}
+          )}
 
-          <p className="product-alert-modal__privacy-note">{translateText("Potvrdom tražite ovo obaveštenje putem ")}{translateText(isEmailChannel ? 'emaila' : deliveryChannel === 'whatsapp' ? 'WhatsApp-a' : 'SMS-a')}{translateText(". Kontakt koristimo samo za tu svrhu; detalji su u ")}<a href={localizePath('/privacy')}>{translateText("politici privatnosti")}</a>.
+          <p className="product-alert-modal__privacy-note"><ShieldCheck size={17} aria-hidden="true" /><span>{translateText("Potvrdom tražite ovo obaveštenje putem ")}{translateText(isEmailChannel ? 'emaila' : deliveryChannel === 'whatsapp' ? 'WhatsApp-a' : 'SMS-a')}{translateText(". Kontakt koristimo samo za tu svrhu; detalji su u ")}<a href={localizePath('/privacy')}>{translateText("politici privatnosti")}</a>.</span>
           </p>
 
           {isEmailChannel && !newsletterSubscribed && (
@@ -260,10 +304,12 @@ export default function ProductAlertModal({
             </label>
           )}
 
-          {error && <p className="product-alert-modal__error">{translateText(error)}</p>}
+          {error && <p role="alert" className="product-alert-modal__error">{translateText(error)}</p>}
           <button type="submit" disabled={submitting || !notificationChannelAvailable(deliveryChannel)}>
-            {translateText(submitting ? 'Čuvamo…' : 'Potvrdi obaveštenje')}
+            {submitting ? <LoaderCircle size={19} aria-hidden="true" /> : <Bell size={19} aria-hidden="true" />}
+            {translateText(submitting ? 'Čuvamo…' : 'Uključi obaveštenje')}
           </button>
+          <p className="product-alert-modal__footnote"><Check size={14} aria-hidden="true" />{translateText('Novosti i ponude su opcione. Vi birate šta primate.')}</p>
         </form>
       </div>
     </div>,

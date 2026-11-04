@@ -1,3 +1,4 @@
+import { Check, Mail, MessageCircle, MessageSquare } from 'lucide-react';
 import { useId } from 'react';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import './NotificationChannelPicker.css';
@@ -11,9 +12,28 @@ export const notificationChannelNotice = (channel) => channel === 'whatsapp'
   ? 'WhatsApp obaveštenja još nisu dostupna. Za sada izaberite Email.'
   : 'SMS obaveštenja još nisu dostupna. Za sada izaberite Email.';
 
-export default function NotificationChannelPicker({ value, onChange, disabled, contact = '' }) {
+export default function NotificationChannelPicker({ value, onChange, disabled, contact = '', variant }) {
   const { t } = useStorefront();
   const id = useId();
+  if (variant === 'cards') {
+    const icons = { email: Mail, whatsapp: MessageCircle, sms: MessageSquare };
+    return <fieldset disabled={disabled} className="alert-channel-cards">
+      <legend>{t('Gde da vam javimo?')}</legend>
+      <div className="alert-channel-cards__grid">
+        {['email', 'whatsapp', 'sms'].map((channel) => {
+          const Icon = icons[channel];
+          const available = notificationChannelAvailable(channel);
+          return <label key={channel} className={`alert-channel-cards__option ${value === channel ? 'is-selected' : ''} ${!available ? 'is-unavailable' : ''}`}>
+            <input type="radio" name={id} value={channel} checked={value === channel} disabled={!available} onChange={() => onChange(channel)} />
+            <Icon size={23} aria-hidden="true" />
+            <strong>{t(notificationChannelLabels[channel])}</strong>
+            <small>{t(available ? 'Dostupno' : 'Nije dostupno')}</small>
+            {value === channel && <Check className="alert-channel-cards__check" size={14} aria-hidden="true" />}
+          </label>;
+        })}
+      </div>
+    </fieldset>;
+  }
   return <div className="notification-channel">
     <fieldset disabled={disabled} className="notification-channel__options" aria-describedby={`${id}-summary`}>
       <legend>{t('Način obaveštavanja')}</legend>
