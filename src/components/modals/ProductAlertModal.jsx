@@ -85,6 +85,7 @@ export default function ProductAlertModal({
     const dialog = dialogRef.current;
     if (!dialog) return undefined;
     const overlay = dialog.parentElement;
+    const content = dialog.querySelector('.product-alert-modal__content');
     const viewport = window.visualViewport;
     let restingHeight = viewport?.height ?? window.innerHeight;
     let keyboardOpen = false;
@@ -102,8 +103,8 @@ export default function ProductAlertModal({
       const visibleBottom = visibleTop + (viewport?.height ?? window.innerHeight) - 36;
       // Only reveal an obscured field. Never pull a user's scroll back toward the top.
       if (bounds.bottom > visibleBottom) {
-        overlay.scrollTo({
-          top: overlay.scrollTop + bounds.bottom - visibleBottom,
+        content.scrollTo({
+          top: content.scrollTop + bounds.bottom - visibleBottom,
           behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
         });
       }
@@ -115,19 +116,22 @@ export default function ProductAlertModal({
       const nextKeyboardOpen = restingHeight - height > 100 && (editing || keyboardOpen);
       if (!nextKeyboardOpen) {
         if (!editing) restingHeight = height;
+        dialog.classList.remove('is-keyboard-open');
         dialog.style.maxHeight = `${Math.max(1, restingHeight - 16)}px`;
         dialog.classList.remove('is-height-constrained');
-        dialog.classList.toggle('is-height-constrained', dialog.scrollHeight > restingHeight - 16);
+        dialog.classList.toggle('is-height-constrained', content.scrollHeight > restingHeight - 16);
         overlay.style.setProperty('--modal-gap', `${Math.max(8, (restingHeight - dialog.offsetHeight) / 2)}px`);
-        if (keyboardOpen) overlay.scrollTop = 0;
+        dialog.style.setProperty('--resting-panel-height', `${dialog.offsetHeight}px`);
+        if (keyboardOpen) content.scrollTop = 0;
       } else {
-        dialog.style.maxHeight = 'none';
+        dialog.style.maxHeight = '';
+        dialog.classList.add('is-keyboard-open');
       }
       keyboardOpen = nextKeyboardOpen;
-      overlay.classList.toggle('is-keyboard-open', keyboardOpen);
       overlay.style.height = `${restingHeight}px`;
-      overlay.style.setProperty('--keyboard-overlap', `${keyboardOpen ? Math.max(0, restingHeight - height) : 0}px`);
       alignViewport();
+      const viewportBottom = (viewport?.offsetTop ?? 0) + height;
+      dialog.style.setProperty('--keyboard-overlap', `${keyboardOpen ? Math.max(0, dialog.getBoundingClientRect().bottom - viewportBottom) + 24 : 0}px`);
       clearTimeout(settleTimer);
       // Wait for Safari's keyboard animation and native focus scrolling to settle.
       if (keyboardOpen) settleTimer = setTimeout(revealFocusedField, 180);
@@ -294,6 +298,7 @@ export default function ProductAlertModal({
           <X size={20} />
         </button>
 
+        <div className="product-alert-modal__content">
         <div className="product-alert-modal__hero">
         <header className="product-alert-modal__header">
           <div className="product-alert-modal__icon"><BellRing size={25} aria-hidden="true" /></div>
@@ -393,6 +398,7 @@ export default function ProductAlertModal({
           </button>
           <p className="product-alert-modal__footnote"><Check size={14} aria-hidden="true" />{translateText('Novosti i ponude su opcione. Vi birate šta primate.')}</p>
         </form>
+        </div>
       </div>
     </div>,
     document.body,
