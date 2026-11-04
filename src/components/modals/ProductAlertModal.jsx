@@ -89,10 +89,12 @@ export default function ProductAlertModal({
     const viewport = window.visualViewport;
     let restingHeight = viewport?.height ?? window.innerHeight;
     let keyboardOpen = false;
-    let viewportFrame;
     const alignViewport = () => {
-      // Match Safari's visual origin without changing the panel's resting top gap.
-      overlay.style.top = `${viewport?.offsetTop ?? 0}px`;
+      // Safari can retain offsetTop briefly after keyboard height has recovered.
+      // Never apply that stale offset to the resting modal.
+      const remainingKeyboardHeight = Math.max(0, restingHeight - (viewport?.height ?? window.innerHeight));
+      const viewportOffset = keyboardOpen ? Math.min(viewport?.offsetTop ?? 0, remainingKeyboardHeight) : 0;
+      overlay.style.top = `${viewportOffset}px`;
       if (keyboardOpen) {
         const gap = parseFloat(overlay.style.getPropertyValue('--modal-gap')) || 8;
         dialog.style.setProperty('--keyboard-content-height', `${Math.max(1, (viewport?.height ?? window.innerHeight) - gap)}px`);
@@ -134,8 +136,7 @@ export default function ProductAlertModal({
       if (keyboardOpen) revealFocusedField();
     };
     const handleViewportScroll = () => {
-      cancelAnimationFrame(viewportFrame);
-      viewportFrame = requestAnimationFrame(alignViewport);
+      alignViewport();
     };
     dialog.addEventListener('focusin', updateViewport);
     dialog.addEventListener('focusout', updateViewport);
@@ -144,7 +145,6 @@ export default function ProductAlertModal({
     viewport?.addEventListener('scroll', handleViewportScroll);
     updateViewport();
     return () => {
-      cancelAnimationFrame(viewportFrame);
       dialog.removeEventListener('focusin', updateViewport);
       dialog.removeEventListener('focusout', updateViewport);
       window.removeEventListener('resize', updateViewport);
