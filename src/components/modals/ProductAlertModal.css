@@ -19,6 +19,7 @@
   max-height: calc(100dvh - 16px);
   overflow-x: hidden;
   overflow-y: auto;
+  scroll-padding-block: 18px;
   overscroll-behavior: contain;
   box-sizing: border-box;
   padding: 30px;
@@ -96,6 +97,7 @@
   color: inherit;
   font: inherit;
   font-size: 1rem;
+  scroll-margin-block: 18px;
 }
 
 .product-alert-modal input[readonly] {
@@ -255,20 +257,6 @@
   .product-alert-modal__hero { row-gap: 7px; margin-bottom: 9px; }
   .product-alert-modal form { gap: 7px; }
 }
-
-/* The visual viewport shrinks with the iPhone keyboard, unlike height media queries. */
-.product-alert-modal.is-editing { scroll-padding-block: 18px; }
-.product-alert-modal.is-editing .product-alert-modal__hero { min-height: 0; grid-template-columns: minmax(0, 1fr) 74px; row-gap: 5px; margin-bottom: 12px; padding-right: 24px; }
-.product-alert-modal.is-editing .product-alert-modal__header { padding-top: 0; }
-.product-alert-modal.is-editing .product-alert-modal__icon,
-.product-alert-modal.is-editing .product-alert-modal__header p,
-.product-alert-modal.is-editing .product-alert-modal__price small { display: none; }
-.product-alert-modal.is-editing h2 { margin: 0; font-size: 1rem; }
-.product-alert-modal.is-editing .product-alert-modal__photo { margin: 0; overflow: hidden; }
-.product-alert-modal.is-editing .product-alert-modal__photo img { inset: 0; width: 100%; max-width: 100%; height: 100%; transform: none; }
-.product-alert-modal.is-editing .product-alert-modal__product-info { gap: 2px; }
-.product-alert-modal.is-editing input[type='email'],
-.product-alert-modal.is-editing input[type='tel'] { font-size: 1rem; scroll-margin-block: 18px; }
 
 /* Keep the backdrop full-screen; only the iPhone dialog follows the keyboard. */
 .product-alert-modal__overlay.is-iphone-keyboard {

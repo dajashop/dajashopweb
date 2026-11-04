@@ -97,7 +97,6 @@ export default function ProductAlertModal({
       overlay.classList.toggle('is-iphone-keyboard', iphoneKeyboardOpen);
       overlay.style.setProperty('--keyboard-viewport-top', `${viewport?.offsetTop ?? 0}px`);
       overlay.style.setProperty('--keyboard-modal-height', `${Math.max(1, viewportHeight - 8)}px`);
-      dialog.classList.toggle('is-editing', iphoneKeyboardOpen);
       dialog.style.maxHeight = iphoneKeyboardOpen ? '' : `${Math.max(1, viewportHeight - 16)}px`;
       cancelAnimationFrame(focusFrame);
       focusFrame = requestAnimationFrame(() => {
