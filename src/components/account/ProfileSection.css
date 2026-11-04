@@ -1,5 +1,27 @@
 /* src/components/account/ProfileSection.css */
 
+.account-phone-control {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 48px;
+  padding: 3px 10px;
+  border: 1px solid #dedee2;
+  border-radius: 12px;
+  background: var(--color-surface, #f5f5f7);
+}
+.account-phone-control:focus-within { border-color: #999; box-shadow: 0 0 0 3px rgb(0 0 0 / 5%); }
+.account-phone-country { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px 0 0; border: 0; border-radius: 0; background: transparent; color: var(--color-text, #111); }
+.account-phone-number { flex: 1; min-width: 0; border-left: 1px solid #dedee2; }
+.account-phone-number .account-phone-input { display: block; width: 100%; min-width: 0; min-height: 40px; padding: 8px 10px; border: 0; border-radius: 0; outline: none; box-shadow: none; background: transparent; color: var(--color-text, #111); font-size: 1rem; }
+.account-phone-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.account-phone-cancel, .account-phone-submit { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 9px 16px; border: 0; border-radius: 10px; font-size: .8rem; font-weight: 600; }
+.account-phone-cancel { background: transparent; color: #666; }
+.account-phone-submit { background: #111; color: #fff; }
+.account-phone-submit:hover:not(:disabled) { background: #333; }
+.account-phone-submit:disabled { opacity: .45; cursor: not-allowed; }
+.account-phone-country:focus-visible, .account-phone-actions button:focus-visible { outline: 2px solid #777; outline-offset: 2px; }
+
 .section-content {
   display: grid;
   gap: 24px;

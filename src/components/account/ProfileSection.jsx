@@ -423,7 +423,7 @@ function ProfileSection({ user }) {
                 {phoneStep === 'input' && <PhoneVerificationPicker value={phoneChannel} onChange={setPhoneChannel} channels={phoneChannels} disabled={loading} />}
                 {phoneStep === 'input' ? (
                   <div className="flex flex-col gap-3">
-                    <div className="flex gap-2">
+                    <div className="account-phone-control">
                       <PhoneCountryPicker
                         className="relative"
                         country={selectedCountry}
@@ -432,7 +432,8 @@ function ProfileSection({ user }) {
                           <button
                             type="button"
                             onClick={toggle}
-                            className="min-h-[42px] min-w-[108px] justify-between rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-900 outline-none transition-colors hover:bg-gray-50 flex items-center gap-2"
+                            className="account-phone-country"
+                            disabled={loading}
                           >
                             <span className="flex items-center gap-2">
                               <img src={getFlagUrl(selectedCountry.code)} alt={translateText(selectedCountry.code)} className="h-auto w-6 shrink-0 rounded-[2px] object-contain" />
@@ -450,27 +451,31 @@ function ProfileSection({ user }) {
                         )}
                       />
 
-                      <div className="relative flex-1 min-w-0">
+                      <div className="account-phone-number">
                         <input
                           type="tel"
+                          inputMode="tel"
+                          autoComplete="tel-national"
+                          aria-label={translateText('Telefon')}
+                          disabled={loading}
                           value={localPhone}
                           onChange={(e) => setLocalPhone(e.target.value)}
-                          className="w-full h-full bg-white border border-gray-200 rounded-lg pl-3 pr-3 py-2 text-gray-900 focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 transition-all outline-none placeholder:text-gray-400"
+                          className="account-phone-input"
                           placeholder="64 123 4567"
                           autoFocus
                         />
                       </div>
                     </div>
 
-                    <div className="flex gap-2 justify-end">
+                    <div className="account-phone-actions">
                       <button
                         onClick={cancelPhoneEdit}
-                        className="text-xs font-bold px-3 py-1.5 rounded-md bg-[var(--color-surface)] text-[var(--color-text)] hover:opacity-80 transition"
+                        className="account-phone-cancel"
                       >{translateText("Otkaži")}</button>
                       <button
                         onClick={handleSendCode}
                         disabled={loading || !phoneChannels[phoneChannel]}
-                        className="text-xs font-bold px-3 py-1.5 rounded-md bg-[var(--color-primary)] text-[var(--color-bg)] hover:opacity-90 transition flex items-center gap-1"
+                        className="account-phone-submit"
                       >
                         {translateText(loading ? (
                           <Loader2
