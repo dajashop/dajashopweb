@@ -18,7 +18,7 @@
   flex-shrink: 0;
   max-height: calc(100dvh - 16px);
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
   scroll-padding-block: 18px;
   overscroll-behavior: contain;
   box-sizing: border-box;
@@ -258,14 +258,28 @@
   .product-alert-modal form { gap: 7px; }
 }
 
-/* Keep the backdrop full-screen; only the iPhone dialog follows the keyboard. */
+/* The iPhone keyboard covers the lower dialog instead of shortening it. */
 .product-alert-modal__overlay.is-iphone-keyboard {
   align-items: flex-start;
-  padding: calc(var(--keyboard-viewport-top, 0px) + 8px) 8px 0;
+  padding: 8px;
 }
 .product-alert-modal__overlay.is-iphone-keyboard .product-alert-modal {
   height: var(--keyboard-modal-height);
   max-height: var(--keyboard-modal-height);
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  padding-bottom: calc(var(--keyboard-overlap, 0px) + 18px);
 }
+
+.product-alert-modal.is-keyboard-open { overflow-y: auto; }
+/* Use a tighter resting layout only when the normal content exceeds screen height. */
+.product-alert-modal.is-height-constrained { padding: 14px; }
+.product-alert-modal.is-height-constrained .product-alert-modal__hero { min-height: 0; margin: 0 0 8px; row-gap: 6px; }
+.product-alert-modal.is-height-constrained .product-alert-modal__header { padding-top: 0; }
+.product-alert-modal.is-height-constrained .product-alert-modal__icon { display: none; }
+.product-alert-modal.is-height-constrained h2 { margin: 0 0 5px; font-size: 1.05rem; }
+.product-alert-modal.is-height-constrained .product-alert-modal__header p { font-size: .75rem; line-height: 1.3; }
+.product-alert-modal.is-height-constrained .product-alert-modal__photo { margin: 0; overflow: hidden; }
+.product-alert-modal.is-height-constrained .product-alert-modal__photo img { inset: 0; width: 100%; max-width: 100%; height: 100%; transform: none; }
+.product-alert-modal.is-height-constrained form { gap: 6px; }
+.product-alert-modal.is-height-constrained .product-alert-modal__check { padding: 0; }
+.product-alert-modal.is-height-constrained .alert-channel-cards legend { margin-bottom: 5px; }
+.product-alert-modal.is-height-constrained .alert-channel-cards__option { padding-block: 5px; }

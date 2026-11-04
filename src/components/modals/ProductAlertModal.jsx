@@ -93,14 +93,21 @@ export default function ProductAlertModal({
       const viewportHeight = viewport?.height ?? window.innerHeight;
       const active = document.activeElement;
       const editing = dialog.contains(active) && active.matches('input[type="email"], input[type="tel"]');
-      const iphoneKeyboardOpen = isIPhone && editing && viewportHeight < initialHeight - 100;
+      const keyboardOpen = viewportHeight < initialHeight - 100 && (editing || dialog.classList.contains('is-keyboard-open'));
+      const iphoneKeyboardOpen = isIPhone && keyboardOpen;
       overlay.classList.toggle('is-iphone-keyboard', iphoneKeyboardOpen);
-      overlay.style.setProperty('--keyboard-viewport-top', `${viewport?.offsetTop ?? 0}px`);
-      overlay.style.setProperty('--keyboard-modal-height', `${Math.max(1, viewportHeight - 8)}px`);
+      dialog.classList.toggle('is-keyboard-open', keyboardOpen);
+      overlay.style.setProperty('--keyboard-modal-height', `${Math.max(1, initialHeight - 16)}px`);
+      overlay.style.setProperty('--keyboard-overlap', `${Math.max(0, initialHeight - viewportHeight)}px`);
       dialog.style.maxHeight = iphoneKeyboardOpen ? '' : `${Math.max(1, viewportHeight - 16)}px`;
+      dialog.classList.remove('is-height-constrained');
+      if (!keyboardOpen) {
+        dialog.classList.toggle('is-height-constrained', dialog.scrollHeight > viewportHeight - 16);
+        dialog.scrollTop = 0;
+      }
       cancelAnimationFrame(focusFrame);
       focusFrame = requestAnimationFrame(() => {
-        if (!editing) return;
+        if (!editing || !keyboardOpen) return;
         const fieldBounds = active.getBoundingClientRect();
         const dialogBounds = dialog.getBoundingClientRect();
         const visibleBottom = Math.min(dialogBounds.bottom, (viewport?.offsetTop ?? 0) + viewportHeight) - 18;
