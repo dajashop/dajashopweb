@@ -84,46 +84,72 @@ export default function ProductAlertModal({
     if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
     const dialog = dialogRef.current;
     if (!dialog) return undefined;
-    let focusFrame;
     const overlay = dialog.parentElement;
-    let restingHeight = window.visualViewport?.height ?? window.innerHeight;
-    let keyboardWasOpen = false;
+    const viewport = window.visualViewport;
+    let restingHeight = viewport?.height ?? window.innerHeight;
+    let keyboardOpen = false;
+    let settleTimer;
+    let viewportFrame;
+    const alignViewport = () => {
+      // Safari may pan its visual viewport independently of the locked document.
+      overlay.style.top = `${viewport?.offsetTop ?? 0}px`;
+    };
+    const revealFocusedField = () => {
+      const active = document.activeElement;
+      if (!keyboardOpen || !dialog.contains(active) || !active.matches('input[type="email"], input[type="tel"]')) return;
+      const bounds = active.getBoundingClientRect();
+      const visibleTop = (viewport?.offsetTop ?? 0) + 18;
+      const visibleBottom = visibleTop + (viewport?.height ?? window.innerHeight) - 36;
+      // Only reveal an obscured field. Never pull a user's scroll back toward the top.
+      if (bounds.bottom > visibleBottom) {
+        overlay.scrollTo({
+          top: overlay.scrollTop + bounds.bottom - visibleBottom,
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+        });
+      }
+    };
     const updateViewport = () => {
-      cancelAnimationFrame(focusFrame);
-      focusFrame = requestAnimationFrame(() => {
-        const viewport = window.visualViewport;
-        const viewportHeight = viewport?.height ?? window.innerHeight;
-        const active = document.activeElement;
-        const editing = dialog.contains(active) && active.matches('input[type="email"], input[type="tel"]');
-        const keyboardOpen = restingHeight - viewportHeight > 100 && (editing || keyboardWasOpen);
-        overlay.classList.toggle('is-keyboard-open', keyboardOpen);
-        overlay.style.setProperty('--keyboard-overlap', `${Math.max(0, restingHeight - viewportHeight)}px`);
-        if (!keyboardOpen) {
-          if (!editing) restingHeight = viewportHeight;
-          dialog.style.maxHeight = `${Math.max(1, restingHeight - 16)}px`;
-          dialog.classList.remove('is-height-constrained');
-          dialog.classList.toggle('is-height-constrained', dialog.scrollHeight > restingHeight - 16);
-          overlay.scrollTop = 0;
-          overlay.style.setProperty('--resting-modal-top', `${Math.max(8, dialog.getBoundingClientRect().top - overlay.getBoundingClientRect().top)}px`);
-        } else {
-          // The dialog keeps its natural height and scrolls as one piece behind the keyboard.
-          dialog.style.maxHeight = 'none';
-
-        }
-        keyboardWasOpen = keyboardOpen;
-      });
+      const height = viewport?.height ?? window.innerHeight;
+      const active = document.activeElement;
+      const editing = dialog.contains(active) && active.matches('input[type="email"], input[type="tel"]');
+      const nextKeyboardOpen = restingHeight - height > 100 && (editing || keyboardOpen);
+      if (!nextKeyboardOpen) {
+        if (!editing) restingHeight = height;
+        dialog.style.maxHeight = `${Math.max(1, restingHeight - 16)}px`;
+        dialog.classList.remove('is-height-constrained');
+        dialog.classList.toggle('is-height-constrained', dialog.scrollHeight > restingHeight - 16);
+        overlay.style.setProperty('--modal-gap', `${Math.max(8, (restingHeight - dialog.offsetHeight) / 2)}px`);
+        if (keyboardOpen) overlay.scrollTop = 0;
+      } else {
+        dialog.style.maxHeight = 'none';
+      }
+      keyboardOpen = nextKeyboardOpen;
+      overlay.classList.toggle('is-keyboard-open', keyboardOpen);
+      overlay.style.height = `${restingHeight}px`;
+      overlay.style.setProperty('--keyboard-overlap', `${keyboardOpen ? Math.max(0, restingHeight - height) : 0}px`);
+      alignViewport();
+      clearTimeout(settleTimer);
+      // Wait for Safari's keyboard animation and native focus scrolling to settle.
+      if (keyboardOpen) settleTimer = setTimeout(revealFocusedField, 180);
+    };
+    const handleViewportScroll = () => {
+      cancelAnimationFrame(viewportFrame);
+      viewportFrame = requestAnimationFrame(alignViewport);
     };
     dialog.addEventListener('focusin', updateViewport);
     dialog.addEventListener('focusout', updateViewport);
     window.addEventListener('resize', updateViewport);
-    window.visualViewport?.addEventListener('resize', updateViewport);
+    viewport?.addEventListener('resize', updateViewport);
+    viewport?.addEventListener('scroll', handleViewportScroll);
     updateViewport();
     return () => {
-      cancelAnimationFrame(focusFrame);
+      clearTimeout(settleTimer);
+      cancelAnimationFrame(viewportFrame);
       dialog.removeEventListener('focusin', updateViewport);
       dialog.removeEventListener('focusout', updateViewport);
       window.removeEventListener('resize', updateViewport);
-      window.visualViewport?.removeEventListener('resize', updateViewport);
+      viewport?.removeEventListener('resize', updateViewport);
+      viewport?.removeEventListener('scroll', handleViewportScroll);
     };
   }, [isOpen, product?.id, product?.variantId, type]);
 

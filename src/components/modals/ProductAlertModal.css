@@ -2,10 +2,10 @@
   position: fixed;
   inset: 0;
   z-index: 2147483647;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
+  bottom: auto;
+  height: 100dvh;
+  display: block;
+  padding: var(--modal-gap, 8px) 8px calc(var(--modal-gap, 8px) + var(--keyboard-overlap, 0px));
   box-sizing: border-box;
   overflow: hidden;
   isolation: isolate;
@@ -25,6 +25,7 @@
 .product-alert-modal {
   position: relative;
   width: min(100%, 500px);
+  margin-inline: auto;
   flex-shrink: 0;
   max-height: calc(100dvh - 16px);
   overflow-x: hidden;
@@ -227,7 +228,6 @@
 @keyframes alert-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .product-alert-modal form > button:disabled svg { animation: none; } }
 @media (max-width: 480px) {
-  .product-alert-modal__overlay { padding: 8px; }
   .product-alert-modal { padding: 22px 18px; border-radius: 20px;  }
   .product-alert-modal__hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: 6px; min-height: 290px; }
   .product-alert-modal__photo img { width: max(100%, 270px); }
@@ -270,10 +270,8 @@
 
 /* One scroll container: the whole panel continues behind the software keyboard. */
 .product-alert-modal__overlay.is-keyboard-open {
-  display: block;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: var(--resting-modal-top, 8px) 8px calc(var(--keyboard-overlap, 0px) + 24px);
   -webkit-overflow-scrolling: touch;
   scroll-padding-block: 18px;
 }
