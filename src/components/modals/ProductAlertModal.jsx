@@ -80,6 +80,34 @@ export default function ProductAlertModal({
     };
   }, [authenticated, initialEmail, initialPhone, isOpen, product?.id, product?.variantId, type]);
 
+  useEffect(() => {
+    if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
+    const dialog = dialogRef.current;
+    if (!dialog) return undefined;
+    const fitToViewport = () => {
+      const viewport = window.visualViewport;
+      const viewportHeight = viewport?.height ?? window.innerHeight;
+      dialog.parentElement.style.height = `${viewportHeight}px`;
+      dialog.parentElement.style.top = `${viewport?.offsetTop ?? 0}px`;
+      const availableHeight = viewportHeight - 16;
+      const availableWidth = (viewport?.width ?? window.innerWidth) - 16;
+      const scale = Math.min(1, availableHeight / dialog.offsetHeight, availableWidth / dialog.offsetWidth);
+      dialog.style.setProperty('--alert-scale', String(Math.max(0.1, scale)));
+    };
+    const observer = new ResizeObserver(fitToViewport);
+    observer.observe(dialog);
+    window.addEventListener('resize', fitToViewport);
+    window.visualViewport?.addEventListener('resize', fitToViewport);
+    window.visualViewport?.addEventListener('scroll', fitToViewport);
+    fitToViewport();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', fitToViewport);
+      window.visualViewport?.removeEventListener('resize', fitToViewport);
+      window.visualViewport?.removeEventListener('scroll', fitToViewport);
+    };
+  }, [isOpen, product?.id, product?.variantId, type]);
+
   const closeFromKeyboard = useEffectEvent(() => {
     if (!submitting) onClose();
   });
