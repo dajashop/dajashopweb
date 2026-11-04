@@ -15,7 +15,7 @@ export default function NewsletterModal() {
   const [isVisible, setIsVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [deliveryChannel, setDeliveryChannel] = useState('whatsapp');
+  const [deliveryChannel, setDeliveryChannel] = useState('email');
   const isEmailChannel = deliveryChannel === 'email';
   const [status, setStatus] = useState('idle');
   const [errorMsg, setErrorMsg] = useState('');

@@ -27,7 +27,7 @@ export default function Footer() {
 
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [deliveryChannel, setDeliveryChannel] = useState('whatsapp');
+  const [deliveryChannel, setDeliveryChannel] = useState('email');
   const isEmailChannel = deliveryChannel === 'email';
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

@@ -21,7 +21,7 @@ export default function PrivacySection({ user }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [marketingOptIn, setMarketingOptIn] = useState(false);
-  const [deliveryChannel, setDeliveryChannel] = useState('whatsapp');
+  const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [preview, setPreview] = useState(null);
