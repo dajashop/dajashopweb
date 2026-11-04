@@ -104,16 +104,11 @@ export default function ProductAlertModal({
           dialog.classList.remove('is-height-constrained');
           dialog.classList.toggle('is-height-constrained', dialog.scrollHeight > restingHeight - 16);
           overlay.scrollTop = 0;
+          overlay.style.setProperty('--resting-modal-top', `${Math.max(8, dialog.getBoundingClientRect().top - overlay.getBoundingClientRect().top)}px`);
         } else {
           // The dialog keeps its natural height and scrolls as one piece behind the keyboard.
           dialog.style.maxHeight = 'none';
-          if (editing) {
-            const field = active.getBoundingClientRect();
-            const visibleTop = (viewport?.offsetTop ?? 0) + 18;
-            const visibleBottom = visibleTop + viewportHeight - 36;
-            if (field.bottom > visibleBottom) overlay.scrollTop += field.bottom - visibleBottom;
-            else if (field.top < visibleTop) overlay.scrollTop -= visibleTop - field.top;
-          }
+
         }
         keyboardWasOpen = keyboardOpen;
       });
@@ -122,7 +117,6 @@ export default function ProductAlertModal({
     dialog.addEventListener('focusout', updateViewport);
     window.addEventListener('resize', updateViewport);
     window.visualViewport?.addEventListener('resize', updateViewport);
-    window.visualViewport?.addEventListener('scroll', updateViewport);
     updateViewport();
     return () => {
       cancelAnimationFrame(focusFrame);
@@ -130,7 +124,6 @@ export default function ProductAlertModal({
       dialog.removeEventListener('focusout', updateViewport);
       window.removeEventListener('resize', updateViewport);
       window.visualViewport?.removeEventListener('resize', updateViewport);
-      window.visualViewport?.removeEventListener('scroll', updateViewport);
     };
   }, [isOpen, product?.id, product?.variantId, type]);
 
