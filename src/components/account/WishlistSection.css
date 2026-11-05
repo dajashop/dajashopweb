@@ -119,6 +119,10 @@
 .wishlist-section a:focus-visible,
 .wishlist-section button:focus-visible { outline: 2px solid var(--color-text); outline-offset: -3px; }
 
+@media (min-width: 1200px) {
+  .wishlist-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
 @media (max-width: 600px) {
   .wishlist-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .wishlist-card { display: grid; grid-template-columns: 108px minmax(0, 1fr); }
