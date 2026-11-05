@@ -67,7 +67,7 @@ function WishlistAlertButton({ item }) {
     };
   }, [product?.id, product?.variantId, type, user?.email, user?.phoneNumber]);
 
-  if (loading || !product?.id || !product.variantId) return null;
+  const alertReady = !loading && Boolean(product?.id && product.variantId);
 
   const activeType = subscribedTypes.includes(type)
     ? type
@@ -163,9 +163,10 @@ function WishlistAlertButton({ item }) {
       <button
         type="button"
         onClick={subscribed ? unsubscribeAlert : requestAlert}
-        disabled={unsubscribing}
+        disabled={!alertReady || unsubscribing}
+        aria-busy={loading || unsubscribing}
         className={`wishlist-alert-btn${subscribed ? ' is-subscribed' : ''}`}
-        title={translateText(subscribed ? 'Isključi obaveštenje' : undefined)}
+        title={translateText(loading ? 'Učitavanje…' : !alertReady ? 'Trenutno nije dostupno' : subscribed ? 'Isključi obaveštenje' : label)}
       >
         {subscribed ? (
           <>
@@ -183,7 +184,7 @@ function WishlistAlertButton({ item }) {
         ) : (
           <>
             <Bell size={15} />
-            {translateText(label)}
+            {translateText('Obavesti me')}
           </>
         )}
       </button>
@@ -239,9 +240,9 @@ function WishlistSection() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="section-content"
+      className="section-content wishlist-section"
     >
-      <div className="section-header-row mb-6">
+      <div className="section-header-row wishlist-header">
         <h3>{translateText("Lista želja")}{translateText(' ')}
           <span className="text-muted text-lg font-normal">
             ({translateText(wishlist.length)})
@@ -268,9 +269,11 @@ function WishlistSection() {
             <div key={item.id} className="wishlist-card group">
               {/* Dugme za brisanje (lebdi gore desno) */}
               <button
+                type="button"
                 onClick={() => setDeleteId(item.id)}
                 className="wishlist-remove-btn"
                 title={translateText("Ukloni iz liste")}
+                aria-label={translateText('Ukloni iz liste') + ': ' + item.name}
               >
                 <Trash2 size={16} />
               </button>
@@ -290,41 +293,38 @@ function WishlistSection() {
                   alt={translateText(item.name)}
                   className="wishlist-img"
                 />
-                {/* Overlay na hover */}
-                <div className="wishlist-overlay">
-                  <span className="text-xs font-bold uppercase tracking-wider text-white border border-white/30 px-3 py-1 rounded-full backdrop-blur-md">{translateText("Detalji")}</span>
-                </div>
               </Link>
 
               {/* Podaci */}
               <div className="wishlist-body">
-                <div className="mb-2">
+                <div className="wishlist-info">
                   {item.brand && (
                     <Link
                       to={`/catalog?brand=${encodeURIComponent(item.brand)}`}
-                      className="inline-block text-[10px] font-bold uppercase tracking-widest text-muted mb-1 hover:text-primary transition-colors"
+                      className="wishlist-brand"
                     >
                       {translateText(item.brand)}
                     </Link>
                   )}
                   <Link
                     to={`/product/${item.slug}`}
-                    className="block font-bold text-base leading-snug hover:text-primary transition-colors line-clamp-2 min-h-[2.5em]"
+                    className="wishlist-name"
                   >
                     {translateText(item.name)}
                   </Link>
                 </div>
 
-                <div className="mt-auto">
-                  <div className="font-mono font-bold text-lg mb-3">
+                <div className="wishlist-actions">
+                  <div className="wishlist-price">
                     {money(item.price)}
                   </div>
 
                   <WishlistAlertButton item={item} />
 
                   <button
+                    type="button"
                     onClick={() => moveToCart(item)}
-                    className="w-full py-2.5 rounded-lg bg-neutral-300 text-neutral-900 font-medium text-sm flex items-center justify-center gap-2 hover:bg-neutral-400 transition-all hover:shadow-lg active:scale-95"
+                    className="wishlist-cart-btn"
                   >
                     <ShoppingCart size={16} />{translateText(" Dodaj u korpu")}</button>
                 </div>
