@@ -357,8 +357,10 @@ export default function ProductAlertModal({
         </div>
         </div>
         <form id="product-alert-subscription-form" onSubmit={handleSubmit}>
-          <NotificationChannelPicker variant="cards" value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setError(''); }} disabled={submitting} />
+          <NotificationChannelPicker variant="cards" value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setError(''); }} disabled={submitting}
+            contact={phone} purpose={type} productId={product.id} variantId={product.variantId} />
 
+          {deliveryChannel !== 'whatsapp' && <>
           {isEmailChannel && reusableGuestEmail ? (
             <div className="product-alert-modal__saved-contact">
               <strong>{translateText("Email za obaveštenje")}</strong>
@@ -431,14 +433,15 @@ export default function ProductAlertModal({
           )}
 
           {error && <p role="alert" className="product-alert-modal__error">{translateText(error)}</p>}
+          </>}
         </form>
-        <div className="product-alert-modal__footer">
+        {deliveryChannel !== 'whatsapp' && <div className="product-alert-modal__footer">
           <button type="submit" form="product-alert-subscription-form" disabled={submitting || !notificationChannelAvailable(deliveryChannel)}>
             {submitting ? <LoaderCircle size={19} aria-hidden="true" /> : <Bell size={19} aria-hidden="true" />}
             {translateText(submitting ? 'Čuvamo…' : 'Uključi obaveštenje')}
           </button>
           <p className="product-alert-modal__footnote"><Check size={14} aria-hidden="true" />{translateText('Novosti i ponude su opcione. Vi birate šta primate.')}</p>
-        </div>
+        </div>}
         </div>
         </div>
       </div>

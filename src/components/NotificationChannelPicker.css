@@ -1,4 +1,10 @@
 .notification-channel { margin: 10px 0; min-width: 0; }
+.whatsapp-subscription { display: grid; gap: 12px; margin-top: 16px; font-size: 14px; line-height: 1.5; }
+.whatsapp-subscription label { display: grid; gap: 6px; }
+.whatsapp-subscription input[type="tel"] { width: 100%; box-sizing: border-box; border: 1px solid #94a3b8; border-radius: 10px; padding: 12px; color: #0f172a; background: white; }
+.whatsapp-subscription .whatsapp-subscription__consent { display: flex; align-items: flex-start; gap: 8px; }
+.whatsapp-subscription button, .whatsapp-subscription__continue { display: block; text-align: center; border: 0; border-radius: 10px; padding: 12px 16px; background: #166534; color: white; font-weight: 600; }
+.whatsapp-subscription button:disabled { opacity: .5; cursor: default; }
 .phone-verification-options { display: flex; flex-wrap: wrap; gap: 6px; border: 0; padding: 0; margin: 0; min-width: 0; }
 .phone-verification-options legend { padding: 0; margin-bottom: 6px; font-size: .78rem; font-weight: 600; }
 .phone-verification-options label { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; min-height: 32px; border: 1px solid #d1d5db; border-radius: 999px; font-size: .76rem; line-height: 1.25; cursor: pointer; }

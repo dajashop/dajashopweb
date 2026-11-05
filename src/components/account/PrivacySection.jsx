@@ -143,11 +143,13 @@ export default function PrivacySection({ user }) {
             <button type="button" className="privacy-section__danger" onClick={() => void odjaviNovosti()} disabled={busy === 'newsletter'}>
               {translateText(busy === 'newsletter' ? 'Odjavljujemo…' : 'Odjavi me sa novosti')}
             </button>
+            <NotificationChannelPicker value={deliveryChannel} onChange={setDeliveryChannel} contact={user.phoneNumber || ''} />
           </>
         ) : (
           <>
             <p>{translateText("Niste prijavljeni na novosti.")}</p>
             <NotificationChannelPicker value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setMarketingOptIn(false); setError(''); }} disabled={busy === 'newsletter'} contact={deliveryChannel === 'email' ? user.email : user.phoneNumber || ''} />
+            {deliveryChannel !== 'whatsapp' && <>
             <label className="privacy-section__check">
               <input type="checkbox" checked={marketingOptIn} onChange={(event) => setMarketingOptIn(event.target.checked)} disabled={busy === 'newsletter'} />
               <span>{translateText("Želim da primam novosti i ponude putem izabranog kanala.")}</span>
@@ -155,6 +157,7 @@ export default function PrivacySection({ user }) {
             <button type="button" className="privacy-section__primary" onClick={() => void prijaviNaNovosti()} disabled={busy === 'newsletter' || !notificationChannelAvailable(deliveryChannel)}>
               {translateText(busy === 'newsletter' ? 'Prijavljujemo…' : 'Prijavi me na novosti')}
             </button>
+            </>}
           </>
         ))}
       </article>

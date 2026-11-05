@@ -1,5 +1,7 @@
 import { Check, Mail, MessageCircle, MessageSquare } from 'lucide-react';
-import { useId } from 'react';
+import { useEffect, useId, useState } from 'react';
+import { apiRequest } from '../services/apiClient.js';
+import WhatsAppSubscription from './WhatsAppSubscription.jsx';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import './NotificationChannelPicker.css';
 
@@ -41,11 +43,20 @@ export function ChannelOptions({ value, onChange, disabled, channels, available,
   </fieldset>;
 }
 
-export default function NotificationChannelPicker({ value, onChange, disabled, variant }) {
+export default function NotificationChannelPicker({ value, onChange, disabled, variant, contact, purpose, productId, variantId }) {
+  const [whatsappAvailable, setWhatsAppAvailable] = useState(false);
+  useEffect(() => {
+    let current = true;
+    apiRequest('/whatsapp/capabilities', { auth: false }).then(data => {
+      if (current) setWhatsAppAvailable(data?.available === true);
+    }).catch(() => {});
+    return () => { current = false; };
+  }, []);
   return <div className={variant === 'cards' ? undefined : 'notification-channel'}>
     <ChannelOptions value={value} onChange={onChange} disabled={disabled}
       compact={variant !== 'cards'}
-      channels={['email', 'whatsapp', 'sms']} available={notificationChannelAvailable}
+      channels={['email', 'whatsapp', 'sms']} available={channel => channel === 'whatsapp' ? whatsappAvailable : notificationChannelAvailable(channel)}
       title={variant === 'cards' ? 'Gde da vam javimo?' : 'Način obaveštavanja'} />
+    {value === 'whatsapp' && whatsappAvailable && <WhatsAppSubscription key={`${purpose || 'newsletter'}:${productId || ''}:${variantId || ''}`} contact={contact} purpose={purpose} productId={productId} variantId={variantId} />}
   </div>;
 }

@@ -187,6 +187,7 @@ export default function NewsletterModal() {
                 <p>{translateText("Prijavite se na DajaShop novosti i primajte informacije o dostupnosti, novitetima i savetima o satovima.")}</p>
                 <form className="newsletter-form" onSubmit={handleSubmit}>
                   <NotificationChannelPicker value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setErrorMsg(''); if (status === 'error') setStatus('idle'); }} disabled={status === 'loading'} contact={isEmailChannel ? email : phone} />
+                  {deliveryChannel !== 'whatsapp' && <>
                   <input
                     ref={emailRef}
                     type={isEmailChannel ? "email" : "tel"}
@@ -210,6 +211,7 @@ export default function NewsletterModal() {
                   <button type="submit" className="newsletter-submit" disabled={status === 'loading' || !notificationChannelAvailable(deliveryChannel)}>
                     {translateText(status === 'loading' ? 'Slanje...' : 'Prijavi me')}
                   </button>
+                  </>}
                 </form>
                 <p className="newsletter-disclaimer">{translateText("Odjava je moguća u bilo kom trenutku.")}</p>
               </div>

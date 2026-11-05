@@ -79,6 +79,7 @@ const ExcelManager = adminPanel(() => import('./components/ExcelManager'));
 const PolicyPublicationPanel = adminPanel(() => import('./components/PolicyPublicationPanel.jsx'));
 const EmailDeliveryPanel = adminPanel(() => import('./components/EmailDeliveryPanel.jsx'));
 const MediaProcessingPanel = lazy(() => import('./components/MediaProcessingPanel.jsx'));
+const WhatsAppPanel = lazy(() => import('./components/WhatsAppPanel.jsx'));
 const SupplierQueuePanel = adminPanel(() => import('./components/SupplierQueuePanel.jsx'));
 const PromotionManager = adminPanel(() => import('./components/PromotionManager.jsx'));
 const FilterManager = adminPanel(() => import('./components/FilterManager.jsx'));
@@ -1309,11 +1310,15 @@ function AdminDashboardContent() {
             {staffAccessLoaded && !isCatalogContributor && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) &&
               <TabButton active={activeTab === 'media'} onClick={() => setActiveTab('media')} icon={BellRing}
                 label="Slike" badge={mediaSummary?.unread} />}
+            {staffAccessLoaded && !isCatalogContributor && (staffAccess?.isOwner || staffAccess?.permissions?.includes('promotions.write')) &&
+              <TabButton active={activeTab === 'whatsapp'} onClick={() => setActiveTab('whatsapp')} icon={BellRing} label="WhatsApp" />}
           </div>
         </div>
       </div>
 
       <div className="container mt-8">
+        {activeTab === 'whatsapp' && !isCatalogContributor && (staffAccess?.isOwner || staffAccess?.permissions?.includes('promotions.write')) &&
+          <LoadErrorBoundary><Suspense fallback={<AdminSkeleton />}><WhatsAppPanel /></Suspense></LoadErrorBoundary>}
         {staffAccessLoaded && !isCatalogContributor && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) &&
           <LoadErrorBoundary><Suspense fallback={activeTab === 'media' ? <AdminSkeleton /> : null}><MediaProcessingPanel visible={activeTab === 'media'} onActivate={() => setActiveTab('media')} onSummary={setMediaSummary}
             canRetry={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('media.upload'))} onOpenProduct={openEdit} /></Suspense></LoadErrorBoundary>}

@@ -109,6 +109,7 @@ export default function Footer() {
 
           <form className="footer-newsletter-form" onSubmit={handleSubmit}>
             <NotificationChannelPicker value={deliveryChannel} onChange={setDeliveryChannel} disabled={loading || success} contact={isEmailChannel ? email : phone} />
+            {deliveryChannel !== 'whatsapp' && <>
             <div
               className={`footer-input-wrapper ${
                 success ? 'border-green-500' : ''
@@ -157,6 +158,7 @@ export default function Footer() {
             </div>
             <p className="footer-newsletter-consent-notice">{translateText("Klikom na „Prijavi me” pristajete na novosti i ponude putem izabranog kanala. Više u ")}<Link to="/privacy">{translateText("Politici privatnosti")}</Link>.
             </p>
+            </>}
           </form>
         </div>
       </div>
