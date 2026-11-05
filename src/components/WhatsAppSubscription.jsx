@@ -53,7 +53,7 @@ export default function WhatsAppSubscription({ contact = '', purpose = 'newslett
       disabled={busy} onChange={e => { setPhone(e.target.value); setUrl(''); setConfirmed(false); }} /></label>
     <label className="whatsapp-subscription__consent"><input type="checkbox" checked={accepted} disabled={busy}
       onChange={e => { setAccepted(e.target.checked); setUrl(''); setConfirmed(false); }} />{t(label)}</label>
-    <p>{t('Odjava u svakom trenutku: pošaljite STOP u WhatsApp razgovoru. Time isključujete WhatsApp novosti i obaveštenja.')} <a href={localizePath('/privacy')}>{t('Politika privatnosti')}</a></p>
+    <p>{t('Odjava u svakom trenutku: pošaljite STOP u WhatsApp razgovoru. Time isključujete WhatsApp novosti i obaveštenja.')} <a href={localizePath('/whatsapp-privacy')}>{t('Politika privatnosti')}</a></p>
     {error && <p role="alert">{t(error)}</p>}
     {confirmed ? <p role="status">{t('WhatsApp prijava je potvrđena.')}</p> : url ? <a className="whatsapp-subscription__continue" href={url} target="_blank" rel="noopener noreferrer">{t('Otvori WhatsApp i potvrdi prijavu')}</a>
       : <button type="button" disabled={!accepted || !phone.trim() || busy} onClick={() => void request()}>{t(busy ? 'Čuvamo…' : 'Nastavi u WhatsApp-u')}</button>}

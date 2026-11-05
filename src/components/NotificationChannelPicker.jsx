@@ -48,10 +48,10 @@ export default function NotificationChannelPicker({ value, onChange, disabled, v
   useEffect(() => {
     let current = true;
     apiRequest('/whatsapp/capabilities', { auth: false }).then(data => {
-      if (current) setWhatsAppAvailable(data?.available === true);
+      if (current) setWhatsAppAvailable(data?.available === true && (purpose !== 'back_in_stock' || data?.backInStockAvailable === true));
     }).catch(() => {});
     return () => { current = false; };
-  }, []);
+  }, [purpose]);
   return <div className={variant === 'cards' ? undefined : 'notification-channel'}>
     <ChannelOptions value={value} onChange={onChange} disabled={disabled}
       compact={variant !== 'cards'}
