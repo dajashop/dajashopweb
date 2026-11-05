@@ -112,18 +112,27 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
             aria-label={translateText(s.alt ?? "Otvori")}
           >
             {(idx === i || loadedSlides.has(idx)) && (
-              <img
-                src={s.src}
-                srcSet={s.srcSet}
-                sizes={s.srcSet ? '(max-width: 1280px) 100vw, 1280px' : undefined}
-                width={s.width}
-                height={s.height}
-                alt={translateText(s.alt ?? "")}
-                loading="eager"
-                fetchPriority={idx === i ? 'high' : 'low'}
-                decoding="async"
-                draggable="false"
-              />
+              <picture>
+                {s.avifSrcSet && (
+                  <source
+                    type="image/avif"
+                    srcSet={s.avifSrcSet}
+                    sizes="(max-width: 1280px) 100vw, 1280px"
+                  />
+                )}
+                <img
+                  src={s.src}
+                  srcSet={s.srcSet}
+                  sizes={s.srcSet ? '(max-width: 1280px) 100vw, 1280px' : undefined}
+                  width={s.width}
+                  height={s.height}
+                  alt={translateText(s.alt ?? "")}
+                  loading="eager"
+                  fetchPriority={idx === i ? 'high' : 'low'}
+                  decoding="async"
+                  draggable="false"
+                />
+              </picture>
             )}
             {s.overlay && <div className="heroBg__overlay">{translateText(s.overlay)}</div>}
           </Slide>
