@@ -157,20 +157,26 @@
 }
 
 .footer__brand {
-  font-size: 1.75rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  display: inline-flex;
   text-decoration: none;
-  background: linear-gradient(
-    90deg,
-    var(--color-text, #111),
-    var(--color-muted, #666)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
   width: fit-content;
+  max-width: 100%;
   margin-bottom: 4px;
+}
+
+.footer__brand-logo {
+  display: block;
+  width: 181px;
+  max-width: 100%;
+  height: auto;
+}
+
+.footer__business-name {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.65;
+  color: var(--color-text, #111);
+  overflow-wrap: anywhere;
 }
 
 .footer__desc {

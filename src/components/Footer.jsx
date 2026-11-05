@@ -2,6 +2,7 @@ import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { seoConfig } from '../config/seo.js';
+import brandLogo from '../assets/dajashop-logo.svg';
 import {
   MapPin,
   Phone,
@@ -167,8 +168,12 @@ export default function Footer() {
       <div className="footer__glass">
         <div className="container footer__content">
           <div className="footer__col brand-col">
-            <Link to="/" className="footer__brand">{translateText("Daja Shop")}</Link>
+            <Link to="/" className="footer__brand">
+              <img className="footer__brand-logo" src={brandLogo} alt="DajaShop" width="181" height="105" />
+            </Link>
             <p className="footer__desc">{translateText("Vaša pouzdana destinacija za originalne satove od 2007. Kvalitet, tradicija i stil na jednom mestu.")}</p>
+            <p className="footer__business-name">TRGOVINSKO KOMISIONA RADNJA DAJA SHOP CVETKOVIC DEJAN PR NIS</p>
+            <p className="footer__business-name">{translateText("PIB")}: 104852069</p>
             <SocialLinks className="footer__socials" />
           </div>
 
