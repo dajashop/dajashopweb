@@ -5,6 +5,7 @@ import { isBrandPath, catalogUrl, decodeCatalogParams, filterUrlEntries, urlSlug
 import { configuredFilterParams } from '../utils/filterConfiguration.js';
 import { PUBLIC_SITE_URL } from '../config/publicSite.js';
 import headerRules from '../../public/_headers?raw';
+import whatsappPrivacy from './whatsappPrivacy.html?raw';
 import { isEmailLinkPath } from '../utils/emailLinkPrivacy.js';
 import { localizedPath, pathLanguage, stripLanguagePrefix } from '../localization/paths.js';
 import { translate } from '../localization/translate.js';
@@ -80,6 +81,12 @@ async function serveRequest(request, env) {
     if (isSensitivePath(url.pathname)) return hiddenFileResponse(request);
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response('Method not allowed', { status: 405, headers: { Allow: 'GET, HEAD' } });
+    }
+    // Public, script-free notice approved by the shop owner for the Meta app.
+    if (path === '/whatsapp-privacy' || path === '/whatsapp-privacy.html') {
+      return new Response(request.method === 'HEAD' ? null : whatsappPrivacy, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex,follow' },
+      });
     }
     if (path.startsWith('/assets/')) {
       const asset = await env.ASSETS.fetch(request);
