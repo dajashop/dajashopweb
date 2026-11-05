@@ -21,6 +21,10 @@ export default function OrderSummary({
   discountAmount, // NOVO: Iznos popusta
 }) {
   const { t: translateText, displayCurrency, moneyRsd } = useStorefront();
+  const summaryMoney = (amount) => <>
+    {moneyRsd(amount)}
+    {displayCurrency !== 'RSD' && <small className="summary-foreign-amount"> ({money(amount)})</small>}
+  </>;
 
   const { items } = useCart();
   return (
@@ -30,7 +34,7 @@ export default function OrderSummary({
       <div className="summary-rows">
         <div className="summary-row">
           <span className="muted">{translateText("Međuzbir")}</span>
-          <span>{money(total)}</span>
+          <span className="summary-amount">{summaryMoney(total)}</span>
         </div>
 
         {/* --- NOVO: Prikaz popusta ako postoji --- */}
@@ -47,7 +51,7 @@ export default function OrderSummary({
             >
               <Ticket size={14} />{translateText(" Popust (")}{translateText(appliedPromo.code)})
             </span>
-            <span>-{money(discountAmount)}</span>
+            <span className="summary-amount">-{summaryMoney(discountAmount)}</span>
           </div>
         )}
 
@@ -56,7 +60,7 @@ export default function OrderSummary({
           {finalShipping === 0 ? (
             <span className="text-success">{translateText("Besplatna")}</span>
           ) : (
-            <span>{money(finalShipping)}</span>
+            <span className="summary-amount">{summaryMoney(finalShipping)}</span>
           )}
         </div>
 
@@ -64,14 +68,14 @@ export default function OrderSummary({
 
         <div className="summary-total">
           <span>{translateText("Ukupno")}</span>
-          <span className="total-price">{money(finalTotal)}</span>
+          <span className="total-price summary-amount">{summaryMoney(finalTotal)}</span>
         </div>
       </div>
 
-      {displayCurrency !== 'RSD' && <p className="summary-currency-note">
-        {translateText('Cene u stranoj valuti su informativne. Plaćanje je u RSD.')}<br />
-        <strong>{translateText('Konačan iznos za plaćanje')}: {moneyRsd(finalTotal)}</strong>
-      </p>}
+      <p className="summary-currency-note">
+        <strong>{translateText('Plaćanje se vrši u dinarima (RSD).')}</strong>
+        {displayCurrency !== 'RSD' && <><br />{translateText('Iznos u zagradi je informativna protivvrednost u izabranoj valuti.')}</>}
+      </p>
 
       {availability !== 'available' && (
         <div id="checkout-availability" className="checkout-availability" role="status" aria-live="polite">

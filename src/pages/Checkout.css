@@ -250,6 +250,23 @@
   color: var(--primary);
 }
 
+.summary-amount {
+  text-align: right;
+}
+
+.summary-foreign-amount {
+  display: inline-block;
+  font-size: 0.8em;
+  font-weight: 400;
+  color: var(--color-text);
+}
+
+.total-price .summary-foreign-amount {
+  display: block;
+  font-size: 0.55em;
+  margin-top: 4px;
+}
+
 .checkout-btn {
   width: 100%;
   padding: 16px;

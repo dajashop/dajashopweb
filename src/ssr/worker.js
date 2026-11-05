@@ -183,7 +183,8 @@ async function serveRequest(request, env) {
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
-    if (/^\/(?:api\/v1(?:\/|$)|socket\.io(?:\/|$))/.test(path)) return proxyApi(request, env, true);
+    // Checkout readiness is outside /api/v1 on the API; keep it out of page routing.
+    if (/^\/(?:api\/v1(?:\/|$)|socket\.io(?:\/|$)|health\/ready$)/.test(path)) return proxyApi(request, env, true);
     const publicPath = stripLanguagePrefix(path);
     const crawler = request.cf?.botManagement?.verifiedBot || /bot\b|crawler|spider|slurp|facebookexternalhit|bingpreview|lighthouse/i.test(request.headers.get('User-Agent') || '');
     if (request.method === 'GET' && request.headers.get('Accept')?.includes('text/html') && !crawler &&
