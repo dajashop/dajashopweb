@@ -30,6 +30,22 @@ import { seoConfig } from '../config/seo.js';
 
 const HERO_SLIDES = [
   {
+    src: '/images/home/hero-g-shock-gold-1280.webp',
+    avifSrc: '/images/home/hero-g-shock-gold-1280.avif',
+    width: 1280,
+    height: 454,
+    alt: 'Casio kolekcija',
+    to: '/catalog?brand=CASIO&category=G-SHOCK',
+  },
+  {
+    src: '/images/home/hero-daniel-klein-gold-960.webp',
+    avifSrc: '/images/home/hero-daniel-klein-gold-960.avif',
+    width: 960,
+    height: 686,
+    alt: 'Daniel Klein izbor',
+    to: '/catalog?brand=DANIEL%20KLEIN',
+  },
+  {
     src: '/images/home/hero-casio-1920.webp',
     srcSet: '/images/home/hero-casio-768.webp 768w, /images/home/hero-casio-1280.webp 1280w, /images/home/hero-casio-1920.webp 1920w',
     width: 1920,
