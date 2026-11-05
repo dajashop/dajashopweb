@@ -30,15 +30,6 @@ import { seoConfig } from '../config/seo.js';
 
 const HERO_SLIDES = [
   {
-    src: '/images/home/hero-casio-classic-1118.webp',
-    srcSet: '/images/home/hero-casio-classic-768.webp 768w, /images/home/hero-casio-classic-1118.webp 1118w',
-    avifSrcSet: '/images/home/hero-casio-classic-768.avif 768w, /images/home/hero-casio-classic-1118.avif 1118w',
-    width: 1118,
-    height: 707,
-    alt: 'Casio kolekcija',
-    to: '/catalog?brand=CASIO',
-  },
-  {
     src: '/images/home/hero-casio-1920.webp',
     srcSet: '/images/home/hero-casio-768.webp 768w, /images/home/hero-casio-1280.webp 1280w, /images/home/hero-casio-1920.webp 1920w',
     width: 1920,
