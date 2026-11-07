@@ -58,7 +58,8 @@ export default {
         headers.set('Content-Disposition', 'attachment');
       }
       headers.set('ETag', object.httpEtag);
-      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      const temporarySource = /(?:-source\.[^./]+|\.source)$/i.test(key);
+      headers.set('Cache-Control', temporarySource ? 'no-store' : 'public, max-age=31536000, immutable');
       headers.set('Content-Length', String(object.size));
       return new Response(request.method === 'HEAD' ? null : object.body, { headers });
     } catch {

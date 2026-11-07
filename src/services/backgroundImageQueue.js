@@ -150,7 +150,7 @@ async function pump() {
               q.jobs = q.jobs.filter(item => item !== job); release(job);
               // Refresh visible cards without turning a refresh failure into
               // another upload/attach attempt.
-              await adminCatalogApi.getProduct(job.targetProductId).then(product => {
+              await adminCatalogApi.getProduct(job.targetProductId, { signal: AbortSignal.timeout(20_000) }).then(product => {
                 window.dispatchEvent(new CustomEvent('daja:products-changed', { detail: { type: 'upsert', product } }));
               }).catch(() => {});
             }

@@ -654,9 +654,10 @@ export const adminCatalogApi = {
     const data = await apiRequest('/products', { staff: true, signal });
     return toArrayPayload(data).map(normalizeProduct);
   },
-  async getProduct(id) {
+  async getProduct(id, { signal } = {}) {
     const data = await apiRequest(`/products/${encodeURIComponent(id)}`, {
       staff: true,
+      signal,
     });
     return normalizeProduct(data);
   },
@@ -1378,6 +1379,7 @@ export const mediaApi = {
     return apiRequest('/media/external', {
       method: 'POST',
       staff: true,
+      signal: AbortSignal.timeout(105_000),
       body: { url, ...options },
     });
   },
@@ -1385,31 +1387,34 @@ export const mediaApi = {
     return apiRequest('/media/uploads', {
       method: 'POST',
       staff: true,
+      signal: AbortSignal.timeout(30_000),
       body: payload,
     });
   },
   completeUpload(mediaId) {
     return apiRequest(
       `/media/uploads/${encodeURIComponent(mediaId)}/complete`,
-      { method: 'POST', staff: true },
+      { method: 'POST', staff: true, signal: AbortSignal.timeout(105_000) },
     );
   },
   resumeUpload(mediaId) {
     return apiRequest(
       `/media/uploads/${encodeURIComponent(mediaId)}/resume`,
-      { method: 'POST', staff: true },
+      { method: 'POST', staff: true, signal: AbortSignal.timeout(30_000) },
     );
   },
   discardUpload(mediaId) {
     return apiRequest(`/media/uploads/${encodeURIComponent(mediaId)}`, {
       method: 'DELETE',
       staff: true,
+      signal: AbortSignal.timeout(30_000),
     });
   },
   attachToProduct(productId, mediaId, options = {}) {
     return apiRequest(`/products/${encodeURIComponent(productId)}/media`, {
       method: 'POST',
       staff: true,
+      signal: AbortSignal.timeout(30_000),
       body: { mediaId, ...options },
     });
   },

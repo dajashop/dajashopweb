@@ -1,8 +1,9 @@
 // Both layouts identify paired AVIF/WebP outputs. Unrelated legacy URLs stay unchanged.
 const versionFolder = '[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}';
 const cleanImageLayout = new RegExp(`/${versionFolder}/${versionFolder}/[^/?#]+\\.webp(?:[?#]|$)`, 'i');
+const flatImageLayout = new RegExp(`/([^/?#]+-slika-[1-9]\\d*)/\\1-${versionFolder}-${versionFolder}(?:-thumb)?\\.webp(?:[?#]|$)`, 'i');
 export function avifImageUrl(url) {
-  return typeof url === 'string' && (/-avif65-webp75-(?:main|thumb)\.webp(?:[?#]|$)/.test(url) || cleanImageLayout.test(url))
+  return typeof url === 'string' && (/-avif65-webp75-(?:main|thumb)\.webp(?:[?#]|$)/.test(url) || cleanImageLayout.test(url) || flatImageLayout.test(url))
     ? url.replace(/\.webp(?=[?#]|$)/, '.avif') : undefined;
 }
 export function avifImageSrcSet(srcSet) {
