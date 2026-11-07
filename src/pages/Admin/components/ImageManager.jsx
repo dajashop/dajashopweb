@@ -105,7 +105,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
       <p>{t(storageError)}</p><button type="button" onClick={reloadQueue} className="mt-2 font-semibold underline">{t('Pokušaj ponovo')}</button>
     </div>}
     {!hydrated && !storageError && <p role="status" className="text-xs text-neutral-500">{t('Proveravam sačuvani red slika…')}</p>}
-    <p className="text-xs text-neutral-500">{t('Pri dodavanju se priprema velika AVIF slika. Ostale tri verzije obrađuju se od 03:00 do 07:00 po vremenu u Srbiji.')}</p>
+    <p className="text-xs text-neutral-500">{t('Original se čuva odmah. Optimizovane verzije stižu čim se obrada završi.')}</p>
     <div className="flex gap-2 items-center">
       <div className="relative flex-1">
         <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />

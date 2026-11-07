@@ -166,7 +166,7 @@ export default function MediaProcessingPanel({ visible, canRetry, onOpenProduct,
   return <>{visible && <section className="mb-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm" aria-label={t('Obaveštenja o slikama')}>
     <div className="border-b border-neutral-100 p-5 sm:p-6">
       <h2 className="flex items-center gap-2 text-xl font-bold"><BellRing size={22} />{t('Slike')}</h2>
-      <p className="mt-1 text-sm text-neutral-500">{t('Noćna obrada: 03:00–07:00, vreme u Srbiji.')}</p>
+      <p className="mt-1 text-sm text-neutral-500">{t('Nove slike prvo obrađuje DAJA računar. Posle sedam dana dostupna je rezervna obrada od 03:00 do 07:00.')}</p>
       <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-live="polite">
         {[
           ['Novih poruka:',summary?.unread,() => { selectView('all'); setUnread('unread'); },'text-red-700'],
@@ -189,7 +189,7 @@ export default function MediaProcessingPanel({ visible, canRetry, onOpenProduct,
           value={view} onChange={event => selectView(event.target.value)}>
           <option value="all">{t('Sve poruke')}</option>
           <option value="problems">{t('Problemi sa slikama')}</option>
-          <option value="queue">{t('Noćni red')}</option>
+          <option value="queue">{t('Red za obradu')}</option>
           <option value="history">{t('Rešene poruke')}</option>
         </select>
         <button type="button" className={button} onClick={refresh}><RefreshCw size={14} />{t('Osveži')}</button>
@@ -232,10 +232,10 @@ export default function MediaProcessingPanel({ visible, canRetry, onOpenProduct,
         {canRetry && selectedItems.some(item => item.phase === 'upload' && !item.resolvedAt) &&
           <button type="button" className={button} disabled={Boolean(busy)} onClick={() => bulk('close')}>{t('Zatvori izabrane poruke')}</button>}
       </div>}
-      <p className="text-xs text-neutral-500">{t('Ponovni pokušaj vraća sliku u noćni red. Istovremeno se obrađuje samo jedna slika.')}</p>
+      <p className="text-xs text-neutral-500">{t('Ponovni pokušaj vraća sliku u red za obradu.')}</p>
       {notice && <p role="status" className="rounded-lg bg-blue-50 p-3 text-sm text-blue-800">{notice}</p>}
       {!list || list.queryKey !== queryKey ? <p className="flex items-center gap-2 text-sm text-neutral-500"><Loader2 size={16} className="animate-spin" />{t('Učitavanje…')}</p>
-        : items.length === 0 ? <p className="py-4 text-sm text-neutral-500">{t(q || status !== 'all' || phase !== 'all' || unread !== 'all' || view === 'all' ? 'Nema poruka za izabrane filtere.' : view === 'problems' ? 'Nema prijavljenih problema sa slikama.' : view === 'queue' ? 'Noćni red je prazan.' : 'Još nema rešenih poruka.')}</p>
+        : items.length === 0 ? <p className="py-4 text-sm text-neutral-500">{t(q || status !== 'all' || phase !== 'all' || unread !== 'all' || view === 'all' ? 'Nema poruka za izabrane filtere.' : view === 'problems' ? 'Nema prijavljenih problema sa slikama.' : view === 'queue' ? 'Red za obradu je prazan.' : 'Još nema rešenih poruka.')}</p>
           : <ul className="space-y-3">{items.map(item => <li key={item.id} className={`rounded-xl border p-3 ${view !== 'queue' && !item.isRead ? 'border-amber-200 bg-amber-50/50' : 'border-neutral-200'}`}>
             <div className="flex items-start gap-3">
               <input type="checkbox" className="mt-4" aria-label={`${t('Izaberi sliku')}: ${item.productName || item.filename || item.mediaId}`}
@@ -248,7 +248,7 @@ export default function MediaProcessingPanel({ visible, canRetry, onOpenProduct,
                 {item.filename && item.productName && <p className="break-words text-xs text-neutral-500">{item.filename}</p>}
                 {item.imageIndex && <p className="text-xs text-neutral-500">{t('Slika:')} {item.imageIndex}</p>}
                 <p className={`mt-1 text-xs font-semibold ${['failed','interrupted','upload_again'].includes(item.status) ? 'text-red-700' : 'text-blue-700'}`}>
-                  {t(statusLabels[item.status] || 'Čeka noćnu obradu')}{item.phase === 'overnight' ? ` · ${t('Noćna obrada')}` : ` · ${t('Dodavanje slike')}`}
+                  {t(item.localWorker && item.status === 'queued' ? 'Čeka DAJA računar' : statusLabels[item.status] || 'Čeka noćnu obradu')}{item.localWorker ? ` · ${t('Lokalna obrada')}` : item.phase === 'overnight' ? ` · ${t('Noćna obrada')}` : ` · ${t('Dodavanje slike')}`}
                 </p>
                 {item.message && <p className="mt-1 break-words text-neutral-700">{item.resolvedAt && item.phase === 'upload'
                   ? t('Prethodni pokušaj dodavanja nije uspeo. Ova poruka je sačuvana u istoriji.') : t(item.message)}</p>}
