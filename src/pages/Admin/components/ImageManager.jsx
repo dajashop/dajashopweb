@@ -7,6 +7,13 @@ import { imageQueue, loadImageQueue, reloadImageQueue, subscribeImageQueues, enq
 
 const imageKey = image => image.linkId || image.mediaId || image.url;
 
+export function keepImageClipboardShortcut(event) {
+  if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase())) {
+    // Keep the input's native clipboard action without sending it to modal shortcuts.
+    event.stopPropagation();
+  }
+}
+
 export default function ImageManager({ images, onChange, onImageClick, productSlug, productName,
   department, onRemoteUploadSuccess, disabled = false, galleryReady = true, onBusyChange, uploadQueueScope }) {
   const { t } = useStorefront();
@@ -137,10 +144,11 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
             <input value={image.altText || ''} placeholder={`${t('Alt tekst slike')} ${index + 1}`}
               aria-label={`${t('Alt tekst slike')} ${index + 1}`} maxLength={240}
               onPointerDown={event => event.stopPropagation()}
+              onKeyDown={keepImageClipboardShortcut}
               onChange={event => publishImages(current.current.images.map(item =>
                 imageKey(item) === imageKey(image)
                   ? { ...item, altText: event.target.value } : item))}
-              className="w-full rounded-md border border-neutral-200 px-2 py-1 text-xs text-neutral-700" />
+              className="w-full select-text rounded-md border border-neutral-200 px-2 py-1 text-xs text-neutral-700" />
           </div>
           <button type="button" disabled={!hydrated || state.removing} title={t('Ukloni sliku')}
             onClick={() => removeImage(image)}
@@ -160,8 +168,9 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
           {job.status === 'failed' && job.error && <p className="mt-1 break-words text-red-700">{job.error}</p>}
           <input value={job.altText || ''} placeholder={`${t('Alt tekst slike')} ${images.length + index + 1}`}
             aria-label={`${t('Alt tekst slike')} ${images.length + index + 1}`} maxLength={240}
+            onKeyDown={keepImageClipboardShortcut}
             onChange={event => updateJobAlt(job.id, event.target.value)}
-            className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs text-neutral-700" />
+            className="mt-2 w-full select-text rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs text-neutral-700" />
         </div>
         {job.status === 'uploading' && <Loader2 size={16} className="animate-spin text-blue-600" />}
         {(job.status === 'failed' || job.status === 'offline') && <button type="button" onClick={() => retryJob(job.id)} title={t('Pokušaj ponovo')} className="p-2 text-blue-700"><RotateCcw size={16} /></button>}

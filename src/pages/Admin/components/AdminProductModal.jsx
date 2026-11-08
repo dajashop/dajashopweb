@@ -25,7 +25,7 @@ import { adminCatalogApi, readerStationApi, subscribeReaderFind, subscribeReader
 import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
 import ImageGalleryModal from '../../../components/modals/ImageGalleryModal.jsx';
-import ImageManager from './ImageManager.jsx';
+import ImageManager, { keepImageClipboardShortcut } from './ImageManager.jsx';
 import { beginImageQueueSave, cancelImageQueueSave, commitImageQueue, imageQueue } from '../../../services/backgroundImageQueue.js';
 import { generateSlug } from '../utils/generators.js';
 import { findSimilarProducts } from '../utils/productNameSimilarity.js';
@@ -2727,6 +2727,7 @@ export default function AdminProductModal({
                         </span>
                         <input
                           value={form.seo?.imageAltText || ''}
+                          onKeyDown={keepImageClipboardShortcut}
                           onChange={(e) =>
                             setForm((prev) => ({
                               ...prev,
