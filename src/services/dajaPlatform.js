@@ -1361,6 +1361,8 @@ export const productAlertSubscriptions = {
 };
 
 export const mediaProcessingApi = {
+  worker() { return apiRequest('/admin/media-processing/worker', { staff: true, signal: AbortSignal.timeout(15_000) }); },
+  saveWorker(profile) { return apiRequest('/admin/media-processing/worker', { method: 'POST', staff: true, body: profile, signal: AbortSignal.timeout(15_000) }); },
   reportUploadFailure(mediaId) { return apiRequest(`/admin/media-processing/${encodeURIComponent(mediaId)}/upload-failed`, { method: 'POST', staff: true }); },
   closeAlert(alertId) { return apiRequest(`/admin/media-processing/alerts/${encodeURIComponent(alertId)}/close`, { method: 'POST', staff: true }); },
   summary() { return apiRequest('/admin/media-processing/summary', { staff: true }); },
@@ -1375,6 +1377,11 @@ export const mediaProcessingApi = {
 };
 
 export const mediaApi = {
+  cancelExternal(requestId) {
+    return apiRequest(`/media/external/${encodeURIComponent(requestId)}`, {
+      method: 'DELETE', staff: true, signal: AbortSignal.timeout(15_000),
+    });
+  },
   registerExternal(url, options = {}) {
     return apiRequest('/media/external', {
       method: 'POST',

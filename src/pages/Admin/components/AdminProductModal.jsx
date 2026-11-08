@@ -26,7 +26,7 @@ import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
 import ImageGalleryModal from '../../../components/modals/ImageGalleryModal.jsx';
 import ImageManager, { keepImageClipboardShortcut } from './ImageManager.jsx';
-import { beginImageQueueSave, cancelImageQueueSave, commitImageQueue, imageQueue } from '../../../services/backgroundImageQueue.js';
+import { beginImageQueueSave, cancelImageQueueSave, commitImageQueue, discardImageDraft, imageQueue } from '../../../services/backgroundImageQueue.js';
 import { generateSlug } from '../utils/generators.js';
 import { findSimilarProducts } from '../utils/productNameSimilarity.js';
 import CustomSelect from './CustomSelect.jsx';
@@ -126,7 +126,10 @@ export default function AdminProductModal({
   onDraftChange,
   uploadQueueOwnerId = 'admin',
 }) {
-  const uploadQueueScope = `user:${uploadQueueOwnerId}:${product?.id ? `product:${product.id}` : 'new-product-draft'}`;
+  const temporaryDraftId = useRef(null);
+  if (!temporaryDraftId.current) temporaryDraftId.current = crypto.randomUUID();
+  const uploadQueueScope = `user:${uploadQueueOwnerId}:${product?.id ? `product:${product.id}` :
+    onDraftChange ? 'new-product-draft' : `new-product-draft-${temporaryDraftId.current}`}`;
   const workTiming = useWorkTiming({ product, draft: productDraft, reviewContext });
   const timingHasDraft = useRef(Boolean(productDraft));
   const buildSeoDefaults = (baseProduct = {}) => {
@@ -661,8 +664,16 @@ export default function AdminProductModal({
     );
   };
 
-  const closeModal = () => {
-    if (submittingRef.current || addingSpecRef.current || imageQueue(uploadQueueScope).removing) return;
+  const closeModal = async () => {
+    const queue = imageQueue(uploadQueueScope);
+    if (submittingRef.current || addingSpecRef.current || queue.removing || queue.persisting || queue.saving) return;
+    if (!product && !onDraftChange && !successfullySavedRef.current) {
+      try { await discardImageDraft(uploadQueueScope, form.images); }
+      catch (error) {
+        setFlash({ open: true, title: error.message || 'Slike nacrta nisu uklonjene.', ok: false });
+        return;
+      }
+    }
     workTiming.close(!product && Boolean(onDraftChange) && timingHasDraft.current);
     // A new product draft may contain images already uploaded to R2. Keep
     // them attached to the draft when the user uses Back or closes the modal.
@@ -1570,7 +1581,7 @@ export default function AdminProductModal({
   // Ovo implementira logiku da se Thumbnail/Main URL menja samo ako se promeni index 0.
   // src/pages/Admin/components/AdminProductModal.jsx
 
-  const handleImageChange = (newImages) => {
+  const handleImageChange = (newImages, { cleanedMediaId } = {}) => {
     const previousImages = form.images || [];
     const imageIdentity = (image) => image.mediaId || image.url;
     const nextImageIds = new Set(newImages.map(imageIdentity).filter(Boolean));
@@ -1591,7 +1602,7 @@ export default function AdminProductModal({
     );
     if (removedUploads.length) {
       removedUploads.forEach((image) => pendingUploadIdsRef.current.delete(image.mediaId));
-      void Promise.all(removedUploads.map((image) => mediaApi.discardUpload(image.mediaId))).catch(
+      void Promise.all(removedUploads.filter(image => image.mediaId !== cleanedMediaId).map((image) => mediaApi.discardUpload(image.mediaId))).catch(
         (error) => console.error('Brisanje uklonjene slike iz R2 nije uspelo:', error),
       );
     }

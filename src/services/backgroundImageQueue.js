@@ -13,6 +13,9 @@ const emit = () => { listeners.forEach(fn => fn()); };
 const mediaChanged = () => window.dispatchEvent(new Event('daja:media-status-changed'));
 const persist = job => saveMediaUploadJob({ ...job, preview: undefined });
 const release = job => { if (job.preview) URL.revokeObjectURL(job.preview); };
+const discardUpload = mediaId => mediaApi.discardUpload(mediaId).catch(error => {
+  if (![404, 410].includes(error.status)) throw error;
+});
 const withJobLock = (id, work) => navigator.locks
   ? navigator.locks.request(`daja-image-job:${id}`, work) : work();
 export const subscribeImageQueues = fn => { listeners.add(fn); return () => listeners.delete(fn); };
@@ -124,9 +127,8 @@ async function pump() {
           if (['failed', 'offline'].includes(job.status)) return;
           if (job.status === 'attaching' && job.image) job.status = 'ready';
           if (job.operation === 'remove') {
-            if (job.mediaId || job.image?.mediaId) await mediaApi.discardUpload(job.mediaId || job.image.mediaId).catch(error => {
-              if (![404, 410].includes(error.status)) throw error;
-          });
+            if (job.sourceUrl) await mediaApi.cancelExternal(job.id);
+            else if (job.mediaId || job.image?.mediaId) await discardUpload(job.mediaId || job.image.mediaId);
           await removeMediaUploadJob(job.id); q.jobs = q.jobs.filter(item => item !== job); release(job);
           if (job.targetProductId) {
             for (const later of q.jobs.filter(item => item.targetProductId === job.targetProductId && item.targetPosition > job.targetPosition)) {
@@ -143,9 +145,18 @@ async function pump() {
             // Another failed/unfinished slot must not be bypassed.
             if (q.jobs.find(item => item.targetProductId && item.operation !== 'remove') === job) {
               job.status = 'attaching'; emit();
-              await mediaApi.attachToProduct(job.targetProductId, job.image.mediaId, {
-                position: job.targetPosition, isPrimary: job.targetPosition === 0, altText: job.altText || null,
-              });
+              try {
+                await mediaApi.attachToProduct(job.targetProductId, job.image.mediaId, {
+                  position: job.targetPosition, isPrimary: job.targetPosition === 0, altText: job.altText || null,
+                });
+              } catch (error) {
+                if (![404, 410].includes(error.status)) throw error;
+                // A product deleted while the browser was uploading cannot
+                // acquire the new media. Retire the resulting orphan.
+                job.operation = 'remove'; job.status = 'queued';
+                await persist(job);
+                return;
+              }
               await removeMediaUploadJob(job.id);
               q.jobs = q.jobs.filter(item => item !== job); release(job);
               // Refresh visible cards without turning a refresh failure into
@@ -176,7 +187,7 @@ export async function commitImageQueue(scope, productId, savedImages, name) {
   const q = imageQueue(scope);
   const linked = new Set(savedImages.map(image => image.mediaId).filter(Boolean));
   const remaining = q.jobs.filter(job => !linked.has(job.image?.mediaId));
-  const targetScope = scope.replace(/:(?:new-product-draft|product:[^:]+)$/, `:product:${productId}`);
+  const targetScope = scope.replace(/:(?:new-product-draft(?:-[^:]+)?|product:[^:]+)$/, `:product:${productId}`);
   const destination = targetScope === scope ? q : imageQueue(targetScope);
   remaining.forEach((job, index) => Object.assign(job, { scope: targetScope,
     targetProductId: productId, targetPosition: savedImages.length + index, productName: name }));
@@ -199,20 +210,55 @@ export async function removeImageJob(scope, id) {
   if (!job || ['uploading', 'attaching'].includes(job.status) || q.saving) return;
   job.operation = 'remove'; job.status = 'queued'; await persist(job); emit(); void pump();
 }
+export async function discardImageDraft(scope, images = [], deletedProductId) {
+  const q = imageQueue(scope);
+  if (q.saving || q.persisting || q.removing) throw new Error('Sačekajte da se završi upis slika.');
+  q.saving = true;
+  emit();
+  try {
+    const jobs = await listMediaUploadJobs(scope);
+    const ids = new Set(images.filter(image => image.mediaId && !image.linkId).map(image => image.mediaId));
+    for (const job of jobs) {
+      if (job.targetProductId && job.targetProductId !== deletedProductId) continue;
+      await withJobLock(job.id, async () => {
+        const latest = await getMediaUploadJob(job.id);
+        if (!latest || latest.scope !== scope || (latest.targetProductId && latest.targetProductId !== deletedProductId)) return;
+        const mediaId = latest.mediaId || latest.image?.mediaId;
+        if (latest.sourceUrl) await mediaApi.cancelExternal(latest.id);
+        else if (mediaId) await discardUpload(mediaId);
+        if (mediaId) ids.delete(mediaId);
+        await removeMediaUploadJob(job.id);
+        const memoryJob = q.jobs.find(item => item.id === job.id);
+        if (memoryJob) release(memoryJob);
+        q.jobs = q.jobs.filter(item => item.id !== job.id);
+      });
+    }
+    for (const id of ids) await discardUpload(id);
+    q.error = '';
+  } finally {
+    q.saving = false;
+    emit();
+    void pump();
+  }
+}
 export async function forgetDraftImage(scope, mediaId) {
   const q = imageQueue(scope);
   const job = q.jobs.find(item => !item.targetProductId && item.status === 'ready' && item.image?.mediaId === mediaId);
-  if (!job) return;
   q.removing = true;
   emit();
   try {
-    await withJobLock(job.id, () => removeMediaUploadJob(job.id));
-    q.jobs = q.jobs.filter(item => item.id !== job.id);
-    release(job);
+    if (job) {
+      await withJobLock(job.id, async () => {
+        const saved = await getMediaUploadJob(job.id);
+        if (saved && (saved.scope !== scope || saved.targetProductId)) return;
+        if (job.sourceUrl) await mediaApi.cancelExternal(job.id);
+        else await discardUpload(mediaId);
+        await removeMediaUploadJob(job.id);
+      });
+      q.jobs = q.jobs.filter(item => item.id !== job.id);
+      release(job);
+    } else await discardUpload(mediaId);
     q.error = '';
-  } catch (error) {
-    q.error = error.message;
-    throw error;
   } finally {
     q.removing = false;
     emit();

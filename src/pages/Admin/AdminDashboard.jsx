@@ -45,6 +45,7 @@ import {
 } from 'lucide-react';
 import useProducts from '../../hooks/useProducts';
 import useProductEditors, { prepareProductEditor } from './components/useProductEditors.jsx';
+import { discardImageDraft } from '../../services/backgroundImageQueue.js';
 import {
   deleteProduct,
   saveProduct,
@@ -663,6 +664,8 @@ function AdminDashboardContent() {
   const filterRef = useRef(null);
 
   const [productDraft, setProductDraft] = useState(null);
+  const [discardingDraft, setDiscardingDraft] = useState(false);
+  const [discardDraftError, setDiscardDraftError] = useState('');
   const [deleteId, setDeleteId] = useState(null);
   const [auditEvents, setAuditEvents] = useState([]);
   const [auditLoading, setAuditLoading] = useState(true);
@@ -1126,6 +1129,19 @@ function AdminDashboardContent() {
     setCompleteCatalogRequested(true);
     openEditor({ draft: productDraft?.payload, onDraftChange: saveProductDraft });
   };
+  const deleteSavedDraft = async () => {
+    if (!productDraft || discardingDraft) return;
+    setDiscardingDraft(true);
+    setDiscardDraftError('');
+    try {
+      const { form, workTiming } = productDraft.payload;
+      await discardImageDraft(`user:${user?.id || 'admin'}:new-product-draft`, form.images);
+      if (workTiming?.id) void workforceApi.abandonSession(workTiming.id, workTiming.startedAt).catch(() => {});
+      saveProductDraft(null);
+    } catch (error) {
+      setDiscardDraftError(error.message || 'Slike nacrta nisu uklonjene. Pokušajte ponovo.');
+    } finally { setDiscardingDraft(false); }
+  };
   const openEdit = (p) => {
     openEditor({ product: p });
   };
@@ -1134,6 +1150,8 @@ function AdminDashboardContent() {
     if (deleteId) {
       await deleteProduct(deleteId);
       setDeleteId(null);
+      void discardImageDraft(`user:${user?.id || 'admin'}:product:${deleteId}`, [], deleteId)
+        .catch(error => console.warn('Čišćenje reda slika obrisanog proizvoda će se ponoviti.', error));
     }
   };
 
@@ -1321,7 +1339,8 @@ function AdminDashboardContent() {
           <LoadErrorBoundary><Suspense fallback={<AdminSkeleton />}><WhatsAppPanel /></Suspense></LoadErrorBoundary>}
         {staffAccessLoaded && !isCatalogContributor && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) &&
           <LoadErrorBoundary><Suspense fallback={activeTab === 'media' ? <AdminSkeleton /> : null}><MediaProcessingPanel visible={activeTab === 'media'} onActivate={() => setActiveTab('media')} onSummary={setMediaSummary}
-            canRetry={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('media.upload'))} onOpenProduct={openEdit} /></Suspense></LoadErrorBoundary>}
+            canRetry={Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('media.upload'))}
+            canManageWorker={Boolean(staffAccess?.isOwner)} onOpenProduct={openEdit} /></Suspense></LoadErrorBoundary>}
         {activeTab === 'variant-groups' && canManageVariantGroups && <VariantGroupsPanel onDirtyChange={onVariantGroupsDirty} />}
         {!isCatalogContributor && (activeTab === 'filters' || filtersVisited) && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
           <div hidden={activeTab !== 'filters'}><FilterManager visible={activeTab === 'filters'} products={completeCatalog.items} productsLoading={completeCatalog.loading} definitions={specs} departments={departments}
@@ -2634,7 +2653,7 @@ function AdminDashboardContent() {
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800">
               <Package size={20} />
             </div>
-            <button type="button" onClick={openSavedDraft} className="min-w-0 flex-1 text-left">
+            <button type="button" disabled={discardingDraft} onClick={openSavedDraft} className="min-w-0 flex-1 text-left">
               <p className="text-xs font-bold uppercase tracking-wider text-amber-800">Sačuvani nacrt</p>
               <p className="mt-1 truncate text-sm font-bold text-neutral-900">
                 {productDraft.payload?.form?.name?.trim() || 'Novi proizvod'}
@@ -2643,11 +2662,8 @@ function AdminDashboardContent() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                const timingId = productDraft?.payload?.workTiming?.id;
-                if (timingId) void workforceApi.abandonSession(timingId, productDraft.payload.workTiming.startedAt).catch(() => {});
-                saveProductDraft(null);
-              }}
+              disabled={discardingDraft}
+              onClick={deleteSavedDraft}
               className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600"
               aria-label="Obriši nacrt proizvoda"
               title="Obriši nacrt"
@@ -2655,6 +2671,8 @@ function AdminDashboardContent() {
               <X size={17} />
             </button>
           </div>
+          {discardingDraft && <p role="status" className="mt-2 text-xs">Uklanjanje slika nacrta…</p>}
+          {discardDraftError && <p role="alert" className="mt-2 text-xs text-red-700">{discardDraftError}</p>}
         </div>
       )}
       <ConfirmModal

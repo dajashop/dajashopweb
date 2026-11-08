@@ -3,6 +3,7 @@ import { BellRing, ImageIcon, Loader2, RefreshCw, Check, ExternalLink, X, Downlo
 import { mediaProcessingApi, adminCatalogApi } from '../../../services/dajaPlatform.js';
 import { useStorefront } from '../../../localization/StorefrontContext.jsx';
 import { createPortal } from 'react-dom';
+import MediaWorkerSettings from './MediaWorkerSettings.jsx';
 
 const date = value => value ? new Date(value).toLocaleString('sr-RS', { timeZone: 'Europe/Belgrade' }) : '—';
 const statusLabels = {
@@ -12,7 +13,7 @@ const statusLabels = {
 };
 const button = 'inline-flex items-center justify-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed';
 
-export default function MediaProcessingPanel({ visible, canRetry, onOpenProduct, onActivate, onSummary }) {
+export default function MediaProcessingPanel({ visible, canRetry, canManageWorker, onOpenProduct, onActivate, onSummary }) {
   const { t } = useStorefront();
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
@@ -166,7 +167,8 @@ export default function MediaProcessingPanel({ visible, canRetry, onOpenProduct,
   return <>{visible && <section className="mb-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm" aria-label={t('Obaveštenja o slikama')}>
     <div className="border-b border-neutral-100 p-5 sm:p-6">
       <h2 className="flex items-center gap-2 text-xl font-bold"><BellRing size={22} />{t('Slike')}</h2>
-      <p className="mt-1 text-sm text-neutral-500">{t('Nove slike prvo obrađuje DAJA računar. Posle sedam dana dostupna je rezervna obrada od 03:00 do 07:00.')}</p>
+      <p className="mt-1 text-sm text-neutral-500">{t('Render preuzima slike koje čekaju najmanje sedam dana ako računar nije bio dostupan sedam dana. Rezerva radi od 03:00 do 07:00.')}</p>
+      <MediaWorkerSettings canManage={canManageWorker} />
       <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-live="polite">
         {[
           ['Novih poruka:',summary?.unread,() => { selectView('all'); setUnread('unread'); },'text-red-700'],
@@ -248,7 +250,9 @@ export default function MediaProcessingPanel({ visible, canRetry, onOpenProduct,
                 {item.filename && item.productName && <p className="break-words text-xs text-neutral-500">{item.filename}</p>}
                 {item.imageIndex && <p className="text-xs text-neutral-500">{t('Slika:')} {item.imageIndex}</p>}
                 <p className={`mt-1 text-xs font-semibold ${['failed','interrupted','upload_again'].includes(item.status) ? 'text-red-700' : 'text-blue-700'}`}>
-                  {t(item.localWorker && item.status === 'queued' ? 'Čeka DAJA računar' : statusLabels[item.status] || 'Čeka noćnu obradu')}{item.localWorker ? ` · ${t('Lokalna obrada')}` : item.phase === 'overnight' ? ` · ${t('Noćna obrada')}` : ` · ${t('Dodavanje slike')}`}
+                  {t(item.localWorker && item.status === 'queued' ? 'Čeka DAJA računar' : statusLabels[item.status] || 'Čeka noćnu obradu')}
+                  {item.leaseWorker === 'render' && item.status === 'processing' && ' · Render'}
+                  {item.renderedAt && ` · ${t('Render verzije su privremeno objavljene')}`}
                 </p>
                 {item.message && <p className="mt-1 break-words text-neutral-700">{item.resolvedAt && item.phase === 'upload'
                   ? t('Prethodni pokušaj dodavanja nije uspeo. Ova poruka je sačuvana u istoriji.') : t(item.message)}</p>}

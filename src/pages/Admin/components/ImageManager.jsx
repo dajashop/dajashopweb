@@ -26,9 +26,9 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
   const hydrated = state.hydrated;
   const storageError = state.error;
   const jobs = state.jobs;
-  const publishImages = next => {
+  const publishImages = (next, options) => {
     current.current.images = next;
-    current.current.onChange(next);
+    current.current.onChange(next, options);
   };
   useEffect(() => {
     if (disabled || !galleryReady) return undefined;
@@ -83,8 +83,9 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
   const retryJob = id => action(retryImageJob(uploadQueueScope, id));
   const removeJob = id => action(removeImageJob(uploadQueueScope, id));
   const removeImage = image => action((async () => {
-    if (image.mediaId) await forgetDraftImage(uploadQueueScope, image.mediaId);
-    publishImages(current.current.images.filter(item => imageKey(item) !== imageKey(image)));
+    const cleanedMediaId = !image.linkId && image.mediaId ? image.mediaId : null;
+    if (cleanedMediaId) await forgetDraftImage(uploadQueueScope, cleanedMediaId);
+    publishImages(current.current.images.filter(item => imageKey(item) !== imageKey(image)), { cleanedMediaId });
   })());
   const updateJobAlt = (id, text) => action(updateImageJobAlt(uploadQueueScope, id, text));
   const reloadQueue = () => action(reloadImageQueue(uploadQueueScope).then(() => {
