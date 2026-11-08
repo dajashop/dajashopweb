@@ -43,7 +43,7 @@ import {
   Ticket,
   BellRing,
 } from 'lucide-react';
-import useProducts from '../../hooks/useProducts';
+import useAdminCatalogProducts from '../../hooks/useAdminCatalogProducts';
 import useProductEditors, { prepareProductEditor } from './components/useProductEditors.jsx';
 import { discardImageDraft } from '../../services/backgroundImageQueue.js';
 import {
@@ -597,25 +597,25 @@ function AdminDashboardContent() {
   const [searchFilters, setSearchFilters] = useState([]);
   const [filtersVisited, setFiltersVisited] = useState(false);
   const [completeCatalogRequested, setCompleteCatalogRequested] = useState(false);
+  const [promotionsVisited, setPromotionsVisited] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(searchTerm), 300);
     return () => window.clearTimeout(timer);
   }, [searchTerm]);
-  const paginatedProducts = activeTab !== 'promotions';
   const productsEndRef = useRef(null);
-  // The public realtime signal carries the changed product ID. The admin hook
-  // then loads only that product through its authenticated catalog API.
-  const { items: products, loading: productsLoading, err: productsError, refresh: refreshProducts, hasMore: hasMoreProducts, loadMore: loadMoreProducts } = useProducts({
-    admin: true,
-    enabled: activeTab === 'products' || activeTab === 'promotions',
-    publicRealtime: true,
-    paginated: paginatedProducts,
-    limit: 30,
-    ...(paginatedProducts ? { search: debouncedSearch, fields: searchFilters.join(',') } : {}),
+  const {
+    items: products, loading: productsLoading, err: productsError, refresh: refreshProducts,
+    hasMore: hasMoreProducts, loadMore: loadMoreProducts, complete: completeCatalog,
+  } = useAdminCatalogProducts({
+    search: debouncedSearch,
+    fields: searchFilters.join(','),
+    productsVisible: activeTab === 'products',
+    loadComplete: completeCatalogRequested || filtersVisited || promotionsVisited || activeTab === 'promotions',
+    completeVisible: activeTab === 'filters' || activeTab === 'promotions' || (activeTab === 'products' && completeCatalogRequested),
+    contributor: isCatalogContributor,
+    enabled: staffAccessLoaded,
   });
-
-  const completeCatalog = useProducts({ admin: true, publicRealtime: false, enabled: completeCatalogRequested || filtersVisited });
 
   useEffect(() => {
     if (activeTab !== 'products' || !hasMoreProducts || productsLoading || productsError || searchTerm !== debouncedSearch) return undefined;
@@ -639,27 +639,7 @@ function AdminDashboardContent() {
     updateActiveTab(next);
   }, [activeTab, staffAccessLoaded, staffAccess, isCatalogContributor]);
   useEffect(() => { if (activeTab === 'filters') setFiltersVisited(true); }, [activeTab]);
-  useEffect(() => {
-    const refreshIfVisible = () => {
-      if (document.visibilityState === 'visible' && activeTab === 'products') refreshProducts();
-    };
-    const timer = window.setInterval(refreshIfVisible, 10 * 60 * 1000);
-    window.addEventListener('focus', refreshIfVisible);
-    return () => { window.clearInterval(timer); window.removeEventListener('focus', refreshIfVisible); };
-  }, [activeTab, refreshProducts]);
-  useEffect(() => {
-    if (activeTab !== 'products') return undefined;
-    const timer = window.setInterval(() => {
-      if (document.visibilityState !== 'visible' || productsLoading) return;
-      const due = products.some((product) => SUPPLIER_PROVIDERS.filter(([provider]) => ['linkel', 'milano'].includes(provider)).some(([provider]) => {
-        if (!product[`${provider}Url`]) return false;
-        const next = Date.parse(product[`${provider}NextCheckAt`] || '');
-        return Number.isFinite(next) && next + 20_000 <= Date.now();
-      }));
-      if (due) refreshProducts();
-    }, 30_000);
-    return () => window.clearInterval(timer);
-  }, [activeTab, products, productsLoading, refreshProducts]);
+  useEffect(() => { if (activeTab === 'promotions') setPromotionsVisited(true); }, [activeTab]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef(null);
 
@@ -1183,6 +1163,7 @@ function AdminDashboardContent() {
 
   // --- Filtriranje Proizvoda ---
   const filteredProducts = useMemo(() => products.filter((p) => {
+    if (searchTerm === debouncedSearch) return true;
     const term = searchTerm.toLowerCase();
     if (!term) return true;
     if (searchFilters.length > 0) {
@@ -1211,7 +1192,7 @@ function AdminDashboardContent() {
       - new Date(left.qualityReviewedAt || left.updatedAt || 0).getTime()
       || new Date(right.updatedAt || 0).getTime() - new Date(left.updatedAt || 0).getTime()
       || String(right.id).localeCompare(String(left.id));
-  }), [products, searchTerm, searchFilters, isCatalogContributor]);
+  }), [products, searchTerm, debouncedSearch, searchFilters, isCatalogContributor]);
   const returnedForRevisionCount = isCatalogContributor
     ? products.filter((product) => product.qualityReviewStatus === 'changes_requested').length
     : 0;
@@ -1348,7 +1329,7 @@ function AdminDashboardContent() {
         )}
         {activeTab === 'promotions' && (
           <PromotionManager
-            products={products}
+            products={completeCatalog.items}
             brands={brands}
             categories={categories}
             departments={departments}
@@ -1358,10 +1339,8 @@ function AdminDashboardContent() {
         {activeTab === 'suppliers' && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
           <SupplierQueuePanel canWrite={canManageSupplierChecks} onOpenProduct={openEdit} />
         )}
-        {activeTab === 'products' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+          <div
+            hidden={activeTab !== 'products'}
             className="space-y-6"
           >
             <ExcelManager
@@ -1619,8 +1598,7 @@ function AdminDashboardContent() {
                 {hasMoreProducts && <button type="button" disabled={productsLoading || searchTerm !== debouncedSearch} onClick={loadMoreProducts} className="ml-3 font-semibold underline">Učitaj još 30</button>}
               </div>
             </div>
-          </motion.div>
-        )}
+          </div>
 
         {activeTab === 'my-workforce' && isCatalogContributor && (
           <motion.section

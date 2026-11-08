@@ -632,12 +632,22 @@ function productWritePayload(product) {
 }
 
 export const adminCatalogApi = {
-  async listProductPage({ after, limit = 30, search, fields, signal } = {}) {
+  async listProductPage({ after, limit = 30, search, fields, signal, incremental = false } = {}) {
+    const position = incremental && after?.includes(',') ? after : undefined;
     const data = await apiRequest('/admin/catalog/batches', {
-      staff: true, signal, query: { after, limit, search, fields },
+      staff: true, signal, query: { after: position ? undefined : after, position, limit, search, fields, incremental: incremental ? 'true' : undefined },
     });
     if (!Array.isArray(data?.items)) throw new Error('Proizvodi nisu dostupni.');
-    return { items: data.items.map(normalizeProduct), nextCursor: data.nextCursor || null };
+    return { items: data.items.map(normalizeProduct), nextCursor: data.nextCursor || null, changeCursor: data.changeCursor, supplierRevision: data.supplierRevision };
+  },
+  async productChanges({ cursor, search, fields, signal }) {
+    const data = await apiRequest('/admin/catalog/changes', {
+      staff: true, signal, query: { xid: cursor.xid, id: cursor.id, search, fields },
+    });
+    if (!Array.isArray(data?.items) || !Array.isArray(data.removedIds) || !data.nextCursor?.xid) {
+      throw new Error('Promene proizvoda nisu dostupne.');
+    }
+    return { ...data, items: data.items.map(normalizeProduct) };
   },
   async listProducts({ onPage, signal } = {}) {
     if (onPage) {
@@ -681,9 +691,10 @@ export const adminCatalogApi = {
     );
     return normalizeProduct(data);
   },
-  async supplierStates(afterRevision = 0, limit = 500) {
+  async supplierStates(afterRevision = 0, limit = 500, { includeLegacy, signal } = {}) {
     return apiRequest('/supplier-links/states', {
-      staff: true, query: { afterRevision, limit }, signal: AbortSignal.timeout(25_000),
+      staff: true, query: { afterRevision, limit, includeLegacy: includeLegacy ? 'true' : undefined },
+      signal: signal ?? AbortSignal.timeout(25_000),
     });
   },
   async supplierProviders(signal) {
