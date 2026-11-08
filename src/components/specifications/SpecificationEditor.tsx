@@ -3,6 +3,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import './specification-editor.css';
 import { eyewearValueError, isEyewearSpecKey } from '../../utils/eyewearCatalog';
+import { subscribeStaffCatalogRealtime } from '../../services/dajaPlatform';
+import { onStaffAccessTokenChange } from '../../services/apiClient';
 
 export type Condition = { specId?: string; brand?: boolean; value: string; operator: 'equals' | 'notEquals' };
 export type Rules = Condition[][];
@@ -10,12 +12,16 @@ export type Spec = { id: string; name: string; slug: string; unit?: string | nul
 export type Field = { specId: string; groupId: string; order: number; visibility: Rules; options: { value: string; rules: Rules }[] };
 export type Configuration = { groups: { id: string; name: string }[]; fields: Field[] };
 export type EditorData = { version: number; configuration: Configuration; specifications: Spec[]; ranking: Record<string, Record<string, number>>; usageCounts?: Record<string, Record<string, number>>; brands?: {id:string;name:string}[] };
-export type EditorRequest = { action: 'get' | 'configure' | 'option'; departmentId: string; brand?: string; specs?: Record<string,string>; version?: number; configuration?: Configuration; specId?: string; value?: string; linkType?: string };
+export type EditorRequest = { action: 'get' | 'configure' | 'option'; departmentId: string; includeUsage?: boolean; brand?: string; specs?: Record<string,string>; version?: number; configuration?: Configuration; specId?: string; value?: string; linkType?: string };
 export type EditorApi = (request: EditorRequest) => Promise<EditorData>;
 const editorReadCache = new Map<string, { expiresAt: number; data: EditorData }>();
-const editorReadCacheTtlMs = 45_000;
-const rememberEditorData = (departmentId: string, data: EditorData) => {
-  editorReadCache.set(departmentId, { expiresAt: Date.now() + editorReadCacheTtlMs, data });
+// A worker normally stays on this form for a long uninterrupted session. Keep
+// each department's choices in memory for that session; catalog real-time
+// events below invalidate it immediately after a taxonomy change.
+const editorReadCacheTtlMs = 2 * 60 * 60_000;
+const editorCacheKey = (departmentId: string, includeUsage: boolean) => `${departmentId}:${includeUsage ? 'usage' : 'choices'}`;
+const rememberEditorData = (departmentId: string, includeUsage: boolean, data: EditorData) => {
+  editorReadCache.set(editorCacheKey(departmentId, includeUsage), { expiresAt: Date.now() + editorReadCacheTtlMs, data });
 };
 const usageCount = (data: EditorData, specId: string, value: string) => data.usageCounts?.[specId]?.[value];
 const usageLabel = (count: number, eyewear = false, remote = false, battery = false) => eyewear || remote || battery ? `${count} ${count === 1 ? 'model' : 'modela'}` : `${count} ${count % 10 === 1 && count % 100 !== 11 ? 'sat' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'sata' : 'satova'}`;
@@ -48,26 +54,32 @@ function useConnected() {
   useEffect(()=>{const update=()=>setConnected(navigator.onLine);window.addEventListener('online',update);window.addEventListener('offline',update);return()=>{window.removeEventListener('online',update);window.removeEventListener('offline',update);};},[]);
   return connected;
 }
-function useEditor(api: EditorApi, departmentId: string) {
+function useEditor(api: EditorApi, departmentId: string, includeUsage: boolean) {
   const [data,setData] = useState<EditorData>(); const [error,setError] = useState(''); const [loading,setLoading] = useState(false);
   const activeDepartment = useRef('');
   const [reload,setReload] = useState(0);
+  const cacheKey=editorCacheKey(departmentId,includeUsage);
+  useEffect(()=>onStaffAccessTokenChange(()=>{editorReadCache.clear();setReload(n=>n+1);}),[]);
+  useEffect(()=>subscribeStaffCatalogRealtime((event: {data?:{collections?:string[]};collections?:string[]})=>{
+    const collections=event?.data?.collections??event?.collections;
+    if(!Array.isArray(collections)||collections.some((collection:string)=>collection==='spec_keys'||collection==='brands')){editorReadCache.delete(cacheKey);setReload(n=>n+1);}
+  }),[cacheKey]);
   useEffect(() => {
     let current = true;
     if (!departmentId) { setData(undefined); return; }
     if(activeDepartment.current!==departmentId){setData(undefined);activeDepartment.current=departmentId;}
-    const cached = editorReadCache.get(departmentId);
+    const cached = editorReadCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       setData(cached.data); setLoading(false); setError('');
       return () => { current=false; };
     }
     setLoading(true); setError('');
     const timer = window.setTimeout(() => {
-      void api({action:'get',departmentId}).then(result => { if(current) { rememberEditorData(departmentId,result); setData(previous=>previous&&previous.version>result.version?previous:result); } }).catch(e => { if(current) setError(e instanceof Error ? e.message : 'Učitavanje nije uspelo.'); }).finally(() => { if(current) setLoading(false); });
+      void api({action:'get',departmentId,includeUsage}).then(result => { if(current) { rememberEditorData(departmentId,includeUsage,result); setData(previous=>previous&&previous.version>result.version?previous:result); } }).catch(e => { if(current) setError(e instanceof Error ? e.message : 'Učitavanje nije uspelo.'); }).finally(() => { if(current) setLoading(false); });
     },150);
     return () => {current=false;window.clearTimeout(timer);};
-  },[api,departmentId,reload]);
-  return {data:activeDepartment.current===departmentId?data:undefined,setData,error,setError,loading,reload:()=>{ editorReadCache.delete(departmentId); setReload(n=>n+1); }};
+  },[api,departmentId,includeUsage,cacheKey,reload]);
+  return {data:activeDepartment.current===departmentId?data:undefined,setData,error,setError,loading,reload:()=>{ editorReadCache.delete(cacheKey); setReload(n=>n+1); }};
 }
 
 function ValueInput({eyewear=false,remote=false,battery=false,spec,value,options,disabled,onCommit,onSave,onLink,onEditing,canLink,busy,message}: {eyewear?:boolean;remote?:boolean;battery?:boolean;spec:Spec;value:string;options:{value:string;unknown:boolean;count?:number}[];disabled:boolean;onCommit:(value:string)=>boolean;onSave:(value:string)=>void;onLink:(value:string)=>void;onEditing:(editing:boolean)=>void;canLink:boolean;busy:boolean;message:string}) {
@@ -100,7 +112,7 @@ function ValueInput({eyewear=false,remote=false,battery=false,spec,value,options
 
 export function SpecificationEditor({api,departmentId,brand='',values,onChange,online=true,disabled=false,images=[],onPreview,onAddImage,onBusyChange,showPreview=true,eyewear=false,remote=false,battery=false}: {eyewear?:boolean;remote?:boolean;battery?:boolean;api:EditorApi;departmentId:string;brand?:string;values:Record<string,string>;onChange:(values:Record<string,string>)=>void;online?:boolean;disabled?:boolean;images?:string[];onPreview?:(index:number)=>void;onAddImage?:()=>void;onBusyChange?:(busy:boolean)=>void;showPreview?:boolean}) {
   const connected=useConnected();online=online&&connected;
-  const {data,setData,error,loading,reload}=useEditor(api,departmentId);
+  const {data,setData,error,loading,reload}=useEditor(api,departmentId,false);
   const [emptyOnly,setEmptyOnly]=useState(false);const [collapsed,setCollapsed]=useState<Record<string,boolean>>({});const [image,setImage]=useState(0);
   const [activeSpec,setActiveSpec]=useState('');
   const [busy,setBusy]=useState('');const busyRef=useRef(false);const [messages,setMessages]=useState<Record<string,string>>({});
@@ -150,7 +162,7 @@ export function SpecificationEditor({api,departmentId,brand='',values,onChange,o
   };
   const save=async(spec:Spec,value:string)=>{
     if(busyRef.current)return;busyRef.current=true;setBusy(spec.id);onBusyChange?.(true);setMessages(m=>({...m,[spec.id]:''}));
-    try{const result=await api({action:'option',departmentId,brand,specs:values,specId:spec.id,value,...(normalizeSpec(spec.slug)==='mehanizam'&&type?{linkType:type}:{})});rememberEditorData(departmentId,result);setData(result);setMessages(m=>({...m,[spec.id]:'Ponuđena vrednost je sačuvana.'}));}
+    try{const result=await api({action:'option',departmentId,brand,specs:values,specId:spec.id,value,...(normalizeSpec(spec.slug)==='mehanizam'&&type?{linkType:type}:{})});rememberEditorData(departmentId,false,result);setData(result);setMessages(m=>({...m,[spec.id]:'Ponuđena vrednost je sačuvana.'}));}
     catch(e){setMessages(m=>({...m,[spec.id]:`Nije sačuvano: ${e instanceof Error?e.message:'Pokušaj ponovo.'} Unos je zadržan.`}));}
     finally{busyRef.current=false;setBusy('');onBusyChange?.(false);}
   };
@@ -226,7 +238,7 @@ function RuleEditor({rules,onChange,specs,brands,self,disabled}: {rules:Rules;on
 export function SpecificationSettings({api,departments,online=true,disabled=false}: {api:EditorApi;departments:{id:string;name:string}[];online?:boolean;disabled?:boolean}) {
   const connected=useConnected();online=online&&connected;
   const [department,setDepartment]=useState('');const departmentId=department||departments[0]?.id||'';
-  const {data,error,setError,loading,reload,setData}=useEditor(api,departmentId);
+  const {data,error,setError,loading,reload,setData}=useEditor(api,departmentId,true);
   const [config,setConfig]=useState<Configuration>();const [name,setName]=useState('');const [busy,setBusy]=useState(false);const [notice,setNotice]=useState('');
   useEffect(()=>{setConfig(data?.configuration);setNotice('');},[data]);
   const eyewear=/nao[čc]are/i.test(departments.find(d=>d.id===departmentId)?.name||'');
@@ -234,7 +246,7 @@ export function SpecificationSettings({api,departments,online=true,disabled=fals
   const battery=/baterije/i.test(departments.find(d=>d.id===departmentId)?.name||'');
   const locked=disabled||!online||busy||loading;
   const updateField=(specId:string,patch:Partial<Field>)=>setConfig(c=>c?{...c,fields:c.fields.map(f=>f.specId===specId?{...f,...patch}:f)}:c);
-  const save=async()=>{if(!data||!config)return;setBusy(true);setError('');setNotice('');try{const result=await api({action:'configure',departmentId,version:data.version,configuration:config});rememberEditorData(departmentId,result);setData(result);setNotice('Podešavanja su sačuvana.');}catch(e){setError(e instanceof Error?e.message:'Čuvanje nije uspelo.');}finally{setBusy(false);}};
+  const save=async()=>{if(!data||!config)return;setBusy(true);setError('');setNotice('');try{const result=await api({action:'configure',departmentId,version:data.version,configuration:config});rememberEditorData(departmentId,true,result);setData(result);setNotice('Podešavanja su sačuvana.');}catch(e){setError(e instanceof Error?e.message:'Čuvanje nije uspelo.');}finally{setBusy(false);}};
   return <section className="specification-editor se-settings"><header className="se-toolbar"><h3>Kategorije i pravila unosa</h3><select value={departmentId} disabled={busy} onChange={e=>{if(!config||!data||JSON.stringify(config)===JSON.stringify(data.configuration)||window.confirm('Odbaci nesačuvana podešavanja i promeni odeljenje?'))setDepartment(e.target.value);}}>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></header>
     {!online&&<p role="alert">Podešavanja zahtevaju internet vezu.</p>}{error&&<p className="se-error" role="alert">{error} <button type="button" onClick={()=>{if(window.confirm('Ponovo učitaj i odbaci nesačuvana podešavanja?'))reload();}}>Ponovo učitaj</button></p>}{notice&&<p role="status">{notice}</p>}
     {!data && !error && departmentId && <AdminSkeleton rows={3} label="Učitavanje pravila specifikacija" />}
