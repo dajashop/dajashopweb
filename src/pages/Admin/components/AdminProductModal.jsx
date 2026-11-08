@@ -662,7 +662,7 @@ export default function AdminProductModal({
   };
 
   const closeModal = () => {
-    if (submittingRef.current || addingSpecRef.current) return;
+    if (submittingRef.current || addingSpecRef.current || imageQueue(uploadQueueScope).removing) return;
     workTiming.close(!product && Boolean(onDraftChange) && timingHasDraft.current);
     // A new product draft may contain images already uploaded to R2. Keep
     // them attached to the draft when the user uses Back or closes the modal.
@@ -1587,7 +1587,7 @@ export default function AdminProductModal({
       setRemovedMediaLinkIds((current) => [...new Set([...current, ...removedLinks])]);
     }
     const removedUploads = removed.filter(
-      (image) => image.mediaId && pendingUploadIdsRef.current.has(image.mediaId),
+      (image) => image.mediaId && !image.linkId && (!product || pendingUploadIdsRef.current.has(image.mediaId)),
     );
     if (removedUploads.length) {
       removedUploads.forEach((image) => pendingUploadIdsRef.current.delete(image.mediaId));

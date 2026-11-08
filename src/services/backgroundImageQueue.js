@@ -168,7 +168,7 @@ async function pump() {
 }
 export function beginImageQueueSave(scope) {
   const q = imageQueue(scope);
-  if (!q.hydrated || q.persisting || q.error) throw new Error(q.error || 'Sačekajte da se proveri sačuvani red slika.');
+  if (!q.hydrated || q.persisting || q.removing || q.error) throw new Error(q.error || 'Sačekajte da se proveri sačuvani red slika.');
   q.saving = true; emit();
 }
 export function cancelImageQueueSave(scope) { imageQueue(scope).saving = false; emit(); void pump(); }
@@ -198,6 +198,25 @@ export async function removeImageJob(scope, id) {
   const q = imageQueue(scope); const job = q.jobs.find(item => item.id === id);
   if (!job || ['uploading', 'attaching'].includes(job.status) || q.saving) return;
   job.operation = 'remove'; job.status = 'queued'; await persist(job); emit(); void pump();
+}
+export async function forgetDraftImage(scope, mediaId) {
+  const q = imageQueue(scope);
+  const job = q.jobs.find(item => !item.targetProductId && item.status === 'ready' && item.image?.mediaId === mediaId);
+  if (!job) return;
+  q.removing = true;
+  emit();
+  try {
+    await withJobLock(job.id, () => removeMediaUploadJob(job.id));
+    q.jobs = q.jobs.filter(item => item.id !== job.id);
+    release(job);
+    q.error = '';
+  } catch (error) {
+    q.error = error.message;
+    throw error;
+  } finally {
+    q.removing = false;
+    emit();
+  }
 }
 export async function updateImageJobAlt(scope, id, altText) {
   const job = imageQueue(scope).jobs.find(item => item.id === id);

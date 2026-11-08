@@ -3,8 +3,9 @@ import { Reorder, motion } from 'framer-motion';
 import { UploadCloud, Trash2, GripHorizontal, Plus, Loader2, ImageIcon, LinkIcon, RotateCcw } from 'lucide-react';
 import { useStorefront } from '../../../localization/StorefrontContext.jsx';
 import { generateSlug } from '../utils/generators';
-import { removeMediaUploadJob } from '../../../services/mediaUploadQueueStorage';
-import { imageQueue, loadImageQueue, reloadImageQueue, subscribeImageQueues, enqueueImages, retryImageJob, removeImageJob, updateImageJobAlt } from '../../../services/backgroundImageQueue';
+import { imageQueue, loadImageQueue, reloadImageQueue, subscribeImageQueues, enqueueImages, retryImageJob, removeImageJob, forgetDraftImage, updateImageJobAlt } from '../../../services/backgroundImageQueue';
+
+const imageKey = image => image.linkId || image.mediaId || image.url;
 
 export default function ImageManager({ images, onChange, onImageClick, productSlug, productName,
   department, onRemoteUploadSuccess, disabled = false, galleryReady = true, onBusyChange, uploadQueueScope }) {
@@ -19,10 +20,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
   const storageError = state.error;
   const jobs = state.jobs;
   const publishImages = next => {
-    const retained = new Set(next.map(image => image.mediaId));
-    const removed = state.jobs.filter(job => job.published && job.image && !retained.has(job.image.mediaId));
-    state.jobs = state.jobs.filter(job => !removed.includes(job));
-    removed.forEach(job => { void removeMediaUploadJob(job.id).catch(() => {}); });
+    current.current.images = next;
     current.current.onChange(next);
   };
   useEffect(() => {
@@ -49,7 +47,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
         }
       }
       // Save waits only for durable local storage, not image optimization.
-      current.current.onBusyChange?.(!q.hydrated || Boolean(q.persisting || q.error));
+      current.current.onBusyChange?.(!q.hydrated || Boolean(q.persisting || q.removing || q.error));
       render(value => value + 1);
     };
     const unsubscribe = subscribeImageQueues(update);
@@ -77,13 +75,17 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
   const action = operation => { void operation.catch(error => { state.error = error.message; render(value => value + 1); }); };
   const retryJob = id => action(retryImageJob(uploadQueueScope, id));
   const removeJob = id => action(removeImageJob(uploadQueueScope, id));
+  const removeImage = image => action((async () => {
+    if (image.mediaId) await forgetDraftImage(uploadQueueScope, image.mediaId);
+    publishImages(current.current.images.filter(item => imageKey(item) !== imageKey(image)));
+  })());
   const updateJobAlt = (id, text) => action(updateImageJobAlt(uploadQueueScope, id, text));
   const reloadQueue = () => action(reloadImageQueue(uploadQueueScope).then(() => {
     onBusyChange?.(Boolean(imageQueue(uploadQueueScope).error));
     render(value => value + 1);
   }));
   const visibleJobs = jobs.filter(job => !job.published);
-  const busy = visibleJobs.length > 0 || !hydrated;
+  const busy = visibleJobs.length > 0 || !hydrated || state.removing;
 
   return <fieldset className="space-y-4 min-w-0" disabled={disabled}
     onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.preventDefault(); }}
@@ -121,7 +123,7 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
     {busy && <p className="text-xs text-blue-700" role="status">{t('Možete sačuvati proizvod dok se slike obrađuju. Napredak i greške prikazuju se pri dnu ekrana.')} {t('Na čekanju:')} {visibleJobs.filter(job => job.status === 'queued').length}</p>}
     <Reorder.Group axis="y"
       values={images} onReorder={nextImages => { if (!disabled && !busy) publishImages(nextImages); }} className="space-y-2 max-h-75 overflow-y-auto custom-scrollbar pr-1">
-      {images.map((image, index) => <Reorder.Item key={image.linkId || image.mediaId || image.url} value={image}
+      {images.map((image, index) => <Reorder.Item key={imageKey(image)} value={image}
         dragListener={!disabled && !busy} className={disabled || busy ? '' : 'cursor-grab active:cursor-grabbing'}>
         <motion.div layout className="flex items-center gap-3 p-2 bg-white border border-neutral-200 rounded-xl shadow-sm">
           <div className="p-2 text-neutral-300"><GripHorizontal size={18} /></div>
@@ -135,13 +137,13 @@ export default function ImageManager({ images, onChange, onImageClick, productSl
             <input value={image.altText || ''} placeholder={`${t('Alt tekst slike')} ${index + 1}`}
               aria-label={`${t('Alt tekst slike')} ${index + 1}`} maxLength={240}
               onPointerDown={event => event.stopPropagation()}
-              onChange={event => publishImages(imagesRef.current.map(item =>
-                (item.linkId || item.mediaId || item.url) === (image.linkId || image.mediaId || image.url)
+              onChange={event => publishImages(current.current.images.map(item =>
+                imageKey(item) === imageKey(image)
                   ? { ...item, altText: event.target.value } : item))}
               className="w-full rounded-md border border-neutral-200 px-2 py-1 text-xs text-neutral-700" />
           </div>
-          <button type="button" disabled={busy} title={t('Ukloni sliku')}
-            onClick={() => publishImages(imagesRef.current.filter(item => item !== image))}
+          <button type="button" disabled={!hydrated || state.removing} title={t('Ukloni sliku')}
+            onClick={() => removeImage(image)}
             className="p-2 text-neutral-400 hover:text-red-500"><Trash2 size={16} /></button>
         </motion.div>
       </Reorder.Item>)}
