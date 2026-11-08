@@ -54,7 +54,7 @@ export default function MediaWorkerSettings({ canManage }) {
       <span>DAJA računar · {offline || !status ? 'stanje nije dostupno' : !status.pcEnabled ? 'nije podešen' :
         status.profile.paused ? 'pauziran' : status.pcOnline ? 'povezan' : 'van mreže'}</span>
       <span>Render · {offline || !status ? 'stanje nije dostupno' : !status.renderOnline ? 'nema svežeg signala' :
-        renderFailed ? 'aktivan, poslednja obrada prijavila grešku' : 'raspored aktivan (03–07)'}</span>
+        renderFailed ? 'poslednja obrada prijavila grešku' : 'rezerva 03:00–07:00 (posle 7 dana)'}</span>
     </div>
     {canManage && profile && <details className="mt-3 border-t border-neutral-200 pt-3">
       <summary className="cursor-pointer font-semibold">Podešavanja lokalne obrade</summary>
