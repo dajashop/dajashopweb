@@ -286,7 +286,10 @@ export default function useProducts(params = {}) {
         busy = false;
         if (!stopped) {
           const checking = [...cache.values()].some(states => [...states.values()].some(state => state.status === 'checking')) || supplierItems.current.some(product => ['supplier', 'bultime', 'timezone', 'qandq'].some(prefix => product[prefix + 'Status'] === 'checking'));
-          timer = window.setTimeout(poll, checking ? 2_000 : 30_000);
+          // Supplier checks run in the background; a ten-second status refresh
+          // keeps the queue responsive without making every open admin tab poll
+          // PostgreSQL twice per second while a provider is checking.
+          timer = window.setTimeout(poll, checking ? 10_000 : 45_000);
         }
       }
     };

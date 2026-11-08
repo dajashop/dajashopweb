@@ -286,7 +286,7 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
     const refresh = () => {
       if (document.visibilityState === 'visible') void load();
     };
-    const timer = setInterval(refresh, busy || pending ? 2000 : 30000);
+    const timer = setInterval(refresh, busy || pending ? 10000 : 45000);
     document.addEventListener('visibilitychange', refresh);
     return () => {
       ++serial.current;
