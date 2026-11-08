@@ -258,7 +258,12 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
     setPage(1);
     setSelected([]);
   }, [provider, status, search, attention, sort, direction]);
+  const loadController = useRef(null);
   const load = useCallback(async () => {
+    loadController.current?.abort();
+    const controller = new AbortController();
+    loadController.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), 25_000);
     const request = ++serial.current;
     const receive = async (key, promise, apply) => {
       try {
@@ -271,29 +276,52 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
         if (request === serial.current) setLoadErrors(current => ({ ...current, [key]: error.message || 'Podaci nisu dostupni.' }));
       }
     };
-    await Promise.allSettled([
-      receive('providers', adminCatalogApi.supplierProviders(), value => setProviders(value.items)),
-      receive('links', adminCatalogApi.supplierLinks(filters), value => { setLinks(value); setLoaded(true); }),
-      receive('statistics', adminCatalogApi.supplierStatistics(provider, period), setStatistics),
-      receive('timeline', adminCatalogApi.supplierTimeline(), setTimeline),
-    ]);
+    try {
+      await Promise.allSettled([
+        receive('providers', adminCatalogApi.supplierProviders(controller.signal), value => setProviders(value.items)),
+        receive('links', adminCatalogApi.supplierLinks(filters, false, controller.signal), value => { setLinks(value); setLoaded(true); }),
+        receive('statistics', adminCatalogApi.supplierStatistics(provider, period, controller.signal), setStatistics),
+        receive('timeline', adminCatalogApi.supplierTimeline(controller.signal), setTimeline),
+      ]);
+    } finally {
+      window.clearTimeout(timeout);
+      if (loadController.current === controller) loadController.current = null;
+    }
   }, [filters, provider, period]);
   const pending =
     providers.some((p) => p.probeRequestedAt) ||
     links.items.some((l) => l.status === 'checking');
+  const refreshDelay = useRef(45_000);
+  refreshDelay.current = busy || pending ? 10_000 : 45_000;
   useEffect(() => {
-    void load();
-    const refresh = () => {
-      if (document.visibilityState === 'visible') void load();
+    let stopped = false;
+    let running = false;
+    let timer;
+    const refresh = async () => {
+      if (stopped || running || document.visibilityState !== 'visible') return;
+      window.clearTimeout(timer);
+      if (loadController.current) {
+        timer = window.setTimeout(refresh, refreshDelay.current);
+        return;
+      }
+      running = true;
+      try {
+        await load();
+      } finally {
+        running = false;
+        if (!stopped) timer = window.setTimeout(refresh, refreshDelay.current);
+      }
     };
-    const timer = setInterval(refresh, busy || pending ? 10000 : 45000);
+    void refresh();
     document.addEventListener('visibilitychange', refresh);
     return () => {
+      stopped = true;
       ++serial.current;
-      clearInterval(timer);
+      loadController.current?.abort();
+      window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', refresh);
     };
-  }, [load, busy, pending]);
+  }, [load]);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);

@@ -2705,7 +2705,7 @@ export default function AdminDashboard() {
       </div>
     );
   }
-  return <AdminDashboardContent />;
+  return <AdminDashboardContent key={user.id} />;
 }
 
 // Helper komponenta za tabove

@@ -21,7 +21,11 @@ let publicCatalogSocket = null;
 let publicCatalogCloseTimer;
 const publicCatalogListeners = new Set();
 let staffCatalogSocket = null;
+let staffCatalogGeneration = 0;
 const staffCatalogListeners = new Set();
+const specificationChoicesCache = new Map();
+const specificationChoicesTtlMs = 2 * 60 * 60_000;
+const specificationChoicesMaxEntries = 16;
 const adminConfigurationVersions = new Map();
 
 const OAUTH_WAKEUP_TIMEOUT_MS = 90_000;
@@ -103,10 +107,17 @@ function ensureStaffCatalogSocket() {
     return;
   }
   staffCatalogSocket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ token: `Bearer ${getStaffAccessToken() || ''}` }));
+  // A disconnected tab can miss invalidations. Never reuse a snapshot from
+  // before the connection changed.
+  staffCatalogSocket.on('connect', () => specificationChoicesCache.clear());
+  staffCatalogSocket.on('disconnect', () => specificationChoicesCache.clear());
   staffCatalogSocket.on('product.updated', (event) => {
     staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
   });
   staffCatalogSocket.on('catalog.taxonomy.updated', (event) => {
+    if (event?.data?.collections?.some(collection => ['spec_keys', 'departments'].includes(collection))) {
+      specificationChoicesCache.clear();
+    }
     staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
   });
   staffCatalogSocket.on('catalog.variant-groups.updated', (event) => {
@@ -118,6 +129,8 @@ function ensureStaffCatalogSocket() {
 }
 
 onStaffAccessTokenChange(() => {
+  staffCatalogGeneration += 1;
+  specificationChoicesCache.clear();
   // A dashboard can mount before its short-lived staff session is issued.
   // In that case there is no socket to close, but active catalog subscribers
   // must still connect as soon as the token becomes available.
@@ -669,19 +682,21 @@ export const adminCatalogApi = {
     return normalizeProduct(data);
   },
   async supplierStates(afterRevision = 0, limit = 500) {
-    return apiRequest(`/supplier-links/states?afterRevision=${afterRevision}&limit=${limit}`, { staff: true });
+    return apiRequest('/supplier-links/states', {
+      staff: true, query: { afterRevision, limit }, signal: AbortSignal.timeout(25_000),
+    });
   },
-  async supplierProviders() {
-    return apiRequest('/supplier-links/providers', { staff: true });
+  async supplierProviders(signal) {
+    return apiRequest('/supplier-links/providers', { staff: true, signal });
   },
-  async supplierLinks(filters = {}, exporting = false) {
-    return apiRequest(exporting ? '/supplier-links/links/export' : '/supplier-links/links', { staff: true, query: filters });
+  async supplierLinks(filters = {}, exporting = false, signal) {
+    return apiRequest(exporting ? '/supplier-links/links/export' : '/supplier-links/links', { staff: true, query: filters, signal });
   },
-  async supplierStatistics(code = 'all', period = '24h') {
-    return apiRequest(`/supplier-links/providers/${encodeURIComponent(code)}/statistics`, { staff: true, query: { period } });
+  async supplierStatistics(code = 'all', period = '24h', signal) {
+    return apiRequest(`/supplier-links/providers/${encodeURIComponent(code)}/statistics`, { staff: true, query: { period }, signal });
   },
-  async supplierTimeline() {
-    return apiRequest('/supplier-links/timeline', { staff: true, query: { minutes: 60 } });
+  async supplierTimeline(signal) {
+    return apiRequest('/supplier-links/timeline', { staff: true, query: { minutes: 60 }, signal });
   },
   async pauseSuppliers(body) {
     return apiRequest('/supplier-links/providers/pause', { staff: true, method: 'POST', body });
@@ -905,45 +920,50 @@ export function createCollectionService(collectionName) {
   let cachedItems = [];
   let stopRealtime = null;
   let inFlight = null;
-  let hasSnapshot = false;
+  let snapshotGeneration = -1;
   let refreshQueued = false;
   const notify = (items) => {
     cachedItems = items;
-    hasSnapshot = true;
+    snapshotGeneration = staffCatalogGeneration;
     subscribers.forEach((subscriber) => subscriber.onData(items));
   };
   const refresh = () => {
-    if (inFlight) return inFlight;
-    inFlight = (async () => {
-    try {
-      const data = await apiRequest(endpoint, { staff: true });
-      const items = toArrayPayload(data);
-      notify(items);
-      return items;
-    } catch (error) {
-      subscribers.forEach((subscriber) => subscriber.onError?.(error));
-      throw error;
-    } finally {
-      inFlight = null;
-      if (refreshQueued) {
-        refreshQueued = false;
-        void refresh().catch(() => {});
+    const generation = staffCatalogGeneration;
+    if (inFlight?.generation === generation) return inFlight.promise;
+    const entry = { generation, promise: null };
+    refreshQueued = false;
+    entry.promise = (async () => {
+      try {
+        const data = await apiRequest(endpoint, { staff: true });
+        const items = toArrayPayload(data);
+        if (generation === staffCatalogGeneration) notify(items);
+        return items;
+      } catch (error) {
+        if (generation === staffCatalogGeneration) subscribers.forEach(subscriber => subscriber.onError?.(error));
+        throw error;
+      } finally {
+        if (inFlight === entry) {
+          inFlight = null;
+          if (refreshQueued && subscribers.size && generation === staffCatalogGeneration) {
+            void refresh().catch(() => {});
+          }
+        }
       }
-    }
     })();
-    return inFlight;
+    inFlight = entry;
+    return entry.promise;
   };
   // A write must revalidate after any older read has finished.
   const refreshAfterWrite = async () => {
-    if (inFlight) await inFlight.catch(() => {});
+    if (inFlight) await inFlight.promise.catch(() => {});
     return refresh();
   };
   const startRealtime = () => {
     if (stopRealtime) return;
     stopRealtime = subscribeStaffCatalogRealtime((event) => {
       const collections = event?.data?.collections ?? event?.collections;
-      if (!Array.isArray(collections) || collections.includes(collectionName)) {
-        if (inFlight) refreshQueued = true;
+      if (event?.event === 'catalog.taxonomy.updated' && Array.isArray(collections) && collections.includes(collectionName)) {
+        if (inFlight?.generation === staffCatalogGeneration) refreshQueued = true;
         else void refresh().catch(() => {});
       }
     });
@@ -960,7 +980,7 @@ export function createCollectionService(collectionName) {
       const subscriber = { onData, onError };
       subscribers.add(subscriber);
       startRealtime();
-      if (hasSnapshot) onData(cachedItems);
+      if (snapshotGeneration === staffCatalogGeneration) onData(cachedItems);
       void refresh().catch(() => {});
       return () => {
         subscribers.delete(subscriber);
@@ -1760,6 +1780,7 @@ export function subscribeStaffCatalogRealtime(onEvent, onError) {
   return () => {
     staffCatalogListeners.delete(listener);
     if (staffCatalogListeners.size === 0 && staffCatalogSocket) {
+      specificationChoicesCache.clear();
       staffCatalogSocket.close();
       staffCatalogSocket = null;
     }
@@ -1796,6 +1817,38 @@ export function subscribePublicCatalogRealtime(onEvent, onError) {
   };
 }
 
-export const specificationEditorApi = (body) => apiRequest("/specification-editor", { staff: true, method: "POST", body });
+export async function specificationEditorApi({ fresh, ...body }) {
+  const request = () => apiRequest('/specification-editor', {
+    staff: true, method: 'POST', body,
+    ...(body.action === 'get' ? { signal: AbortSignal.timeout(25_000) } : {}),
+  });
+  if (body.action !== 'get') {
+    const result = await request();
+    specificationChoicesCache.clear();
+    return result;
+  }
+  // Settings require up-to-date counts and a configuration version for edits.
+  if (body.includeUsage !== false) return request();
+
+  const key = body.departmentId;
+  const cached = specificationChoicesCache.get(key);
+  if (cached?.pending) return cached.pending;
+  if (!fresh && staffCatalogSocket?.connected && getStaffAccessToken() && cached?.expiresAt > Date.now()) return cached.data;
+  specificationChoicesCache.delete(key);
+  if (specificationChoicesCache.size >= specificationChoicesMaxEntries) {
+    specificationChoicesCache.delete(specificationChoicesCache.keys().next().value);
+  }
+  const entry = { pending: request(), expiresAt: 0, data: undefined };
+  specificationChoicesCache.set(key, entry);
+  try {
+    const data = await entry.pending;
+    if (specificationChoicesCache.get(key) === entry && staffCatalogSocket?.connected && getStaffAccessToken()) {
+      specificationChoicesCache.set(key, { data, expiresAt: Date.now() + specificationChoicesTtlMs });
+    }
+    return data;
+  } finally {
+    if (specificationChoicesCache.get(key) === entry) specificationChoicesCache.delete(key);
+  }
+}
 
 export const catalogSearchSettingsApi = { get: () => apiRequest("/catalog-search-settings", { staff: true }), save: body => apiRequest("/catalog-search-settings", { staff: true, method: "PUT", body }) };

@@ -252,53 +252,66 @@ export default function useProducts(params = {}) {
     let busy = false;
     let timer;
     const cache = new Map();
-    const apply = () => setItems(current => current.map(product => {
-      const states = cache.get(product.id);
-      if (!states) return product;
-      const fields = {};
-      for (const state of states.values()) {
-        const prefix = state.providerCode === 'ekka' ? 'supplier' : state.providerCode;
-        for (const key of ['url', 'status', 'stockStatus', 'priceAmount', 'priceCurrency', 'lastCheckedAt', 'nextCheckAt', 'queuePosition', 'checksEnabled', 'disabledReason', 'disabledAt', 'lastGoodResult', 'confirmationDueAt', 'nextRegularAt', 'pausedUntil', 'pauseReason', 'firstProblemAt', 'firstProblemReason']) {
-          fields[prefix + key[0].toUpperCase() + key.slice(1)] = state.removed ? null : state[key] ?? null;
+    const apply = () => setItems(current => {
+      const updated = current.map(product => {
+        const states = cache.get(product.id);
+        if (!states) return product;
+        const fields = {};
+        for (const state of states.values()) {
+          const prefix = state.providerCode === 'ekka' ? 'supplier' : state.providerCode;
+          for (const key of ['url', 'status', 'stockStatus', 'priceAmount', 'priceCurrency', 'lastCheckedAt', 'nextCheckAt', 'queuePosition', 'checksEnabled', 'disabledReason', 'disabledAt', 'lastGoodResult', 'confirmationDueAt', 'nextRegularAt', 'pausedUntil', 'pauseReason', 'firstProblemAt', 'firstProblemReason']) {
+            fields[prefix + key[0].toUpperCase() + key.slice(1)] = state.removed ? null : state[key] ?? null;
+          }
+          fields[prefix + 'LinkId'] = state.id;
         }
-        fields[prefix + 'LinkId'] = state.id;
-      }
-      return { ...product, ...fields };
-    }));
+        return Object.entries(fields).every(([key, value]) => product[key] === value)
+          ? product : { ...product, ...fields };
+      });
+      return updated.some((product, index) => product !== current[index]) ? updated : current;
+    });
     const poll = async () => {
       if (busy || stopped || document.visibilityState !== 'visible') return;
       busy = true;
+      let hasBacklog = false;
       try {
-        let more;
-        do {
+        for (let page = 0; page < 4; page += 1) {
           const result = await adminCatalogApi.supplierStates(revision);
           if (stopped) return;
           for (const state of result.items) {
             if (!cache.has(state.productId)) cache.set(state.productId, new Map());
             cache.get(state.productId).set(state.providerCode, state);
           }
+          hasBacklog = result.hasMore && result.nextRevision > revision;
+          if (!Number.isSafeInteger(result.nextRevision) || result.nextRevision <= revision) {
+            hasBacklog = false;
+            break;
+          }
           revision = result.nextRevision;
-          more = result.hasMore;
-        } while (more);
-        apply();
-      } catch { /* Preserve current results while offline or during a deployment. */ }
-      finally {
+          if (!hasBacklog || document.visibilityState !== 'visible') break;
+        }
+      } catch {
+        hasBacklog = false;
+      } finally {
         busy = false;
         if (!stopped) {
+          apply();
           const checking = [...cache.values()].some(states => [...states.values()].some(state => state.status === 'checking')) || supplierItems.current.some(product => ['supplier', 'bultime', 'timezone', 'qandq'].some(prefix => product[prefix + 'Status'] === 'checking'));
-          // Supplier checks run in the background; a ten-second status refresh
-          // keeps the queue responsive without making every open admin tab poll
-          // PostgreSQL twice per second while a provider is checking.
-          timer = window.setTimeout(poll, checking ? 10_000 : 45_000);
+          timer = window.setTimeout(poll, hasBacklog ? 1_000 : checking ? 10_000 : 45_000);
         }
       }
     };
-    const wake = () => { window.clearTimeout(timer); void poll(); };
+    const wake = () => {
+      if (document.visibilityState !== 'visible') return;
+      apply();
+      if (busy) return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(poll, 1_000);
+    };
     window.addEventListener('daja:supplier-refresh', wake);
     document.addEventListener('visibilitychange', wake);
     void poll();
     return () => { stopped = true; window.clearTimeout(timer); window.removeEventListener('daja:supplier-refresh', wake); document.removeEventListener('visibilitychange', wake); };
-  }, [memoizedParams.admin, refreshKey, enabled]);
+  }, [memoizedParams.admin, enabled]);
 
   const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
   const loadMore = useCallback(() => {
