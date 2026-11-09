@@ -209,7 +209,7 @@ function Chart({ rows, hours }) {
     </>
   );
 }
-export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
+export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOpenProduct }) {
   const [providers, setProviders] = useState([]),
     [links, setLinks] = useState({ items: [], total: 0 }),
     [statistics, setStatistics] = useState({ items: [], health: {} }),
@@ -326,7 +326,10 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+  const actionInFlight = useRef(false);
   const run = async (key, fn) => {
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
     setBusy(key);
     setError('');
     setMessage('');
@@ -337,6 +340,7 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
     } catch (e) {
       setError(e.message || 'Akcija nije uspela.');
     } finally {
+      actionInFlight.current = false;
       setBusy('');
     }
   };
@@ -347,16 +351,14 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
         ids,
         reason || undefined,
       );
-      const accepted = result.items.filter(
-        (item) => item.status === 'accepted',
-      ).length;
-      setMessage(
-        `${accepted} prihvaćeno od ${result.items.length}. ${result.items
-          .filter((item) => item.status !== 'accepted')
-          .map((item) => item.reason)
-          .filter(Boolean)
-          .join(' · ')}`,
-      );
+      const counts = new Map();
+      let accepted = 0;
+      for (const item of result.items) {
+        if (item.status === 'accepted') accepted += 1;
+        else if (item.reason) counts.set(item.reason, (counts.get(item.reason) || 0) + 1);
+      }
+      const summary = [...counts].map(([reason, count]) => `${count} × ${reason}`);
+      setMessage([`${accepted} prihvaćeno od ${result.items.length}.`, ...summary].join(' · '));
       setSelected([]);
     });
   const setSelectedProductVisibility = (active) =>
@@ -371,9 +373,12 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
       const productIds = [
         ...new Set(selectedLinks.map((link) => link.productId)),
       ];
-      const results = await Promise.allSettled(
-        productIds.map((id) => adminCatalogApi.setProductVisibility(id, active)),
-      );
+      const results = [];
+      for (let offset = 0; offset < productIds.length; offset += 4) {
+        results.push(...await Promise.allSettled(
+          productIds.slice(offset, offset + 4).map((id) => adminCatalogApi.setProductVisibility(id, active)),
+        ));
+      }
       const succeeded = results.filter(
         (result) => result.status === 'fulfilled',
       ).length;
@@ -867,20 +872,24 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
             >
               Vrati izabrane
             </button>
-            <button
-              className={button}
-              disabled={!!busy || !selected.length}
-              onClick={() => void setSelectedProductVisibility(false)}
-            >
-              Sakrij sa sajta
-            </button>
-            <button
-              className={button}
-              disabled={!!busy || !selected.length}
-              onClick={() => void setSelectedProductVisibility(true)}
-            >
-              Prikaži na sajtu
-            </button>
+            {canChangeVisibility && (
+              <>
+                <button
+                  className={button}
+                  disabled={!!busy || !selected.length}
+                  onClick={() => void setSelectedProductVisibility(false)}
+                >
+                  Sakrij sa sajta
+                </button>
+                <button
+                  className={button}
+                  disabled={!!busy || !selected.length}
+                  onClick={() => void setSelectedProductVisibility(true)}
+                >
+                  Prikaži na sajtu
+                </button>
+              </>
+            )}
           </div>
         )}
         <div className="mt-4 overflow-x-auto">

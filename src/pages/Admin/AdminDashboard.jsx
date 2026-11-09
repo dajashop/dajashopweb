@@ -1337,7 +1337,11 @@ function AdminDashboardContent() {
           />
         )}
         {activeTab === 'suppliers' && (staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.read')) && (
-          <SupplierQueuePanel canWrite={canManageSupplierChecks} onOpenProduct={openEdit} />
+          <SupplierQueuePanel
+            canWrite={canManageSupplierChecks}
+            canChangeVisibility={canManageSupplierChecks && Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))}
+            onOpenProduct={openEdit}
+          />
         )}
           <div
             hidden={activeTab !== 'products'}
