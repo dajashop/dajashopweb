@@ -715,8 +715,8 @@ export const adminCatalogApi = {
   async resumeSuppliers(providers) {
     return apiRequest('/supplier-links/providers/resume', { staff: true, method: 'POST', body: { providers } });
   },
-  async supplierActions(action, ids, reason) {
-    return apiRequest('/supplier-links/actions', { staff: true, method: 'POST', body: { action, ids, reason } });
+  async supplierActions(action, ids, reason, bulk) {
+    return apiRequest('/supplier-links/actions', { staff: true, method: 'POST', body: { action, ids, reason, bulk } });
   },
   async reactivateSupplierLink(id) {
     return apiRequest(`/supplier-links/${encodeURIComponent(id)}/reactivate`, { staff: true, method: 'POST' });

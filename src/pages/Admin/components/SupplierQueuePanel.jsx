@@ -344,12 +344,13 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
       setBusy('');
     }
   };
-  const act = (action, ids) =>
+  const act = (action, ids, bulk) =>
     run(action, async () => {
       const result = await adminCatalogApi.supplierActions(
         action,
         ids,
         reason || undefined,
+        bulk,
       );
       const counts = new Map();
       let accepted = 0;
@@ -849,7 +850,7 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
             <button
               className={button}
               disabled={!!busy || !selected.length}
-              onClick={() => void act('check', selected)}
+              onClick={() => void act('check', selected, true)}
             >
               Proveri izabrane
             </button>
