@@ -20,7 +20,7 @@
   grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
   align-items: center;
   padding-inline: clamp(4px, 2vw, 20px);
-  background: #172233;
+  background: #000;
   color: #fff;
   font-size: 0.8125rem;
   line-height: 1.4;
