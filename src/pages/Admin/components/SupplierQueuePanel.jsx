@@ -848,16 +848,18 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
             >
               Proveri izabrane
             </button>
-            <button
-              className={button}
-              disabled={!!busy || !selected.length}
-              onClick={() => {
-                setReason('');
-                setDisableIds(selected);
-              }}
-            >
-              Isključi izabrane
-            </button>
+            {provider !== 'linkel' && (
+              <button
+                className={button}
+                disabled={!!busy || !selected.length}
+                onClick={() => {
+                  setReason('');
+                  setDisableIds(selected);
+                }}
+              >
+                Isključi izabrane
+              </button>
+            )}
             <button
               className={button}
               disabled={!!busy || !selected.length}
@@ -988,7 +990,9 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
                     </p>
                     {link.manualRequestedAt && (
                       <p className="mt-1 text-blue-700">
-                        Vanredna provera čeka
+                        {link.providerCode === 'linkel'
+                          ? 'Čeka da DAJA računar preuzme proveru'
+                          : 'Vanredna provera čeka'}
                       </p>
                     )}
                   </td>
@@ -997,6 +1001,9 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
                     <p title={date(link.nextCheckAt)} className="mt-1">
                       Naredna: {countdown(link.nextCheckAt, now)}
                     </p>
+                    {link.providerCode === 'linkel' && link.checksEnabled && link.nextRegularAt && (
+                      <p className="mt-1">Redovni termin: {date(link.nextRegularAt)}</p>
+                    )}
                     {link.confirmationDueAt && (
                       <p className="mt-1 text-amber-700">
                         Potvrda: {date(link.confirmationDueAt)}
@@ -1059,16 +1066,18 @@ export default function SupplierQueuePanel({ canWrite, onOpenProduct }) {
                             >
                               Proveri sada
                             </button>
-                            <button
-                              className={button}
-                              disabled={!!busy}
-                              onClick={() => {
-                                setReason('');
-                                setDisableIds([link.id]);
-                              }}
-                            >
-                              Isključi
-                            </button>
+                            {link.providerCode !== 'linkel' && (
+                              <button
+                                className={button}
+                                disabled={!!busy}
+                                onClick={() => {
+                                  setReason('');
+                                  setDisableIds([link.id]);
+                                }}
+                              >
+                                Isključi
+                              </button>
+                            )}
                           </>
                         ) : (
                           <button
