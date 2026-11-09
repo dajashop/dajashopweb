@@ -854,18 +854,16 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
             >
               Proveri izabrane
             </button>
-            {provider !== 'linkel' && (
-              <button
-                className={button}
-                disabled={!!busy || !selected.length}
-                onClick={() => {
-                  setReason('');
-                  setDisableIds(selected);
-                }}
-              >
-                Isključi izabrane
-              </button>
-            )}
+            <button
+              className={button}
+              disabled={!!busy || !selected.length}
+              onClick={() => {
+                setReason('');
+                setDisableIds(selected);
+              }}
+            >
+              Isključi izabrane
+            </button>
             <button
               className={button}
               disabled={!!busy || !selected.length}
@@ -1076,18 +1074,16 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
                             >
                               Proveri sada
                             </button>
-                            {link.providerCode !== 'linkel' && (
-                              <button
-                                className={button}
-                                disabled={!!busy}
-                                onClick={() => {
-                                  setReason('');
-                                  setDisableIds([link.id]);
-                                }}
-                              >
-                                Isključi
-                              </button>
-                            )}
+                            <button
+                              className={button}
+                              disabled={!!busy}
+                              onClick={() => {
+                                setReason('');
+                                setDisableIds([link.id]);
+                              }}
+                            >
+                              Isključi
+                            </button>
                           </>
                         ) : (
                           <button
