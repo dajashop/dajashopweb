@@ -1,5 +1,5 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './Header.css';
 import { Link } from 'react-router-dom';
 import NavBar from './NavBar.jsx';
@@ -8,12 +8,53 @@ import { useCart } from '../hooks/useCart.js';
 import HeaderLoginButton from './HeaderLoginButton.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 // [NOVO] Dodat import za ShoppingBag
-import { Heart, ShoppingBag } from 'lucide-react';
+import { Heart, ShoppingBag, X } from 'lucide-react';
 import { useWishlist } from '../context/WishlistProvider.jsx';
+import { useConsent } from '../context/ConsentContext.jsx';
 
 import HamburgerMenu from './HamburgerMenu.jsx';
 import StorefrontPreferences from '../localization/StorefrontPreferences.jsx';
 import brandLogo from '../assets/dajashop-logo.svg';
+
+const NOTICE_DISMISSED_KEY = 'daja:prelaunch-notice-dismissed';
+
+export function StorefrontNotice() {
+  const { t } = useStorefront();
+  const { authReady, staffReady } = useAuth();
+  const { hasDecision, loading } = useConsent();
+  const [dismissed, setDismissed] = useState(true);
+
+  useEffect(() => {
+    try {
+      setDismissed(window.sessionStorage.getItem(NOTICE_DISMISSED_KEY) === '1');
+    } catch {
+      setDismissed(false);
+    }
+  }, []);
+
+  if (dismissed || loading || staffReady || (hasDecision && !authReady)) return null;
+
+  function dismiss() {
+    setDismissed(true);
+    try {
+      window.sessionStorage.setItem(NOTICE_DISMISSED_KEY, '1');
+    } catch {
+      // The notice can still be dismissed when storage is unavailable.
+    }
+  }
+
+  return (
+    <div className="storefront-notice">
+      <p>
+        {t('Sajt je u pripremi i još nije zvanično pušten u rad. Za porudžbine i pitanja pozovite')}{' '}
+        <a href="tel:+381641262425">064 126 24 25</a>.
+      </p>
+      <button type="button" onClick={dismiss} aria-label={t('Zatvori obaveštenje')}>
+        <X size={16} aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
 
 export default function Header() {
   const { t: translateText } = useStorefront();

@@ -1,7 +1,7 @@
 import { catalogLanding } from './data/catalogLandings.js';
 import AppRoutes from './router.jsx';
 import EngravingSync from './components/engraving/EngravingSync';
-import Header from './components/Header.jsx';
+import Header, { StorefrontNotice } from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import AuthModal from './components/AuthModal.jsx';
 import { useLocation, useNavigationType } from 'react-router-dom';
@@ -58,6 +58,7 @@ export default function App() {
     >
       <OrganizationJsonLd />
       <WebSiteJsonLd />
+      <StorefrontNotice />
       <Header />
       <EngravingSync />
       {user && staffReady && <Suspense fallback={null}><BackgroundImageStatus /></Suspense>}
