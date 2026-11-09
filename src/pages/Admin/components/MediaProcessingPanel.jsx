@@ -164,11 +164,23 @@ export default function MediaProcessingPanel({ visible, canRetry, canManageWorke
     finally { setBusy(''); }
   };
 
-  return <>{visible && <section className="mb-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm" aria-label={t('Obaveštenja o slikama')}>
+  const studio = summary?.studio;
+  const studioProblems = studio && (studio.offline || studio.imageError || studio.linkelError);
+  return <>
+    {studioProblems && <section className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950" role="status">
+      <h2 className="font-bold">Donji DAJA Studio · upozorenje</h2>
+      {studio.offline && <p>Računar se ne javlja. Poslednji signal {date(studio.seenAt)}.</p>}
+      {studio.imageError && <p><strong>Slike</strong> · {studio.imageError}</p>}
+      {studio.linkelError && <p><strong>Linkel</strong> · {studio.linkelError}</p>}
+    </section>}
+    {visible && <section className="mb-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm" aria-label={t('Obaveštenja o slikama')}>
     <div className="border-b border-neutral-100 p-5 sm:p-6">
       <h2 className="flex items-center gap-2 text-xl font-bold"><BellRing size={22} />{t('Slike')}</h2>
       <p className="mt-1 text-sm text-neutral-500">{t('Render preuzima slike koje čekaju najmanje sedam dana ako računar nije bio dostupan sedam dana. Rezerva radi od 03:00 do 07:00.')}</p>
       <MediaWorkerSettings canManage={canManageWorker} />
+      {studio?.seenAt && !studioProblems && <p className="mt-2 text-sm text-neutral-600">
+        Donji DAJA Studio je povezan · poslednji signal {date(studio.seenAt)}
+      </p>}
       <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-live="polite">
         {[
           ['Novih poruka:',summary?.unread,() => { selectView('all'); setUnread('unread'); },'text-red-700'],
