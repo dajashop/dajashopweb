@@ -115,7 +115,7 @@ function ensureStaffCatalogSocket() {
     staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
   });
   staffCatalogSocket.on('catalog.taxonomy.updated', (event) => {
-    if (event?.data?.collections?.some(collection => ['spec_keys', 'departments'].includes(collection))) {
+    if (event?.data?.collections?.some(collection => ['spec_keys', 'brands', 'departments'].includes(collection))) {
       specificationChoicesCache.clear();
     }
     staffCatalogListeners.forEach((candidate) => candidate.onEvent(event));
@@ -1838,10 +1838,7 @@ export async function specificationEditorApi({ fresh, ...body }) {
     specificationChoicesCache.clear();
     return result;
   }
-  // Settings require up-to-date counts and a configuration version for edits.
-  if (body.includeUsage !== false) return request();
-
-  const key = body.departmentId;
+  const key = `${body.departmentId}:${body.includeUsage === false ? 'choices' : 'usage'}`;
   const cached = specificationChoicesCache.get(key);
   if (cached?.pending) return cached.pending;
   if (!fresh && staffCatalogSocket?.connected && getStaffAccessToken() && cached?.expiresAt > Date.now()) return cached.data;
@@ -1849,12 +1846,14 @@ export async function specificationEditorApi({ fresh, ...body }) {
   if (specificationChoicesCache.size >= specificationChoicesMaxEntries) {
     specificationChoicesCache.delete(specificationChoicesCache.keys().next().value);
   }
+  const requestedAt = Date.now();
   const entry = { pending: request(), expiresAt: 0, data: undefined };
   specificationChoicesCache.set(key, entry);
   try {
     const data = await entry.pending;
     if (specificationChoicesCache.get(key) === entry && staffCatalogSocket?.connected && getStaffAccessToken()) {
-      specificationChoicesCache.set(key, { data, expiresAt: Date.now() + specificationChoicesTtlMs });
+      const ttlMs = Math.min(data.cacheTtlMs ?? specificationChoicesTtlMs, specificationChoicesTtlMs);
+      specificationChoicesCache.set(key, { data, expiresAt: requestedAt + ttlMs });
     }
     return data;
   } finally {

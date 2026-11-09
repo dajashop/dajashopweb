@@ -43,7 +43,7 @@ function useConnected() {
   useEffect(()=>{const update=()=>setConnected(navigator.onLine);window.addEventListener('online',update);window.addEventListener('offline',update);return()=>{window.removeEventListener('online',update);window.removeEventListener('offline',update);};},[]);
   return connected;
 }
-function useEditor(api: EditorApi, departmentId: string, includeUsage: boolean) {
+function useEditor(api: EditorApi, departmentId: string) {
   const [data,setData] = useState<EditorData>(); const [error,setError] = useState(''); const [loading,setLoading] = useState(false);
   const activeDepartment = useRef('');
   const [reload,setReload] = useState(0);
@@ -59,13 +59,13 @@ function useEditor(api: EditorApi, departmentId: string, includeUsage: boolean) 
     const timer = window.setTimeout(() => {
       const fresh = freshDepartment.current === departmentId;
       freshDepartment.current = '';
-      void api({action:'get',departmentId,includeUsage,fresh})
+      void api({action:'get',departmentId,includeUsage:true,fresh})
         .then(result => { if (current) setData(previous => previous && previous.version > result.version ? previous : result); })
         .catch(e => { if (current) setError(e instanceof Error ? e.message : 'Učitavanje nije uspelo.'); })
         .finally(() => { if (current) setLoading(false); });
     },150);
     return () => {current=false;window.clearTimeout(timer);};
-  },[api,departmentId,includeUsage,reload]);
+  },[api,departmentId,reload]);
   return {
     data: activeDepartment.current === departmentId ? data : undefined,
     setData: (result: EditorData) => {
@@ -106,7 +106,7 @@ function ValueInput({eyewear=false,remote=false,battery=false,spec,value,options
 
 export function SpecificationEditor({api,departmentId,brand='',values,onChange,online=true,disabled=false,images=[],onPreview,onAddImage,onBusyChange,showPreview=true,eyewear=false,remote=false,battery=false}: {eyewear?:boolean;remote?:boolean;battery?:boolean;api:EditorApi;departmentId:string;brand?:string;values:Record<string,string>;onChange:(values:Record<string,string>)=>void;online?:boolean;disabled?:boolean;images?:string[];onPreview?:(index:number)=>void;onAddImage?:()=>void;onBusyChange?:(busy:boolean)=>void;showPreview?:boolean}) {
   const connected=useConnected();online=online&&connected;
-  const {data,setData,error,loading,reload}=useEditor(api,departmentId,false);
+  const {data,setData,error,loading,reload}=useEditor(api,departmentId);
   const [emptyOnly,setEmptyOnly]=useState(false);const [collapsed,setCollapsed]=useState<Record<string,boolean>>({});const [image,setImage]=useState(0);
   const [activeSpec,setActiveSpec]=useState('');
   const [busy,setBusy]=useState('');const busyRef=useRef(false);const [messages,setMessages]=useState<Record<string,string>>({});
@@ -156,7 +156,12 @@ export function SpecificationEditor({api,departmentId,brand='',values,onChange,o
   };
   const save=async(spec:Spec,value:string)=>{
     if(busyRef.current)return;busyRef.current=true;setBusy(spec.id);onBusyChange?.(true);setMessages(m=>({...m,[spec.id]:''}));
-    try{const result=await api({action:'option',departmentId,includeUsage:false,brand,specId:spec.id,value,...(normalizeSpec(spec.slug)==='mehanizam'&&type?{linkType:type}:{})});setData(result);setMessages(m=>({...m,[spec.id]:'Ponuđena vrednost je sačuvana.'}));}
+    try{
+      const result=await api({action:'option',departmentId,includeUsage:false,brand,specId:spec.id,value,...(normalizeSpec(spec.slug)==='mehanizam'&&type?{linkType:type}:{})});
+      setData({...result,ranking:data?.ranking ?? {},usageCounts:data?.usageCounts});
+      reload();
+      setMessages(m=>({...m,[spec.id]:'Ponuđena vrednost je sačuvana.'}));
+    }
     catch(e){setMessages(m=>({...m,[spec.id]:`Nije sačuvano: ${e instanceof Error?e.message:'Pokušaj ponovo.'} Unos je zadržan.`}));}
     finally{busyRef.current=false;setBusy('');onBusyChange?.(false);}
   };
@@ -232,7 +237,7 @@ function RuleEditor({rules,onChange,specs,brands,self,disabled}: {rules:Rules;on
 export function SpecificationSettings({api,departments,online=true,disabled=false}: {api:EditorApi;departments:{id:string;name:string}[];online?:boolean;disabled?:boolean}) {
   const connected=useConnected();online=online&&connected;
   const [department,setDepartment]=useState('');const departmentId=department||departments[0]?.id||'';
-  const {data,error,setError,loading,reload,setData}=useEditor(api,departmentId,true);
+  const {data,error,setError,loading,reload,setData}=useEditor(api,departmentId);
   const [config,setConfig]=useState<Configuration>();const [name,setName]=useState('');const [busy,setBusy]=useState(false);const [notice,setNotice]=useState('');
   useEffect(()=>{setConfig(data?.configuration);setNotice('');},[data]);
   const eyewear=/nao[čc]are/i.test(departments.find(d=>d.id===departmentId)?.name||'');
