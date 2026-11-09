@@ -359,7 +359,10 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
         else if (item.reason) counts.set(item.reason, (counts.get(item.reason) || 0) + 1);
       }
       const summary = [...counts].map(([reason, count]) => `${count} × ${reason}`);
-      setMessage([`${accepted} prihvaćeno od ${result.items.length}.`, ...summary].join(' · '));
+      const resultText = action === 'check'
+        ? `${accepted} od ${result.items.length} dodato u red za proveru.`
+        : `${accepted} prihvaćeno od ${result.items.length}.`;
+      setMessage([resultText, ...summary].join(' · '));
       setSelected([]);
     });
   const setSelectedProductVisibility = (active) =>
@@ -982,12 +985,14 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
                           'missing',
                           'waiting_confirmation',
                           'paused',
-                        ].includes(link.status)
+                        ].includes(link.status) || (link.status === 'unverified' && link.lastError)
                           ? 'text-amber-700'
                           : 'text-emerald-700'
                       }
                     >
-                      {STATUS[link.status] || link.status}
+                      {link.status === 'unverified' && link.lastError
+                        ? 'Provera nije uspela'
+                        : STATUS[link.status] || link.status}
                     </span>
                     <p className="mt-1 text-neutral-500">
                       {link.stockStatus === 'in_stock'
@@ -1020,8 +1025,8 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
                   </td>
                   <td className="max-w-60 p-3 text-neutral-500">
                     {link.disabledReason ||
-                      link.firstProblemReason ||
                       link.lastError ||
+                      link.firstProblemReason ||
                       '—'}
                     {link.firstProblemAt && (
                       <p className="mt-1">
