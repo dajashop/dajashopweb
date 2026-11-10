@@ -14,6 +14,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useFlash } from '../../hooks/useFlash.js';
 import {
   adminCatalogApi,
   catalogAuditApi,
@@ -145,13 +146,16 @@ function SupplierCountdown({ nextCheckAt }) {
 
 const supplierDate = value => value ? new Date(value).toLocaleString('sr-RS', { timeZone: 'Europe/Belgrade' }) : '—';
 function SupplierLinkSummary({ product, provider, label, withDivider, canWrite }) {
+  const { flash } = useFlash();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const url = product[`${provider}Url`];
   if (!url) return null;
   const status = product[`${provider}Status`];
   const stock = product[`${provider}StockStatus`] ?? (provider === 'qandq' && status === 'available' ? 'in_stock' : null);
-  const amount = product[`${provider}PriceAmount`];
+  const linkId = product[`${provider}LinkId`];
+  const lastGoodResult = product[`${provider}LastGoodResult`];
+  const amount = lastGoodResult?.regularPrice === true ? product[`${provider}PriceAmount`] : null;
   const currency = product[`${provider}PriceCurrency`];
   const number = product[`${provider}QueuePosition`];
   const paused = product[`${provider}PausedUntil`];
@@ -162,17 +166,32 @@ function SupplierLinkSummary({ product, provider, label, withDivider, canWrite }
   const reactivate = async () => {
     setBusy(true); setError('');
     try {
-      await adminCatalogApi.reactivateSupplierLink(product[`${provider}LinkId`]);
+      await adminCatalogApi.reactivateSupplierLink(linkId);
       window.dispatchEvent(new Event('daja:supplier-refresh'));
     } catch (caught) { setError(caught.message || 'Vraćanje nije uspelo.'); }
+    finally { setBusy(false); }
+  };
+  const checkPrice = async () => {
+    setBusy(true); setError('');
+    try {
+      const { items } = await adminCatalogApi.supplierActions('check', [linkId]);
+      const result = items[0];
+      if (result?.status === 'accepted' || result?.status === 'already_queued') {
+        flash('Provera dobavljača', result.reason || 'Dodato u red za proveru.', 'success');
+        window.dispatchEvent(new Event('daja:supplier-refresh'));
+      } else {
+        setError(result?.reason || 'Provera nije zakazana.');
+      }
+    } catch (caught) { setError(caught.message || 'Provera nije zakazana.'); }
     finally { setBusy(false); }
   };
   return <div className={`flex min-w-[150px] max-w-[250px] flex-col gap-1 ${withDivider ? 'border-l border-neutral-200 pl-4' : ''}`}>
     <div className="flex items-baseline gap-2 font-bold">
       <a href={url} target="_blank" rel="noopener noreferrer" className="text-neutral-700 hover:text-blue-700 hover:underline">{label}</a>
       {number != null && <span title="Redni broj u desetodnevnom ciklusu" className="font-normal text-neutral-500">#{number}</span>}
-      {amount != null && <span className="font-normal text-neutral-600">{Number(amount).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} {currency || ''}</span>}
+      {amount != null && <span title="Redovna cena" className="font-normal text-neutral-600">{Number(amount).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} {currency || ''}</span>}
     </div>
+    {amount == null && <span className="text-neutral-500">Redovna cena nije potvrđena</span>}
     <div className="flex items-baseline gap-2">
       <span className={`font-semibold ${stock === 'out_of_stock' || status === 'missing' ? 'text-red-700' : status === 'available' ? 'text-emerald-700' : 'text-amber-700'}`}>{statusText}</span>
       <SupplierCountdown nextCheckAt={product[`${provider}NextCheckAt`]} />
@@ -182,8 +201,10 @@ function SupplierLinkSummary({ product, provider, label, withDivider, canWrite }
     {product[`${provider}LastCheckedAt`] && <span title="Poslednja provera" className="text-neutral-500">{supplierDate(product[`${provider}LastCheckedAt`])}</span>}
     {product[`${provider}ConfirmationDueAt`] && <span className="text-amber-700">Potvrda: {supplierDate(product[`${provider}ConfirmationDueAt`])}</span>}
     {paused && <span className="text-amber-700">Pauza do {supplierDate(paused)} · {product[`${provider}PauseReason`]}</span>}
-    {status !== 'available' && product[`${provider}LastGoodResult`]?.checkedAt && <span className="text-neutral-500">Poslednja dobra: {supplierDate(product[`${provider}LastGoodResult`].checkedAt)}</span>}
-    {status === 'disabled' && canWrite && <button type="button" disabled={busy} onClick={reactivate} className="self-start text-blue-700 hover:underline disabled:opacity-50">{busy ? 'Vraćanje…' : 'Vrati u proveru'}</button>}
+    {status !== 'available' && lastGoodResult?.checkedAt && <span className="text-neutral-500">Poslednja dobra: {supplierDate(lastGoodResult.checkedAt)}</span>}
+    {status === 'disabled' && canWrite && linkId && <button type="button" disabled={busy} onClick={reactivate} className="self-start text-blue-700 hover:underline disabled:opacity-50">{busy ? 'Vraćanje…' : 'Vrati u proveru'}</button>}
+    {amount == null && canWrite && linkId && status !== 'disabled' && status !== 'paused' && status !== 'checking' &&
+      <button type="button" disabled={busy} onClick={checkPrice} className="self-start text-blue-700 hover:underline disabled:opacity-50">Proveri sada</button>}
     {error && <span role="alert" className="whitespace-normal text-red-700">{error}</span>}
   </div>;
 }
