@@ -155,7 +155,7 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
           <div className="product-admin-supplier-heading"><a href={record[field]} target="_blank" rel="noopener noreferrer">{label}<ExternalLink size={12} /></a>
             <SupplierCountdown nextCheckAt={record[`${prefix}NextCheckAt`]} />
           </div>
-          <span className="product-admin-supplier-price">{supplierPrice(amount, currency, eurRsdRate)}</span>
+          <span className="product-admin-supplier-price">{amount == null && status === 'checking' ? 'Prikupljanje redovne cene…' : supplierPrice(amount, currency, eurRsdRate)}</span>
           <span className={`product-admin-supplier-status ${status === 'available' && stock !== 'out_of_stock' ? 'is-available' : stock === 'out_of_stock' || status === 'missing' ? 'is-unavailable' : ''}`}>{statusText}</span>
         </div>;
       })}</div>

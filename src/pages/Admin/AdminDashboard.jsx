@@ -191,7 +191,7 @@ function SupplierLinkSummary({ product, provider, label, withDivider, canWrite }
       {number != null && <span title="Redni broj u desetodnevnom ciklusu" className="font-normal text-neutral-500">#{number}</span>}
       {amount != null && <span title="Redovna cena" className="font-normal text-neutral-600">{Number(amount).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} {currency || ''}</span>}
     </div>
-    {amount == null && <span className="text-neutral-500">Redovna cena nije potvrđena</span>}
+    {amount == null && <span className="text-neutral-500">{status === 'checking' ? 'Prikupljanje redovne cene…' : 'Redovna cena nije potvrđena'}</span>}
     <div className="flex items-baseline gap-2">
       <span className={`font-semibold ${stock === 'out_of_stock' || status === 'missing' ? 'text-red-700' : status === 'available' ? 'text-emerald-700' : 'text-amber-700'}`}>{statusText}</span>
       <SupplierCountdown nextCheckAt={product[`${provider}NextCheckAt`]} />
