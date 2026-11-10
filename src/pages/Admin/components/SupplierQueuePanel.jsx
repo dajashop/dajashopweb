@@ -209,6 +209,76 @@ function Chart({ rows, hours }) {
     </>
   );
 }
+function SupplierTimeline({ timeline }) {
+  const snapshotAt = Date.parse(timeline.now);
+  if (!Number.isFinite(snapshotAt)) return null;
+
+  const minuteMs = 60_000;
+  const firstMinute = Math.floor(snapshotAt / minuteMs) * minuteMs;
+  const minutes = Array.from({ length: 60 }, () => []);
+  const queued = [];
+  const overdue = [];
+  for (const task of timeline.items) {
+    const at = Date.parse(task.nextCheckAt);
+    if (!Number.isFinite(at)) continue;
+    if (task.status === 'checking') queued.push(task);
+    else if (at < snapshotAt) overdue.push(task);
+    else {
+      const minute = Math.floor((at - firstMinute) / minuteMs);
+      if (minute < minutes.length) minutes[minute].push(task);
+    }
+  }
+
+  const time = (value, seconds = false) => new Date(value).toLocaleTimeString('sr-RS', {
+    timeZone: 'Europe/Belgrade',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...(seconds ? { second: '2-digit' } : {}),
+  });
+  const taskLabel = (task) =>
+    `${NAMES[task.providerCode]} ${task.queuePosition ? `#${task.queuePosition}` : '· provera'}`;
+
+  return (
+    <>
+      {[
+        ['Čekaju preuzimanje', 'Dodato u red', queued],
+        ['Prošli termini', 'Planirani termin', overdue],
+      ].map(([title, timeLabel, tasks]) => tasks.length > 0 && (
+        <details key={title} className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          <summary className="cursor-pointer font-semibold">
+            {title} · {number(tasks.length)}
+          </summary>
+          <ul className="mt-2 max-h-56 space-y-1 overflow-auto">
+            {tasks.map((task) => (
+              <li key={task.id}>
+                {taskLabel(task)} · {task.productName} · {timeLabel} {date(task.nextCheckAt)}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ))}
+      <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-10">
+        {minutes.map((tasks, minute) => {
+          const at = firstMinute + minute * minuteMs;
+          return (
+            <div
+              key={at}
+              className={`min-h-16 rounded-lg border p-2 text-xs ${tasks.length ? 'border-emerald-200 bg-emerald-50' : 'border-neutral-100 bg-neutral-50 text-neutral-400'}`}
+            >
+              <strong>{time(at)}</strong>
+              {tasks.length ? tasks.map((task) => (
+                <p key={task.id} className="mt-1 text-[10px] text-emerald-800" title={task.productName}>
+                  {time(task.nextCheckAt, true)} {taskLabel(task)}
+                </p>
+              )) : <p className="mt-1">—</p>}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOpenProduct }) {
   const [providers, setProviders] = useState([]),
     [links, setLinks] = useState({ items: [], total: 0 }),
@@ -1146,57 +1216,12 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
           Narednih 60 minuta
         </h3>
         <p className="mt-1 text-xs text-neutral-500">
-          Zakazani poslovi firme; prazni minuti ne pokreću zahteve.
-          Termini tokom blokirajuće pauze nisu prikazani. Zauzetost sistema može odložiti početak.
+          Predstojeći termini po minutima. Poslovi koji čekaju i prošli termini prikazani su iznad rasporeda.
+          Zauzetost sistema može odložiti početak.
         </p>
-        {!ready.timeline ? (!loadErrors.timeline && <AdminSkeleton cards rows={6} />) : <>
-        <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-10">
-          {Array.from({ length: 60 }, (_, i) => {
-            const base =
-              Math.floor(
-                Date.parse(timeline.now || new Date(now).toISOString()) / 60000,
-              ) * 60000;
-            const at = base + i * 60000;
-            const tasks = timeline.items.filter(
-              (t) =>
-                Math.max(
-                  base,
-                  Math.floor(Date.parse(t.nextCheckAt) / 60000) * 60000,
-                ) === at,
-            );
-            return (
-              <div
-                key={i}
-                className={`min-h-16 rounded-lg border p-2 text-xs ${tasks.length ? 'border-emerald-200 bg-emerald-50' : 'border-neutral-100 bg-neutral-50 text-neutral-400'}`}
-              >
-                <strong>
-                  {new Date(at).toLocaleTimeString('sr-RS', {
-                    timeZone: 'Europe/Belgrade',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </strong>
-                {tasks.length ? (
-                  tasks.map((t) => (
-                    <p key={t.id} className="mt-1 text-[10px] text-emerald-800">
-                      {new Date(t.nextCheckAt).toLocaleTimeString('sr-RS', {
-                        timeZone: 'Europe/Belgrade',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                      })}{' '}
-                      {NAMES[t.providerCode]}{' '}
-                      {t.queuePosition ? `#${t.queuePosition}` : '· provera'}
-                    </p>
-                  ))
-                ) : (
-                  <p className="mt-1">—</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        </>}
+        {!ready.timeline
+          ? (!loadErrors.timeline && <AdminSkeleton cards rows={6} />)
+          : <SupplierTimeline timeline={timeline} />}
       </section>
       {pause && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
