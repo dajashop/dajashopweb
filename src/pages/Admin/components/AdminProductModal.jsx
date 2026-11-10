@@ -1987,9 +1987,9 @@ export default function AdminProductModal({
                     />
                   </label>
                   {priceFocused && <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-xl border border-neutral-200 bg-white p-3 text-xs text-neutral-700 shadow-xl">
-                    <span className="font-semibold">Cene kod dobavljača:</span>{' '}
+                    <span className="font-semibold">Redovne cene kod dobavljača:</span>{' '}
                     {(isWatchDepartment ? [
-                      ['Ekka', 'supplier', product?.supplierPriceAmount, product?.supplierPriceCurrency],
+                      ['Ekka', 'ekka', product?.supplierPriceAmount, product?.supplierPriceCurrency],
                       ['Bultime', 'bultime', product?.bultimePriceAmount, product?.bultimePriceCurrency],
                       ['Timezone', 'timezone', product?.timezonePriceAmount, product?.timezonePriceCurrency],
                       ['Stilius', 'qandq', product?.qandqPriceAmount, product?.qandqPriceCurrency],
@@ -1997,19 +1997,14 @@ export default function AdminProductModal({
                       ['Linkel', 'linkel', product?.linkelPriceAmount, product?.linkelPriceCurrency],
                     ] : isEyewearDepartment ? [
                       ['Milano Group', 'milano', product?.milanoPriceAmount, product?.milanoPriceCurrency],
-                    ] : []).map(([label, provider, savedAmount, savedCurrency], index) => {
+                    ] : []).map(([label, provider, savedAmount, savedCurrency]) => {
                       const preview = supplierPreviews[provider];
-                      const amount = preview?.priceAmount ?? savedAmount;
-                      const currency = preview?.priceCurrency ?? savedCurrency;
+                      const amount = preview?.status === 'available' ? preview.priceAmount : savedAmount;
+                      const currency = preview?.status === 'available' ? preview.priceCurrency : savedCurrency;
                       let display = '—';
-                      let discountedRsd = null;
                       if (amount !== null && amount !== undefined) {
                         const numeric = Number(amount);
                         const code = String(currency || 'RSD').toUpperCase();
-                        if (['bultime', 'timezone', 'qandq'].includes(provider) && Number.isFinite(numeric) && numeric >= 0) {
-                          const rsdAmount = code === 'RSD' ? numeric : code === 'EUR' && eurRsdRate > 0 ? numeric * eurRsdRate : null;
-                          if (rsdAmount !== null) discountedRsd = rsdAmount * 0.9;
-                        }
                         if (code === 'EUR' && eurRsdRate) {
                           display = `${(numeric * eurRsdRate).toLocaleString('sr-RS', { maximumFractionDigits: 2 })} RSD · ${numeric.toLocaleString('sr-RS', { maximumFractionDigits: 2 })} EUR`;
                         } else if (code === 'RSD' && eurRsdRate) {
@@ -2018,9 +2013,8 @@ export default function AdminProductModal({
                           display = `${numeric.toLocaleString('sr-RS', { maximumFractionDigits: 2 })} ${code}`;
                         }
                       }
-                      return <span key={provider} className={index ? 'mt-1 block' : 'mt-1 block'}>
+                      return <span key={provider} className="mt-1 block">
                         {label}: {display}
-                        {discountedRsd !== null && <span className="mt-0.5 block font-semibold text-emerald-700">{label} −10%: {discountedRsd.toLocaleString('sr-RS', { maximumFractionDigits: 2 })} RSD</span>}
                       </span>;
                     })}
                     <span className="mt-1 block text-neutral-400">Prikaz: RSD i EUR po trenutnom srednjem kursu NBS. Ne menja prodajnu cenu.</span>
