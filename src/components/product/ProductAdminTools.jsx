@@ -26,7 +26,7 @@ function SupplierCountdown({ nextCheckAt }) {
 }
 
 function supplierPrice(amount, currency, rate) {
-  if (amount == null || !Number.isFinite(Number(amount))) return 'Cena nije potvrđena';
+  if (amount == null || !Number.isFinite(Number(amount))) return 'Redovna cena nije potvrđena';
   const value = Number(amount);
   const code = String(currency || '').toUpperCase();
   const format = (number) => number.toLocaleString('sr-RS', { maximumFractionDigits: 2 });
@@ -60,11 +60,40 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
 
   useEffect(() => {
     let cancelled = false;
+    let fetching = false;
+    let loaded = false;
+    const controller = new AbortController();
     setRecord(null); setError(''); setShowFlags(false); setConfirmDelete(false);
-    adminCatalogApi.getProduct(product.id).then((data) => {
-      if (!cancelled) setRecord(data);
-    }).catch((caught) => { if (!cancelled) setError(caught.message || 'Admin podaci nisu dostupni.'); });
-    return () => { cancelled = true; };
+    const refresh = async () => {
+      if (fetching || cancelled) return;
+      fetching = true;
+      try {
+        const data = await adminCatalogApi.getProduct(product.id, { signal: controller.signal });
+        if (!cancelled) {
+          loaded = true;
+          setRecord(data);
+          setError('');
+        }
+      } catch (caught) {
+        if (!cancelled && !loaded) setError(caught.message || 'Admin podaci nisu dostupni.');
+      } finally { fetching = false; }
+    };
+    const refreshVisible = () => {
+      if (document.visibilityState === 'visible') void refresh();
+    };
+    void refresh();
+    const timer = window.setInterval(refreshVisible, 30_000);
+    document.addEventListener('visibilitychange', refreshVisible);
+    window.addEventListener('focus', refreshVisible);
+    window.addEventListener('daja:supplier-refresh', refreshVisible);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshVisible);
+      window.removeEventListener('focus', refreshVisible);
+      window.removeEventListener('daja:supplier-refresh', refreshVisible);
+    };
   }, [product.id]);
 
   const update = async (patch) => {
@@ -116,7 +145,8 @@ export default function ProductAdminTools({ product, onUpdated, onDeleted }) {
         const prefix = field.replace(/Url$/, '');
         const status = record[`${prefix}Status`];
         const stock = record[`${prefix}StockStatus`];
-        const amount = record[`${prefix}PriceAmount`];
+        const amount = record[`${prefix}LastGoodResult`]?.regularPrice === true
+          ? record[`${prefix}PriceAmount`] : null;
         const currency = record[`${prefix}PriceCurrency`];
         const statusText = status === 'available'
           ? stock === 'in_stock' ? 'Na stanju' : stock === 'out_of_stock' ? 'Nema na stanju' : 'Stranica dostupna'
