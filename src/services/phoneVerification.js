@@ -1,24 +1,20 @@
 import { apiRequest } from './apiClient';
 import { pathLanguage } from '../localization/paths.js';
-import { requestFirebasePhone, confirmFirebasePhone } from './firebasePhone.js';
+import { requestFirebasePhone, confirmFirebasePhone, readPhoneCapabilities } from './firebasePhone.js';
 
-let capabilities;
 let pending;
 let sending = false;
 export const whatsappVerificationUnavailable = 'WhatsApp verifikacija trenutno nije dostupna. Izaberite SMS ili email.';
 
-export function phoneVerificationCapabilities() {
-  capabilities ??= apiRequest('/customer-auth/security-capabilities', { auth: false })
-    .then(data => ({ sms: Boolean(data?.firebasePhone), whatsapp: data?.whatsappPhone?.available === true }))
-    .catch(() => { capabilities = undefined; return { sms: false, whatsapp: false }; });
-  return capabilities;
+export async function phoneVerificationCapabilities() {
+  const data = await readPhoneCapabilities();
+  return { sms: Boolean(data?.firebasePhone), whatsapp: data?.whatsappPhone?.available === true };
 }
 
 export async function requestPhoneCode(phone, purpose, channel = 'sms') {
   if (sending) throw new Error('Sačekajte da se prethodno slanje završi.');
   if (!['sms', 'whatsapp'].includes(channel)) throw new Error('Izaberite SMS ili WhatsApp.');
   sending = true;
-  pending = null;
   try {
     const available = await phoneVerificationCapabilities();
     if (!available[channel]) throw new Error(channel === 'whatsapp' ? whatsappVerificationUnavailable : 'SMS verifikacija trenutno nije dostupna. Koristite email ili Google prijavu.');

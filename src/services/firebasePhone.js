@@ -1,16 +1,27 @@
 import { apiRequest } from './apiClient';
 import { pathLanguage } from '../localization/paths.js';
 
-let configuration;
+let capabilitiesRequest;
+let capabilitiesExpiresAt = 0;
 let runtime;
 let pending;
 let sending = false;
 
+export function readPhoneCapabilities() {
+  if (!capabilitiesRequest || Date.now() >= capabilitiesExpiresAt) {
+    capabilitiesExpiresAt = Date.now() + 60_000;
+    capabilitiesRequest = apiRequest('/customer-auth/security-capabilities', { auth: false })
+      .catch(() => {
+        capabilitiesRequest = undefined;
+        return null;
+      });
+  }
+  return capabilitiesRequest;
+}
+
 export async function firebasePhoneConfig() {
-  configuration ??= apiRequest('/customer-auth/security-capabilities', { auth: false })
-    .then(data => data?.firebasePhone || null)
-    .catch(() => null);
-  return configuration;
+  const data = await readPhoneCapabilities();
+  return data?.firebasePhone || null;
 }
 
 async function firebaseRuntime() {
@@ -21,7 +32,10 @@ async function firebaseRuntime() {
     const app = getApps().find(item => item.name === 'daja-phone') || initializeApp(config, 'daja-phone');
     const auth = authSdk.initializeAuth(app, { persistence: authSdk.inMemoryPersistence });
     return { auth, authSdk };
-  })();
+  })().catch(error => {
+    runtime = undefined;
+    throw error;
+  });
   return runtime;
 }
 
@@ -30,7 +44,6 @@ export async function requestFirebasePhone(phone, purpose) {
   sending = true;
   let verifier;
   let container;
-  pending = null;
   try {
     const { auth, authSdk } = await firebaseRuntime();
     // Resolve on every send so changing the storefront language also changes
@@ -55,9 +68,12 @@ export async function requestFirebasePhone(phone, purpose) {
     };
     throw new Error(messages[error.code] || error.message || 'Greška pri slanju SMS-a.');
   } finally {
-    verifier?.clear();
-    container?.remove();
-    sending = false;
+    try {
+      verifier?.clear();
+    } finally {
+      container?.remove();
+      sending = false;
+    }
   }
 }
 
