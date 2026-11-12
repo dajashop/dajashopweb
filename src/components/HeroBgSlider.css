@@ -41,9 +41,16 @@
 }
 .heroBg__slide--art-directed img {
   object-fit: contain;
-  transform: none;
-  animation: none;
-  will-change: auto;
+  animation: ken-soft 8s ease-out forwards;
+  will-change: transform;
+}
+@keyframes ken-soft {
+  from {
+    transform: scale(1.025);
+  }
+  to {
+    transform: scale(1);
+  }
 }
 @keyframes ken {
   from {

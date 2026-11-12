@@ -31,7 +31,7 @@ import { seoConfig } from '../config/seo.js';
 const HERO_SLIDES = [
   {
     src: '/images/home/hero-dajashop-mobile.webp',
-    desktopSrc: '/images/home/hero-dajashop-desktop.webp',
+    desktopSrc: '/images/home/hero-dajashop-desktop.webp?v=2',
     width: 750,
     height: 1000,
     alt: 'Daniel Klein satovi',
