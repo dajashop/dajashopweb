@@ -1,28 +1,41 @@
-import { useEffect, useState } from 'react';
-import { ChevronDown, ExternalLink } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import AdminSkeleton from '../../../components/AdminSkeleton.jsx';
+import { AdminTableSkeleton } from '../../../components/AdminSkeleton.jsx';
+// src/pages/Admin/components/AdminOrders.jsx
+import React, { useState, useEffect } from 'react';
 import EngravingSummary from '../../../components/engraving/EngravingSummary';
-import ConfirmModal from '../../../components/modals/ConfirmModal';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import {
+  Package,
+  Clock,
+  ChevronDown,
+  User,
+  MapPin,
+  Phone,
+  CreditCard,
+  Truck,
+  ExternalLink,
+  Mail,
+  Ticket,
+} from 'lucide-react';
 import { ordersService } from '../../../services/admin';
 import { money } from '../../../utils/currency';
+import ConfirmModal from '../../../components/modals/ConfirmModal'; // DODATO
 
-const statusStyles = {
-  'Na čekanju': 'border-neutral-200 bg-neutral-50 text-neutral-700',
-  'U obradi': 'border-amber-200 bg-amber-50 text-amber-900',
-  Poslato: 'border-blue-200 bg-blue-50 text-blue-800',
-  Isporučeno: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  Otkazano: 'border-red-200 bg-red-50 text-red-800',
-};
+const STATUS_OPTIONS = [
+  'Na čekanju',
+  'U obradi',
+  'Poslato',
+  'Isporučeno',
+  'Otkazano',
+];
 
 const orderTime = new Intl.DateTimeFormat('sr-Latn-RS', {
   dateStyle: 'short', timeStyle: 'medium', timeZone: 'Europe/Belgrade',
 });
 
-function OrderTime({ value, fallback = '—' }) {
+function formatOrderTime(value) {
   const date = new Date(value);
-  if (!value || !Number.isFinite(date.getTime())) return fallback;
-  return <time dateTime={date.toISOString()} className="tabular-nums">{orderTime.format(date)}</time>;
+  return value && Number.isFinite(date.getTime()) ? orderTime.format(date) : '—';
 }
 
 const supplierNames = { ekka: 'Ekka', bultime: 'Bultime', timezone: 'TimeZone', qandq: 'Q&Q', linkel: 'Linkel', milano: 'Milano' };
@@ -32,175 +45,63 @@ const supplierResults = {
   checking: 'Provera u toku', paused: 'Provere dobavljača su pauzirane',
   disabled: 'Provera je isključena', removed: 'Link je promenjen ili uklonjen',
 };
-const emailStatuses = {
-  pending: 'Čeka slanje', sending: 'Slanje u toku', sent: 'SES prihvatio, čeka potvrdu dostave',
-  failed: 'Greška pri slanju', expired: 'Istekao rok za slanje', suppressed: 'Slanje blokirano',
-};
-const emailFeedback = {
-  Delivery: 'Dostavljeno serveru primaoca', DeliveryDelay: 'Dostava kasni', Bounce: 'Poruka vraćena',
-  Complaint: 'Prijavljeno kao spam', Reject: 'SES odbio poruku',
-  'Rendering Failure': 'Greška pri pripremi poruke', RenderingFailure: 'Greška pri pripremi poruke',
-};
-
-const textLink = 'underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
-const heading = 'text-sm font-semibold text-neutral-900';
-
-function StatusText({ tone = 'neutral', children }) {
-  const styles = {
-    neutral: 'text-neutral-600 before:bg-neutral-400',
-    good: 'text-emerald-800 before:bg-emerald-600',
-    waiting: 'text-amber-900 before:bg-amber-500',
-    issue: 'text-red-800 before:bg-red-500',
-  };
-  return (
-    <span className={`inline-flex items-baseline gap-1.5 font-medium before:h-1.5 before:w-1.5 before:shrink-0 before:self-center before:rounded-full ${styles[tone]}`}>
-      {children}
-    </span>
-  );
-}
 
 function SupplierChecks({ checks }) {
   return (
-    <div className="mt-3 border-t border-neutral-200 pt-2 text-xs">
-      <p className="font-medium text-neutral-600">Stanje kod dobavljača</p>
-      {checks.length === 0 ? <p className="mt-1 text-neutral-500">Nema evidentiranih linkova.</p> : (
-        <ul className="mt-1 space-y-1.5">
-          {checks.map(check => {
-            const name = supplierNames[check.provider] ?? check.provider;
-            const tone = check.result === 'in_stock' ? 'good'
-              : ['out_of_stock', 'missing', 'error'].includes(check.result) ? 'issue'
-              : ['pending', 'checking', 'paused'].includes(check.result) ? 'waiting' : 'neutral';
-            const timestamp = check.checkedAt ?? (check.result === 'pending' ? check.requestedAt : null);
-            return (
-              <li key={`${check.provider}:${check.url}`} className="grid grid-cols-[minmax(4rem,auto)_minmax(0,1fr)] items-baseline gap-x-3">
-                <div className="font-semibold text-neutral-800">
-                  {/^https?:\/\//i.test(check.url) ? (
-                    <a href={check.url} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-1 ${textLink}`}>
-                      {name} <ExternalLink size={11} aria-hidden="true" />
-                    </a>
-                  ) : name}
-                </div>
-                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <StatusText tone={tone}>{supplierResults[check.result] ?? 'Stanje nije poznato'}</StatusText>
-                  {timestamp && <span className="text-neutral-500"><OrderTime value={timestamp} /></span>}
-                </div>
-              </li>
-            );
-          })}
+    <div className="mt-3 rounded-lg border border-neutral-200 p-2.5 text-xs">
+      <p className="font-semibold text-neutral-700">Stanje kod dobavljača</p>
+      {checks.length === 0 ? <p className="mt-1 text-neutral-500">Nema evidentiranih linkova za ovu stavku.</p> : (
+        <ul className="mt-1 divide-y divide-neutral-100">
+          {checks.map(check => (
+            <li key={`${check.provider}:${check.url}`} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-1.5">
+              {/^https?:\/\//i.test(check.url) ? (
+                <a href={check.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-blue-700 hover:underline">
+                  {supplierNames[check.provider] ?? check.provider} <ExternalLink size={11} />
+                </a>
+              ) : <span>{supplierNames[check.provider] ?? check.provider}</span>}
+              <span className={check.result === 'in_stock' ? 'text-emerald-700' : check.result === 'out_of_stock' || check.result === 'error' ? 'text-red-700' : 'text-neutral-600'}>
+                {supplierResults[check.result] ?? 'Stanje nije poznato'}
+                {(check.checkedAt || check.result === 'pending') && <span className="ml-2 text-neutral-500">{formatOrderTime(check.checkedAt ?? check.requestedAt)}</span>}
+              </span>
+            </li>
+          ))}
         </ul>
       )}
     </div>
   );
 }
 
+const emailStatuses = { pending: 'Čeka slanje', sending: 'Slanje u toku', sent: 'SES prihvatio · čeka potvrdu dostave', failed: 'Greška pri slanju', expired: 'Istekao rok za slanje', suppressed: 'Slanje blokirano' };
+const emailFeedback = { Delivery: 'Dostavljeno serveru primaoca', DeliveryDelay: 'Dostava kasni', Bounce: 'Poruka vraćena', Complaint: 'Prijavljeno kao spam', Reject: 'SES odbio poruku', 'Rendering Failure': 'Greška pri pripremi poruke', RenderingFailure: 'Greška pri pripremi poruke' };
+
 function OrderEmailStatus({ order }) {
+  const deliveries = order.emailDeliveries ?? [];
   return (
-    <section className="border-t border-neutral-200 pt-3">
-      <h4 className={heading}>Email poruke</h4>
-      <div className="mt-2 divide-y divide-neutral-200">
-        {['order-confirmation', 'new-order-notification'].map(tag => {
-          const isCustomer = tag === 'order-confirmation';
-          const messages = (order.emailDeliveries ?? []).filter(message => message.tag === tag);
-          return (
-            <div key={tag} className="py-2 first:pt-0 last:pb-0">
-              <p className="text-xs font-semibold text-neutral-700">{isCustomer ? 'Potvrda kupcu' : 'Obaveštenje prodavnici'}</p>
-              {messages.length ? (
-                <ul className="mt-1 space-y-2 text-xs">
-                  {messages.map(message => {
-                    const tone = message.feedback === 'Delivery' ? 'good'
-                      : message.feedback === 'DeliveryDelay' ? 'waiting'
-                      : message.feedback || ['failed', 'expired', 'suppressed'].includes(message.status) ? 'issue' : 'waiting';
-                    const timestamp = message.feedbackAt ?? message.sentAt;
-                    return (
-                      <li key={message.recipient} className="grid gap-x-4 gap-y-0.5 sm:grid-cols-2">
-                        <span className="break-words text-neutral-700">{message.recipient}</span>
-                        <div>
-                          <StatusText tone={tone}>{emailFeedback[message.feedback] ?? emailStatuses[message.status] ?? 'Status nije poznat'}</StatusText>
-                          {timestamp && <p className="mt-0.5 text-neutral-500"><OrderTime value={timestamp} /></p>}
-                          {message.attempts > 0 && message.status !== 'sent' && <p className="text-neutral-500">Pokušaji {message.attempts}</p>}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className="mt-1 text-xs text-neutral-500">{isCustomer && order.customerEmailDisabled ? 'Slanje kupcu je isključeno.' : 'Nema zapisa o slanju.'}</p>
-              )}
-            </div>
-          );
-        })}
+    <section className="min-w-0 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm md:col-span-2 xl:col-span-4">
+      <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase text-neutral-500"><Mail size={14} /> Email poruke</h4>
+      <div className="grid gap-4 md:grid-cols-2 md:gap-6">
+      {['order-confirmation', 'new-order-notification'].map(tag => {
+        const customer = tag === 'order-confirmation';
+        const messages = deliveries.filter(message => message.tag === tag);
+        return (
+          <div key={tag} className="border-t border-neutral-100 py-2 text-sm">
+            <p className="font-semibold">{customer ? 'Potvrda kupcu' : 'Obaveštenje prodavnici'}</p>
+            {!messages.length && <p className="text-neutral-500">{customer && order.customerEmailDisabled ? 'Slanje kupcu je isključeno.' : 'Nema zapisa o slanju.'}</p>}
+            {messages.map(message => (
+              <div key={message.recipient} className="mt-1 flex flex-wrap justify-between gap-x-3 text-neutral-600">
+                <span className="break-all">{message.recipient}</span>
+                <span className={message.feedback === 'Delivery' ? 'text-emerald-700' : ''}>
+                  {emailFeedback[message.feedback] ?? emailStatuses[message.status] ?? 'Status nije poznat'}
+                  {(message.feedbackAt || message.sentAt) && <> · {formatOrderTime(message.feedbackAt ?? message.sentAt)}</>}
+                  {message.attempts > 0 && message.status !== 'sent' && <> · pokušaji: {message.attempts}</>}
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      })}
       </div>
     </section>
-  );
-}
-
-function OrderDetails({ order, id }) {
-  const { customer } = order;
-  const pickup = order.shippingMethod === 'pickup';
-  return (
-    <div id={id} className="grid gap-5 border-t border-neutral-200 bg-neutral-50 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-0">
-      <section className="min-w-0 lg:pr-6">
-        <h4 className={heading}>Artikli <span className="ml-1 font-normal text-neutral-500">{order.items.length}</span></h4>
-        <ul className="mt-2 divide-y divide-neutral-200">
-          {order.items.map((item, index) => {
-            const productUrl = item.slug ? `/product/${item.slug}` : null;
-            return (
-              <li key={index} className="py-3 first:pt-1">
-                <div className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-start gap-x-3 sm:grid-cols-[4rem_minmax(0,1fr)_auto]">
-                  <img src={item.image || '/placeholder.png'} alt="" className="aspect-square w-full rounded-md border border-neutral-200 bg-white object-contain" />
-                  <div className="min-w-0">
-                    {productUrl ? (
-                      <Link to={productUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex items-baseline gap-1.5 font-semibold ${textLink}`}>
-                        <span className="break-words">{item.name}</span> <ExternalLink size={12} aria-hidden="true" className="shrink-0" />
-                      </Link>
-                    ) : <p className="break-words font-semibold">{item.name}</p>}
-                    <p className="mt-0.5 text-xs text-neutral-600">{item.qty} kom × {money(item.price)}</p>
-                    <EngravingSummary item={item} admin />
-                  </div>
-                  <span className="whitespace-nowrap text-right text-sm font-semibold tabular-nums">{money(item.price * item.qty)}</span>
-                </div>
-                <SupplierChecks checks={(order.supplierChecks ?? []).filter(check => check.productId === (item.productId ?? item.id))} />
-              </li>
-            );
-          })}
-        </ul>
-        <dl className="space-y-1.5 border-t border-neutral-200 pt-3 text-sm tabular-nums">
-          <div className="flex justify-between gap-3"><dt className="text-neutral-600">Dostava</dt><dd>{order.shippingCost === 0 ? 'Besplatna' : money(order.shippingCost)}</dd></div>
-          {order.promoCode && (
-            <div className="flex justify-between gap-3 text-emerald-800">
-              <dt>Promo kod <span className="font-semibold">{order.promoCode}</span></dt>
-              <dd>{Number(order.discountAmount) > 0 ? `−${money(order.discountAmount)}` : 'Besplatna dostava'}</dd>
-            </div>
-          )}
-          <div className="flex items-baseline justify-between gap-3 pt-1 font-semibold"><dt>Ukupno</dt><dd className="text-base">{money(order.finalTotal)}</dd></div>
-        </dl>
-      </section>
-
-      <div className="min-w-0 space-y-3 border-t border-neutral-200 pt-4 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
-          <section className="min-w-0">
-            <h4 className={heading}>Kupac</h4>
-            <address className="mt-1 space-y-1 break-words text-sm not-italic text-neutral-700">
-              <p className="font-medium text-neutral-900">{customer.name} {customer.surname}</p>
-              {!pickup && <p>{customer.address}<br />{customer.postalCode} {customer.city}</p>}
-              {customer.phone && <p><a href={`tel:${customer.phone}`} className={textLink}>{customer.phone}</a></p>}
-              {customer.email && <p><a href={`mailto:${customer.email}`} className={textLink}>{customer.email}</a></p>}
-            </address>
-          </section>
-          <section>
-            <h4 className={heading}>Logistika</h4>
-            <dl className="mt-1 space-y-1.5 text-sm">
-              <div><dt className="text-xs text-neutral-500">Isporuka</dt><dd>{pickup ? 'Lično preuzimanje' : 'Kurirska služba'}</dd></div>
-              <div><dt className="text-xs text-neutral-500">Plaćanje</dt><dd>{order.paymentMethod === 'cod' ? 'Pouzećem' : 'Pri preuzimanju'}</dd></div>
-            </dl>
-          </section>
-        </div>
-        {order.statusChangedAt && new Date(order.statusChangedAt).getTime() !== new Date(order.createdAt).getTime() && (
-          <p className="text-xs text-neutral-600"><span className="mr-2 font-medium">Poslednja promena statusa</span><OrderTime value={order.statusChangedAt} /></p>
-        )}
-        <OrderEmailStatus order={order} />
-      </div>
-    </div>
   );
 }
 
@@ -210,123 +111,462 @@ export default function AdminOrders() {
   const [loadError, setLoadError] = useState('');
   const [revision, setRevision] = useState(0);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+  // NOVO: State za Modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingChange, setPendingChange] = useState(null);
 
+  // 1. Učitavanje podataka u realnom vremenu
   useEffect(() => {
-    setLoading(true);
-    setLoadError('');
-    return ordersService.subscribe(
-      data => { setOrders(data); setLoading(false); setLoadError(''); },
-      error => { setLoadError(error.message || 'Porudžbine nisu učitane.'); setLoading(false); },
+    setLoading(true); setLoadError('');
+    const unsub = ordersService.subscribe(
+      (data) => {
+        setOrders(data);
+        setLoading(false);
+      },
+      (err) => { setLoadError(err.message || 'Porudžbine nisu učitane.'); setLoading(false); }
     );
+    return () => unsub();
   }, [revision]);
 
+  // NOVO: 2a. Iniciranje promene (Samo otvara modal)
+  const initiateStatusChange = (
+    orderId,
+    newStatus,
+    currentStatus,
+    customerName
+  ) => {
+    if (newStatus === currentStatus) return;
+
+    setPendingChange({
+      orderId, // Ovo je docId
+      newStatus,
+      oldStatus: currentStatus,
+      customerName,
+    });
+    setIsModalOpen(true);
+  };
+
+  // NOVO: 2b. Potvrda promene (Izvršava logiku koja je pre bila direktna)
   const confirmStatusChange = async () => {
     if (!pendingChange) return;
-    const { orderId, newStatus, oldStatus } = pendingChange;
-    setOrders(current => current.map(order => order.docId === orderId ? { ...order, status: newStatus } : order));
+
+    const { orderId, newStatus } = pendingChange;
+    const oldOrders = [...orders];
+
+    // Odmah ažuriraj UI da se vidi promena
+    setOrders(
+      orders.map((o) => (o.docId === orderId ? { ...o, status: newStatus } : o))
+    );
+
     try {
       await ordersService.updateStatus(orderId, newStatus);
-    } catch {
-      setOrders(current => current.map(order => order.docId === orderId && order.status === newStatus ? { ...order, status: oldStatus } : order));
+      setIsModalOpen(false);
+      setPendingChange(null);
+    } catch (error) {
+      setOrders(oldOrders); // Vrati na staro ako pukne
       alert('Greška pri promeni statusa.');
+      setIsModalOpen(false);
     }
   };
 
-  const toggleDetails = async order => {
+  // NOVO: 2c. Odustajanje
+  const cancelStatusChange = () => {
+    setIsModalOpen(false);
+    setPendingChange(null);
+  };
+
+  // 3. Otvaranje detalja i označavanje kao PROČITANO
+  const toggleDetails = async (order) => {
     const isExpanding = expandedOrderId !== order.id;
     setExpandedOrderId(isExpanding ? order.id : null);
+
+    // Ako otvaramo porudžbinu koja NIJE pročitana, označi je u bazi kao pročitanu
     if (isExpanding && !order.isRead) {
-      setOrders(current => current.map(item => item.docId === order.docId ? { ...item, isRead: true } : item));
+      const previousOrders = orders;
+      setOrders((current) => current.map((item) => item.docId === order.docId ? { ...item, isRead: true } : item));
       try {
         await ordersService.markAsRead(order.docId);
-      } catch {
-        setOrders(current => current.map(item => item.docId === order.docId ? { ...item, isRead: false } : item));
+      } catch (error) {
+        setOrders(previousOrders);
+        console.error('Failed to mark as read', error);
       }
     }
   };
 
+  // 4. Boje za statuse
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Isporučeno':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      case 'Poslato':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'U obradi':
+        return 'bg-amber-100 text-amber-800 border-amber-300';
+      case 'Otkazano':
+        return 'bg-red-100 text-red-800 border-red-300';
+      default:
+        return 'bg-neutral-100 text-neutral-800 border-neutral-300';
+    }
+  };
+
+  if (loadError && !orders.length) return <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-700">{loadError} <button onClick={() => setRevision(value => value + 1)}>Pokušaj ponovo</button></p>;
+
   return (
-    <section aria-busy={loading} className="overflow-hidden rounded-xl border border-neutral-200 bg-white text-neutral-900">
-      <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-neutral-200 px-4 py-3.5 sm:px-6">
-        <h2 className="font-semibold">Upravljanje porudžbinama</h2>
-        <p className="text-sm text-neutral-600">Ukupno {orders.length}</p>
-      </header>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden"
+    >
+      {/* HEADER TABELE */}
+      <div className="p-6 border-b border-neutral-100 flex justify-between items-center">
+        <h2 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
+          <Package className="text-neutral-500" /> Upravljanje Porudžbinama
+        </h2>
+        <span className="text-sm text-neutral-500 font-medium bg-neutral-50 px-3 py-1 rounded-full border border-neutral-100">
+          Ukupno: {orders.length}
+        </span>
+      </div>
 
-      {loadError && (
-        <div role="alert" className="bg-red-50 px-4 py-3 text-sm text-red-800 sm:px-6">
-          {loadError} <button type="button" className="ml-1 font-semibold underline" onClick={() => setRevision(value => value + 1)}>Pokušaj ponovo</button>
-        </div>
-      )}
-      {loading && !orders.length && <AdminSkeleton rows={3} />}
-      {!loading && !orders.length && !loadError && <p className="px-4 py-6 text-sm text-neutral-600 sm:px-6">Još nema porudžbina.</p>}
-
-      <ul className="divide-y divide-neutral-200">
-        {orders.map(order => {
-          const expanded = expandedOrderId === order.id;
-          const detailsId = `order-details-${order.docId}`;
-          const status = order.status || 'Na čekanju';
-          return (
-            <li key={order.id}>
-              <div className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-4 sm:gap-x-5 sm:px-6 ${expanded ? 'bg-neutral-50' : 'hover:bg-neutral-50'}`}>
-                <button
-                  type="button"
-                  aria-expanded={expanded}
-                  aria-controls={expanded ? detailsId : undefined}
+      {/* TABELA */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-neutral-50 text-neutral-500 uppercase text-xs font-bold tracking-wider border-b border-neutral-200">
+            <tr>
+              <th className="p-4">ID</th>
+              <th className="hidden p-4 md:table-cell">Kupac</th>
+              <th className="hidden p-4 md:table-cell">Datum i vreme</th>
+              <th className="p-4">Status</th>
+              <th className="hidden p-4 md:table-cell">Iznos</th>
+              <th className="p-4 text-right">Detalji</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-100" aria-busy={loading}>
+            {loading && !orders.length && <AdminTableSkeleton columns={6} variant="orders" />}
+            {orders.map((order) => (
+              <React.Fragment key={order.id}>
+                {/* GLAVNI RED */}
+                <tr
                   onClick={() => toggleDetails(order)}
-                  className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 py-3 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1.1fr)_auto_auto] md:gap-x-4 md:py-4"
+                  className={`cursor-pointer transition-colors ${
+                    expandedOrderId === order.id
+                      ? 'bg-neutral-50'
+                      : !order.isRead
+                      ? 'bg-blue-50/60 font-semibold'
+                      : 'hover:bg-neutral-50'
+                  }`}
                 >
-                  <span className="min-w-0 font-semibold tabular-nums">
-                    <span className="mr-1.5 inline-block w-1.5 align-middle">
-                      {!order.isRead && <span className="block h-1.5 w-1.5 rounded-full bg-blue-600" aria-label="Nepročitano" />}
-                    </span>
+                  <td className="p-4 font-mono text-neutral-600 relative">
+                    {!order.isRead && (
+                      <span className="absolute top-1/2 left-1 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full"></span>
+                    )}
                     {order.id}
-                  </span>
-                  <span className="col-span-2 row-start-2 min-w-0 break-words text-neutral-700 md:col-auto md:row-auto">
-                    {order.customer.name} {order.customer.surname}
-                  </span>
-                  <span className="row-start-3 text-xs text-neutral-600 md:col-auto md:row-auto">
-                    <OrderTime value={order.createdAt} fallback={order.date} />
-                  </span>
-                  <span className="col-start-2 row-start-3 whitespace-nowrap text-right font-semibold tabular-nums md:col-auto md:row-auto">
-                    {money(order.finalTotal)}
-                  </span>
-                  <ChevronDown size={16} aria-hidden="true" className={`col-start-2 row-start-1 justify-self-end text-neutral-500 motion-safe:transition-transform md:col-auto md:row-auto ${expanded ? 'rotate-180' : ''}`} />
-                </button>
-                <label className={`flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs font-semibold focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 ${statusStyles[status] ?? statusStyles['Na čekanju']}`}>
-                  <select
-                    value={status}
-                    aria-label={`Status porudžbine ${order.id}`}
-                    onChange={event => setPendingChange({
-                      orderId: order.docId,
-                      newStatus: event.target.value,
-                      oldStatus: status,
-                      customerName: `${order.customer.name} ${order.customer.surname}`,
-                    })}
-                    className="cursor-pointer appearance-none bg-transparent outline-none"
-                  >
-                    {!Object.hasOwn(statusStyles, status) && <option value={status}>{status}</option>}
-                    {Object.keys(statusStyles).map(option => <option key={option} value={option} className="bg-white text-neutral-900">{option}</option>)}
-                  </select>
-                  <ChevronDown size={12} aria-hidden="true" className="pointer-events-none" />
-                </label>
-              </div>
-              {expanded && <OrderDetails order={order} id={detailsId} />}
-            </li>
-          );
-        })}
-      </ul>
+                    <div className="mt-1 space-y-1 font-sans text-sm font-normal md:hidden">
+                      <div className="text-neutral-900">{order.customer.name} {order.customer.surname}</div>
+                      <div>{order.createdAt ? <time dateTime={order.createdAt}>{formatOrderTime(order.createdAt)}</time> : order.date}</div>
+                      <div className="font-bold text-neutral-900">{money(order.finalTotal)}</div>
+                    </div>
+                  </td>
+                  <td className="hidden p-4 md:table-cell">
+                    <div className="text-neutral-900">
+                      {order.customer.name} {order.customer.surname}
+                    </div>
+                    <div className="text-xs text-neutral-400 font-normal">
+                      {order.customer.email}
+                    </div>
+                  </td>
+                  <td className="hidden p-4 font-normal text-neutral-500 md:table-cell">
+                    <div className="flex items-center gap-1">
+                      <Clock size={14} /> {order.createdAt ? <time dateTime={order.createdAt}>{formatOrderTime(order.createdAt)}</time> : order.date}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <select
+                      value={order.status || 'Na čekanju'}
+                      // IZMENJENO: Pozivamo initiateStatusChange umesto direktne promene
+                      onChange={(e) =>
+                        initiateStatusChange(
+                          order.docId,
+                          e.target.value,
+                          order.status,
+                          `${order.customer.name} ${order.customer.surname}`
+                        )
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg border-2 outline-none cursor-pointer transition-all appearance-none shadow-sm uppercase tracking-wide ${getStatusColor(
+                        order.status
+                      )}`}
+                      style={{ textAlignLast: 'center' }}
+                    >
+                      {STATUS_OPTIONS.map((opt) => (
+                        <option
+                          key={opt}
+                          value={opt}
+                          className="bg-white text-neutral-900"
+                        >
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="hidden p-4 font-bold text-neutral-900 md:table-cell">
+                    <div>{money(order.finalTotal)}</div>
+                    {order.promoCode && (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                        <Ticket size={13} />
+                        <code className="rounded bg-emerald-50 px-1.5 py-0.5 text-emerald-800">
+                          {order.promoCode}
+                        </code>
+                        {Number(order.discountAmount) > 0 ? (
+                          <span>−{money(order.discountAmount)}</span>
+                        ) : (
+                          <span>Besplatna dostava</span>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-4 text-right">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleDetails(order);
+                      }}
+                      aria-label={
+                        expandedOrderId === order.id
+                          ? `Zatvori detalje porudžbine ${order.id}`
+                          : `Otvori detalje porudžbine ${order.id}`
+                      }
+                      className="p-2 hover:bg-white rounded-lg text-neutral-500 hover:text-neutral-900 border border-transparent hover:border-neutral-200 transition-all"
+                    >
+                      <ChevronDown
+                        size={18}
+                        className={`transition-transform ${
+                          expandedOrderId === order.id ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                  </td>
+                </tr>
 
+                {/* DETALJI (EXPANDED) */}
+                <AnimatePresence>
+                  {expandedOrderId === order.id && (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        className="p-0 border-b border-neutral-100"
+                      >
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden bg-neutral-50/50"
+                        >
+                          <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:p-6 xl:grid-cols-4">
+                            {/* LEVA KOLONA: ARTIKLI */}
+                            <div className="min-w-0 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm md:col-span-2">
+                              <h4 className="text-xs font-bold uppercase text-neutral-400 mb-4 flex items-center gap-2">
+                                <Package size={14} /> Sadržaj korpe (
+                                {order.items.length})
+                              </h4>
+
+                              <div className="space-y-4">
+                                {order.items.map((item, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex gap-4 pb-4 border-b border-neutral-100 last:border-0 last:pb-0"
+                                  >
+                                    {/* SLIKA PROIZVODA (LINK) */}
+                                    <Link
+                                      to={`/product/${item.slug}`}
+                                      target="_blank"
+                                      className="relative block h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 group sm:h-24 sm:w-24"
+                                    >
+                                      <img
+                                        src={item.image || '/placeholder.png'}
+                                        alt={item.name}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                      />
+                                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+                                    </Link>
+
+                                    <div className="flex min-w-0 flex-1 flex-col justify-between">
+                                      <div>
+                                        <div className="flex justify-between items-start gap-2">
+                                          <Link
+                                            to={`/product/${item.slug}`}
+                                            target="_blank"
+                                            className="font-bold text-neutral-900 text-sm sm:text-base line-clamp-2 hover:text-blue-600 transition-colors"
+                                          >
+                                            {item.name}
+                                          </Link>
+                                          <span className="font-mono font-bold text-neutral-900 ml-2 whitespace-nowrap">
+                                            {money(item.price * item.qty)}
+                                          </span>
+                                        </div>
+                                        <EngravingSummary item={item} admin />
+                                        <div className="text-sm text-neutral-500 mt-1">
+                                          Količina:{' '}
+                                          <span className="font-bold text-neutral-900">
+                                            {item.qty} kom
+                                          </span>
+                                          <span className="mx-2">•</span>
+                                          Cena: {money(item.price)}
+                                        </div>
+                                      </div>
+
+                                      <div className="mt-2">
+                                        <Link
+                                          to={`/product/${item.slug}`}
+                                          target="_blank"
+                                          className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                                        >
+                                          Pogledaj proizvod{' '}
+                                          <ExternalLink size={12} />
+                                        </Link>
+                                      </div>
+                                      <SupplierChecks checks={(order.supplierChecks ?? []).filter(check => check.productId === (item.productId ?? item.id))} />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="border-t border-neutral-100 pt-4 mt-2 flex justify-between items-center text-sm">
+                                <span className="text-neutral-500">
+                                  Dostava:
+                                </span>
+                                <span className="font-bold text-neutral-900">
+                                  {order.shippingCost === 0
+                                    ? 'Besplatna'
+                                    : money(order.shippingCost)}
+                                </span>
+                              </div>
+                              {order.promoCode && (
+                                <div className="mt-2 flex justify-between items-center gap-3 rounded-lg border border-emerald-100 bg-emerald-50/60 p-3 text-sm">
+                                  <span className="flex items-center gap-2 font-semibold text-emerald-800">
+                                    <Ticket size={15} /> Promo kod
+                                  </span>
+                                  <span className="flex flex-wrap items-center justify-end gap-2 text-right font-bold text-emerald-800">
+                                    <code className="rounded bg-white/80 px-2 py-1">{order.promoCode}</code>
+                                    {Number(order.discountAmount) > 0
+                                      ? `−${money(order.discountAmount)}`
+                                      : 'Besplatna dostava'}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex justify-between items-center text-lg mt-2 pt-2 border-t border-neutral-100">
+                                <span className="font-bold text-neutral-900">
+                                  Ukupno:
+                                </span>
+                                <span className="font-bold text-blue-600 text-xl">
+                                  {money(order.finalTotal)}
+                                </span>
+                              </div>
+                            </div>
+
+                              <div className="min-w-0 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+                                <h4 className="text-xs font-bold uppercase text-neutral-400 mb-4 flex items-center gap-2">
+                                  <User size={14} /> Podaci kupca
+                                </h4>
+                                <div className="space-y-4 text-sm text-neutral-600">
+                                  <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-neutral-50 rounded-lg text-neutral-400">
+                                      <MapPin size={18} />
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-neutral-900 text-base mb-1">
+                                        {order.customer.name}{' '}
+                                        {order.customer.surname}
+                                      </p>
+                                      {order.shippingMethod === 'pickup' ? (
+                                        <span className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-md">
+                                          Lično preuzimanje u radnji
+                                        </span>
+                                      ) : (
+                                        <>
+                                          <p>{order.customer.address}</p>
+                                          <p>
+                                            {order.customer.postalCode}{' '}
+                                            {order.customer.city}
+                                          </p>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-neutral-50 rounded-lg text-neutral-400">
+                                      <Phone size={18} />
+                                    </div>
+                                    <a href={`tel:${order.customer.phone}`} className="break-all font-medium text-neutral-900 hover:underline">{order.customer.phone}</a>
+                                  </div>
+                                  {order.customer.email && <a href={`mailto:${order.customer.email}`} className="block break-all text-blue-700 hover:underline">{order.customer.email}</a>}
+                                </div>
+                              </div>
+
+                              <div className="min-w-0 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+                                <h4 className="text-xs font-bold uppercase text-neutral-400 mb-4 flex items-center gap-2">
+                                  <Truck size={14} /> Logistika
+                                </h4>
+                                <div className="space-y-3 text-sm">
+                                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-neutral-50 p-2">
+                                    <span className="text-neutral-500">
+                                      Metod isporuke:
+                                    </span>
+                                    <span className="font-bold text-neutral-900">
+                                      {order.shippingMethod === 'courier'
+                                        ? 'Kurirska služba'
+                                        : 'Preuzimanje'}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-neutral-50 p-2">
+                                    <span className="text-neutral-500">
+                                      Način plaćanja:
+                                    </span>
+                                    <span className="font-bold text-neutral-900 flex items-center gap-2">
+                                      <CreditCard size={14} />
+                                      {order.paymentMethod === 'cod'
+                                        ? 'Pouzećem'
+                                        : 'Pri preuzimanju'}
+                                    </span>
+                                  </div>
+                                </div>
+                                {order.statusChangedAt && new Date(order.statusChangedAt).getTime() !== new Date(order.createdAt).getTime() && (
+                                  <div className="mt-4 border-t border-neutral-100 pt-3 text-sm text-neutral-600">
+                                    <p className="font-semibold text-neutral-900">Poslednja promena statusa</p>
+                                    <p className="mt-1">{formatOrderTime(order.statusChangedAt)}</p>
+                                  </div>
+                                )}
+                              </div>
+                            <OrderEmailStatus order={order} />
+                          </div>
+                        </motion.div>
+                      </td>
+                    </tr>
+                  )}
+                </AnimatePresence>
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* NOVO: Confirmation Modal */}
       <ConfirmModal
-        isOpen={Boolean(pendingChange)}
-        onClose={() => setPendingChange(null)}
+        isOpen={isModalOpen}
+        onClose={cancelStatusChange}
         onConfirm={confirmStatusChange}
         title="Promena statusa porudžbine"
-        description={pendingChange ? `Da li želite da promenite status porudžbine za ${pendingChange.customerName} u „${pendingChange.newStatus}“?` : ''}
+        description={
+          pendingChange
+            ? `Da li ste sigurni da želite da promenite status za ${pendingChange.customerName} u "${pendingChange.newStatus}"?`
+            : ''
+        }
         confirmText="Promeni status"
         cancelText="Odustani"
         isDanger={pendingChange?.newStatus === 'Otkazano'}
       />
-    </section>
+    </motion.div>
   );
 }
