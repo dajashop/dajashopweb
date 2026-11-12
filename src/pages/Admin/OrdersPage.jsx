@@ -1,14 +1,12 @@
 import { AdminDashboardSkeleton } from '../../components/AdminSkeleton.jsx';
-import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { isAdminEmail } from '../../services/dajaPlatform';
-import { useNavigate } from 'react-router-dom';
-import AdminOrders from './components/AdminOrders'; // Tvoja postojeća komponenta
+import { Link } from 'react-router-dom';
+import AdminOrders from './components/AdminOrders';
 import SEOHead from '../../components/seo/SEOHead.jsx';
 
 export default function OrdersPage() {
   const { user, authReady, staffReady, showAuth } = useAuth();
-  const nav = useNavigate();
   const isAuthorized = isAdminEmail(user?.email) && staffReady;
 
   if (!authReady) return <AdminDashboardSkeleton />;
@@ -26,23 +24,13 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen pb-20 bg-[#f5f5f7]">
       <SEOHead title="Admin - Porudžbine" noIndex={true} />
-      {/* HEADER */}
-      <div className="bg-white border-b border-neutral-200 sticky top-[var(--header-bar-h)] z-30 shadow-sm">
-        <div className="container py-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-neutral-900">
-            Admin Porudžbine
-          </h1>
-          <button
-            onClick={() => nav('/admin')}
-            className="text-sm font-bold text-neutral-500 hover:text-neutral-900 transition-colors"
-          >
-            ← Nazad na Dashboard
-          </button>
-        </div>
-      </div>
-
-      {/* CONTENT */}
-      <div className="container mt-8">
+      <div className="container pt-6 sm:pt-8">
+        <header className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">Porudžbine</h1>
+          <Link to="/admin" className="text-sm font-medium text-neutral-700 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-offset-4">
+            Nazad na admin
+          </Link>
+        </header>
         <AdminOrders />
       </div>
     </div>
