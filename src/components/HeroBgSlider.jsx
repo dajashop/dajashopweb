@@ -113,6 +113,7 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
           >
             {(idx === i || loadedSlides.has(idx)) && (
               <picture>
+                {s.desktopSrc && <source media="(min-width: 769px)" srcSet={s.desktopSrc} type="image/webp" />}
                 {s.avifSrc && <source type="image/avif" srcSet={s.avifSrc} />}
                 <img
                   src={s.src}

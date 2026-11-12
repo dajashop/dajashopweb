@@ -30,6 +30,22 @@ import { seoConfig } from '../config/seo.js';
 
 const HERO_SLIDES = [
   {
+    src: '/images/home/hero-dajashop-mobile.webp',
+    desktopSrc: '/images/home/hero-dajashop-desktop.webp',
+    width: 750,
+    height: 1000,
+    alt: 'Daniel Klein satovi',
+    to: '/catalog?brand=DANIEL%20KLEIN',
+  },
+  {
+    src: '/images/home/hero-orient-stretto-mobile.webp',
+    desktopSrc: '/images/home/hero-orient-stretto-desktop.webp',
+    width: 750,
+    height: 1000,
+    alt: 'Orient Stretto Date kolekcija',
+    to: '/brend/orient',
+  },
+  {
     src: '/images/home/hero-g-shock-gold-1280.webp',
     avifSrc: '/images/home/hero-g-shock-gold-1280.avif',
     width: 1280,
