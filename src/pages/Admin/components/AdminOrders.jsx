@@ -311,7 +311,7 @@ export default function AdminOrders() {
                 {/* GLAVNI RED */}
                 <tr
                   onClick={() => toggleDetails(order)}
-                  className={`grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-3 p-4 transition-colors md:table-row md:p-0 ${
+                  className={`cursor-pointer transition-colors max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-2 max-md:gap-y-3 max-md:p-4 ${
                     expandedOrderId === order.id
                       ? 'bg-neutral-50'
                       : !order.isRead
@@ -342,7 +342,7 @@ export default function AdminOrders() {
                       <Clock size={14} /> {order.createdAt ? <time dateTime={order.createdAt}>{formatOrderTime(order.createdAt)}</time> : order.date}
                     </div>
                   </td>
-                  <td className="col-span-2 row-start-2 flex min-w-0 flex-wrap items-center justify-between gap-2 md:table-cell md:p-4">
+                  <td className="md:p-4 max-md:col-span-2 max-md:row-start-2 max-md:flex max-md:min-w-0 max-md:flex-wrap max-md:items-center max-md:justify-between max-md:gap-2">
                     <select
                       value={order.status || 'Na čekanju'}
                       aria-label={`Status porudžbine ${order.id}`}
@@ -583,17 +583,17 @@ export default function AdminOrders() {
                                 <h4 className="text-xs font-bold uppercase text-neutral-400 mb-4 flex items-center gap-2">
                                   <Truck size={14} /> Logistika
                                 </h4>
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                                  <div className="flex flex-wrap items-baseline gap-x-1.5">
-                                    <span className="text-neutral-500">Dostava</span>
+                                <div className="space-y-3 text-sm">
+                                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-neutral-50 p-2">
+                                    <span className="text-neutral-500">Metod isporuke:</span>
                                     <span className="font-bold text-neutral-900">
                                       {order.shippingMethod === 'courier'
                                         ? 'Kurirska služba'
                                         : 'Preuzimanje'}
                                     </span>
                                   </div>
-                                  <div className="flex flex-wrap items-baseline gap-x-1.5">
-                                    <span className="text-neutral-500">Plaćanje</span>
+                                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-neutral-50 p-2">
+                                    <span className="text-neutral-500">Način plaćanja:</span>
                                     <span className="font-bold text-neutral-900 flex items-center gap-2">
                                       <CreditCard size={14} />
                                       {order.paymentMethod === 'cod'
