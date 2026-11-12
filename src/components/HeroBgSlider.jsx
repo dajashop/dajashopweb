@@ -101,7 +101,7 @@ export default function HeroBgSlider({ slides = [], interval = 5000 }) {
           <Slide
             key={idx}
             {...(s.to ? { to: s.to } : {})}
-            className={`heroBg__slide ${idx === i ? "is-active" : ""}`}
+            className={`heroBg__slide ${s.desktopSrc ? "heroBg__slide--art-directed" : ""} ${idx === i ? "is-active" : ""}`}
             onClick={(e) => {
               if (e.detail !== 0 && wasDragged.current) e.preventDefault();
             }}

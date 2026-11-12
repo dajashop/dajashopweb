@@ -917,6 +917,17 @@
   }
 }
 
+.hero:has(.heroBg__slide--art-directed.is-active) {
+  min-height: 0;
+  aspect-ratio: 1534 / 678;
+}
+
+@media (max-width: 768px) {
+  .hero:has(.heroBg__slide--art-directed.is-active) {
+    aspect-ratio: 3 / 4;
+  }
+}
+
 @media (max-width: 640px) {
   .section__head {
     flex-direction: column;

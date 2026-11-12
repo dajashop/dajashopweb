@@ -39,6 +39,12 @@
   animation: ken 8s ease-out forwards;
   will-change: transform, opacity;
 }
+.heroBg__slide--art-directed img {
+  object-fit: contain;
+  transform: none;
+  animation: none;
+  will-change: auto;
+}
 @keyframes ken {
   from {
     transform: scale(1.08);
