@@ -110,6 +110,23 @@ function catalogAttributeKey(value) {
   return normalized || 'specification';
 }
 
+function SupplierStockPreview({ result, showPrice = false }) {
+  if (result?.status !== 'available') return null;
+
+  const inStock = result.stockStatus === 'in_stock';
+  const outOfStock = result.stockStatus === 'out_of_stock';
+  const color = inStock ? 'text-emerald-700' : outOfStock ? 'text-red-700' : 'text-amber-700';
+  const label = inStock ? 'Na stanju kod dobavljača'
+    : outOfStock ? 'Nema na stanju kod dobavljača'
+    : 'Stranica postoji, stanje nije potvrđeno';
+
+  return (
+    <span className={`mt-1 block text-xs font-semibold ${color}`}>
+      {label}{showPrice && result.priceAmount != null ? ` · ${result.priceAmount} ${result.priceCurrency || ''}` : ''}
+    </span>
+  );
+}
+
 export default function AdminProductModal({
   product,
   existingProducts = [],
@@ -2036,7 +2053,7 @@ export default function AdminProductModal({
                       placeholder="https://ekka.rs/proizvodi/..."
                     />
                     {supplierPreviews.ekka?.status === 'checking' && <span className="mt-1 block text-xs text-neutral-500">Proveravam Ekka link…</span>}
-                    {supplierPreviews.ekka?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">Link je važeći.</span>}
+                    <SupplierStockPreview result={supplierPreviews.ekka} />
                     {(supplierPreviews.ekka?.status === 'missing' || supplierPreviews.ekka?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen.</span>}
                   </label>
                 </div>}
@@ -2048,11 +2065,11 @@ export default function AdminProductModal({
                       value={form.linkelUrl || ''}
                       onChange={(event) => handleChange('linkelUrl', event.target.value)}
                       onBlur={(event) => previewSupplier('linkel', event.target.value)}
-                      className={`w-full bg-neutral-50 border rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 ${supplierPreviews.linkel?.status === 'available' ? 'border-emerald-400 focus:ring-emerald-200' : supplierPreviews.linkel?.status === 'missing' || supplierPreviews.linkel?.status === 'error' ? 'border-red-400 focus:ring-red-200' : 'border-neutral-200 focus:ring-neutral-200'}`}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
                       placeholder="https://www.linkel.rs/sr/..."
                     />
                     {supplierPreviews.linkel?.status === 'checking' && <span className="mt-1 block text-xs text-neutral-500">Proveravam Linkel link…</span>}
-                    {supplierPreviews.linkel?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">Link je važeći{supplierPreviews.linkel.stockStatus === 'in_stock' ? ' i artikal je na stanju' : supplierPreviews.linkel.stockStatus === 'out_of_stock' ? ', artikal nije na stanju' : ''}.</span>}
+                    <SupplierStockPreview result={supplierPreviews.linkel} />
                     {supplierPreviews.linkel?.status === 'unverified' && <span className="mt-1 block text-xs font-semibold text-amber-700">{supplierPreviews.linkel.message || 'Link se može sačuvati; dostupnost trenutno nije potvrđena.'}</span>}
                     {(supplierPreviews.linkel?.status === 'missing' || supplierPreviews.linkel?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen{supplierPreviews.linkel.message ? `: ${supplierPreviews.linkel.message}` : '.'}</span>}
                   </label>
@@ -2069,7 +2086,7 @@ export default function AdminProductModal({
                       placeholder="https://bultime.bg/index.php?route=product/product&product_id=..."
                     />
                     {supplierPreviews.bultime?.status === 'checking' && <span className="mt-1 block text-xs text-neutral-500">Proveravam Bultime link…</span>}
-                    {supplierPreviews.bultime?.status === 'available' && <span className="mt-1 block text-xs font-semibold text-emerald-700">Link je važeći.</span>}
+                    <SupplierStockPreview result={supplierPreviews.bultime} />
                     {(supplierPreviews.bultime?.status === 'missing' || supplierPreviews.bultime?.status === 'error') && <span className="mt-1 block text-xs font-semibold text-red-700">Link nije potvrđen.</span>}
                   </label>
                 </div>}
@@ -2087,7 +2104,7 @@ export default function AdminProductModal({
                         className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
                         placeholder={placeholder} />
                       {result?.status === 'checking' && <span className="mt-1 block text-xs text-neutral-500">Proveravam link…</span>}
-                      {result?.status === 'available' && <span className={`mt-1 block text-xs font-semibold ${result.stockStatus === 'out_of_stock' ? 'text-amber-700' : 'text-emerald-700'}`}>{result.stockStatus === 'in_stock' ? 'Na stanju kod dobavljača' : result.stockStatus === 'out_of_stock' ? 'Nema na stanju kod dobavljača' : 'Stranica dostupna'}{result.priceAmount != null ? ` · ${result.priceAmount} ${result.priceCurrency || ''}` : ''}</span>}
+                      <SupplierStockPreview result={result} showPrice />
                       {result?.status === 'unverified' && <span className="mt-1 block text-xs text-amber-700">{result.message || 'Link je sačuvan; provera trenutno nije dostupna.'}</span>}
                       {(result?.status === 'missing' || result?.status === 'error') && <span className="mt-1 block text-xs text-red-700">{result.message || 'Stranica nije potvrđena.'}</span>}
                     </label>
