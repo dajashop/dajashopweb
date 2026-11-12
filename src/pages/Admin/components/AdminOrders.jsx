@@ -55,8 +55,8 @@ function SupplierChecks({ checks }) {
         const result = supplierResults[check.result] ?? 'Stanje nije poznato';
         const title = check.checkedAt ? `${result} · ${formatOrderTime(check.checkedAt)}` : result;
         const color = check.result === 'in_stock' ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-          : ['out_of_stock', 'missing', 'error'].includes(check.result) ? 'border-red-200 bg-red-50 text-red-800'
-          : 'border-neutral-200 bg-neutral-50 text-neutral-600';
+          : ['out_of_stock', 'missing', 'disabled', 'removed'].includes(check.result) ? 'border-red-200 bg-red-50 text-red-800'
+          : 'border-amber-200 bg-amber-50 text-amber-900';
         const style = `inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm font-medium ${color}`;
         return (
           <li key={`${check.provider}:${check.url}`}>
