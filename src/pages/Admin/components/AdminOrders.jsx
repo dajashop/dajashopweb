@@ -101,7 +101,7 @@ function OrderEmailRow({ orderId, message }) {
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 py-2 text-sm">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 py-1.5 text-sm">
       <span className="break-words text-neutral-700">{message.recipient}</span>
       <details className="group text-right">
         <summary className={`relative inline-block cursor-pointer list-none rounded-md px-2 py-0.5 font-semibold [&::-webkit-details-marker]:hidden ${received ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
@@ -128,15 +128,40 @@ function OrderEmailRow({ orderId, message }) {
 
 function OrderEmailStatus({ order }) {
   const deliveries = order.emailDeliveries ?? [];
-  const messages = order.customer.email && !deliveries.some(message => message.tag === 'order-confirmation')
-    ? [{ recipient: order.customer.email, status: order.customerEmailDisabled ? 'suppressed' : null }, ...deliveries]
-    : deliveries;
+  const shopMessages = deliveries.filter(message => message.tag === 'new-order-notification');
+  const messages = deliveries.filter(message => message.tag !== 'new-order-notification');
+  if (order.customer.email && !messages.some(message => message.tag === 'order-confirmation')) {
+    messages.push({ recipient: order.customer.email, status: order.customerEmailDisabled ? 'suppressed' : null });
+  }
+  const shopReceived = shopMessages.some(message => message.feedback === 'Delivery');
+  const shopDeliveryTime = shopMessages
+    .filter(message => message.feedback === 'Delivery' && message.feedbackAt)
+    .map(message => message.feedbackAt)
+    .sort()[0];
 
   return (
-    <div className="mt-4 border-t border-neutral-100 pt-3">
+    <div className="mt-3 border-t border-neutral-100 pt-2">
       <h4 className="mb-1 flex items-center gap-2 text-xs font-bold uppercase text-neutral-500"><Mail size={14} /> Email poruke</h4>
-      {messages.length ? (
+      {messages.length || shopMessages.length ? (
         <div className="divide-y divide-neutral-100">
+          {shopMessages.length > 0 && (
+            <details className="group py-1.5 text-sm">
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-2 text-neutral-700 [&::-webkit-details-marker]:hidden">
+                <span>DajaShop</span>
+                <span className={`relative rounded-md px-2 py-0.5 font-semibold ${shopReceived ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
+                  {shopReceived ? 'Primljeno' : 'Nije primljeno'}
+                  {shopDeliveryTime && (
+                    <span aria-hidden="true" className="pointer-events-none absolute bottom-full right-0 z-10 mb-1 hidden whitespace-nowrap rounded-md bg-neutral-900 px-2 py-1 font-normal text-white group-hover:block group-open:hidden">
+                      {formatOrderTime(shopDeliveryTime)}
+                    </span>
+                  )}
+                </span>
+              </summary>
+              <div className="mt-1 border-l border-neutral-200 pl-2">
+                {shopMessages.map(message => <OrderEmailRow key={message.id ?? message.recipient} orderId={order.docId} message={message} />)}
+              </div>
+            </details>
+          )}
           {messages.map(message => <OrderEmailRow key={message.id ?? `${message.tag}:${message.recipient}`} orderId={order.docId} message={message} />)}
         </div>
       ) : <p className="mt-2 text-sm text-neutral-500">Nema zapisa o slanju.</p>}
@@ -558,21 +583,17 @@ export default function AdminOrders() {
                                 <h4 className="text-xs font-bold uppercase text-neutral-400 mb-4 flex items-center gap-2">
                                   <Truck size={14} /> Logistika
                                 </h4>
-                                <div className="space-y-3 text-sm">
-                                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-neutral-50 p-2">
-                                    <span className="text-neutral-500">
-                                      Metod isporuke:
-                                    </span>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                                  <div className="flex flex-wrap items-baseline gap-x-1.5">
+                                    <span className="text-neutral-500">Dostava</span>
                                     <span className="font-bold text-neutral-900">
                                       {order.shippingMethod === 'courier'
                                         ? 'Kurirska služba'
                                         : 'Preuzimanje'}
                                     </span>
                                   </div>
-                                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-neutral-50 p-2">
-                                    <span className="text-neutral-500">
-                                      Način plaćanja:
-                                    </span>
+                                  <div className="flex flex-wrap items-baseline gap-x-1.5">
+                                    <span className="text-neutral-500">Plaćanje</span>
                                     <span className="font-bold text-neutral-900 flex items-center gap-2">
                                       <CreditCard size={14} />
                                       {order.paymentMethod === 'cod'
