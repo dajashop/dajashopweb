@@ -47,6 +47,37 @@ const button =
 const input =
   'rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-800';
 const panel = 'rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm';
+const confirmedStock = link => link.stockConfirmationPending || link.lastError ? null : link.stockStatus;
+const hasStock = link => confirmedStock(link) === 'in_stock';
+
+function ProductSupplierLinks({ current, suppliers }) {
+  return (
+    <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Svi dobavljači artikla">
+      {suppliers.map(link => {
+        const unavailable = confirmedStock(link) === 'out_of_stock' || link.checkStatus === 'missing' || !link.checksEnabled;
+        const stockLabel = hasStock(link) ? 'Na stanju' : confirmedStock(link) === 'out_of_stock' ? 'Nema na stanju'
+          : link.checkStatus === 'missing' ? 'Stranica ne postoji' : 'Stanje nije potvrđeno';
+        const label = link.checksEnabled ? stockLabel : `Isključen · ${stockLabel}`;
+        const tone = unavailable ? 'border-red-200 bg-red-50 text-red-800'
+          : hasStock(link) ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+          : 'border-amber-200 bg-amber-50 text-amber-900';
+        return (
+          <li key={link.id}>
+            <a href={link.url} target="_blank" rel="noopener noreferrer"
+              aria-current={link.id === current.id ? 'true' : undefined}
+              title={link.lastCheckedAt ? `Poslednja provera: ${date(link.lastCheckedAt)}` : undefined}
+              className={`inline-flex flex-wrap items-center gap-x-1.5 rounded-md border px-2 py-1 hover:underline ${tone}`}>
+              <span className="font-semibold">{NAMES[link.providerCode]}</span>
+              <span>{label}</span>
+              <ExternalLink size={11} aria-hidden="true" />
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function countdown(value, now) {
   if (!value) return '—';
   const delta = Date.parse(value) - now;
@@ -279,7 +310,7 @@ function SupplierTimeline({ timeline }) {
   );
 }
 
-export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOpenProduct }) {
+export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOpenProduct, brands, departments }) {
   const [providers, setProviders] = useState([]),
     [links, setLinks] = useState({ items: [], total: 0 }),
     [statistics, setStatistics] = useState({ items: [], health: {} }),
@@ -289,6 +320,11 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
     [search, setSearch] = useState(''),
     [searchValue, setSearchValue] = useState(''),
     [attention, setAttention] = useState(false),
+    [brandId, setBrandId] = useState(''),
+    [departmentId, setDepartmentId] = useState(''),
+    [stock, setStock] = useState(''),
+    [visibility, setVisibility] = useState(''),
+    [alternative, setAlternative] = useState(false),
     [sort, setSort] = useState('next'),
     [direction, setDirection] = useState('asc'),
     [page, setPage] = useState(1),
@@ -317,17 +353,22 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
       ...(provider === 'all' ? {} : { provider }),
       ...(status ? { status } : {}),
       ...(search ? { search } : {}),
+      ...(brandId ? { brandId } : {}),
+      ...(departmentId ? { departmentId } : {}),
+      ...(stock ? { stock } : {}),
+      ...(visibility ? { visibility } : {}),
+      alternative: String(alternative),
       attention: String(attention),
       sort,
       direction,
       page,
     }),
-    [provider, status, search, attention, sort, direction, page],
+    [provider, status, search, brandId, departmentId, stock, visibility, alternative, attention, sort, direction, page],
   );
   useEffect(() => {
     setPage(1);
     setSelected([]);
-  }, [provider, status, search, attention, sort, direction]);
+  }, [provider, status, search, brandId, departmentId, stock, visibility, alternative, attention, sort, direction]);
   const loadController = useRef(null);
   const load = useCallback(async () => {
     loadController.current?.abort();
@@ -444,6 +485,8 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
         throw new Error(
           'Promeni stranu/filter pa izaberi proizvode koje želiš da izmeniš.',
         );
+      if (!active && selectedLinks.some(link => (link.supplierLinks ?? [link]).some(hasStock))
+        && !window.confirm('Neki izabrani artikli su na stanju kod dobavljača. Da li ipak želiš da ih sakriješ sa sajta?')) return;
       const productIds = [
         ...new Set(selectedLinks.map((link) => link.productId)),
       ];
@@ -875,8 +918,28 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
             onChange={(e) => setSearchValue(e.target.value)}
           />
           <ProviderSelect value={provider} onChange={setProvider} />
+          <select aria-label="Brend" className={input} value={brandId} onChange={event => setBrandId(event.target.value)}>
+            <option value="">Svi brendovi</option>
+            {brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+          </select>
+          <select aria-label="Odeljenje" className={input} value={departmentId} onChange={event => setDepartmentId(event.target.value)}>
+            <option value="">Sva odeljenja</option>
+            {departments.map(department => <option key={department.id} value={department.id}>{department.name}</option>)}
+          </select>
+          <select aria-label="Stanje zaliha" className={input} value={stock} onChange={event => setStock(event.target.value)}>
+            <option value="">Sva stanja zaliha</option>
+            <option value="in_stock">Na stanju</option>
+            <option value="out_of_stock">Nema na stanju</option>
+            <option value="unknown">Stanje nije potvrđeno</option>
+          </select>
+          <select aria-label="Vidljivost na sajtu" className={input} value={visibility} onChange={event => setVisibility(event.target.value)}>
+            <option value="">Svi statusi vidljivosti</option>
+            <option value="visible">Vidljiv na sajtu</option>
+            <option value="hidden">Sakriven sa sajta</option>
+          </select>
           <select
             className={input}
+            aria-label="Status provere"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
@@ -894,6 +957,10 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
               onChange={(e) => setAttention(e.target.checked)}
             />
             Treba pažnju
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={alternative} onChange={event => setAlternative(event.target.checked)} />
+            Ima kod drugog dobavljača
           </label>
           <select
             aria-label="Sortiranje"
@@ -985,7 +1052,7 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
                     />
                   </th>
                 )}
-                <th className="p-3">ARTIKAL / DOBAVLJAČ</th>
+                <th className="p-3">ARTIKAL I SVI DOBAVLJAČI</th>
                 <th className="p-3">STANJE</th>
                 <th className="p-3">PROVERE</th>
                 <th className="p-3">PROBLEM / PAUZA</th>
@@ -993,7 +1060,7 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
               </tr>
             </thead>
             <tbody>
-              {!ready.links && !loadErrors.links && <AdminTableSkeleton columns={10} />}
+              {!ready.links && !loadErrors.links && <AdminTableSkeleton columns={canWrite ? 6 : 5} />}
               {links.items.map((link) => (
                 <tr
                   key={link.id}
@@ -1002,7 +1069,7 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
                   {canWrite && (
                     <td className="p-3">
                       <input
-                        aria-label={`Izaberi ${link.productName}`}
+                        aria-label={`Izaberi ${link.productName}, ${NAMES[link.providerCode]}`}
                         type="checkbox"
                         checked={selected.includes(link.id)}
                         onChange={() => toggle(link.id)}
@@ -1022,7 +1089,8 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
                     >
                       {link.productName}
                     </button>
-                    <p className="mt-1">
+                    <p className="mt-1 text-neutral-600">
+                      Red za{' '}
                       {NAMES[link.providerCode]}{' '}
                       {link.queuePosition ? `#${link.queuePosition}` : ''}
                     </p>
@@ -1037,27 +1105,14 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
                         ? 'Vidljiv na sajtu'
                         : 'Sakriven na sajtu'}
                     </p>
-                    <a
-                      className="mt-1 block truncate text-blue-700"
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title={link.url}
-                    >
-                      {link.url}
-                    </a>
+                    <ProductSupplierLinks current={link} suppliers={link.supplierLinks ?? [link]} />
                   </td>
                   <td className="p-3">
                     <span
                       className={
-                        [
-                          'disabled',
-                          'missing',
-                          'waiting_confirmation',
-                          'paused',
-                        ].includes(link.status) || (link.status === 'unverified' && link.lastError)
-                          ? 'text-amber-700'
-                          : 'text-emerald-700'
+                        ['disabled', 'missing'].includes(link.status) || confirmedStock(link) === 'out_of_stock'
+                          ? 'text-red-700'
+                          : hasStock(link) ? 'text-emerald-700' : 'text-amber-700'
                       }
                     >
                       {link.status === 'unverified' && link.lastError
@@ -1065,12 +1120,17 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
                         : STATUS[link.status] || link.status}
                     </span>
                     <p className="mt-1 text-neutral-500">
-                      {link.stockStatus === 'in_stock'
+                      {hasStock(link)
                         ? 'Na stanju'
-                        : link.stockStatus === 'out_of_stock'
+                        : confirmedStock(link) === 'out_of_stock'
                           ? 'Nema na stanju'
                           : 'Stanje zaliha nepoznato'}
                     </p>
+                    {link.outOfStockCycles > 0 && (
+                      <p className="mt-1 font-semibold text-red-700">
+                        Bez zaliha u {link.outOfStockCycles}/10 redovnih ciklusa
+                      </p>
+                    )}
                     {link.manualRequestedAt && (
                       <p className="mt-1 text-blue-700">
                         {link.providerCode === 'linkel'
@@ -1337,8 +1397,7 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
               Isključi {disableIds.length} linkova?
             </h3>
             <p className="mt-3 text-sm text-neutral-600">
-              URL-ovi ostaju sačuvani. Mesta u numerisanim redovima se
-              oslobađaju.
+              Isključuju se samo provere izabranih linkova. Ostali dobavljači istog artikla nastavljaju da se proveravaju.
             </p>
             <input
               aria-label="Razlog isključenja"

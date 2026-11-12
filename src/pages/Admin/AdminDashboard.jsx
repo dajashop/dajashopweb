@@ -1362,6 +1362,8 @@ function AdminDashboardContent() {
             canWrite={canManageSupplierChecks}
             canChangeVisibility={canManageSupplierChecks && Boolean(staffAccess?.isOwner || staffAccess?.permissions?.includes('catalog.write'))}
             onOpenProduct={openEdit}
+            brands={brands}
+            departments={departments}
           />
         )}
           <div
