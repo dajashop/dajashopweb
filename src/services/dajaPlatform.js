@@ -1158,6 +1158,12 @@ export const ordersApi = {
     const data = await apiRequest('/admin/orders', { staff: true });
     return toArrayPayload(data).map(normalizeOrder);
   },
+  retryEmail(orderId, deliveryId) {
+    return apiRequest(`/admin/orders/${encodeURIComponent(orderId)}/emails/${encodeURIComponent(deliveryId)}/retry`, {
+      method: 'POST',
+      staff: true,
+    });
+  },
   updateStatus(id, status) {
     return apiRequest(`/admin/orders/${encodeURIComponent(id)}/status`, {
       method: 'PATCH',

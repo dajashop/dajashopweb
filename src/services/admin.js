@@ -48,6 +48,7 @@ export const ordersService = {
   },
   updateStatus: ordersApi.updateStatus,
   markAsRead: ordersApi.markAsRead,
+  retryEmail: ordersApi.retryEmail,
 };
 
 export const uploadRemoteImage = async (url, productName) => {

@@ -38,7 +38,7 @@ function formatOrderTime(value) {
   return value && Number.isFinite(date.getTime()) ? orderTime.format(date) : '—';
 }
 
-const supplierNames = { ekka: 'Ekka', bultime: 'Bultime', timezone: 'TimeZone', qandq: 'Q&Q', linkel: 'Linkel', milano: 'Milano' };
+const supplierNames = { ekka: 'Ekka', bultime: 'Bultime', timezone: 'TimeZone', qandq: 'Stilius', linkel: 'Linkel', milano: 'Milano' };
 const supplierResults = {
   in_stock: 'Na stanju', out_of_stock: 'Nema na stanju prema proveri', unknown: 'Stanje nije prikazano',
   missing: 'Stranica nije pronađena', error: 'Provera nije uspela', pending: 'Čeka proveru',
@@ -47,64 +47,102 @@ const supplierResults = {
 };
 
 function SupplierChecks({ checks }) {
+  if (!checks.length) return null;
   return (
-    <div className="mt-3 rounded-lg border border-neutral-200 p-2.5 text-xs">
-      <p className="font-semibold text-neutral-700">Stanje kod dobavljača</p>
-      {checks.length === 0 ? <p className="mt-1 text-neutral-500">Nema evidentiranih linkova za ovu stavku.</p> : (
-        <ul className="mt-1 divide-y divide-neutral-100">
-          {checks.map(check => (
-            <li key={`${check.provider}:${check.url}`} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-1.5">
-              {/^https?:\/\//i.test(check.url) ? (
-                <a href={check.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-blue-700 hover:underline">
-                  {supplierNames[check.provider] ?? check.provider} <ExternalLink size={11} />
-                </a>
-              ) : <span>{supplierNames[check.provider] ?? check.provider}</span>}
-              <span className={check.result === 'in_stock' ? 'text-emerald-700' : check.result === 'out_of_stock' || check.result === 'error' ? 'text-red-700' : 'text-neutral-600'}>
-                {supplierResults[check.result] ?? 'Stanje nije poznato'}
-                {(check.checkedAt || check.result === 'pending') && <span className="ml-2 text-neutral-500">{formatOrderTime(check.checkedAt ?? check.requestedAt)}</span>}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+    <ul aria-label="Stanje kod dobavljača" className="mt-2 flex flex-wrap gap-2">
+      {checks.map(check => {
+        const name = supplierNames[check.provider] ?? check.provider;
+        const result = supplierResults[check.result] ?? 'Stanje nije poznato';
+        const title = check.checkedAt ? `${result} · ${formatOrderTime(check.checkedAt)}` : result;
+        const color = check.result === 'in_stock' ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+          : ['out_of_stock', 'missing', 'error'].includes(check.result) ? 'border-red-200 bg-red-50 text-red-800'
+          : 'border-neutral-200 bg-neutral-50 text-neutral-600';
+        const style = `inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm font-medium ${color}`;
+        return (
+          <li key={`${check.provider}:${check.url}`}>
+            {/^https?:\/\//i.test(check.url) ? (
+              <a href={check.url} target="_blank" rel="noopener noreferrer" title={title}
+                aria-label={`${name}: ${title}`} className={`${style} hover:underline`}>
+                {name} <ExternalLink size={12} aria-hidden="true" />
+              </a>
+            ) : <span title={title} className={style}>{name}<span className="sr-only"> {title}</span></span>}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+const emailStatuses = {
+  pending: 'Čeka slanje', sending: 'Slanje u toku', sent: 'Čeka potvrdu dostave',
+  failed: 'Greška pri slanju', expired: 'Istekao rok za slanje', suppressed: 'Slanje blokirano',
+};
+const emailFeedback = {
+  DeliveryDelay: 'Dostava kasni', Bounce: 'Poruka vraćena', Complaint: 'Prijavljeno kao spam',
+  Reject: 'SES odbio poruku', 'Rendering Failure': 'Greška pri pripremi poruke',
+  RenderingFailure: 'Greška pri pripremi poruke',
+};
+
+function OrderEmailRow({ orderId, message }) {
+  const [retryState, setRetryState] = useState(null);
+  const received = message.feedback === 'Delivery';
+  const deliveryTime = formatOrderTime(message.feedbackAt);
+  const reason = emailFeedback[message.feedback] ?? emailStatuses[message.status] ?? 'Nema zapisa o slanju';
+  const queued = retryState?.queued && message.status === retryState.status && message.attempts === retryState.attempts;
+
+  async function retry() {
+    setRetryState({ busy: true });
+    try {
+      await ordersService.retryEmail(orderId, message.id);
+      setRetryState({ queued: true, status: message.status, attempts: message.attempts });
+    } catch (error) {
+      setRetryState({ error: error.message || 'Ponovno slanje nije zakazano.' });
+    }
+  }
+
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 py-2 text-sm">
+      <span className="break-words text-neutral-700">{message.recipient}</span>
+      <details className="group text-right">
+        <summary className={`relative inline-block cursor-pointer list-none rounded-md px-2 py-0.5 font-semibold [&::-webkit-details-marker]:hidden ${received ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
+          {received ? 'Primljeno' : 'Nije primljeno'}
+          {received && (
+            <span aria-hidden="true" className="pointer-events-none absolute bottom-full right-0 z-10 mb-1 hidden whitespace-nowrap rounded-md bg-neutral-900 px-2 py-1 font-normal text-white group-hover:block group-open:hidden">
+              {deliveryTime}
+            </span>
+          )}
+        </summary>
+        <div className="mt-1 max-w-48 text-neutral-600">
+          <p>{received ? deliveryTime : queued ? 'Ponovno slanje zakazano.' : reason}</p>
+          {!received && message.canRetry && message.id && !queued && (
+            <button type="button" disabled={retryState?.busy} onClick={retry} className="mt-1 font-semibold text-blue-700 underline disabled:opacity-50">
+              {retryState?.busy ? 'Zakazivanje…' : 'Probaj ponovo'}
+            </button>
+          )}
+          {retryState?.error && !received && <p role="alert" className="mt-1 text-red-700">{retryState.error}</p>}
+        </div>
+      </details>
     </div>
   );
 }
 
-const emailStatuses = { pending: 'Čeka slanje', sending: 'Slanje u toku', sent: 'SES prihvatio · čeka potvrdu dostave', failed: 'Greška pri slanju', expired: 'Istekao rok za slanje', suppressed: 'Slanje blokirano' };
-const emailFeedback = { Delivery: 'Dostavljeno serveru primaoca', DeliveryDelay: 'Dostava kasni', Bounce: 'Poruka vraćena', Complaint: 'Prijavljeno kao spam', Reject: 'SES odbio poruku', 'Rendering Failure': 'Greška pri pripremi poruke', RenderingFailure: 'Greška pri pripremi poruke' };
-
 function OrderEmailStatus({ order }) {
   const deliveries = order.emailDeliveries ?? [];
+  const messages = order.customer.email && !deliveries.some(message => message.tag === 'order-confirmation')
+    ? [{ recipient: order.customer.email, status: order.customerEmailDisabled ? 'suppressed' : null }, ...deliveries]
+    : deliveries;
+
   return (
-    <section className="min-w-0 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm md:col-span-2 xl:col-span-4">
-      <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase text-neutral-500"><Mail size={14} /> Email poruke</h4>
-      <div className="grid gap-4 md:grid-cols-2 md:gap-6">
-      {['order-confirmation', 'new-order-notification'].map(tag => {
-        const customer = tag === 'order-confirmation';
-        const messages = deliveries.filter(message => message.tag === tag);
-        return (
-          <div key={tag} className="border-t border-neutral-100 py-2 text-sm">
-            <p className="font-semibold">{customer ? 'Potvrda kupcu' : 'Obaveštenje prodavnici'}</p>
-            {!messages.length && <p className="text-neutral-500">{customer && order.customerEmailDisabled ? 'Slanje kupcu je isključeno.' : 'Nema zapisa o slanju.'}</p>}
-            {messages.map(message => (
-              <div key={message.recipient} className="mt-1 flex flex-wrap justify-between gap-x-3 text-neutral-600">
-                <span className="break-all">{message.recipient}</span>
-                <span className={message.feedback === 'Delivery' ? 'text-emerald-700' : ''}>
-                  {emailFeedback[message.feedback] ?? emailStatuses[message.status] ?? 'Status nije poznat'}
-                  {(message.feedbackAt || message.sentAt) && <> · {formatOrderTime(message.feedbackAt ?? message.sentAt)}</>}
-                  {message.attempts > 0 && message.status !== 'sent' && <> · pokušaji: {message.attempts}</>}
-                </span>
-              </div>
-            ))}
-          </div>
-        );
-      })}
-      </div>
-    </section>
+    <div className="mt-4 border-t border-neutral-100 pt-3">
+      <h4 className="mb-1 flex items-center gap-2 text-xs font-bold uppercase text-neutral-500"><Mail size={14} /> Email poruke</h4>
+      {messages.length ? (
+        <div className="divide-y divide-neutral-100">
+          {messages.map(message => <OrderEmailRow key={message.id ?? `${message.tag}:${message.recipient}`} orderId={order.docId} message={message} />)}
+        </div>
+      ) : <p className="mt-2 text-sm text-neutral-500">Nema zapisa o slanju.</p>}
+    </div>
   );
 }
-
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -363,9 +401,9 @@ export default function AdminOrders() {
                           exit={{ height: 0, opacity: 0 }}
                           className="overflow-hidden bg-neutral-50/50"
                         >
-                          <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:p-6 xl:grid-cols-4">
+                          <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:p-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,3fr)_minmax(0,4fr)]">
                             {/* LEVA KOLONA: ARTIKLI */}
-                            <div className="min-w-0 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm md:col-span-2">
+                            <div className="min-w-0 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm md:col-span-2 xl:col-span-1">
                               <h4 className="text-xs font-bold uppercase text-neutral-400 mb-4 flex items-center gap-2">
                                 <Package size={14} /> Sadržaj korpe (
                                 {order.items.length})
@@ -538,8 +576,8 @@ export default function AdminOrders() {
                                     <p className="mt-1">{formatOrderTime(order.statusChangedAt)}</p>
                                   </div>
                                 )}
+                                <OrderEmailStatus order={order} />
                               </div>
-                            <OrderEmailStatus order={order} />
                           </div>
                         </motion.div>
                       </td>
