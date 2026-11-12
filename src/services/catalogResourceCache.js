@@ -1,3 +1,5 @@
+import { onStaffAccessTokenChange } from './apiClient.js';
+
 // Bounded, in-memory cache; public and staff resources use separate keys.
 const entries = new Map();
 const requests = new Map();
@@ -62,6 +64,7 @@ export function requestResource(key, loader, { signal, force = false, cacheResul
   });
 }
 if (typeof window !== 'undefined') {
+  onStaffAccessTokenChange(invalidateCatalogResources);
   ['daja:products-changed', 'daja:variant-groups-changed', 'daja:filters-changed']
     .forEach(event => window.addEventListener(event, invalidateCatalogResources));
 }

@@ -28,7 +28,7 @@ const slideVariants = {
 const swipeConfidenceThreshold = 10000;
 const swipePower = (offset, velocity) => Math.abs(offset) * velocity;
 
-function ProductCard({ p, priority = false, blankImage = false }) {
+function ProductCard({ p, priority = false, blankImage = false, showPurchase = true }) {
   const { t: translateText, money } = useStorefront();
 
   const isEyewear = p.department === 'naocare';
@@ -458,10 +458,10 @@ function ProductCard({ p, priority = false, blankImage = false }) {
               {translateText(p.salePrice ? <><span className="line-through text-zinc-400 mr-2">{money(p.price)}</span><span className="text-red-600">{money(p.salePrice)}</span></> : money(p.price))}
             </div>
 
-            <button
+            {showPurchase && <button
               className="product-card__btn w-full py-2 bg-neutral-300 text-neutral-900 rounded-lg font-medium text-sm hover:bg-neutral-400 transition-all hover:shadow-md active:scale-95"
               onClick={addToCart}
-            >{translateText("Dodaj u korpu")}</button>
+            >{translateText("Dodaj u korpu")}</button>}
           </div>
 
           {/* --- ADMIN KONTROLE NA KARTICI --- */}

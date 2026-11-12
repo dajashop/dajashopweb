@@ -3,21 +3,22 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchProductBySlug, cachedProductBySlug, productResourceKey } from "../services/products";
 import { cachedResource, rememberResource } from '../services/catalogResourceCache.js';
 import { usePageData } from '../ssr/PageData.jsx';
-import { useAuth } from './useAuth.js';
+import { useAuth, useStaffCatalogScope } from './useAuth.js';
 import { isAdminEmail } from '../services/dajaPlatform.js';
 
 export default function useProduct(slug) {
-  const { user, staffReady } = useAuth();
-  const includeHiddenForAdmin = Boolean(staffReady && isAdminEmail(user?.email));
+  const { user } = useAuth();
+  const staffScope = useStaffCatalogScope();
+  const includeHiddenForAdmin = Boolean(staffScope && isAdminEmail(user?.email));
   const page = usePageData();
-  const resourceKey = productResourceKey(slug, includeHiddenForAdmin);
+  const resourceKey = productResourceKey(slug, staffScope);
   const initialProduct = page?.hydrating && page?.data?.product?.slug === slug ? page.data.product
-    : cachedProductBySlug(slug, includeHiddenForAdmin) || (includeHiddenForAdmin ? cachedProductBySlug(slug) : null);
+    : cachedProductBySlug(slug, staffScope) || (staffScope ? cachedProductBySlug(slug) : null);
   const [result, setResult] = useState({
     slug, resourceKey, product: initialProduct, loading: Boolean(slug) && !initialProduct, error: null,
   });
-  const promotedProduct = includeHiddenForAdmin && result.slug === slug
-    && result.resourceKey === productResourceKey(slug, false) ? result.product : null;
+  const promotedProduct = staffScope && result.slug === slug
+    && result.resourceKey === productResourceKey(slug) ? result.product : null;
   // Route changes must hide the previous result in the render itself, before effects run.
   const current = result.slug === slug && result.resourceKey === resourceKey ? result : {
     slug, resourceKey, product: initialProduct || promotedProduct,
@@ -31,14 +32,14 @@ export default function useProduct(slug) {
     let mounted = true;
     let controller;
     let sequence = 0;
-    const stored = initialProduct || promotedProduct || cachedProductBySlug(slug, includeHiddenForAdmin);
+    const stored = initialProduct || promotedProduct || cachedProductBySlug(slug, staffScope);
     if (page?.hydrating && initialProduct) rememberResource(resourceKey, initialProduct);
     setResult({ slug, resourceKey, product: stored, loading: !stored, error: null });
     const load = (force = false) => {
       controller?.abort();
       controller = new AbortController();
       const requestSequence = ++sequence;
-      void fetchProductBySlug(slug, { includeHiddenForAdmin, signal: controller.signal, force }).then(data => {
+      void fetchProductBySlug(slug, { staffScope, includeHiddenForAdmin, signal: controller.signal, force }).then(data => {
         if (mounted && requestSequence === sequence) setResult({ slug, resourceKey, product: data || null, loading: false,
           error: data ? null : Object.assign(new Error('Proizvod nije pronađen u bazi.'), { status: 404 }) });
       }).catch(error => {
@@ -57,7 +58,7 @@ export default function useProduct(slug) {
       events.forEach(event => window.removeEventListener(event, refresh));
       window.removeEventListener('focus', onFocus);
     };
-  }, [slug, resourceKey, includeHiddenForAdmin]);
+  }, [slug, resourceKey, staffScope, includeHiddenForAdmin]);
 
   useEffect(() => {
     const updateCurrentProduct = (event) => {
@@ -67,7 +68,7 @@ export default function useProduct(slug) {
           change.product.slug === slug || (current.product && change.product.id === current.product.id)
         ) ? { ...current, product: { ...current.product, ...change.product }, loading: false, error: null } : current);
       }
-      if (change?.type === 'deleteBySlug' && change.slug === slug && !includeHiddenForAdmin) {
+      if (change?.type === 'deleteBySlug' && change.slug === slug && !staffScope) {
         setResult(current => current.slug === slug ? { ...current, product: null, loading: true } : current);
       }
       if (change?.type === 'delete') {
@@ -77,7 +78,7 @@ export default function useProduct(slug) {
     };
     window.addEventListener('daja:products-changed', updateCurrentProduct);
     return () => window.removeEventListener('daja:products-changed', updateCurrentProduct);
-  }, [slug, includeHiddenForAdmin]);
+  }, [slug, staffScope]);
 
   useEffect(() => {
     if (!product?.salePrice || !product.saleValidUntil || !slug) return undefined;
@@ -86,7 +87,7 @@ export default function useProduct(slug) {
     let mounted = true;
     const timer = window.setTimeout(async () => {
       try {
-        const fresh = await fetchProductBySlug(slug, { includeHiddenForAdmin, force: true });
+        const fresh = await fetchProductBySlug(slug, { staffScope, includeHiddenForAdmin, force: true });
         if (mounted) setResult((current) => current.slug === slug
           ? { ...current, product: fresh } : current);
       } catch (err) {
@@ -94,7 +95,7 @@ export default function useProduct(slug) {
       }
     }, Math.min(delay + 50, 2_147_483_647));
     return () => { mounted = false; window.clearTimeout(timer); };
-  }, [product?.salePrice, product?.saleValidUntil, slug, includeHiddenForAdmin]);
+  }, [product?.salePrice, product?.saleValidUntil, slug, staffScope, includeHiddenForAdmin]);
 
   const updateProduct = useCallback((patch) => setResult((current) => current.slug === slug && current.product
     ? { ...current, product: { ...current.product, ...patch } } : current), [slug]);

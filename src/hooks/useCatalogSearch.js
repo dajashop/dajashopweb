@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { catalogApi, subscribePublicCatalogRealtime } from '../services/dajaPlatform.js';
+import { catalogApi, subscribePublicCatalogRealtime, subscribeStaffCatalogRealtime } from '../services/dajaPlatform.js';
+import { onStaffAccessTokenChange } from '../services/apiClient.js';
 import { useConsent } from '../context/ConsentContext.jsx';
+import { useStaffCatalogScope } from './useAuth.js';
 
 const cache = new Map();
 const requests = new Map();
 const invalidationListeners = new Set();
 let generation = 0;
 function invalidate() { generation += 1; cache.clear(); invalidationListeners.forEach(notify => notify()); }
+onStaffAccessTokenChange(invalidate);
+
 function cached(key) {
   const entry = cache.get(key);
   return entry?.expires > Date.now() ? entry.data : null;
@@ -21,14 +25,14 @@ function remember(key, data) {
 }
 // Share identical requests across the header and results page. Abort only when
 // the last consumer leaves, including React's immediate effect remount.
-function acquire(key, params) {
+function acquire(key, params, staff) {
   const requestKey = `${generation}:${key}`;
   let entry = requests.get(requestKey);
   if (!entry) {
     const controller = new AbortController();
     const revision = generation;
     entry = { controller, users: 0, cancel: null };
-    entry.promise = catalogApi.search(params, { signal: controller.signal }).then(data => {
+    entry.promise = catalogApi.search(params, { signal: controller.signal, staff }).then(data => {
       if (!controller.signal.aborted && generation === revision) remember(key, data);
       return data;
     }).finally(() => { if (requests.get(requestKey) === entry) requests.delete(requestKey); });
@@ -49,13 +53,14 @@ function acquire(key, params) {
 
 export default function useCatalogSearch({ q = '', mode = 'suggestions', department, sort = 'relevance', cursor, enabled = true, literal = false }) {
   const { hasDecision } = useConsent();
+  const staffScope = useStaffCatalogScope();
   const [state, setState] = useState({ data: null, loading: false, error: null });
   const [attempt, setAttempt] = useState(0);
   const previousQuery = useRef('');
   const retry = useCallback(invalidate, []);
   const effectiveQuery = q.trim().slice(0, 120);
   const active = enabled && effectiveQuery.length >= 2;
-  const context = JSON.stringify([mode, department, sort, cursor, literal]);
+  const context = JSON.stringify([mode, department, sort, cursor, literal, staffScope]);
   const key = JSON.stringify([effectiveQuery.toLowerCase(), context]);
   useEffect(() => {
     if (!active) { previousQuery.current = ''; setState({ data: null, loading: false, error: null }); return undefined; }
@@ -72,7 +77,7 @@ export default function useCatalogSearch({ q = '', mode = 'suggestions', departm
     let request;
     const delay = mode === 'suggestions' && Math.abs(effectiveQuery.length - previous.length) <= 1 ? 120 : 0;
     const timer = window.setTimeout(async () => {
-      request = acquire(key, { q: effectiveQuery, mode, department, sort, cursor, literal: literal ? 'yes' : 'no' });
+      request = acquire(key, { q: effectiveQuery, mode, department, sort, cursor, literal: literal ? 'yes' : 'no' }, Boolean(staffScope));
       try {
         const data = await request.promise;
         if (!cancelled && revision === generation) setState({ key, context, revision, data, loading: false, error: null });
@@ -81,7 +86,7 @@ export default function useCatalogSearch({ q = '', mode = 'suggestions', departm
       }
     }, delay);
     return () => { cancelled = true; window.clearTimeout(timer); request?.release(); };
-  }, [active, key, context, effectiveQuery, mode, department, sort, cursor, literal, attempt]);
+  }, [active, key, context, effectiveQuery, mode, department, sort, cursor, literal, staffScope, attempt]);
   useEffect(() => {
     if (!active) return undefined;
     const notify = () => setAttempt(value => value + 1);
@@ -91,7 +96,8 @@ export default function useCatalogSearch({ q = '', mode = 'suggestions', departm
     const events = ['daja:products-changed', 'daja:filters-changed', 'daja:variant-groups-changed'];
     events.forEach(event => window.addEventListener(event, refresh));
     window.addEventListener('focus', onFocus);
-    const unsubscribe = hasDecision ? subscribePublicCatalogRealtime(event => {
+    const subscribe = staffScope ? subscribeStaffCatalogRealtime : subscribePublicCatalogRealtime;
+    const unsubscribe = hasDecision ? subscribe(event => {
       if (['product.updated', 'catalog.variant-groups.updated'].includes(event.event)) refresh();
     }) : null;
     return () => {
@@ -100,7 +106,7 @@ export default function useCatalogSearch({ q = '', mode = 'suggestions', departm
       window.removeEventListener('focus', onFocus);
       unsubscribe?.();
     };
-  }, [active, key, hasDecision]);
+  }, [active, key, hasDecision, staffScope]);
   const current = active && state.key === key && state.revision === generation;
   const stored = active ? cached(key) : null;
   const retained = active && mode === 'suggestions' && state.context === context && state.revision === generation ? state.data : null;

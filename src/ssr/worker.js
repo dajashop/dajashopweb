@@ -147,7 +147,21 @@ async function serveRequest(request, env) {
       ), env.ASSETS.fetch(new Request(new URL('/', url)))
         .then(async response => ({ response, text: await response.text() }))
         .catch(() => null)]);
-      if (snapshot.missing) return errorPage(404, request, env);
+      if (snapshot.missing) {
+        // The browser loads staff-only product data through the authenticated API.
+        const hasStaffCookie = /(?:^|;\s*)__Host-daja_staff=[^;]+/.test(request.headers.get('Cookie') || '');
+        if (isProductPath(path) && hasStaffCookie && pageTemplate?.response.ok) {
+          const headers = new Headers(pageTemplate.response.headers);
+          headers.delete('Content-Length');
+          headers.delete('Content-Encoding');
+          headers.delete('ETag');
+          headers.set('Cache-Control', 'private, no-store');
+          headers.set('X-Robots-Tag', 'noindex,follow');
+          headers.set('Vary', 'Cookie');
+          return new Response(request.method === 'HEAD' ? null : pageTemplate.text, { status: 200, headers });
+        }
+        return errorPage(404, request, env);
+      }
       if (snapshot.redirectTo) return Response.redirect(new URL(localizedPath(snapshot.redirectTo, language), siteUrl).toString(), 301);
       const department = catalogDepartment(path);
       if (department && snapshot.filters[department]) {

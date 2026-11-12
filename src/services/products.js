@@ -94,11 +94,11 @@ export async function removeImagesByPaths() {
   return undefined;
 }
 
-export const productResourceKey = (slug, admin = false) => `product:${admin ? 'admin' : 'public'}:${slug}`;
-export const cachedProductBySlug = (slug, admin = false) => cachedResource(productResourceKey(slug, admin));
-export function fetchProductBySlug(slug, { includeHiddenForAdmin = false, signal, force = false } = {}) {
-  return requestResource(productResourceKey(slug, includeHiddenForAdmin),
-    requestSignal => loadProductBySlug(slug, includeHiddenForAdmin, requestSignal), { signal, force });
+export const productResourceKey = (slug, staffScope) => `product:${staffScope ? `staff:${staffScope}` : 'public'}:${slug}`;
+export const cachedProductBySlug = (slug, staffScope) => cachedResource(productResourceKey(slug, staffScope));
+export function fetchProductBySlug(slug, { staffScope, includeHiddenForAdmin = false, signal, force = false } = {}) {
+  return requestResource(productResourceKey(slug, staffScope),
+    requestSignal => loadProductBySlug(slug, staffScope, includeHiddenForAdmin, requestSignal), { signal, force });
 }
 const prefetches = new Map();
 export function prefetchProduct(slug, { image = false } = {}) {
@@ -141,7 +141,7 @@ export async function prepareProductVariant(slug, { signal } = {}) {
   }
   return product;
 }
-async function loadProductBySlug(slug, includeHiddenForAdmin, signal) {
+async function loadProductBySlug(slug, staffScope, includeHiddenForAdmin, signal) {
   let publicProduct = null;
   try {
     publicProduct = await catalogApi.getProductBySlug(slug, { signal });
@@ -156,6 +156,10 @@ async function loadProductBySlug(slug, includeHiddenForAdmin, signal) {
   }
   if (publicProduct?.id || publicProduct?.redirectTo) return publicProduct;
   if (includeHiddenForAdmin) return adminCatalogApi.getProductBySlug(slug, signal);
+  if (staffScope) {
+    try { return await catalogApi.staffWatchBySlug(slug, signal); }
+    catch (error) { if (error.status !== 401 && error.status !== 403) throw error; }
+  }
   return publicProduct;
 }
 

@@ -11,7 +11,7 @@ export function SearchProductRow({ product, ...props }) {
     aria-label={translateText(`${product.brand || ''} ${product.name}, ${price}${product.inStock ? '' : ', nema na stanju'}`)} {...props}>
     <span className="live-search__thumbnail">{product.thumbnailUrl || product.image
       ? <ProgressiveImage src={product.thumbnailUrl || product.image} alt="" loading="eager" decoding="async" /> : <Watch size={38} aria-hidden="true" />}</span>
-    <span className="live-search__product-info">{product.brand && <small>{translateText(product.brand)}</small>}<strong>{translateText(product.name)}</strong><span className="live-search__price">{translateText(price)}</span></span>
+    <span className="live-search__product-info">{product.brand && <small>{translateText(product.brand)}</small>}<strong>{translateText(product.name)}</strong><span className="live-search__price">{translateText(price)}</span>{product.isVisible === false && <small>{translateText('Proizvod je sakriven')}</small>}</span>
   </a>;
 }
 const titles = { brands: 'Brendovi', collections: 'Kolekcije', attributes: 'Osobine i funkcije' };

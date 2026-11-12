@@ -451,12 +451,25 @@ export const authApi = {
 };
 
 export const catalogApi = {
-  async search(params = {}, { signal } = {}) {
-    const data = await apiRequest('/public/catalog/search', { auth: false, query: params, signal });
+  async search(params = {}, { signal, staff = false } = {}) {
+    const publicSearch = () => apiRequest('/public/catalog/search', { auth: false, query: params, signal });
+    const data = await (staff
+      ? apiRequest('/staff/catalog/search', { staff: true, query: params, signal }).catch(error => {
+        if (error.status === 401 || error.status === 403) return publicSearch();
+        throw error;
+      })
+      : publicSearch());
     if (!data || typeof data !== 'object' || !Array.isArray(data.items)) {
       throw new Error('Pretraga nije vratila očekivani odgovor.');
     }
-    return { ...data, items: data.items.map(normalizeProduct), recommendations: (data.recommendations || []).map(normalizeProduct), similar: (data.similar || []).map(item => ({ ...item, product: normalizeProduct(item.product) })) };
+    const normalizeSearchProduct = product => normalizeProduct({
+      ...product, isVisible: product.published === false ? false : product.isVisible,
+    });
+    return { ...data, items: data.items.map(normalizeSearchProduct), recommendations: (data.recommendations || []).map(normalizeSearchProduct), similar: (data.similar || []).map(item => ({ ...item, product: normalizeSearchProduct(item.product) })) };
+  },
+  async staffWatchBySlug(slug, signal) {
+    const product = await apiRequest(`/staff/catalog/products/${encodeURIComponent(slug)}`, { staff: true, signal });
+    return normalizeProduct({ ...product, isVisible: product.published !== false && product.active !== false });
   },
   async listing(route, signal) {
     let data;

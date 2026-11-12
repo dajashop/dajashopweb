@@ -5,7 +5,7 @@ import { Search, RefreshCw, ArrowRight, X } from 'lucide-react';
 import useCatalogSearch from '../hooks/useCatalogSearch.js';
 import ProductCard from '../components/ProductCard.jsx';
 import SEOHead from '../components/seo/SEOHead.jsx';
-import { useAuth } from '../hooks/useAuth.js';
+import { useAuth, useStaffCatalogScope } from '../hooks/useAuth.js';
 import { isAdminEmail } from '../services/dajaPlatform.js';
 import '../components/ProductGrid.css';
 import './SearchResults.css';
@@ -16,12 +16,13 @@ export default function SearchResults() {
 
   const { user } = useAuth();
   const showStock = isAdminEmail(user?.email);
+  const staffScope = useStaffCatalogScope();
   const [params, setParams] = useSearchParams();
   const q = (params.get('q') || '').slice(0, 120);
   const department = departments.some((item) => item.id === params.get('department')) ? params.get('department') || undefined : undefined;
   const sort = ['price_asc', 'price_desc'].includes(params.get('sort')) ? params.get('sort') : 'relevance';
   const literal = params.get('literal') === 'yes';
-  const queryKey = JSON.stringify([q, department, sort, literal]);
+  const queryKey = JSON.stringify([q, department, sort, literal, staffScope]);
   const [page, setPage] = useState({ key: queryKey, cursor: undefined, items: [] });
   const [field, setField] = useState(q);
   const cursor = page.key === queryKey ? page.cursor : undefined;
@@ -47,8 +48,8 @@ export default function SearchResults() {
     <div className="search-results__status" role="status" aria-live="polite">{translateText(loading ? 'Učitavanje rezultata…' : error ? '' : data && shown ? `${data.total} proizvoda odgovara pretrazi` : 'Unesi model, brend ili osobine proizvoda. Dovoljna su dva znaka da počnemo.')}</div>
     {error && <div className="search-results__error">{translateText("Pretraga trenutno nije dostupna.")}<button type="button" onClick={retry}><RefreshCw size={15} />{translateText(" Pokušaj ponovo")}</button></div>}
     {!error && data?.message && <div className="search-results__empty"><p>{translateText(data.message)}</p>{data.corrections?.length > 0 && <div><span>{translateText("Da li ste mislili…?")}</span>{data.corrections.map((item) => <button key={item.query} type="button" onClick={() => update('q', item.query)}>{translateText(item.label)}</button>)}</div>}</div>}
-    {items.length > 0 && <div className="product-grid">{items.map((product) => <div className="search-results__card" key={product.id}><ProductCard p={product} />{showStock && <span className={`search-results__stock ${product.inStock ? 'is-available' : ''}`}>{translateText(product.inStock ? 'Na stanju' : 'Nema na stanju')}</span>}</div>)}</div>}
-    {!loading && !error && data?.similar?.length > 0 && <section className="search-results__similar"><h2>{translateText("Slični rezultati")}</h2><p>{translateText("Ovi proizvodi odstupaju od jednog uslova. Razlika je označena uz svaki proizvod.")}</p><div className="product-grid">{data.similar.map(({product,reason})=><div className="search-results__card" key={product.id}><ProductCard p={product}/><span className="search-results__difference">{translateText(reason)}</span></div>)}</div></section>}
+    {items.length > 0 && <div className="product-grid">{items.map((product) => <div className="search-results__card" key={product.id}><ProductCard p={product} showPurchase={product.isVisible !== false} />{showStock && <span className={`search-results__stock ${product.inStock ? 'is-available' : ''}`}>{translateText(product.inStock ? 'Na stanju' : 'Nema na stanju')}</span>}</div>)}</div>}
+    {!loading && !error && data?.similar?.length > 0 && <section className="search-results__similar"><h2>{translateText("Slični rezultati")}</h2><p>{translateText("Ovi proizvodi odstupaju od jednog uslova. Razlika je označena uz svaki proizvod.")}</p><div className="product-grid">{data.similar.map(({product,reason})=><div className="search-results__card" key={product.id}><ProductCard p={product} showPurchase={product.isVisible !== false}/><span className="search-results__difference">{translateText(reason)}</span></div>)}</div></section>}
     {data?.nextCursor && <button type="button" className="search-results__more" disabled={loading} onClick={loadMore}>{translateText("Prikaži još proizvoda")}</button>}
     {loading && previousItems.length > 0 && <div className="search-results__status">{translateText("Učitavanje narednih proizvoda…")}</div>}
     {shown && !loading && !error && data?.total === 0 && data?.recommendations?.length > 0 && !items.length && <section className="search-results__recommendations"><h2>{translateText("Možda će vam se svideti")}</h2><div className="product-grid">{data.recommendations.map((product) => <div className="search-results__card" key={product.id}><ProductCard p={product} />{showStock && <span className={`search-results__stock ${product.inStock ? 'is-available' : ''}`}>{translateText(product.inStock ? 'Na stanju' : 'Nema na stanju')}</span>}</div>)}</div></section>}
