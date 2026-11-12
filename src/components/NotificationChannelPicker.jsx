@@ -55,7 +55,7 @@ export default function NotificationChannelPicker({ value, onChange, disabled, v
   return <div className={variant === 'cards' ? undefined : 'notification-channel'}>
     <ChannelOptions value={value} onChange={onChange} disabled={disabled}
       compact={variant !== 'cards'}
-      channels={['email', 'whatsapp', 'sms']} available={channel => channel === 'whatsapp' ? whatsappAvailable : notificationChannelAvailable(channel)}
+      channels={['email', 'whatsapp']} available={channel => channel === 'whatsapp' ? whatsappAvailable : notificationChannelAvailable(channel)}
       title={variant === 'cards' ? 'Gde da vam javimo?' : 'Način obaveštavanja'} />
     {value === 'whatsapp' && whatsappAvailable && <WhatsAppSubscription key={`${purpose || 'newsletter'}:${productId || ''}:${variantId || ''}`} contact={contact} purpose={purpose} productId={productId} variantId={variantId} />}
   </div>;
