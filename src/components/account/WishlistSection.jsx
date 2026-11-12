@@ -243,10 +243,8 @@ function WishlistSection() {
       className="section-content wishlist-section"
     >
       <div className="section-header-row wishlist-header">
-        <h3>{translateText("Lista želja")}{translateText(' ')}
-          <span className="text-muted text-lg font-normal">
-            ({translateText(wishlist.length)})
-          </span>
+        <h3>{translateText("Lista želja")}{' '}
+          <span className="wishlist-count">{wishlist.length}</span>
         </h3>
       </div>
 
@@ -263,11 +261,9 @@ function WishlistSection() {
           >{translateText("Istraži ponudu")}</Link>
         </div>
       ) : (
-        // KORISTIMO GRID UMESTO LISTE
         <div className="wishlist-grid">
           {wishlist.map((item) => (
-            <div key={item.id} className="wishlist-card group">
-              {/* Dugme za brisanje (lebdi gore desno) */}
+            <article key={item.id} className="wishlist-card">
               <button
                 type="button"
                 onClick={() => setDeleteId(item.id)}
@@ -275,10 +271,9 @@ function WishlistSection() {
                 title={translateText("Ukloni iz liste")}
                 aria-label={translateText('Ukloni iz liste') + ': ' + item.name}
               >
-                <Trash2 size={16} />
+                <Trash2 size={16} aria-hidden="true" />
               </button>
 
-              {/* Slika */}
               <Link
                 to={`/product/${item.slug}`}
                 className="wishlist-img-wrapper"
@@ -292,10 +287,10 @@ function WishlistSection() {
                   }
                   alt={translateText(item.name)}
                   className="wishlist-img"
+                  thumbSrc={placeholderImage}
                 />
               </Link>
 
-              {/* Podaci */}
               <div className="wishlist-body">
                 <div className="wishlist-info">
                   {item.brand && (
@@ -314,11 +309,9 @@ function WishlistSection() {
                   </Link>
                 </div>
 
-                <div className="wishlist-actions">
-                  <div className="wishlist-price">
-                    {money(item.price)}
-                  </div>
+                <div className="wishlist-price">{money(item.price)}</div>
 
+                <div className="wishlist-actions">
                   <WishlistAlertButton item={item} />
 
                   <button
@@ -326,10 +319,12 @@ function WishlistSection() {
                     onClick={() => moveToCart(item)}
                     className="wishlist-cart-btn"
                   >
-                    <ShoppingCart size={16} />{translateText(" Dodaj u korpu")}</button>
+                    <ShoppingCart size={16} aria-hidden="true" />
+                    {translateText("Dodaj u korpu")}
+                  </button>
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}
