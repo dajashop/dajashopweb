@@ -1,10 +1,13 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
-import { catalogApi } from '../services/dajaPlatform.js';
+import { catalogApi, homeHeroApi } from '../services/dajaPlatform.js';
+import { usePageData } from '../ssr/PageData.jsx';
+import { HOME_HERO_DEFAULTS } from '../config/homeHeroDefaults.js';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './Home.css';
 import { Link } from 'react-router-dom';
 import HeroBgSlider from '../components/HeroBgSlider.jsx';
+import HomeHeroEditor from '../components/HomeHeroEditor.jsx';
 import BrandStrip from '../components/BrandStrip.jsx';
 import TrustBar from '../components/TrustBar.jsx';
 import WatchFinder from '../components/WatchFinder.jsx';
@@ -27,65 +30,6 @@ import {
   X,
 } from 'lucide-react';
 import { seoConfig } from '../config/seo.js';
-
-const HERO_SLIDES = [
-  {
-    src: '/images/home/hero-dajashop-mobile.webp',
-    desktopSrc: '/images/home/hero-dajashop-desktop.webp?v=2',
-    width: 750,
-    height: 1000,
-    alt: 'Daniel Klein satovi',
-    to: '/catalog?brand=DANIEL%20KLEIN',
-  },
-  {
-    src: '/images/home/hero-orient-stretto-mobile.webp',
-    desktopSrc: '/images/home/hero-orient-stretto-desktop.webp',
-    width: 750,
-    height: 1000,
-    alt: 'Orient Stretto Date kolekcija',
-    to: '/brend/orient',
-  },
-  {
-    src: '/images/home/hero-g-shock-gold-1280.webp',
-    avifSrc: '/images/home/hero-g-shock-gold-1280.avif',
-    width: 1280,
-    height: 454,
-    alt: 'Casio kolekcija',
-    to: '/catalog?brand=CASIO&category=G-SHOCK',
-  },
-  {
-    src: '/images/home/hero-daniel-klein-gold-960.webp',
-    avifSrc: '/images/home/hero-daniel-klein-gold-960.avif',
-    width: 960,
-    height: 686,
-    alt: 'Daniel Klein izbor',
-    to: '/catalog?brand=DANIEL%20KLEIN',
-  },
-  {
-    src: '/images/home/hero-casio-1920.webp',
-    srcSet: '/images/home/hero-casio-768.webp 768w, /images/home/hero-casio-1280.webp 1280w, /images/home/hero-casio-1920.webp 1920w',
-    width: 1920,
-    height: 640,
-    alt: 'Casio kolekcija',
-    to: '/catalog?brand=CASIO',
-  },
-  {
-    src: '/images/home/hero-daniel-klein-1519.webp',
-    srcSet: '/images/home/hero-daniel-klein-768.webp 768w, /images/home/hero-daniel-klein-1280.webp 1280w, /images/home/hero-daniel-klein-1519.webp 1519w',
-    width: 1519,
-    height: 550,
-    alt: 'Daniel Klein izbor',
-    to: '/catalog?brand=DANIEL%20KLEIN',
-  },
-  {
-    src: '/images/home/g-shock-1600.webp',
-    srcSet: '/images/home/g-shock-768.webp 768w, /images/home/g-shock-1280.webp 1280w, /images/home/g-shock-1600.webp 1600w',
-    width: 1600,
-    height: 900,
-    alt: 'G-Shock GA-2100',
-    to: '/catalog?brand=CASIO&category=G-SHOCK',
-  },
-];
 
 const TOP_SLUGS = [
   'casio-mtp-1314pl-8a',
@@ -188,6 +132,18 @@ function BestEditCard({ onClick }) {
 
 export default function Home() {
   const { t: translateText, money } = useStorefront();
+  const pageData = usePageData();
+  const [hero, setHero] = useState(() => pageData?.data?.homeHero ?? { version: 0, slides: HOME_HERO_DEFAULTS, intervalMs: 5600 });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
+    homeHeroApi.public(controller.signal).then(settings => {
+      if (controller.signal.aborted || !settings?.slides?.length) return;
+      setHero(current => settings.version > current.version ? settings : current);
+    }).catch(() => {}).finally(() => clearTimeout(timer));
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, []);
 
   const homeListing = usePublicListing('home', 'homeProducts');
   const items = homeListing.data?.items || [];
@@ -509,9 +465,14 @@ export default function Home() {
 
 
       {/* HERO */}
-      <section className="hero">
-        <HeroBgSlider slides={HERO_SLIDES} interval={5600} />
-      </section>
+      <div className="homeHero">
+        <section className="hero">
+          <HeroBgSlider key={hero.version} slides={hero.slides} interval={hero.intervalMs} />
+        </section>
+        {isAdmin && <HomeHeroEditor onSaved={settings => setHero({
+          ...settings, slides: settings.slides.filter(slide => slide.active),
+        })} />}
+      </div>
 
       {/* TRUST BAR */}
       <TrustBar

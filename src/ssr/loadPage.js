@@ -101,12 +101,13 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
       return legacyListing(await (readCatalog ? readCatalog(catalogLoader) : catalogLoader()),route,configuration);
     }
   };
-  const [product, listing, variants, related, collectionPreviews] = await Promise.all([
+  const [product, listing, variants, related, collectionPreviews, homeHero] = await Promise.all([
     isProductPath(path) ? (readProduct ? readProduct(productLoader) : productLoader()) : null,
     requestKey ? listingLoader(requestKey) : engravingRequest ? listingLoader(engravingRequest) : path === '/' ? listingLoader('home') : null,
     isProductPath(path) ? api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/variants`, true) : null,
     isProductPath(path) ? (readRelated ? readRelated(relatedLoader) : relatedLoader()) : [],
     path === '/kolekcije-satova' || path.startsWith('/magazin/brendovi/') ? api('/public/catalog/collections', true) : null,
+    path === '/' ? api('/public/catalog/hero-slides', true) : null,
   ]);
   if (product?.missing) return { missing: true };
   if (product?.redirectTo) return { redirectTo: product.redirectTo };
@@ -122,7 +123,10 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
     const { configuration: _configuration, ...listingData } = listing;
     data.catalogPage = { ...listingData, requestKey };
   }
-  if (path === '/') data.homeProducts = { ...listing, requestKey: 'home' };
+  if (path === '/') {
+    data.homeProducts = { ...listing, requestKey: 'home' };
+    data.homeHero = homeHero;
+  }
   data.relatedVariants = variants?.items || [];
   data.variantGroupId = variants?.groupId || null;
   data.relatedProducts = related || [];

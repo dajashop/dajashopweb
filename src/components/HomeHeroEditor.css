@@ -1,0 +1,274 @@
+.homeHeroEditTrigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0 auto;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border, #ddd);
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #161616);
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.homeHeroEditor {
+  position: fixed;
+  inset: 0;
+  width: min(960px, calc(100% - 28px));
+  max-width: none;
+  max-height: calc(100dvh - 28px);
+  padding: 0;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 18px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #161616);
+  box-shadow: 0 24px 72px #0003;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.homeHeroEditor::backdrop { background: #1118; }
+
+.homeHeroEditor__header,
+.homeHeroEditor__footer {
+  position: sticky;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 20px;
+  background: var(--color-surface, #fff);
+}
+
+.homeHeroEditor__header {
+  top: 0;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border, #ddd);
+}
+
+.homeHeroEditor__header h2 {
+  margin: 0;
+  font-size: clamp(1.1rem, 3vw, 1.35rem);
+}
+
+.homeHeroEditor__footer {
+  bottom: 0;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--color-border, #ddd);
+}
+
+.homeHeroEditor__footer [role="status"] { margin-inline-end: auto; }
+.homeHeroEditor__footer .btn { min-height: 42px; padding-block: 8px; }
+
+.homeHeroEditor__body {
+  display: grid;
+  grid-template-columns: minmax(170px, .34fr) minmax(0, 1fr);
+}
+
+.homeHeroEditor fieldset {
+  min-width: 0;
+  margin: 0;
+}
+
+.homeHeroEditor__list,
+.homeHeroEditor__detail {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 18px;
+  border: 0;
+}
+
+.homeHeroEditor__list {
+  background: var(--color-bg, #f5f5f5);
+  border-inline-end: 1px solid var(--color-border, #ddd);
+}
+
+.homeHeroEditor__order {
+  display: grid;
+  gap: 4px;
+  max-height: 440px;
+  overflow: auto;
+}
+
+.homeHeroEditor__order button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+}
+
+.homeHeroEditor__order button[aria-pressed="true"] {
+  border-color: var(--color-border, #ddd);
+  background: var(--color-surface, #fff);
+}
+
+.homeHeroEditor__order strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.homeHeroEditor__order small { margin-inline-start: auto; }
+.homeHeroEditor__order span,
+.homeHeroEditor__order small { color: var(--color-muted, #666); }
+
+.homeHeroEditor__tools,
+.homeHeroEditor__actions,
+.homeHeroEditor__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.homeHeroEditor__tools { justify-content: space-between; flex-wrap: wrap; }
+.homeHeroEditor__check { min-height: 38px; font-weight: 650; }
+.homeHeroEditor__check input { width: 17px; height: 17px; flex: none; }
+
+.homeHeroEditor__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 9px;
+  background: var(--color-surface, #fff);
+  color: inherit;
+  cursor: pointer;
+}
+
+.homeHeroEditor button:disabled { opacity: .45; cursor: default; }
+
+.homeHeroEditor__fields,
+.homeHeroEditor__images,
+.homeHeroImageField__frame {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.homeHeroEditor__fields label:not(.homeHeroEditor__check),
+.homeHeroImageField__position,
+.homeHeroImageField__frame label {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  font-size: .875rem;
+  font-weight: 600;
+}
+
+.homeHeroEditor__fields input:not([type="checkbox"], [type="range"]),
+.homeHeroEditor__fields select,
+.homeHeroImageField__position select,
+.homeHeroImageField__frame input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+  color: inherit;
+  font: inherit;
+  font-weight: 400;
+}
+
+.homeHeroImageField {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 12px;
+}
+
+.homeHeroImageField legend { padding-inline: 4px; font-weight: 700; }
+.homeHeroImageField__stage {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  border-radius: 8px;
+  background: var(--color-bg, #f5f5f5);
+}
+
+.homeHeroImageField__preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--color-surface, #fff);
+  color: var(--color-muted, #666);
+  text-align: center;
+  font-size: .78rem;
+}
+
+.homeHeroImageField__preview img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.homeHeroImageField__upload {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  border: 1px dashed var(--color-border, #ddd);
+  border-radius: 8px;
+  font-size: .875rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.homeHeroImageField__upload input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.homeHeroImageField__upload:focus-within { outline: 2px solid currentColor; outline-offset: 2px; }
+.homeHeroEditor__status { margin: 0; padding: 12px 20px; }
+.homeHeroEditor__error { flex-basis: 100%; margin: 0; color: #ad2323; }
+
+@media (max-width: 640px) {
+  .homeHeroEditor__body { grid-template-columns: minmax(0, 1fr); }
+  .homeHeroEditor__header, .homeHeroEditor__footer { padding-inline: 12px; }
+  .homeHeroEditor__list, .homeHeroEditor__detail { padding: 12px; }
+  .homeHeroEditor__list {
+    gap: 8px;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--color-border, #ddd);
+  }
+  .homeHeroEditor__order { display: flex; gap: 4px; }
+  .homeHeroEditor__order button { width: auto; max-width: 220px; flex: 0 0 auto; }
+  .homeHeroEditor__list > .btn { justify-self: start; padding-block: 7px; }
+}
+
+@media (max-width: 480px) {
+  .homeHeroEditor__images, .homeHeroEditor__fields { grid-template-columns: minmax(0, 1fr); }
+}

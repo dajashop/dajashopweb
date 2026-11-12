@@ -16,7 +16,6 @@
 /* HERO */
 .hero {
   position: relative;
-  min-height: clamp(380px, 58vh, 680px);
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid color-mix(in oklab, var(--color-text) 8%, transparent);
@@ -909,22 +908,8 @@
 }
 
 @media (max-width: 900px) {
-  .hero {
-    min-height: clamp(360px, 60vh, 620px);
-  }
   .mood {
     grid-template-columns: 1fr;
-  }
-}
-
-.hero:has(.heroBg__slide--art-directed.is-active) {
-  min-height: 0;
-  aspect-ratio: 1534 / 678;
-}
-
-@media (max-width: 768px) {
-  .hero:has(.heroBg__slide--art-directed.is-active) {
-    aspect-ratio: 3 / 4;
   }
 }
 

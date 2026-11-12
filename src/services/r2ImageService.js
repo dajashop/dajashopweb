@@ -4,16 +4,14 @@ async function checksumSha256(file) {
   return [...new Uint8Array(digest)].map((part) => part.toString(16).padStart(2, '0')).join('');
 }
 
-export async function uploadProductImage(slug, file, index = 0, options = {}) {
-  if (!slug) throw new Error('Slug proizvoda je obavezan za upload slike.');
+async function uploadImage(file, { slug, index = 0, options = {} } = {}) {
   if (!file.size || file.size > 25 * 1024 * 1024) throw new Error('Slika mora biti manja od 25 MiB.');
   const createUpload = async () => mediaApi.createUpload({
       mimeType: file.type || 'application/octet-stream',
       sizeBytes: file.size,
       checksumSha256: await checksumSha256(file),
-      originalFilename: file.name || 'product-image',
-      productSlug: slug,
-      imageIndex: index + 1,
+      originalFilename: file.name || (slug ? 'product-image' : 'storefront-banner'),
+      ...(slug ? { productSlug: slug, imageIndex: index + 1 } : {}),
     });
   let upload;
   if (options.mediaId) {
@@ -57,6 +55,15 @@ export async function uploadProductImage(slug, file, index = 0, options = {}) {
   }
   const url = completed.mainImageUrl || completed.publicUrl || upload.publicUrl || '';
   return { mediaId, url, thumb: completed.thumbnailUrl || upload.thumbnailUrl || url };
+}
+
+export async function uploadProductImage(slug, file, index = 0, options = {}) {
+  if (!slug) throw new Error('Slug proizvoda je obavezan za upload slike.');
+  return uploadImage(file, { slug, index, options });
+}
+
+export async function uploadStorefrontImage(file, options = {}) {
+  return uploadImage(file, { options });
 }
 
 export async function uploadProductImages(slug, files, onProgress, startIndex = 0) {

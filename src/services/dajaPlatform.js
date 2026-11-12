@@ -1053,6 +1053,18 @@ function queueCustomerWrite(collection, save) {
   return pending;
 }
 
+export const homeHeroApi = {
+  public(signal) {
+    return apiRequest('/public/catalog/hero-slides', { auth: false, signal });
+  },
+  admin(signal) {
+    return apiRequest('/admin/home/hero-slides', { staff: true, signal });
+  },
+  save(payload) {
+    return apiRequest('/admin/home/hero-slides', { method: 'PUT', staff: true, body: payload });
+  },
+};
+
 export const customerApi = {
   async me() {
     const data = await apiRequest('/customers/me');
