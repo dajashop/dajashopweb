@@ -58,9 +58,8 @@
   position: relative;
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 5;
   overflow: hidden;
-  border-bottom: 1px solid var(--color-surface);
   background: #fff;
 }
 .wishlist-img {
@@ -69,7 +68,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  padding: 12px 14px;
+  padding: 20px 12px 14px;
   object-fit: contain;
 }
 .wishlist-body {
@@ -128,10 +127,17 @@
   cursor: pointer;
 }
 .wishlist-section .wishlist-alert-btn { background: var(--color-bg, #fff); color: var(--color-text); }
-.wishlist-section .wishlist-cart-btn { border-color: var(--color-text); background: var(--color-text); color: var(--color-bg, #fff); }
+.wishlist-section .wishlist-cart-btn {
+  border-color: #dedee3;
+  background: #f1f1f4;
+  color: var(--color-text, #111);
+}
 .wishlist-alert-btn svg, .wishlist-cart-btn svg { flex-shrink: 0; }
 .wishlist-section .wishlist-alert-btn:not(:disabled):hover { background: var(--color-surface); }
-.wishlist-section .wishlist-cart-btn:hover { background: #2c2c2c; }
+.wishlist-section .wishlist-cart-btn:hover {
+  border-color: #c9c9d0;
+  background: #e8e8ed;
+}
 .wishlist-section .wishlist-alert-btn.is-subscribed {
   display: grid;
   border-color: #d7e9df;
@@ -156,13 +162,13 @@
 .wishlist-section button:focus-visible { outline: 2px solid var(--color-text); outline-offset: -3px; }
 
 @media (min-width: 1200px) {
-  .wishlist-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .wishlist-grid { grid-template-columns: repeat(4, minmax(0, 280px)); }
 }
 
 @media (max-width: 600px) {
   .wishlist-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  .wishlist-card { display: grid; grid-template-columns: clamp(90px, 28%, 145px) minmax(0, 1fr); }
-  .wishlist-img-wrapper { aspect-ratio: auto; border-bottom: 0; border-inline-end: 1px solid var(--color-surface); }
+  .wishlist-card { display: grid; grid-template-columns: clamp(90px, 34%, 155px) minmax(0, 1fr); }
+  .wishlist-img-wrapper { aspect-ratio: auto; }
   .wishlist-img { padding: 8px; }
   .wishlist-body { padding: 12px; gap: 8px; }
   .wishlist-info { padding-inline-end: 36px; }
