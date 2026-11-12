@@ -539,7 +539,16 @@ export default function AdminOrders() {
                                     </div>
                                     <a href={`tel:${order.customer.phone}`} className="break-all font-medium text-neutral-900 hover:underline">{order.customer.phone}</a>
                                   </div>
-                                  {order.customer.email && <a href={`mailto:${order.customer.email}`} className="block break-all text-blue-700 hover:underline">{order.customer.email}</a>}
+                                  {order.customer.email && (
+                                    <div className="flex items-center gap-3">
+                                      <div className="shrink-0 rounded-lg bg-neutral-50 p-2 text-neutral-400">
+                                        <Mail size={18} aria-hidden="true" />
+                                      </div>
+                                      <a href={`mailto:${order.customer.email}`} className="min-w-0 break-all text-blue-700 hover:underline">
+                                        {order.customer.email}
+                                      </a>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
 
