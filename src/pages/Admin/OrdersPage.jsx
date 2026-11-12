@@ -27,9 +27,9 @@ export default function OrdersPage() {
     <div className="min-h-screen pb-20 bg-[#f5f5f7]">
       <SEOHead title="Admin - Porudžbine" noIndex={true} />
       {/* HEADER */}
-      <div className="bg-white border-b border-neutral-200 sticky top-[var(--header-bar-h)] z-30 shadow-sm">
-        <div className="container py-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-neutral-900">
+      <div className="border-b border-neutral-200 bg-white shadow-sm md:sticky md:top-[var(--header-bar-h)] md:z-30">
+        <div className="container flex flex-wrap items-center justify-between gap-2 py-4 md:py-6">
+          <h1 className="text-2xl font-bold text-neutral-900 md:text-3xl">
             Admin Porudžbine
           </h1>
           <button
@@ -42,7 +42,7 @@ export default function OrdersPage() {
       </div>
 
       {/* CONTENT */}
-      <div className="container mt-8">
+      <div className="container mt-4 md:mt-8">
         <AdminOrders />
       </div>
     </div>

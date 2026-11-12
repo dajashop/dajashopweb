@@ -257,9 +257,9 @@ export default function AdminOrders() {
       className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden"
     >
       {/* HEADER TABELE */}
-      <div className="p-6 border-b border-neutral-100 flex justify-between items-center">
-        <h2 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
-          <Package className="text-neutral-500" /> Upravljanje Porudžbinama
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 p-4 md:p-6">
+        <h2 className="flex items-center gap-2 text-lg font-bold text-neutral-900 md:text-xl">
+          <Package className="shrink-0 text-neutral-500" /> Upravljanje Porudžbinama
         </h2>
         <span className="text-sm text-neutral-500 font-medium bg-neutral-50 px-3 py-1 rounded-full border border-neutral-100">
           Ukupno: {orders.length}
@@ -268,8 +268,8 @@ export default function AdminOrders() {
 
       {/* TABELA */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-neutral-50 text-neutral-500 uppercase text-xs font-bold tracking-wider border-b border-neutral-200">
+        <table className="block w-full text-left text-sm md:table">
+          <thead className="hidden border-b border-neutral-200 bg-neutral-50 text-xs font-bold uppercase tracking-wider text-neutral-500 md:table-header-group">
             <tr>
               <th className="p-4">ID</th>
               <th className="hidden p-4 md:table-cell">Kupac</th>
@@ -279,14 +279,14 @@ export default function AdminOrders() {
               <th className="p-4 text-right">Detalji</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100" aria-busy={loading}>
+          <tbody className="block divide-y divide-neutral-100 max-md:[&>tr[aria-hidden=true]]:block max-md:[&>tr[aria-hidden=true]>td]:block max-md:[&>tr[aria-hidden=true]>td:not(:first-child)]:hidden md:table-row-group" aria-busy={loading}>
             {loading && !orders.length && <AdminTableSkeleton columns={6} variant="orders" />}
             {orders.map((order) => (
               <React.Fragment key={order.id}>
                 {/* GLAVNI RED */}
                 <tr
                   onClick={() => toggleDetails(order)}
-                  className={`cursor-pointer transition-colors ${
+                  className={`grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-3 p-4 transition-colors md:table-row md:p-0 ${
                     expandedOrderId === order.id
                       ? 'bg-neutral-50'
                       : !order.isRead
@@ -294,15 +294,14 @@ export default function AdminOrders() {
                       : 'hover:bg-neutral-50'
                   }`}
                 >
-                  <td className="p-4 font-mono text-neutral-600 relative">
+                  <td className="relative col-start-1 row-start-1 min-w-0 font-mono text-neutral-600 md:p-4">
                     {!order.isRead && (
-                      <span className="absolute top-1/2 left-1 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full"></span>
+                      <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-blue-500 md:absolute md:left-1 md:top-1/2 md:-translate-y-1/2"></span>
                     )}
-                    {order.id}
-                    <div className="mt-1 space-y-1 font-sans text-sm font-normal md:hidden">
-                      <div className="text-neutral-900">{order.customer.name} {order.customer.surname}</div>
-                      <div>{order.createdAt ? <time dateTime={order.createdAt}>{formatOrderTime(order.createdAt)}</time> : order.date}</div>
-                      <div className="font-bold text-neutral-900">{money(order.finalTotal)}</div>
+                    <span className="whitespace-nowrap">{order.id}</span>
+                    <div className="mt-1 space-y-1 break-words font-sans text-sm font-normal md:hidden">
+                      <div className="font-semibold text-neutral-900">{order.customer.name} {order.customer.surname}</div>
+                      <div className="tabular-nums">{order.createdAt ? <time dateTime={order.createdAt}>{formatOrderTime(order.createdAt)}</time> : order.date}</div>
                     </div>
                   </td>
                   <td className="hidden p-4 md:table-cell">
@@ -318,9 +317,10 @@ export default function AdminOrders() {
                       <Clock size={14} /> {order.createdAt ? <time dateTime={order.createdAt}>{formatOrderTime(order.createdAt)}</time> : order.date}
                     </div>
                   </td>
-                  <td className="p-4">
+                  <td className="col-span-2 row-start-2 flex min-w-0 flex-wrap items-center justify-between gap-2 md:table-cell md:p-4">
                     <select
                       value={order.status || 'Na čekanju'}
+                      aria-label={`Status porudžbine ${order.id}`}
                       // IZMENJENO: Pozivamo initiateStatusChange umesto direktne promene
                       onChange={(e) =>
                         initiateStatusChange(
@@ -346,6 +346,7 @@ export default function AdminOrders() {
                         </option>
                       ))}
                     </select>
+                    <span className="whitespace-nowrap font-bold text-neutral-900 md:hidden">{money(order.finalTotal)}</span>
                   </td>
                   <td className="hidden p-4 font-bold text-neutral-900 md:table-cell">
                     <div>{money(order.finalTotal)}</div>
@@ -363,9 +364,10 @@ export default function AdminOrders() {
                       </div>
                     )}
                   </td>
-                  <td className="p-4 text-right">
+                  <td className="col-start-2 row-start-1 self-start text-right md:p-4">
                     <button
                       type="button"
+                      aria-expanded={expandedOrderId === order.id}
                       onClick={(event) => {
                         event.stopPropagation();
                         toggleDetails(order);
@@ -390,10 +392,10 @@ export default function AdminOrders() {
                 {/* DETALJI (EXPANDED) */}
                 <AnimatePresence>
                   {expandedOrderId === order.id && (
-                    <tr>
+                    <tr className="block md:table-row">
                       <td
                         colSpan="6"
-                        className="p-0 border-b border-neutral-100"
+                        className="block border-b border-neutral-100 p-0 md:table-cell"
                       >
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
@@ -403,7 +405,7 @@ export default function AdminOrders() {
                         >
                           <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:p-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,3fr)_minmax(0,4fr)]">
                             {/* LEVA KOLONA: ARTIKLI */}
-                            <div className="min-w-0 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm md:col-span-2 xl:col-span-1">
+                            <div className="min-w-0 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5 md:col-span-2 xl:col-span-1">
                               <h4 className="text-xs font-bold uppercase text-neutral-400 mb-4 flex items-center gap-2">
                                 <Package size={14} /> Sadržaj korpe (
                                 {order.items.length})
@@ -431,15 +433,15 @@ export default function AdminOrders() {
 
                                     <div className="flex min-w-0 flex-1 flex-col justify-between">
                                       <div>
-                                        <div className="flex justify-between items-start gap-2">
+                                        <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
                                           <Link
                                             to={`/product/${item.slug}`}
                                             target="_blank"
-                                            className="font-bold text-neutral-900 text-sm sm:text-base line-clamp-2 hover:text-blue-600 transition-colors"
+                                            className="line-clamp-2 min-w-0 break-words text-sm font-bold text-neutral-900 transition-colors hover:text-blue-600 sm:text-base"
                                           >
                                             {item.name}
                                           </Link>
-                                          <span className="font-mono font-bold text-neutral-900 ml-2 whitespace-nowrap">
+                                          <span className="whitespace-nowrap font-mono font-bold text-neutral-900">
                                             {money(item.price * item.qty)}
                                           </span>
                                         </div>
