@@ -92,7 +92,7 @@ function countdown(value, now) {
         ? `${Math.floor(sec / 60)}m`
         : `${sec}s`;
 }
-function ProviderSelect({ value, onChange, all = true }) {
+function ProviderSelect({ value, onChange, all = true, codes = CODES }) {
   return (
     <select
       className={input}
@@ -100,7 +100,7 @@ function ProviderSelect({ value, onChange, all = true }) {
       onChange={(e) => onChange(e.target.value)}
     >
       {all && <option value="all">Svi dobavljači</option>}
-      {CODES.map((code) => (
+      {codes.map((code) => (
         <option key={code} value={code}>
           {NAMES[code]}
         </option>
@@ -315,6 +315,8 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
     [links, setLinks] = useState({ items: [], total: 0 }),
     [statistics, setStatistics] = useState({ items: [], health: {} }),
     [timeline, setTimeline] = useState({ items: [] });
+  const hasFilterOption = (key, value, selected) =>
+    value === selected || !links.facets || links.facets[key].includes(value);
   const [provider, setProvider] = useState('all'),
     [status, setStatus] = useState(''),
     [search, setSearch] = useState(''),
@@ -390,7 +392,13 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
     try {
       await Promise.allSettled([
         receive('providers', adminCatalogApi.supplierProviders(controller.signal), value => setProviders(value.items)),
-        receive('links', adminCatalogApi.supplierLinks(filters, false, controller.signal), value => { setLinks(value); setLoaded(true); }),
+        receive('links', adminCatalogApi.supplierLinks(filters, false, controller.signal), value => {
+          setLinks(value);
+          setLoaded(true);
+          if (filters.status && value.facets && !value.facets.status.includes(filters.status)) {
+            setStatus(current => current === filters.status ? '' : current);
+          }
+        }),
         receive('statistics', adminCatalogApi.supplierStatistics(provider, period, controller.signal), setStatistics),
         receive('timeline', adminCatalogApi.supplierTimeline(controller.signal), setTimeline),
       ]);
@@ -844,7 +852,7 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-lg font-bold">Statistika provera</h3>
           <div className="flex gap-2">
-            <ProviderSelect value={provider} onChange={setProvider} />
+            <ProviderSelect value={provider} onChange={setProvider} codes={CODES.filter(code => hasFilterOption('provider', code, provider))} />
             <select
               className={input}
               value={period}
@@ -917,34 +925,36 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
-          <ProviderSelect value={provider} onChange={setProvider} />
+          <ProviderSelect value={provider} onChange={setProvider} codes={CODES.filter(code => hasFilterOption('provider', code, provider))} />
           <select aria-label="Brend" className={input} value={brandId} onChange={event => setBrandId(event.target.value)}>
             <option value="">Svi brendovi</option>
-            {brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+            {brands.filter(brand => hasFilterOption('brandId', brand.id, brandId))
+              .map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
           </select>
           <select aria-label="Odeljenje" className={input} value={departmentId} onChange={event => setDepartmentId(event.target.value)}>
             <option value="">Sva odeljenja</option>
-            {departments.map(department => <option key={department.id} value={department.id}>{department.name}</option>)}
+            {departments.filter(department => hasFilterOption('departmentId', department.id, departmentId))
+              .map(department => <option key={department.id} value={department.id}>{department.name}</option>)}
           </select>
           <select aria-label="Stanje zaliha" className={input} value={stock} onChange={event => setStock(event.target.value)}>
             <option value="">Sva stanja zaliha</option>
-            <option value="in_stock">Na stanju</option>
-            <option value="out_of_stock">Nema na stanju</option>
-            <option value="unknown">Stanje nije potvrđeno</option>
+            {hasFilterOption('stock', 'in_stock', stock) && <option value="in_stock">Na stanju</option>}
+            {hasFilterOption('stock', 'out_of_stock', stock) && <option value="out_of_stock">Nema na stanju</option>}
+            {hasFilterOption('stock', 'unknown', stock) && <option value="unknown">Stanje nije potvrđeno</option>}
           </select>
           <select aria-label="Vidljivost na sajtu" className={input} value={visibility} onChange={event => setVisibility(event.target.value)}>
             <option value="">Svi statusi vidljivosti</option>
-            <option value="visible">Vidljiv na sajtu</option>
-            <option value="hidden">Sakriven sa sajta</option>
+            {hasFilterOption('visibility', 'visible', visibility) && <option value="visible">Vidljiv na sajtu</option>}
+            {hasFilterOption('visibility', 'hidden', visibility) && <option value="hidden">Sakriven sa sajta</option>}
           </select>
           <select
             className={input}
             aria-label="Status provere"
-            value={status}
+            value={hasFilterOption('status', status) ? status : ''}
             onChange={(e) => setStatus(e.target.value)}
           >
             <option value="">Svi statusi</option>
-            {Object.entries(STATUS).map(([key, label]) => (
+            {Object.entries(STATUS).filter(([key]) => hasFilterOption('status', key)).map(([key, label]) => (
               <option key={key} value={key}>
                 {label}
               </option>
