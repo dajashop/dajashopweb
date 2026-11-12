@@ -14,6 +14,7 @@ import {
   CreditCard,
   Truck,
   ExternalLink,
+  Mail,
   Ticket,
 } from 'lucide-react';
 import { ordersService } from '../../../services/admin';
@@ -27,6 +28,80 @@ const STATUS_OPTIONS = [
   'Isporučeno',
   'Otkazano',
 ];
+
+const orderTime = new Intl.DateTimeFormat('sr-Latn-RS', {
+  dateStyle: 'short', timeStyle: 'medium', timeZone: 'Europe/Belgrade',
+});
+
+function formatOrderTime(value) {
+  const date = new Date(value);
+  return value && Number.isFinite(date.getTime()) ? orderTime.format(date) : '—';
+}
+
+const supplierNames = { ekka: 'Ekka', bultime: 'Bultime', timezone: 'TimeZone', qandq: 'Q&Q', linkel: 'Linkel', milano: 'Milano' };
+const supplierResults = {
+  in_stock: 'Na stanju', out_of_stock: 'Nema na stanju prema proveri', unknown: 'Stanje nije prikazano',
+  missing: 'Stranica nije pronađena', error: 'Provera nije uspela', pending: 'Čeka proveru',
+  checking: 'Provera u toku', paused: 'Provere dobavljača su pauzirane',
+  disabled: 'Provera je isključena', removed: 'Link je promenjen ili uklonjen',
+};
+
+function SupplierChecks({ checks }) {
+  return (
+    <div className="mt-3 rounded-lg border border-neutral-200 p-2.5 text-xs">
+      <p className="font-semibold text-neutral-700">Stanje kod dobavljača</p>
+      {checks.length === 0 ? <p className="mt-1 text-neutral-500">Nema evidentiranih linkova za ovu stavku.</p> : (
+        <ul className="mt-1 divide-y divide-neutral-100">
+          {checks.map(check => (
+            <li key={`${check.provider}:${check.url}`} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-1.5">
+              {/^https?:\/\//i.test(check.url) ? (
+                <a href={check.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-blue-700 hover:underline">
+                  {supplierNames[check.provider] ?? check.provider} <ExternalLink size={11} />
+                </a>
+              ) : <span>{supplierNames[check.provider] ?? check.provider}</span>}
+              <span className={check.result === 'in_stock' ? 'text-emerald-700' : check.result === 'out_of_stock' || check.result === 'error' ? 'text-red-700' : 'text-neutral-600'}>
+                {supplierResults[check.result] ?? 'Stanje nije poznato'}
+                {(check.checkedAt || check.result === 'pending') && <span className="ml-2 text-neutral-500">{formatOrderTime(check.checkedAt ?? check.requestedAt)}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+const emailStatuses = { pending: 'Čeka slanje', sending: 'Slanje u toku', sent: 'SES prihvatio · čeka potvrdu dostave', failed: 'Greška pri slanju', expired: 'Istekao rok za slanje', suppressed: 'Slanje blokirano' };
+const emailFeedback = { Delivery: 'Dostavljeno serveru primaoca', DeliveryDelay: 'Dostava kasni', Bounce: 'Poruka vraćena', Complaint: 'Prijavljeno kao spam', Reject: 'SES odbio poruku', 'Rendering Failure': 'Greška pri pripremi poruke', RenderingFailure: 'Greška pri pripremi poruke' };
+
+function OrderEmailStatus({ order }) {
+  const deliveries = order.emailDeliveries ?? [];
+  return (
+    <section className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+      <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase text-neutral-500"><Mail size={14} /> Email poruke</h4>
+      {['order-confirmation', 'new-order-notification'].map(tag => {
+        const customer = tag === 'order-confirmation';
+        const messages = deliveries.filter(message => message.tag === tag);
+        return (
+          <div key={tag} className="border-t border-neutral-100 py-2 text-sm">
+            <p className="font-semibold">{customer ? 'Potvrda kupcu' : 'Obaveštenje prodavnici'}</p>
+            {!messages.length && <p className="text-neutral-500">{customer && order.customerEmailDisabled ? 'Slanje kupcu je isključeno.' : 'Nema zapisa o slanju.'}</p>}
+            {messages.map(message => (
+              <div key={message.recipient} className="mt-1 flex flex-wrap justify-between gap-x-3 text-neutral-600">
+                <span className="break-all">{message.recipient}</span>
+                <span className={message.feedback === 'Delivery' ? 'text-emerald-700' : ''}>
+                  {emailFeedback[message.feedback] ?? emailStatuses[message.status] ?? 'Status nije poznat'}
+                  {(message.feedbackAt || message.sentAt) && <> · {formatOrderTime(message.feedbackAt ?? message.sentAt)}</>}
+                  {message.attempts > 0 && message.status !== 'sent' && <> · pokušaji: {message.attempts}</>}
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </section>
+  );
+}
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -158,7 +233,7 @@ export default function AdminOrders() {
             <tr>
               <th className="p-4">ID</th>
               <th className="p-4">Kupac</th>
-              <th className="p-4">Datum</th>
+              <th className="p-4">Datum i vreme</th>
               <th className="p-4">Status</th>
               <th className="p-4">Iznos</th>
               <th className="p-4 text-right">Detalji</th>
@@ -195,7 +270,7 @@ export default function AdminOrders() {
                   </td>
                   <td className="p-4 text-neutral-500 font-normal">
                     <div className="flex items-center gap-1">
-                      <Clock size={14} /> {order.date}
+                      <Clock size={14} /> {order.createdAt ? <time dateTime={order.createdAt}>{formatOrderTime(order.createdAt)}</time> : order.date}
                     </div>
                   </td>
                   <td className="p-4">
@@ -281,7 +356,7 @@ export default function AdminOrders() {
                           exit={{ height: 0, opacity: 0 }}
                           className="overflow-hidden bg-neutral-50/50"
                         >
-                          <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-2 lg:items-start lg:p-6">
                             {/* LEVA KOLONA: ARTIKLI */}
                             <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm">
                               <h4 className="text-xs font-bold uppercase text-neutral-400 mb-4 flex items-center gap-2">
@@ -309,7 +384,7 @@ export default function AdminOrders() {
                                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
                                     </Link>
 
-                                    <div className="flex-1 flex flex-col justify-between">
+                                    <div className="flex min-w-0 flex-1 flex-col justify-between">
                                       <div>
                                         <div className="flex justify-between items-start gap-2">
                                           <Link
@@ -344,6 +419,7 @@ export default function AdminOrders() {
                                           <ExternalLink size={12} />
                                         </Link>
                                       </div>
+                                      <SupplierChecks checks={(order.supplierChecks ?? []).filter(check => check.productId === (item.productId ?? item.id))} />
                                     </div>
                                   </div>
                                 ))}
@@ -383,7 +459,8 @@ export default function AdminOrders() {
                             </div>
 
                             {/* DESNA KOLONA: PODACI O KUPCU */}
-                            <div className="space-y-6">
+                            <div className="space-y-4">
+                              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                               <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm">
                                 <h4 className="text-xs font-bold uppercase text-neutral-400 mb-4 flex items-center gap-2">
                                   <User size={14} /> Podaci kupca
@@ -418,10 +495,9 @@ export default function AdminOrders() {
                                     <div className="p-2 bg-neutral-50 rounded-lg text-neutral-400">
                                       <Phone size={18} />
                                     </div>
-                                    <span className="font-medium text-neutral-900 select-all">
-                                      {order.customer.phone}
-                                    </span>
+                                    <a href={`tel:${order.customer.phone}`} className="break-all font-medium text-neutral-900 hover:underline">{order.customer.phone}</a>
                                   </div>
+                                  {order.customer.email && <a href={`mailto:${order.customer.email}`} className="block break-all text-blue-700 hover:underline">{order.customer.email}</a>}
                                 </div>
                               </div>
 
@@ -448,11 +524,17 @@ export default function AdminOrders() {
                                       <CreditCard size={14} />
                                       {order.paymentMethod === 'cod'
                                         ? 'Pouzećem'
-                                        : 'Kartica'}
+                                        : 'Pri preuzimanju'}
                                     </span>
                                   </div>
                                 </div>
                               </div>
+                              </div>
+                              <div className="rounded-xl border border-neutral-200 bg-white p-5 text-sm text-neutral-700 shadow-sm">
+                                <p><strong>Primljena porudžbina</strong> · {formatOrderTime(order.createdAt)}</p>
+                                {order.statusChangedAt && <p className="mt-1"><strong>Poslednji upis statusa</strong> · {formatOrderTime(order.statusChangedAt)}</p>}
+                              </div>
+                              <OrderEmailStatus order={order} />
                             </div>
                           </div>
                         </motion.div>
@@ -474,7 +556,7 @@ export default function AdminOrders() {
         title="Promena statusa porudžbine"
         message={
           pendingChange
-            ? `Da li ste sigurni da želite da promenite status za ${pendingChange.customerName} u "${pendingChange.newStatus}"? Kupac će biti obavešten email-om.`
+            ? `Da li ste sigurni da želite da promenite status za ${pendingChange.customerName} u "${pendingChange.newStatus}"?`
             : ''
         }
         confirmText="Promeni status"

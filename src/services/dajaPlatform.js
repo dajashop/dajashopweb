@@ -257,7 +257,7 @@ function normalizeOrder(order) {
   return {
     ...order,
     id: order.displayId || order.display_id || order.id,
-    docId: order.id || order.docId || order.doc_id,
+    docId: order.docId || order.doc_id || order.id,
     displayId: order.displayId || order.display_id || order.id,
     finalTotal: order.finalTotal ?? order.final_total ?? order.total,
     shippingCost: order.shippingCost ?? order.shipping_cost,
