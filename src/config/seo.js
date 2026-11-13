@@ -25,7 +25,7 @@ export const seoConfig = {
   business: {
     name: import.meta.env.VITE_BUSINESS_NAME || 'DajaShop',
     legalName: 'TRGOVINSKO KOMISIONA RADNJA DAJA SHOP CVETKOVIĆ DEJAN PR NIŠ',
-    street: 'Obrenoviceva bb, Podzemni prolaz lokal C31',
+    street: 'Obrenoviceva bb',
     city: businessCity === 'Nis' ? 'Niš' : businessCity,
     postalCode: import.meta.env.VITE_BUSINESS_POSTAL_CODE || '18000',
     country: import.meta.env.VITE_BUSINESS_COUNTRY || 'RS',

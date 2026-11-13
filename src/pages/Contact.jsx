@@ -14,7 +14,7 @@ import { apiRequest } from '../services/apiClient.js';
 
 // KORIŠĆENJE ISTOG PRINICIPA KAO U ShippingSection.jsx
 
-const SHOP_ADDRESS_QUERY = 'Daja Shop, Obrenoviceva bb, Podzemni prolaz lokal C31, Niš, Srbija';
+const SHOP_ADDRESS_QUERY = 'Obrenoviceva bb, Niš, Srbija';
 const MAP_EMBED_URL = `https://www.google.com/maps/embed/v1/place?key=${
   import.meta.env.VITE_GOOGLE_MAPS_KEY
 }&q=${encodeURIComponent(SHOP_ADDRESS_QUERY)}`;
@@ -132,7 +132,7 @@ export default function Contact() {
               fontSize: '0.9rem',
               color: 'var(--color-muted)',
             }}
-          >{translateText("Posetite nas u Podzemnom prolazu u ulici Obrenoviceva bb, u srcu Niša. Lako nas možete pronaći. Naš lokal je C31. Radujemo se Vašoj poseti!")}</p>
+          >{translateText("Posetite nas u Nišu, na adresi Obrenoviceva bb. Radujemo se Vašoj poseti!")}</p>
         </div>
       </div>
 
