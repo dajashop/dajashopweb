@@ -33,7 +33,7 @@ export default function About() {
       >
         <SEOHead
           title={translateText("O nama")}
-          description={translateText("DajaShop je prodavnica satova u Nišu, u Podzemnom prolazu, lokal C31. Upoznajte našu ponudu i kontaktirajte nas za pomoć pri izboru sata.")}
+          description={translateText("DajaShop je prodavnica satova u Nišu, u Podzemnom prolazu u ulici Obrenoviceva bb, lokal C31. Upoznajte našu ponudu i kontaktirajte nas za pomoć pri izboru sata.")}
         />
         <AboutHero />
         <AboutStats />

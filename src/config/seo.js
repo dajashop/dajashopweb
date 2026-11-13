@@ -3,12 +3,6 @@ const configuredShareImage = import.meta.env.VITE_OG_DEFAULT_IMAGE || '';
 const defaultShareImage = `${siteUrl}/images/og-default.jpg?v=20261004`;
 const defaultDescription = 'DajaShop — prodavnica ručnih satova u Nišu. Otkrijte našu ponudu satova, naočara, daljinskih upravljača, baterija i dodatne opreme.';
 const configuredDescription = (import.meta.env.VITE_SITE_DESCRIPTION || '').trim();
-const configuredStreet = (import.meta.env.VITE_BUSINESS_STREET || '').trim();
-// Older build settings contain concatenated words. Use readable defaults
-// rather than publishing those values in metadata, addresses and map links.
-const businessStreet = /\s/u.test(configuredStreet)
-  ? configuredStreet.replace(/,?\s*(?:Niš|Nis)\s*18000\s*$/iu, '').trim()
-  : 'Obrenovićeva bb, Podzemni prolaz lokal C31';
 const businessCity = import.meta.env.VITE_BUSINESS_CITY || 'Niš';
 const publicSetting = value => {
   const setting = (value || '').trim();
@@ -30,7 +24,8 @@ export const seoConfig = {
   googleSiteVerification: publicSetting(import.meta.env.VITE_GOOGLE_SITE_VERIFICATION),
   business: {
     name: import.meta.env.VITE_BUSINESS_NAME || 'DajaShop',
-    street: businessStreet,
+    legalName: 'TRGOVINSKO KOMISIONA RADNJA DAJA SHOP CVETKOVIĆ DEJAN PR NIŠ',
+    street: 'Obrenoviceva bb, Podzemni prolaz lokal C31',
     city: businessCity === 'Nis' ? 'Niš' : businessCity,
     postalCode: import.meta.env.VITE_BUSINESS_POSTAL_CODE || '18000',
     country: import.meta.env.VITE_BUSINESS_COUNTRY || 'RS',

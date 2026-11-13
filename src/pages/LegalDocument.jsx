@@ -2,6 +2,7 @@ import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect, useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import SEOHead from '../components/seo/SEOHead.jsx';
+import { seoConfig } from '../config/seo.js';
 import { privacyApi } from '../services/dajaPlatform.js';
 import './LegalDocument.css';
 
@@ -35,6 +36,8 @@ export default function LegalDocument({ kind }) {
       <SEOHead title={translateText(title)} noIndex={true} />
       <header>
         <h1>{translateText(title)}</h1>
+        <p>{seoConfig.business.legalName}</p>
+        <address>{translateText(seoConfig.business.street)}<br />{seoConfig.business.postalCode} {seoConfig.business.city}</address>
         {document?.updatedAt && <p>{translateText("Verzija / datum: ")}{translateText(document.version || document.updatedAt)}</p>}
       </header>
       {!document && !error && <div className="legal-document__loading"><Loader2 className="animate-spin" size={22} />{translateText(" Učitavanje dokumenta…")}</div>}

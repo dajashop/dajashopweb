@@ -13,7 +13,7 @@ import GoogleMapEmbed from '../privacy/GoogleMapEmbed.jsx';
 import EngravingSummary from '../engraving/EngravingSummary';
 
 const MAP_API_KEY = 'AIzaSyCwDMD-56pwnAqgEDqNCT8uMxFy_mPbAe0';
-const SHOP_ADDRESS_QUERY = 'Daja Shop, TPC Gorca lokal C31, Nis, Srbija';
+const SHOP_ADDRESS_QUERY = 'Daja Shop, Obrenoviceva bb, lokal C31, Nis, Srbija';
 const MAP_EMBED_URL = `https://www.google.com/maps/embed/v1/place?key=${MAP_API_KEY}&q=${encodeURIComponent(
   SHOP_ADDRESS_QUERY
 )}`;
@@ -153,7 +153,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
 
             {isPickup ? (
               <>
-                <p>{translateText("Niš, TPC Gorča lokal C31")}</p>
+                <p>{translateText("Obrenoviceva bb, Niš, lokal C31")}</p>
                 <p>{translateText("Vaš kontakt telefon: ")}{translateText(order.customer.phone || 'Nije unet')}
                 </p>
 

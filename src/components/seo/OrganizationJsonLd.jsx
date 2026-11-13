@@ -13,6 +13,7 @@ export default function OrganizationJsonLd() {
     '@type': 'Store',
     '@id': `${seoConfig.siteUrl.replace(/\/$/, '')}/#organization`,
     name: business.name,
+    legalName: business.legalName,
     url: seoConfig.siteUrl,
     logo: seoConfig.siteLogoUrl,
     image: seoConfig.ogDefaultImage,

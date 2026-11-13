@@ -65,6 +65,7 @@ export function ServiceVisit({ service }) {
     <div className="services-visit__address">
       <MapPin size={36} strokeWidth={1.6} aria-hidden="true" />
       <h3>{translateText(business.name)}</h3>
+      <p>{business.legalName}</p>
       <address>{translateText(business.street)}<br />{translateText(business.postalCode)} {translateText(business.city)}</address>
       <a className="services-inline-link" href={`https://www.google.com/maps/search/?api=1&query=${query}`} target="_blank" rel="noopener noreferrer">{translateText("Otvorite mapu ")}<ArrowUpRight size={20} aria-hidden="true" /><span className="services-sr-only">{translateText(" (novi prozor)")}</span></a>
       <Link className="services-inline-link" to="/contact">{translateText("Kontakt i radno vreme ")}<ChevronRight size={20} aria-hidden="true" /></Link>

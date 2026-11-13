@@ -6,7 +6,7 @@ import { Truck, MapPin, CheckCircle2, MessageSquare } from 'lucide-react'; // Do
 import GoogleMapEmbed from '../privacy/GoogleMapEmbed.jsx';
 
 // Prosleđujemo URL mape kao prop ili konstantu ako je potrebno
-const SHOP_ADDRESS_QUERY = 'Daja Shop, Podzemni prolaz lokal C31, Nis, Srbija';
+const SHOP_ADDRESS_QUERY = 'Daja Shop, Obrenoviceva bb, Podzemni prolaz lokal C31, Nis, Srbija';
 const MAP_EMBED_URL = `https://www.google.com/maps/embed/v1/place?key=${
   import.meta.env.VITE_GOOGLE_MAPS_KEY
 }&q=${encodeURIComponent(SHOP_ADDRESS_QUERY)}`;
@@ -89,7 +89,7 @@ export default function ShippingSection({
               <MapPin size={20} className="text-primary" />
               <div>
                 <span className="radio-title">{translateText("Preuzimanje u prodavnici")}</span>
-                <span className="radio-desc">{translateText("Niš, Podzemni prolaz lokal C31 (Uvek besplatno)")}</span>
+                <span className="radio-desc">{translateText("Obrenoviceva bb, Niš, lokal C31 (Uvek besplatno)")}</span>
               </div>
             </div>
             <div
@@ -177,7 +177,7 @@ export default function ShippingSection({
                     color: 'var(--text)',
                   }}
                 >{translateText("Daja Shop Niš")}</p>
-                <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{translateText("Podzemni prolaz lokal C31, Obrenovićeva bb, Niš")}</p>
+                <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{translateText("Obrenoviceva bb, Niš, lokal C31")}</p>
               </div>
             </div>
             <div className="map-container">
