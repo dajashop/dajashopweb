@@ -1,0 +1,34 @@
+PODSETNIK — PRIVREMENA IZMENA NAZIVA I ADRESE
+
+Svrha: pregledno zabeležiti šta je promenjeno i koje vrednosti vratiti ako kasnije zatreba.
+
+TRENUTNE VREDNOSTI
+Pravno ime: TRGOVINSKO KOMISIONA RADNJA DAJA SHOP CVETKOVIĆ DEJAN PR NIŠ
+Adresa: Obrenoviceva bb, Podzemni prolaz, lokal C31, Niš 18000, Srbija
+
+GLAVNO MESTO ZA IZMENU
+src/config/seo.js
+  seoConfig.business.legalName — pravno ime koje koriste footer, kontakt, pravne stranice i strukturirani podaci.
+  seoConfig.business.street — adresa za kontakt i strukturirane podatke.
+
+OSTALA MESTA KOJA SU USKLAĐENA
+- src/components/Footer.jsx — podnožje sajta.
+- src/components/about/AboutHero.jsx, src/components/about/AboutStory.jsx, src/pages/About.jsx — stranica O nama.
+- src/pages/Contact.jsx — kontakt i adresa prodavnice.
+- src/components/checkout/ShippingSection.jsx — izbor ličnog preuzimanja i prikaz lokacije.
+- src/components/checkout/OrderConfirmationModal.jsx — potvrda porudžbine.
+- src/pages/LegalDocument.jsx — zaglavlje stranica privatnosti/uslova.
+- src/ssr/whatsappPrivacy.html — javna WhatsApp politika privatnosti.
+- src/components/seo/OrganizationJsonLd.jsx — pravno ime u SEO podacima.
+- src/components/services/ServiceShared.jsx — prikaz naziva u deljenim servisnim stranicama.
+- src/localization/en.json — engleski prevodi teksta koji prikazuje adresu.
+
+PRETHODNE VREDNOSTI / OBLICI U SADRŽAJU
+- Pravno ime je ranije prikazivano kao „TRGOVINSKO KOMISIONA RADNJA DAJA SHOP CVETKOVIC DEJAN PR NIS“ (bez dijakritika).
+- Adresa je ranije prikazivana kao „Niš, TPC Gorča lokal C31“, ili „Obrenovićeva bb, Podzemni prolaz lokal C31“.
+- Neki stari tekstovi su izostavljali ulicu ili koristili različite rasporede „Podzemni prolaz“ i „lokal C31“.
+
+KAKO VRATITI
+1. Vrati odgovarajuće vrednosti u fajlovima iz liste iznad; za centralni pravni naziv i adresu kreni od src/config/seo.js.
+2. Ako želiš da poništiš ceo skup izmena, pregledaj commit „Align storefront legal name and business address“ (d61338e) i uradi revert tog commita.
+3. Ovaj podsetnik je samo evidencija; njegovo prisustvo ne menja prikaz sajta.
