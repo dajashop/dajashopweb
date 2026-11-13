@@ -199,7 +199,7 @@ export default function Footer() {
                   aria-label={translateText("Adresa")}
                 >
                   <MapPin size={18} />
-                  <span>{translateText("Obrenoviceva bb")}</span>
+                  <span>{translateText("Obrenoviceva bb, 18105 Niš")}</span>
                 </Link>
               </li>
               <li>

@@ -4,7 +4,7 @@ Svrha: pregledno zabeležiti šta je promenjeno i koje vrednosti vratiti ako kas
 
 TRENUTNE VREDNOSTI
 Pravno ime: TRGOVINSKO KOMISIONA RADNJA DAJA SHOP CVETKOVIĆ DEJAN PR NIŠ
-Adresa: Obrenoviceva bb
+Adresa: Obrenoviceva bb, 18105 Niš
 
 GLAVNO MESTO ZA IZMENU
 src/config/seo.js
@@ -26,7 +26,7 @@ OSTALA MESTA KOJA SU USKLAĐENA
 PRETHODNE VREDNOSTI / OBLICI U SADRŽAJU
 - Pravno ime je ranije prikazivano kao „TRGOVINSKO KOMISIONA RADNJA DAJA SHOP CVETKOVIC DEJAN PR NIS“ (bez dijakritika).
 - Adresa je ranije prikazivana kao „Niš, TPC Gorča lokal C31“, ili „Obrenovićeva bb, Podzemni prolaz lokal C31“.
-- Neki stari tekstovi su izostavljali ulicu ili koristili različite rasporede „Podzemni prolaz“ i „lokal C31“.
+- Neki stari tekstovi su izostavljali ulicu ili koristili različite rasporede „Podzemni prolaz“ i „lokal C31“.`r`n- Stari poštanski broj u podacima firme bio je 18000; trenutna vrednost je 18105.
 
 KAKO VRATITI
 1. Vrati odgovarajuće vrednosti u fajlovima iz liste iznad; za centralni pravni naziv i adresu kreni od src/config/seo.js.

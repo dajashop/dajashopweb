@@ -27,7 +27,7 @@ export const seoConfig = {
     legalName: 'TRGOVINSKO KOMISIONA RADNJA DAJA SHOP CVETKOVIĆ DEJAN PR NIŠ',
     street: 'Obrenoviceva bb',
     city: businessCity === 'Nis' ? 'Niš' : businessCity,
-    postalCode: import.meta.env.VITE_BUSINESS_POSTAL_CODE || '18000',
+    postalCode: '18105',
     country: import.meta.env.VITE_BUSINESS_COUNTRY || 'RS',
     phone: import.meta.env.VITE_BUSINESS_PHONE || '+381641262425',
     email: configuredEmail && configuredEmail.toLowerCase() !== 'info@dajashop.com' ? configuredEmail : 'cvelenis42@yahoo.com',

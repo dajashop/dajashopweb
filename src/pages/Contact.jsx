@@ -14,7 +14,7 @@ import { apiRequest } from '../services/apiClient.js';
 
 // KORIŠĆENJE ISTOG PRINICIPA KAO U ShippingSection.jsx
 
-const SHOP_ADDRESS_QUERY = 'Obrenoviceva bb, Niš, Srbija';
+const SHOP_ADDRESS_QUERY = 'Obrenoviceva bb, 18105 Niš, Srbija';
 const MAP_EMBED_URL = `https://www.google.com/maps/embed/v1/place?key=${
   import.meta.env.VITE_GOOGLE_MAPS_KEY
 }&q=${encodeURIComponent(SHOP_ADDRESS_QUERY)}`;
@@ -69,7 +69,7 @@ export default function Contact() {
             <div>
               <h3>{translateText("Adresa i lokacija")}</h3>
               <p>{seoConfig.business.legalName}</p>
-              <address>{translateText(seoConfig.business.street)}<br />{translateText("18000 Niš, Srbija")}</address>
+              <address>{translateText(seoConfig.business.street)}<br />{translateText("18105 Niš, Srbija")}</address>
               <p>
                 {/* Link za Google Maps navigaciju (koristi dinamičku adresu) */}
               </p>
@@ -132,7 +132,7 @@ export default function Contact() {
               fontSize: '0.9rem',
               color: 'var(--color-muted)',
             }}
-          >{translateText("Posetite nas u Nišu, na adresi Obrenoviceva bb. Radujemo se Vašoj poseti!")}</p>
+          >{translateText("Posetite nas u Nišu, na adresi Obrenoviceva bb, 18105. Radujemo se Vašoj poseti!")}</p>
         </div>
       </div>
 
