@@ -14,7 +14,7 @@ import { apiRequest } from '../services/apiClient.js';
 
 // KORIŠĆENJE ISTOG PRINICIPA KAO U ShippingSection.jsx
 
-const SHOP_ADDRESS_QUERY = 'Obrenoviceva bb, 18105 Niš, Srbija';
+const SHOP_ADDRESS_QUERY = 'Obrenoviceva bb, Niš, Srbija';
 const MAP_EMBED_URL = `https://www.google.com/maps/embed/v1/place?key=${
   import.meta.env.VITE_GOOGLE_MAPS_KEY
 }&q=${encodeURIComponent(SHOP_ADDRESS_QUERY)}`;

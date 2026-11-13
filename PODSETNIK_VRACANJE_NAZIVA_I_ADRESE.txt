@@ -14,7 +14,7 @@ src/config/seo.js
 OSTALA MESTA KOJA SU USKLAĐENA
 - src/components/Footer.jsx — podnožje sajta.
 - src/components/about/AboutHero.jsx, src/components/about/AboutStory.jsx, src/pages/About.jsx — stranica O nama.
-- src/pages/Contact.jsx — kontakt i adresa prodavnice.
+- src/pages/Contact.jsx — kontakt i adresa prodavnice. Google Maps pretraga koristi samo ulicu i grad (bez ZIP-a), da pin ne ode na poštu.
 - src/components/checkout/ShippingSection.jsx — izbor ličnog preuzimanja i prikaz lokacije.
 - src/components/checkout/OrderConfirmationModal.jsx — potvrda porudžbine.
 - src/pages/LegalDocument.jsx — zaglavlje stranica privatnosti/uslova.

@@ -6,7 +6,7 @@ import { Truck, MapPin, CheckCircle2, MessageSquare } from 'lucide-react'; // Do
 import GoogleMapEmbed from '../privacy/GoogleMapEmbed.jsx';
 
 // Prosleđujemo URL mape kao prop ili konstantu ako je potrebno
-const SHOP_ADDRESS_QUERY = 'Obrenoviceva bb, 18105 Nis, Srbija';
+const SHOP_ADDRESS_QUERY = 'Obrenoviceva bb, Nis, Srbija';
 const MAP_EMBED_URL = `https://www.google.com/maps/embed/v1/place?key=${
   import.meta.env.VITE_GOOGLE_MAPS_KEY
 }&q=${encodeURIComponent(SHOP_ADDRESS_QUERY)}`;
