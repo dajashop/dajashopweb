@@ -247,6 +247,7 @@ export function normalizeProduct(product) {
     marketingFlags: product.marketingFlags || product.marketing_flags || [],
     isVisible: product.isVisible ?? product.active ?? true,
     published: product.published ?? true,
+    publishedAt: product.publishedAt || product.published_at,
     createdAt: product.createdAt || product.created_at,
     updatedAt: product.updatedAt || product.updated_at,
   };

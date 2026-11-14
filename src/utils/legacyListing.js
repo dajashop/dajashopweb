@@ -21,7 +21,15 @@ export function legacyListing(rawItems, route, savedConfiguration) {
   const filtered = filterConfiguredProducts(products,params,configuration,{fixedGender});
   const sort = params.get('sort');
   const collator = new Intl.Collator('sr-RS',{sensitivity:'base'});
-  filtered.sort((a,b) => sort === 'price-asc' ? a.price-b.price : sort === 'price-desc' ? b.price-a.price : sort === 'name' ? collator.compare(a.name,b.name) : 0);
+  filtered.sort((a,b) => {
+    if (sort === 'newest') {
+      const aDate = a.publishedAt || a.createdAt || '';
+      const bDate = b.publishedAt || b.createdAt || '';
+      return (Date.parse(bDate) || 0) - (Date.parse(aDate) || 0)
+        || (a.publishedAt && b.publishedAt ? bDate.localeCompare(aDate) || b.id.localeCompare(a.id) : 0);
+    }
+    return sort === 'price-asc' ? a.price-b.price : sort === 'price-desc' ? b.price-a.price : sort === 'name' ? collator.compare(a.name,b.name) : 0;
+  });
   const facets = Object.fromEntries(filterLeaves(configuration).map(node => {
     const candidates = filterConfiguredProducts(products,params,configuration,{fixedGender,ignoreId:node.id});
     const options = node.options.filter(option => option.visible);
