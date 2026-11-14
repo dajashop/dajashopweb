@@ -212,9 +212,14 @@
 }
 
 /* --- RIGHT COLUMN (Summary) --- */
-.summary-card {
+.checkout-layout > .checkout-right {
   position: sticky;
-  top: 100px; /* Da prati skrol */
+  top: calc(var(--header-sticky-offset, 112px) + 16px);
+  align-self: start;
+  min-width: 0;
+}
+
+.summary-card {
   padding: 24px;
 }
 
@@ -349,7 +354,7 @@
     grid-template-columns: 1fr; /* Jedna kolona */
     gap: 16px;
   }
-  .summary-card {
+  .checkout-layout > .checkout-right {
     position: static;
   }
 }
