@@ -18,19 +18,23 @@ export default function Unsubscribe() {
   const beginRequest = useEmailLinkRequest(kind + ':' + token);
   const [status, setStatus] = useState(token ? 'ready' : legacySuccess ? 'success' : 'invalid');
   const [error, setError] = useState('');
-  const label = kind === 'product-alert' ? 'obaveštenja za ovaj artikal' : 'novosti i ponude';
+  const [allAlerts, setAllAlerts] = useState(false);
+  const label = kind === 'product-alert' ? (allAlerts ? 'email obaveštenja o artiklima' : 'obaveštenja za ovaj artikal') : 'novosti i ponude';
   useEffect(() => {
     setStatus(token ? 'ready' : legacySuccess ? 'success' : 'invalid');
     setError('');
+    setAllAlerts(false);
   }, [token, kind, legacySuccess]);
-  async function unsubscribe() {
+  async function unsubscribe(all = false) {
     if (!token || status !== 'ready') return;
     const request = beginRequest();
     if (!request) return;
+    setAllAlerts(all);
     setStatus('saving');
     setError('');
     try {
-      await privacyApi.unsubscribe(kind, token);
+      await privacyApi.unsubscribe(kind === 'product-alert' ? (all ? 'product-alert-all' : 'product-alert-watch') : kind, token);
+      window.dispatchEvent(new Event('daja:product-alerts-changed'));
       if (!request.isCurrent()) return;
       setStatus('success');
     } catch (requestError) {
@@ -45,7 +49,11 @@ export default function Unsubscribe() {
       <div className="reset-password-page__icon">{status === 'success' ? <CheckCircle2 size={28} /> : <MailX size={28} />}</div>
       <h1>{translateText(status === 'success' ? 'Odjava je potvrđena.' : 'Potvrdite odjavu.')}</h1>
       <p className="reset-password-page__copy">{translateText(status === 'success' ? `Više nećete primati ${label}.` : status === 'invalid' ? 'Link za odjavu nije potpun ili nije važeći. Otvorite link iz email poruke.' : `Klikom na dugme isključujete ${label}.`)}</p>
-      {['ready', 'saving'].includes(status) && <button className="reset-password-page__button" onClick={unsubscribe} disabled={status === 'saving'}>{translateText(status === 'saving' ? 'Čuvamo odjavu…' : 'Potvrdi odjavu')}</button>}
+      {['ready', 'saving'].includes(status) && <button className="reset-password-page__button" onClick={() => void unsubscribe()} disabled={status === 'saving'}>{translateText(status === 'saving' ? 'Čuvamo odjavu…' : kind === 'product-alert' ? 'Odjavi ovaj artikal' : 'Potvrdi odjavu')}</button>}
+      {kind === 'product-alert' && status === 'ready' &&
+        <button type="button" className="reset-password-page__secondary" onClick={() => void unsubscribe(true)}>
+          {translateText('Odjavi sva email obaveštenja o artiklima')}
+        </button>}
       {error && <p className="reset-password-page__error">{translateText(error)}</p>}
       <Link to="/" className="reset-password-page__secondary">{translateText("Nazad na DajaShop")}</Link>
     </div>

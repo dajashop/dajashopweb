@@ -422,6 +422,7 @@ function ProductCard({ p, priority = false, blankImage = false, showPurchase = t
                 e.stopPropagation();
                 toggleWishlist({
                   id: p.id,
+                  variantId: p.variantId,
                   name: p.name,
                   price: p.price,
                   image: imgs?.[0]?.url ?? p.mainImageUrl ?? p.image,

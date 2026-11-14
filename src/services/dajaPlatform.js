@@ -1316,6 +1316,11 @@ export function subscribeReaderFind(sessionId, onEvent, onError) {
 }
 
 export const productAlertsApi = {
+  async subscribeWishlist(payload) {
+    const result = await apiRequest('/product-alerts/wishlist', { method: 'POST', body: payload });
+    window.dispatchEvent(new Event('daja:product-alerts-changed'));
+    return result;
+  },
   confirm(token) { return apiRequest('/product-alerts/confirm', { method: 'POST', auth: false, body: { token } }); },
   subscribe(productId, payload, { auth = true } = {}) {
     return apiRequest(`/products/${encodeURIComponent(productId)}/alerts`, {
@@ -1324,10 +1329,11 @@ export const productAlertsApi = {
       body: payload,
     });
   },
-  status(productId, { variantId, managementToken } = {}, { auth = true } = {}) {
+  status(productId, { variantId, managementToken } = {}, { auth = true, signal } = {}) {
     return apiRequest(`/products/${encodeURIComponent(productId)}/alerts/status`, {
       method: 'POST',
       auth,
+      signal,
       body: { variantId, ...(managementToken ? { managementToken } : {}) },
     });
   },
@@ -1669,7 +1675,7 @@ export const emailAdminApi = {
 
 export const privacyApi = {
   unsubscribe(kind, token) {
-    if (!['newsletter', 'product-alert'].includes(kind)) throw new Error('Link za odjavu nije važeći.');
+    if (!['newsletter', 'product-alert', 'product-alert-watch', 'product-alert-all'].includes(kind)) throw new Error('Link za odjavu nije važeći.');
     return apiRequest('/privacy/unsubscribe/' + kind + '?token=' + encodeURIComponent(token), { method: 'POST', auth: false });
   },
   current() {
@@ -1688,13 +1694,20 @@ export const privacyApi = {
       body: payload,
     });
   },
-  mine() {
-    return apiRequest('/privacy/me');
+  mine(options) {
+    return apiRequest('/privacy/me', options);
   },
   async odjaviNovosti() {
     const result = await apiRequest('/privacy/me/newsletter', { method: 'DELETE' });
     window.dispatchEvent(new Event('daja:newsletter-changed'));
     return result;
+  },
+  async unsubscribeProductAlerts(channel, scope) {
+    try {
+      return await apiRequest('/privacy/me/alerts/unsubscribe', { method: 'POST', body: { channel, scope } });
+    } finally {
+      window.dispatchEvent(new Event('daja:product-alerts-changed'));
+    }
   },
   unsubscribeAlert(id) {
     return apiRequest(`/privacy/me/alerts/${encodeURIComponent(id)}`, { method: 'DELETE' });

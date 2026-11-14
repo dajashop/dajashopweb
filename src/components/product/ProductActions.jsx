@@ -3,12 +3,11 @@ import React, { useEffect, useState } from 'react';
 import { Bell, BellRing, Heart } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useFlash } from '../../hooks/useFlash.js';
-import {
-  productAlertsApi,
-  productAlertSubscriptions,
-} from '../../services/dajaPlatform.js';
+import { productAlertSubscriptions } from '../../services/dajaPlatform.js';
 import { storefrontFeatures } from '../../config/storefrontFeatures.js';
 import ProductAlertModal from '../modals/ProductAlertModal.jsx';
+import WatchAlertControls from './WatchAlertControls.jsx';
+import { useWatchAlertStatus } from '../../services/watchAlertStatus.js';
 import './ProductActions.css';
 import { isProcurementUnavailable } from '../../utils/productAvailability.js';
 
@@ -18,60 +17,18 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked, di
   const { user } = useAuth();
   const { flash } = useFlash();
   const [guestAlertType, setGuestAlertType] = useState(null);
-  const [subscribedTypes, setSubscribedTypes] = useState([]);
+  const alerts = useWatchAlertStatus(product.id, product.variantId);
+  const subscribedTypes = [...alerts.email, ...alerts.whatsapp];
   const inStock = product.availability?.inStock ?? product.inStock;
   const procurementUnavailable = isProcurementUnavailable(product);
   const useStockAwareActions = storefrontFeatures.customerStockVisibility;
   const showPriceAlerts = storefrontFeatures.customerPriceAlerts;
-  const outOfStockAlertType = subscribedTypes.includes('price_change')
-    ? 'price_change'
-    : 'back_in_stock';
+  const outOfStockAlertType = 'back_in_stock';
   const outOfStockSubscribed = subscribedTypes.includes(outOfStockAlertType);
 
-  useEffect(() => {
-    setGuestAlertType(null);
-    if (procurementUnavailable || (!useStockAwareActions && !showPriceAlerts)) {
-      setSubscribedTypes([]);
-      return undefined;
-    }
-    const authenticated = Boolean(user?.email || user?.phoneNumber);
-    const storedTypes = authenticated
-      ? []
-      : productAlertSubscriptions.typesFor(product.id, product.variantId);
-    setSubscribedTypes(storedTypes);
+  useEffect(() => setGuestAlertType(null), [product.id, product.variantId]);
 
-    const contact = productAlertSubscriptions.contact();
-    if (!authenticated && !contact.managementToken) return undefined;
-    let cancelled = false;
-    productAlertsApi
-      .status(product.id, {
-        variantId: product.variantId,
-        ...(!authenticated && contact.managementToken ? { managementToken: contact.managementToken } : {}),
-      }, { auth: authenticated })
-      .then((response) => {
-        if (cancelled) return;
-        const activeTypes = Array.isArray(response?.types) ? response.types : [];
-        if (!authenticated) {
-          productAlertSubscriptions.replaceTypes(product.id, product.variantId, activeTypes);
-        }
-        setSubscribedTypes(activeTypes);
-      })
-      .catch((error) => {
-        if (!cancelled && !authenticated && [400, 422].includes(error?.status)) {
-          productAlertSubscriptions.clearContact();
-          setSubscribedTypes([]);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [product.id, product.variantId, showPriceAlerts, useStockAwareActions, procurementUnavailable, user?.email, user?.phoneNumber]);
-
-  const requestAlert = (type) => {
-    if (subscribedTypes.includes(type)) return;
-    setGuestAlertType(type);
-  };
+  const requestAlert = (type) => setGuestAlertType(type);
 
   const handleGuestSubscription = ({ type, deliveryChannel, newsletterWarning, contact, requiresConfirmation }) => {
     if (requiresConfirmation) {
@@ -87,9 +44,7 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked, di
         contact,
       );
     }
-    setSubscribedTypes((current) =>
-      current.includes(type) ? current : [...current, type],
-    );
+    window.dispatchEvent(new Event('daja:product-alerts-changed'));
     setGuestAlertType(null);
     flash(
       'Obaveštenje je uključeno',
@@ -112,18 +67,13 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked, di
             type="button"
             className={`stock-alert-button${outOfStockSubscribed ? ' is-subscribed' : ''}`}
             onClick={() => requestAlert(outOfStockAlertType)}
-            disabled={outOfStockSubscribed}
           >
             {outOfStockSubscribed ? (
               <BellRing size={19} />
             ) : (
               <Bell size={19} />
             )}
-            {translateText(outOfStockSubscribed
-              ? outOfStockAlertType === 'price_change'
-                ? 'Pratite promenu cene'
-                : 'Obaveštenje je uključeno'
-              : 'Obavesti me kada bude na stanju')}
+            {translateText(outOfStockSubscribed ? 'Obaveštenje je uključeno' : 'Obavesti me kada bude na stanju')}
           </button>
         ) : (
           <button className="cta-button" disabled={disabled} onClick={onAdd}>{translateText("Dodaj u korpu")}</button>
@@ -144,7 +94,6 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked, di
           type="button"
           className={`price-alert-button${subscribedTypes.includes('price_change') ? ' is-subscribed' : ''}`}
           onClick={() => requestAlert('price_change')}
-          disabled={subscribedTypes.includes('price_change')}
           title={translateText(subscribedTypes.includes('price_change') ? 'Pratite promenu cene' : 'Obavesti me kada se cena promeni')}
           aria-label={translateText(subscribedTypes.includes('price_change') ? 'Pratite promenu cene' : 'Obavesti me kada se cena promeni')}
         >
@@ -152,6 +101,8 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked, di
         </button>
         )}
       </div>
+
+      {subscribedTypes.length > 0 && <WatchAlertControls product={product} status={alerts} />}
 
       <ProductAlertModal
         isOpen={Boolean(guestAlertType)}

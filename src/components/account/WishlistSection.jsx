@@ -2,7 +2,7 @@ import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, BellOff, BellRing, Heart, Trash2, ShoppingCart } from 'lucide-react';
+import { Heart, Trash2, ShoppingCart } from 'lucide-react';
 
 import { useWishlist } from '../../context/WishlistProvider.jsx';
 import { useCart } from '../../hooks/useCart.js';
@@ -11,207 +11,78 @@ import { useUndo } from '../../hooks/useUndo.js';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
 import useProduct from '../../hooks/useProduct.js';
-import {
-  productAlertsApi,
-  productAlertSubscriptions,
-} from '../../services/dajaPlatform.js';
+import { privacyApi } from '../../services/dajaPlatform.js';
 import './WishlistSection.css';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
 import ProductAlertModal from '../modals/ProductAlertModal.jsx';
+import WatchAlertControls from '../product/WatchAlertControls.jsx';
+import WishlistAlertSettings from './WishlistAlertSettings.jsx';
 
-function WishlistAlertButton({ item }) {
-  const { t: translateText } = useStorefront();
-
-  const { product, loading } = useProduct(item.slug);
+function WishlistAlertButton({ item, alerts }) {
+  const { product: catalogProduct } = useProduct(item.slug);
   const { user } = useAuth();
   const { flash } = useFlash();
-  const [subscribedTypes, setSubscribedTypes] = useState([]);
-  const [showGuestAlertModal, setShowGuestAlertModal] = useState(false);
-  const [unsubscribing, setUnsubscribing] = useState(false);
+  const [open, setOpen] = useState(false);
+  const variant = item.variantId && catalogProduct?.variants?.find(entry => entry.id === item.variantId);
+  const product = variant && catalogProduct.variantId !== variant.id
+    ? { ...catalogProduct, variantId: variant.id, name: variant.name ? `${catalogProduct.name} — ${variant.name}` : catalogProduct.name,
+        price: variant.current_price_amount != null ? Number(variant.current_price_amount) / 100 : item.price, salePrice: undefined }
+    : catalogProduct;
+  if (!product?.variantId || (item.variantId && product.variantId !== item.variantId)) return null;
 
-  const inStock = product?.availability?.inStock ?? product?.inStock;
-  const type = inStock ? 'price_change' : 'back_in_stock';
-
-  useEffect(() => {
-    const authenticated = Boolean(user?.email || user?.phoneNumber);
-    const storedTypes = authenticated
-      ? []
-      : productAlertSubscriptions.typesFor(product?.id, product?.variantId);
-    setSubscribedTypes(storedTypes);
-
-    const contact = productAlertSubscriptions.contact();
-    if ((!authenticated && !contact.managementToken) || !product?.id || !product?.variantId) return undefined;
-    let cancelled = false;
-    productAlertsApi
-      .status(product.id, {
-        variantId: product.variantId,
-        ...(!authenticated && contact.managementToken ? { managementToken: contact.managementToken } : {}),
-      }, { auth: authenticated })
-      .then((response) => {
-        if (cancelled) return;
-        const activeTypes = Array.isArray(response?.types) ? response.types : [];
-        if (!authenticated) {
-          productAlertSubscriptions.replaceTypes(product.id, product.variantId, activeTypes);
-        }
-        setSubscribedTypes(activeTypes);
-      })
-      .catch((error) => {
-        if (!cancelled && !authenticated && [400, 422].includes(error?.status)) {
-          productAlertSubscriptions.clearContact();
-          setSubscribedTypes([]);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [product?.id, product?.variantId, type, user?.email, user?.phoneNumber]);
-
-  const alertReady = !loading && Boolean(product?.id && product.variantId);
-
-  const activeType = subscribedTypes.includes(type)
-    ? type
-    : subscribedTypes[0] || type;
-  const subscribed = subscribedTypes.includes(activeType);
-  const label = activeType === 'price_change'
-    ? 'Obavesti me kada se cena promeni'
-    : 'Obavesti me kada bude na stanju';
-
-  const requestAlert = () => {
-    if (!subscribed) setShowGuestAlertModal(true);
-  };
-
-  const unsubscribeAlert = async () => {
-    const contact = productAlertSubscriptions.contact();
-    const authenticated = Boolean(user?.email || user?.phoneNumber);
-    if (!authenticated && !contact.managementToken) {
-      flash(
-        'Email nije dostupan',
-        'Prijavite se ponovo da biste isključili ovo obaveštenje.',
-        'error',
-      );
-      return;
+  const status = { email: [], whatsapp: [] };
+  for (const alert of alerts) {
+    if (alert.productId === product.id && alert.variantId === product.variantId) {
+      status[alert.channel === 'whatsapp' ? 'whatsapp' : 'email'].push(alert.type);
     }
-    setUnsubscribing(true);
-    try {
-      await productAlertsApi.unsubscribe(
-        product.id,
-        {
-          variantId: product.variantId,
-          type: activeType,
-          ...(!authenticated && contact.managementToken ? { managementToken: contact.managementToken } : {}),
-        },
-        { auth: authenticated },
-      );
-      if (!authenticated) {
-        productAlertSubscriptions.markUnsubscribed(
-          product.id,
-          product.variantId,
-          activeType,
-        );
-      }
-      setSubscribedTypes((current) =>
-        current.filter((currentType) => currentType !== activeType),
-      );
-      flash('Obaveštenje je isključeno', 'Više nećemo slati ovu obavest.', 'success');
-    } catch (error) {
-      flash(
-        'Isključivanje nije uspelo',
-        error?.message || 'Pokušajte ponovo.',
-        'error',
-      );
-    } finally {
-      setUnsubscribing(false);
-    }
-  };
-
-  const handleGuestSubscription = ({ deliveryChannel, newsletterWarning, contact, requiresConfirmation }) => {
-    if (requiresConfirmation) {
-      setShowGuestAlertModal(false);
-      flash('Potvrdite email adresu', 'Proverite email i potvrdite prijavu preko dugmeta u poruci. Obaveštenje će se tada uključiti.', 'info');
-      return;
-    }
-    if (!user?.email && !user?.phoneNumber) {
-      productAlertSubscriptions.markSubscribed(
-        product.id,
-        product.variantId,
-        type,
-        contact,
-      );
-    }
-    setSubscribedTypes((current) =>
-      current.includes(type) ? current : [...current, type],
-    );
-    setShowGuestAlertModal(false);
-    flash(
-      'Obaveštenje je uključeno',
-      newsletterWarning
-        ? 'Obaveštenje je sačuvano, ali prijava na novosti nije uspela.'
-        : deliveryChannel === 'sms'
-          ? inStock
-            ? 'Javićemo vam SMS-om kada se cena promeni.'
-            : 'Javićemo vam SMS-om kada proizvod ponovo bude na stanju.'
-          : inStock
-            ? 'Javićemo vam emailom kada se cena promeni.'
-            : 'Javićemo vam emailom kada proizvod ponovo bude na stanju.',
-      newsletterWarning ? 'info' : 'success',
-    );
-  };
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={subscribed ? unsubscribeAlert : requestAlert}
-        disabled={!alertReady || unsubscribing}
-        aria-busy={loading || unsubscribing}
-        className={`wishlist-alert-btn${subscribed ? ' is-subscribed' : ''}`}
-        title={translateText(loading ? 'Učitavanje…' : !alertReady ? 'Trenutno nije dostupno' : subscribed ? 'Isključi obaveštenje' : label)}
-      >
-        {subscribed ? (
-          <>
-            <span className="wishlist-alert-btn__status">
-              <BellRing size={15} />
-              {translateText(activeType === 'price_change'
-                ? 'Promena cene: uključeno'
-                : 'Stanje: uključeno')}
-            </span>
-            <span className="wishlist-alert-btn__unsubscribe">
-              <BellOff size={15} />
-              {translateText(unsubscribing ? 'Isključujemo…' : 'Isključi obaveštenje')}
-            </span>
-          </>
-        ) : (
-          <>
-            <Bell size={15} />
-            {translateText('Obavesti me')}
-          </>
-        )}
-      </button>
-      <ProductAlertModal
-        isOpen={showGuestAlertModal}
-        onClose={() => setShowGuestAlertModal(false)}
-        product={product}
-        type={type}
-        initialEmail={user?.email ?? ''}
-        initialPhone={user?.phoneNumber ?? ''}
-        authenticated={Boolean(user?.email || user?.phoneNumber)}
-        onSubscribed={handleGuestSubscription}
-      />
-    </>
-  );
+  }
+  return <>
+    <WatchAlertControls product={product} status={status} onSubscribe={() => setOpen(true)} />
+    <ProductAlertModal
+      isOpen={open} onClose={() => setOpen(false)} product={product} type="price_change"
+      initialEmail={user?.email ?? ''} initialPhone={user?.phoneNumber ?? ''} authenticated={Boolean(user)}
+      onSubscribed={result => {
+        if (result.requiresConfirmation) flash('Potvrdite email adresu', 'Proverite email i potvrdite prijavu preko dugmeta u poruci. Obaveštenje će se tada uključiti.', 'info');
+        window.dispatchEvent(new Event('daja:product-alerts-changed'));
+      }}
+    />
+  </>;
 }
 
 function WishlistSection() {
   const { t: translateText, money } = useStorefront();
 
-  const { wishlist, removeFromWishlist, addToWishlist } = useWishlist();
+  const { wishlist, removeFromWishlist, addToWishlist, flushWishlist } = useWishlist();
+  const { user } = useAuth();
+  const accountId = user?.id;
+  const [alerts, setAlerts] = useState(null);
   const { dispatch } = useCart();
   const { flash } = useFlash();
   const { showUndo } = useUndo();
   const placeholderImage = '/images/product-placeholder.svg';
 
   const [deleteId, setDeleteId] = useState(null);
+
+  useEffect(() => {
+    if (!accountId) return undefined;
+    let controller;
+    const refresh = () => {
+      controller?.abort();
+      controller = new AbortController();
+      const { signal } = controller;
+      privacyApi.mine({ signal }).then(snapshot => {
+        if (!signal.aborted) setAlerts({ accountId, items: snapshot?.alerts || [] });
+      }).catch(() => {});
+    };
+    refresh();
+    window.addEventListener('daja:product-alerts-changed', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      controller?.abort();
+      window.removeEventListener('daja:product-alerts-changed', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [accountId]);
 
   const moveToCart = (item) => {
     dispatch({
@@ -247,6 +118,8 @@ function WishlistSection() {
           <span className="wishlist-count">{wishlist.length}</span>
         </h3>
       </div>
+
+      <WishlistAlertSettings hasItems={wishlist.length > 0} onBeforeSubscribe={flushWishlist} />
 
       {wishlist.length === 0 ? (
         <div className="empty-state card glass flex flex-col items-center justify-center py-16 text-center">
@@ -312,7 +185,7 @@ function WishlistSection() {
                 <div className="wishlist-price">{money(item.price)}</div>
 
                 <div className="wishlist-actions">
-                  <WishlistAlertButton item={item} />
+                  <WishlistAlertButton item={item} alerts={alerts?.accountId === accountId ? alerts?.items || [] : []} />
 
                   <button
                     type="button"

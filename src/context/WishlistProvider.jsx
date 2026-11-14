@@ -267,6 +267,7 @@ export const WishlistProvider = ({ children }) => {
       ...prev,
       {
         id: product.id,
+        variantId: product.variantId,
         name: product.name,
         price: product.price,
         image: product.image,
@@ -290,12 +291,26 @@ export const WishlistProvider = ({ children }) => {
     flash('Vraceno', 'Proizvod vracen u listu zelja.', 'success');
   };
 
+  const flushWishlist = async () => {
+    const controller = accountController.current;
+    await pendingLoad.current;
+    if (!userId || !controller || controller.signal.aborted || !loadedServerWishlist.current) {
+      throw new Error('Lista želja nije učitana. Pokušajte ponovo.');
+    }
+    const items = latestWishlist.current;
+    if (serverDirty.current) {
+      await customerApi.setWishlist(items, { signal: controller.signal });
+      if (latestWishlist.current === items) serverDirty.current = false;
+    }
+  };
+
   const isInWishlist = (id) => wishlist.some((item) => item.id === id);
 
   return (
     <WishlistContext.Provider
       value={{
         wishlist,
+        flushWishlist,
         toggleWishlist,
         removeFromWishlist,
         addToWishlist,

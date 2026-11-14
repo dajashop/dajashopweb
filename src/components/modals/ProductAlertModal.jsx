@@ -1,5 +1,6 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Bell, BellRing, Check, Image as ImageIcon, LoaderCircle, ShieldCheck, X } from 'lucide-react';
 import {
@@ -27,7 +28,7 @@ export default function ProductAlertModal({
   const { t: translateText, localizePath, money } = useStorefront();
 
   const { policy } = useConsent();
-  const { showAuth } = useAuth();
+  const { user, showAuth } = useAuth();
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -303,6 +304,7 @@ export default function ProductAlertModal({
         }
       }
 
+      window.dispatchEvent(new Event('daja:product-alerts-changed'));
       onSubscribed?.({
         requiresConfirmation: result?.requiresConfirmation === true,
         type,
@@ -451,6 +453,9 @@ export default function ProductAlertModal({
           </button>
           <p className="product-alert-modal__footnote"><Check size={14} aria-hidden="true" />{translateText('Novosti i ponude su opcione. Vi birate šta primate.')}</p>
         </div>}
+        {user && type === 'price_change' && <Link className="product-alert-modal__wishlist-link" to="/account/wishlist" onClick={onClose}>
+          {translateText('Praćenje cena za celu listu želja')}
+        </Link>}
         </div>
         </div>
       </div>

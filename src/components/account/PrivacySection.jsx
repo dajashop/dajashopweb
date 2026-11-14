@@ -6,6 +6,7 @@ import { privacyApi, novostiApi } from '../../services/dajaPlatform.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 
 import './PrivacySection.css';
+import ConfirmModal from '../modals/ConfirmModal.jsx';
 import NotificationChannelPicker, { notificationChannelAvailable, notificationChannelNotice } from '../NotificationChannelPicker.jsx';
 
 const alertLabel = {
@@ -24,6 +25,7 @@ export default function PrivacySection({ user }) {
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [confirmAll, setConfirmAll] = useState(false);
   const [preview, setPreview] = useState(null);
 
   const refresh = useCallback(async () => {
@@ -89,10 +91,26 @@ export default function PrivacySection({ user }) {
     }
   };
 
-  const unsubscribeAlert = async (id) => {
-    setBusy(`alert:${id}`);
+  const unsubscribeAlert = async (alert) => {
+    setBusy(`alert:${alert.id}`);
     try {
-      await privacyApi.unsubscribeAlert(id);
+      await privacyApi.unsubscribeProductAlerts(alert.channel || 'email', {
+        kind: 'watch', productId: alert.productId, variantId: alert.variantId,
+      });
+      await refresh();
+    } catch (requestError) {
+      setError(requestError.message || 'Odjava od obaveštenja nije uspela.');
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const unsubscribeAll = async () => {
+    setConfirmAll(false);
+    setBusy('all-alerts');
+    setError('');
+    try {
+      await privacyApi.unsubscribeProductAlerts('both', { kind: 'all' });
       await refresh();
     } catch (requestError) {
       setError(requestError.message || 'Odjava od obaveštenja nije uspela.');
@@ -104,7 +122,14 @@ export default function PrivacySection({ user }) {
   if (loading) return <AccountSectionSkeleton section="privacy" />;
 
   const newsletterActive = snapshot?.newsletter?.active === true;
-  const alerts = Array.isArray(snapshot?.alerts) ? snapshot.alerts : [];
+  const alertsByWatch = new Map();
+  for (const alert of snapshot?.alerts || []) {
+    const key = [alert.channel || 'email', alert.productId, alert.variantId].join(':');
+    const current = alertsByWatch.get(key);
+    if (current) current.types.add(alert.type);
+    else alertsByWatch.set(key, { ...alert, types: new Set([alert.type]) });
+  }
+  const alerts = [...alertsByWatch.values()];
   const hasEmail = Boolean(user?.email);
 
   return (
@@ -112,7 +137,7 @@ export default function PrivacySection({ user }) {
       <header className="privacy-section__header section-header-row">
         <div>
           <h3>{translateText("Privatnost i obaveštenja")}</h3>
-          <p>{translateText("Ovde menjate izbor kolačića i upravljate email obaveštenjima.")}</p>
+          <p>{translateText("Ovde menjate izbor kolačića i upravljate email i WhatsApp obaveštenjima.")}</p>
         </div>
         <button type="button" className="privacy-section__settings" onClick={openSettings}>
           <Settings2 size={17} />{translateText(" Podesi kolačiće")}</button>
@@ -164,13 +189,21 @@ export default function PrivacySection({ user }) {
 
       <article className="privacy-section__card card glass">
         <div className="privacy-section__title"><span className="privacy-section__icon"><BellOff size={24} /></span><h4>{translateText("Obaveštenja o artiklima")}</h4></div>
+          <button type="button" className="privacy-section__danger" disabled={Boolean(busy)}
+            onClick={() => setConfirmAll(true)}>{translateText('Odjavi sva obaveštenja o satovima')}</button>
+          <ConfirmModal isOpen={confirmAll} onClose={() => setConfirmAll(false)} onConfirm={() => void unsubscribeAll()}
+            title={translateText('Odjavi sva obaveštenja o satovima')}
+            description={translateText('Isključićete sva email i WhatsApp obaveštenja o satovima. Prijava na novosti ostaje aktivna ako je uključena.')}
+            confirmText={translateText('Potvrdi odjavu')} isDanger />
+        {alerts.some(alert => alert.channel === 'whatsapp') &&
+          <p>{translateText('Za odjavu ovog sata odgovorite na njegovu WhatsApp poruku sa STOP SAT. Za sve satove pošaljite STOP SATOVI.')}</p>}
         {alerts.length === 0 ? (
           <p>{translateText("Nemate aktivna obaveštenja o artiklima.")}</p>
         ) : (
           <ul className="privacy-section__alerts">
             {alerts.map((alert) => {
               const name = [alert.brand, alert.name].filter(Boolean).join(' ') || 'Artikal';
-              const hasPrice = Number.isFinite(Number(alert.price));
+              const hasPrice = alert.price != null && Number.isFinite(Number(alert.price));
               const imageSrc = alert.image || '/images/product-placeholder.svg';
               return (
                 <li key={alert.id}>
@@ -192,11 +225,11 @@ export default function PrivacySection({ user }) {
                     </button>
                     <div className="privacy-section__alert-details">
                       <strong>{translateText(name)}</strong>
-                      <span>{translateText(alertLabel[alert.type] || 'Obaveštenje')}</span>
+                      <span>{[...alert.types].map(type => translateText(alertLabel[type] || 'Obaveštenje')).join(' / ')} · {alert.channel === 'whatsapp' ? 'WhatsApp' : translateText('Email')}</span>
                       {hasPrice && <b>{money(Number(alert.price))}</b>}
                     </div>
                   </div>
-                  <button type="button" onClick={() => void unsubscribeAlert(alert.id)} disabled={busy === `alert:${alert.id}`}>
+                  <button type="button" onClick={() => void unsubscribeAlert(alert)} disabled={Boolean(busy)}>
                     {translateText(busy === `alert:${alert.id}` ? 'Odjavljujemo…' : 'Isključi')}
                   </button>
                 </li>

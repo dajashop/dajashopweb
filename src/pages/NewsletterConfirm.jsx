@@ -37,6 +37,7 @@ export default function NewsletterConfirm({ productAlert = false }) {
         setActive(result.active !== false);
         if (result.active !== false) productAlertSubscriptions.markSubscribed(result.productId, result.variantId, result.type);
         else productAlertSubscriptions.markUnsubscribed(result.productId, result.variantId, result.type);
+        window.dispatchEvent(new Event('daja:product-alerts-changed'));
       } else {
         await novostiApi.confirm(token, { isCurrent: request.isCurrent });
         if (!request.isCurrent()) return;

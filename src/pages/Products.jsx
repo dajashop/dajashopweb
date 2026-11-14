@@ -177,6 +177,7 @@ export default function Product() {
   const handleWishlist = () => {
     toggleWishlist({
       id: p.id,
+      variantId: p.variantId,
       name: p.name,
       price: p.price,
       image: p.images?.[0]?.url || p.mainImageUrl || p.image,

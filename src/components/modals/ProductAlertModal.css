@@ -376,3 +376,5 @@
 @media (prefers-reduced-motion: reduce) {
   .product-alert-modal, .product-alert-modal__overlay::before { animation: none; }
 }
+
+.product-alert-modal__wishlist-link { display: block; margin-top: 8px; text-align: center; font-size: .75rem; text-decoration: underline; overflow-wrap: anywhere; }

@@ -34,6 +34,7 @@ export default function WhatsAppPriceAlertForm({ product, initialPhone, onSignIn
     });
     if (result?.active) {
       setActive(true);
+      window.dispatchEvent(new Event('daja:product-alerts-changed'));
       return true;
     }
     if (result?.requiresPhoneVerification) return false;
@@ -104,7 +105,7 @@ export default function WhatsAppPriceAlertForm({ product, initialPhone, onSignIn
       </div>}
       <p className="product-alert-modal__privacy-note">
         <ShieldCheck size={17} aria-hidden="true" />
-        <span>{t('Odjava: pošaljite STOP u WhatsApp-u.')} <a href={localizePath('/whatsapp-privacy')}>{t('Politika privatnosti')}</a></span>
+        <span>{t('Za odjavu ovog sata odgovorite na njegovu WhatsApp poruku sa STOP SAT. Za sve satove pošaljite STOP SATOVI.')} <a href={localizePath('/whatsapp-privacy')}>{t('Politika privatnosti')}</a></span>
       </p>
       {error && <p role="alert" className="product-alert-modal__error">{t(error)}</p>}
       <div className="product-alert-modal__footer product-alert-modal__footer--whatsapp">
