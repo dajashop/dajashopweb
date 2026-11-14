@@ -29,6 +29,7 @@ import {
   MessageSquare, // Dodata ikonica za napomenu
 } from 'lucide-react';
 import ErrorMessage from './ErrorMessage';
+import { formatDeliveryAddress } from './deliveryAddress.js';
 
 import { customerApi } from '../../services/dajaPlatform';
 import { loadGoogleMapsPlaces } from '../../services/googleMaps';
@@ -148,6 +149,7 @@ export default function DeliveryForm({
         setFormData((prev) => ({
           ...prev,
           address: '',
+          addressDetails: '',
           city: '',
           postalCode: '',
         }));
@@ -167,6 +169,7 @@ export default function DeliveryForm({
           surname: lName,
           phone: addr.phone || '',
           address: addr.address || '',
+          addressDetails: '',
           city: addr.city || '',
           postalCode: addr.zip || '',
           email: prev.email || user?.email || '',
@@ -236,12 +239,13 @@ export default function DeliveryForm({
     return val.trim().toLowerCase();
   }
 
+  const deliveryAddress = formatDeliveryAddress(formData.address, formData.addressDetails);
   const addressExists = useMemo(
     () =>
       savedAddresses.some(
-        (a) => normalizeAddress(a.address) === normalizeAddress(formData.address)
+        (a) => normalizeAddress(a.address) === normalizeAddress(deliveryAddress)
       ),
-    [savedAddresses, formData.address]
+    [savedAddresses, deliveryAddress]
   );
 
   const buildAddressSuggestions = useCallback(
@@ -391,7 +395,7 @@ export default function DeliveryForm({
       label,
       icon,
       name: `${formData.name} ${formData.surname}`.trim(),
-      address: formData.address,
+      address: deliveryAddress,
       city: formData.city,
       zip: formData.postalCode,
       phone: formData.phone,
@@ -873,6 +877,21 @@ export default function DeliveryForm({
                 <AnimatePresence mode="wait">
                   {errors.address && <ErrorMessage message={errors.address} />}
                 </AnimatePresence>
+              </div>
+              <div className="input-wrapper-col">
+                <div className="input-group">
+                  <input
+                    type="text"
+                    name="addressDetails"
+                    aria-label={translateText("Kućni broj / stan (opciono)")}
+                    placeholder={translateText("Kućni broj / stan (opciono)")}
+                    autoComplete="address-line2"
+                    value={formData.addressDetails}
+                    onChange={handleChange}
+                    maxLength={80}
+                    className="pl-4"
+                  />
+                </div>
               </div>
               <div className="input-wrapper-col">
                 <div className={`input-group ${getInputClass('city')}`}>

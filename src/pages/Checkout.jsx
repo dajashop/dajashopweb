@@ -1,3 +1,4 @@
+import { formatDeliveryAddress } from '../components/checkout/deliveryAddress.js';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useState, useEffect, useRef } from 'react';
 import './Checkout.css';
@@ -60,6 +61,7 @@ export default function Checkout() {
     email: '',
     phone: '',
     address: '',
+    addressDetails: '',
     city: '',
     postalCode: '',
   });
@@ -107,6 +109,7 @@ export default function Checkout() {
               email: user.email || prev.email,
               phone: savedAddr.phone || '',
               address: savedAddr.address || '',
+              addressDetails: '',
               city: savedAddr.city || '',
               postalCode: savedAddr.zip || '',
             }));
@@ -126,6 +129,7 @@ export default function Checkout() {
       setFormData((prev) => ({
         ...prev,
         address: '',
+        addressDetails: '',
         city: '',
         postalCode: '',
       }));
@@ -212,9 +216,11 @@ export default function Checkout() {
           }
         }
 
+        const { addressDetails, ...customerDetails } = formData;
         const newOrder = await ordersApi.create({
           customer: {
-            ...formData,
+            ...customerDetails,
+            address: requiredForCourier ? formatDeliveryAddress(formData.address, addressDetails) : '',
             uid: user ? user.uid : 'guest',
           },
           items,

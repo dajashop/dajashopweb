@@ -1375,7 +1375,8 @@
   transform: none;
 }
 .checkout-page input::placeholder,
-.checkout-page textarea::placeholder { color: #81858e; opacity: 1; }
+.checkout-page textarea::placeholder { color: #898d96; font-weight: 400; opacity: 1; }
+.checkout-page .ghost-overlay .prediction-text { color: #898d96; font-weight: 400; }
 .checkout-page .checkout-note-field textarea { display: block; background: transparent; border: 0; color: var(--text); }
 .checkout-page .phone-country-picker > button { background: #ffffff; border-color: #d8dce2; }
 .checkout-page .phone-country-picker > button:hover { background: #fafafa; }
