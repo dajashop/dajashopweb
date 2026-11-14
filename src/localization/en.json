@@ -1445,7 +1445,7 @@
   "Korisnik nije pronađen.": "User not found.",
   "Došlo je do greške.": "Something went wrong.",
   "Broj telefona verifikovan ✅": "Phone number verified ✅",
-  "Za prijavu brojem prvo se prijavite postojećim nalogom, pa u profilu dodajte i SMS kodom potvrdite taj broj.": "To sign in by phone, first sign in to your existing account, then add and verify that number by SMS in your profile.",
+  "Taj broj nije povezan sa nalogom za prijavu. Napravite nalog putem emaila, pa potvrdite broj u profilu da biste ubuduće mogli da se prijavite njime.": "That number isn’t linked to an account for sign-in. Create an account with your email, then verify the number in your profile to use it for future sign-ins.",
   "Nevažeći kod.": "Invalid code.",
   "Greška pri OAuth prijavi.": "Could not sign in.",
   "Prijavljeni ste putem Passkey-a! 🔑": "Signed in with a passkey! 🔑",

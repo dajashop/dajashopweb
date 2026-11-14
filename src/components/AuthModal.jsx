@@ -189,6 +189,7 @@ export default function AuthModal() {
   }, [authOpen, isLogin, reduceMotion]);
 
   function go(next) {
+    setPhoneRegistrationNotice(false);
     setMode(next);
   }
 
@@ -214,6 +215,7 @@ export default function AuthModal() {
   const [passwordResetError, setPasswordResetError] = useState('');
   const [passwordResetStatus, setPasswordResetStatus] = useState('idle');
 
+  const [phoneRegistrationNotice, setPhoneRegistrationNotice] = useState(false);
   const [awaitPhoneCode, setAwaitPhoneCode] = useState(false);
   const [smsCode, setSmsCode] = useState('');
   const [phoneChannel, setPhoneChannel] = useState('sms');
@@ -270,6 +272,7 @@ export default function AuthModal() {
 
     setLastLogin(savedLogin);
     if (!authOpen || isOpening) {
+      setPhoneRegistrationNotice(false);
       setIdentity(shouldSuggestEmail ? savedLogin.email : '');
       setIsSuggestedEmail(shouldSuggestEmail);
     }
@@ -674,10 +677,12 @@ export default function AuthModal() {
         'Broj telefona verifikovan ✅'
       );
     } catch (err) {
-      if (err.code === 'INVALID_CREDENTIALS') {
+      if (isLogin && err.code === 'INVALID_CREDENTIALS') {
         setAwaitPhoneCode(false);
         setSmsCode('');
-        alert(translateText('Za prijavu brojem prvo se prijavite postojećim nalogom, pa u profilu dodajte i SMS kodom potvrdite taj broj.'));
+        setIdentity('');
+        setPhoneRegistrationNotice(true);
+        setMode('register');
       } else {
         alert(translateText(err.message || 'Nevažeći kod.'));
       }
@@ -867,6 +872,11 @@ export default function AuthModal() {
                         ) : !awaitPhoneCode &&
                         (!pendingEmailVerify || loginPane) ? (
                           <form className="form" onSubmit={onSubmit} noValidate>
+                            {!loginPane && phoneRegistrationNotice && (
+                              <div className="verify-box" role="status">
+                                {translateText('Taj broj nije povezan sa nalogom za prijavu. Napravite nalog putem emaila, pa potvrdite broj u profilu da biste ubuduće mogli da se prijavite njime.')}
+                              </div>
+                            )}
                             {!loginPane && (
                               <label className="field">
                                 <span>{translateText("Ime i prezime")}</span>
