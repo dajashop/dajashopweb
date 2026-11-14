@@ -73,7 +73,7 @@
 .product-specifications__row dt { color: var(--color-muted, #6e6e73); font-weight: 400; }
 .product-specifications__row dd { margin: 0; text-align: right; font-weight: 600; }
 
-@container (max-width: 493px) {
+@media (width < 1280px) {
   .product-specifications__grid { grid-template-columns: minmax(0, 1fr); }
   .product-specifications__column { display: contents; }
 }
