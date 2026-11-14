@@ -43,7 +43,7 @@ export function ChannelOptions({ value, onChange, disabled, channels, available,
   </fieldset>;
 }
 
-export default function NotificationChannelPicker({ value, onChange, disabled, variant, contact, purpose, productId, variantId }) {
+export default function NotificationChannelPicker({ value, onChange, disabled, variant, contact, purpose, productId, variantId, channelOnly = false }) {
   const [whatsappAvailable, setWhatsAppAvailable] = useState(false);
   useEffect(() => {
     let current = true;
@@ -57,6 +57,6 @@ export default function NotificationChannelPicker({ value, onChange, disabled, v
       compact={variant !== 'cards'}
       channels={['email', 'whatsapp']} available={channel => channel === 'whatsapp' ? whatsappAvailable : notificationChannelAvailable(channel)}
       title={variant === 'cards' ? 'Gde da vam javimo?' : 'Način obaveštavanja'} />
-    {value === 'whatsapp' && whatsappAvailable && <WhatsAppSubscription key={`${purpose || 'newsletter'}:${productId || ''}:${variantId || ''}`} contact={contact} purpose={purpose} productId={productId} variantId={variantId} />}
+    {!channelOnly && value === 'whatsapp' && whatsappAvailable && <WhatsAppSubscription key={`${purpose || 'newsletter'}:${productId || ''}:${variantId || ''}`} contact={contact} purpose={purpose} productId={productId} variantId={variantId} />}
   </div>;
 }

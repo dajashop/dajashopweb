@@ -7,8 +7,10 @@ import {
   productAlertsApi,
   novostiApi,
 } from '../../services/dajaPlatform.js';
+import { useAuth } from '../../hooks/useAuth.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import './ProductAlertModal.css';
+import WhatsAppPriceAlertForm from './WhatsAppPriceAlertForm.jsx';
 import NotificationChannelPicker, { notificationChannelAvailable, notificationChannelNotice } from '../NotificationChannelPicker.jsx';
 
 export default function ProductAlertModal({
@@ -25,6 +27,7 @@ export default function ProductAlertModal({
   const { t: translateText, localizePath, money } = useStorefront();
 
   const { policy } = useConsent();
+  const { showAuth } = useAuth();
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -38,10 +41,13 @@ export default function ProductAlertModal({
   const [error, setError] = useState('');
 
   useEffect(() => {
+    setDeliveryChannel('email');
+  }, [isOpen, product?.id, product?.variantId, type]);
+
+  useEffect(() => {
     if (!isOpen || !product?.id || !product?.variantId || !type) return undefined;
     const storedContact = authenticated ? {} : productAlertSubscriptions.contact();
     const token = storedContact.managementToken || '';
-    setDeliveryChannel('email');
     setEmail(String(initialEmail || '').trim());
     setPhone(String(initialPhone || '').trim());
     setManagementToken(token);
@@ -318,7 +324,7 @@ export default function ProductAlertModal({
   return createPortal(
     <div className="product-alert-modal__overlay" role="presentation" data-lenis-prevent>
       <div
-        className={`product-alert-modal${deliveryChannel === 'whatsapp' ? ' is-whatsapp' : ''}`}
+        className="product-alert-modal"
         ref={dialogRef}
         tabIndex={-1}
         role="dialog"
@@ -358,7 +364,7 @@ export default function ProductAlertModal({
         </div>
         <form id="product-alert-subscription-form" onSubmit={handleSubmit}>
           <NotificationChannelPicker variant="cards" value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setError(''); }} disabled={submitting}
-            contact={phone} purpose={type} productId={product.id} variantId={product.variantId} />
+            contact={phone} purpose={type} productId={product.id} variantId={product.variantId} channelOnly={type === 'price_change'} />
 
           {deliveryChannel !== 'whatsapp' && <>
           {isEmailChannel && reusableGuestEmail ? (
@@ -435,6 +441,9 @@ export default function ProductAlertModal({
           {error && <p role="alert" className="product-alert-modal__error">{translateText(error)}</p>}
           </>}
         </form>
+        {deliveryChannel === 'whatsapp' && type === 'price_change' &&
+          <WhatsAppPriceAlertForm key={`${product.id}:${product.variantId}`} product={product} initialPhone={phone}
+            onSignIn={() => { onClose(); showAuth('login'); }} />}
         {deliveryChannel !== 'whatsapp' && <div className="product-alert-modal__footer">
           <button type="submit" form="product-alert-subscription-form" disabled={submitting || !notificationChannelAvailable(deliveryChannel)}>
             {submitting ? <LoaderCircle size={19} aria-hidden="true" /> : <Bell size={19} aria-hidden="true" />}
