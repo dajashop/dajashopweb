@@ -1,3 +1,4 @@
+import { formatDeliveryAddress } from '../checkout/deliveryAddress.js';
 import { AccountSectionSkeleton } from './AccountSkeleton.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import React, { useState, useEffect, useCallback } from 'react';
@@ -77,6 +78,7 @@ function AddressSection({ user }) {
     icon: 'home',
     name: user.displayName || '',
     address: '',
+    addressDetails: '',
     city: '',
     zip: '',
     phone: '',
@@ -192,7 +194,7 @@ function AddressSection({ user }) {
 
   const handleEdit = (addr) => {
     const { prefix, number } = parsePhoneNumber(addr.phone);
-    setForm({ ...addr, phone: number });
+    setForm({ ...addr, addressDetails: '', phone: number });
     setPhonePrefix(prefix);
     setEditingId(addr.id);
     setIsAdding(true);
@@ -225,7 +227,12 @@ function AddressSection({ user }) {
     }
 
     const fullPhoneNumber = `${phonePrefix} ${form.phone}`;
-    const dataToSave = { ...form, phone: fullPhoneNumber };
+    const { addressDetails, ...addressFields } = form;
+    const dataToSave = {
+      ...addressFields,
+      address: formatDeliveryAddress(form.address, addressDetails),
+      phone: fullPhoneNumber,
+    };
 
     const isEditing = !!editingId;
     try {
@@ -391,7 +398,7 @@ function AddressSection({ user }) {
                 </AnimatePresence>
               </label>
               <label className="full">
-                <span>{translateText("Ulica i broj")}</span>
+                <span>{translateText("Ulica")}</span>
                 <div className="input-with-icon">
                   <MapPin
                     size={16}
@@ -446,6 +453,16 @@ function AddressSection({ user }) {
                     />
                   )}
                 </AnimatePresence>
+              </label>
+              <label className="full">
+                <span>{translateText("Kućni broj / stan (opciono)")}</span>
+                <input
+                  name="addressDetails"
+                  value={form.addressDetails}
+                  onChange={handleInputChange}
+                  autoComplete="address-line2"
+                  maxLength={80}
+                />
               </label>
               <label>
                 <span>{translateText("Grad")}</span>
