@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import { apiRequest } from '../../services/apiClient.js';
 import { privacyApi, productAlertsApi } from '../../services/dajaPlatform.js';
+import WhatsAppPriceAlertForm from '../modals/WhatsAppPriceAlertForm.jsx';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
 
 export default function WishlistAlertSettings({ onBeforeSubscribe }) {
@@ -123,8 +124,9 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
   }
 
   if (!user) return null;
-  const canSubscribe = channel === 'email' ? user.emailVerified : whatsappAvailable && user.phoneVerified;
+
   const alreadyTracking = tracking?.includes(channel);
+  const showWhatsAppForm = channel === 'whatsapp' && whatsappAvailable && !alreadyTracking;
   const showHint = hintReady && !hintDismissed && !menuOpen && !confirm && tracking?.length === 0;
   return <div ref={settingsRef} className="wishlist-alert-settings">
     <button ref={triggerRef} type="button" className={`wishlist-alert-settings__trigger${tracking?.length > 0 ? ' is-tracking' : ''}`} aria-expanded={menuOpen}
@@ -155,12 +157,20 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
             </label>
           </div>
         </fieldset>
-        <button className="wishlist-alert-settings__primary" type="button" disabled={busy || !canSubscribe || alreadyTracking} onClick={() => void change(true)}>
+        {showWhatsAppForm ? (
+          <WhatsAppPriceAlertForm key={account} onBeforeSubscribe={onBeforeSubscribe}
+            onWishlistSubscribed={() => {
+              setStatusError(null);
+              setNotice(t('Praćenje uključeno'));
+              setTracking(current => [...new Set([...(current || []), 'whatsapp'])]);
+            }} />
+        ) : (
+          <button className="wishlist-alert-settings__primary" type="button" disabled={busy || channel !== 'email' || !user.emailVerified || alreadyTracking} onClick={() => void change(true)}>
           {t(busy ? 'Čuvamo…' : alreadyTracking ? 'Praćenje uključeno' : 'Prati sve satove sa liste')}
-        </button>
-        {!canSubscribe && <p>{t(channel === 'email'
-          ? 'Potvrdite email adresu naloga pre uključivanja email obaveštenja.'
-          : 'Potvrdite broj telefona u profilu pre uključivanja WhatsApp obaveštenja.')}</p>}
+          </button>
+        )}
+        {channel === 'email' && !user.emailVerified &&
+          <p>{t('Potvrdite email adresu naloga pre uključivanja email obaveštenja.')}</p>}
         <button type="button" className="wishlist-alert-settings__stop" disabled={busy} onClick={() => setConfirm(true)}>
           <BellOff size={15} aria-hidden="true" />{t('Odjavi sva obaveštenja o satovima')}
         </button>

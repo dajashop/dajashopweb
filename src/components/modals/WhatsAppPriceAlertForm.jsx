@@ -3,12 +3,13 @@ import { Bell, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
+import { productAlertsApi } from '../../services/dajaPlatform.js';
 import { apiRequest } from '../../services/apiClient.js';
 import {
   confirmPhoneCode, phoneVerificationCapabilities, requestPhoneCode,
 } from '../../services/phoneVerification.js';
 
-export default function WhatsAppPriceAlertForm({ product, initialPhone, onSignIn }) {
+export default function WhatsAppPriceAlertForm({ product, initialPhone = '', onSignIn, onBeforeSubscribe, onWishlistSubscribed }) {
   const { user, refreshUser } = useAuth();
   const { policy } = useConsent();
   const { t, language, localizePath } = useStorefront();
@@ -18,11 +19,27 @@ export default function WhatsAppPriceAlertForm({ product, initialPhone, onSignIn
   const [attempt, setAttempt] = useState(null);
   const [busy, setBusy] = useState(false);
   const [active, setActive] = useState(false);
+  const [verifiedNumber, setVerifiedNumber] = useState(null);
+  const [wishlistResult, setWishlistResult] = useState(null);
+  const followsWishlist = Boolean(onBeforeSubscribe);
   const [error, setError] = useState('');
   const number = phone.replace(/[\s()-]/g, '');
   const canSubmit = number.length > 0 && (!attempt || /^\d{6}$/.test(code));
 
-  async function activate() {
+  async function activate(confirmedNumber = verifiedNumber) {
+    if (followsWishlist) {
+      const accountNumber = user?.phoneVerified ? user.phoneNumber?.replace(/[\s()-]/g, '') : null;
+      if (number !== confirmedNumber && number !== accountNumber) return false;
+      await onBeforeSubscribe();
+      const result = await productAlertsApi.subscribeWishlist({
+        channel: 'whatsapp', phone: number, language, accepted: true,
+        ...(policy?.version ? { policyVersion: policy.version } : {}),
+      });
+      setWishlistResult(result);
+      setActive(true);
+      onWishlistSubscribed?.(result);
+      return true;
+    }
     const result = await apiRequest('/whatsapp/subscriptions/verified-account', {
       method: 'POST',
       body: {
@@ -64,8 +81,12 @@ export default function WhatsAppPriceAlertForm({ product, initialPhone, onSignIn
         await confirmPhoneCode(number, code, 'link', attempt.channel);
         setAttempt(null);
         setCode('');
-        void refreshUser().catch(() => {});
-        if (!await activate()) throw new Error('Ova WhatsApp prijava nije dostupna.');
+        setVerifiedNumber(number);
+        try {
+          if (!await activate(number)) throw new Error('Ova WhatsApp prijava nije dostupna.');
+        } finally {
+          void refreshUser().catch(() => {});
+        }
       } else if (!await activate()) {
         await sendCode();
       }
@@ -76,7 +97,9 @@ export default function WhatsAppPriceAlertForm({ product, initialPhone, onSignIn
     }
   }
 
-  if (active) return <p role="status">{t('Obaveštenje o promeni cene je uključeno.')}</p>;
+  if (active) return <p role="status">{wishlistResult
+    ? t(wishlistResult.alreadyEnabled ? 'Praćenje uključeno' : 'Automatsko praćenje je uključeno. Pratimo {active} satova, nedostupnih: {skipped}.', wishlistResult)
+    : t('Obaveštenje o promeni cene je uključeno.')}</p>;
 
   return (
     <form className="product-alert-modal__whatsapp-form" onSubmit={event => void submit(event)}>
@@ -99,6 +122,8 @@ export default function WhatsAppPriceAlertForm({ product, initialPhone, onSignIn
             setError('');
           }} />
       </>}
+      {followsWishlist && user && user.phoneNumber && user.phoneNumber.replace(/[\s()-]/g, '') !== number && number &&
+        <p className="product-alert-modal__whatsapp-instructions">{t('Potvrdom novog broja menjate broj telefona na nalogu.')}</p>}
       {user && attempt && <div className="product-alert-modal__whatsapp-actions">
         <button type="button" disabled={busy} onClick={event => void submit(event, true)}>{t('Pošalji novi kod')}</button>
         <button type="button" disabled={busy} onClick={() => { setAttempt(null); setCode(''); setError(''); }}>{t('Promeni broj')}</button>
@@ -111,7 +136,7 @@ export default function WhatsAppPriceAlertForm({ product, initialPhone, onSignIn
       <div className="product-alert-modal__footer product-alert-modal__footer--whatsapp">
         <button type="submit" disabled={busy || (Boolean(user) && !canSubmit)}>
           {busy ? <LoaderCircle size={19} aria-hidden="true" /> : <Bell size={19} aria-hidden="true" />}
-          {t(!user ? 'Prijavi se' : busy ? 'Čuvamo…' : attempt ? 'Potvrdi kod i uključi obaveštenje' : 'Obavesti me preko WhatsApp-a')}
+          {t(!user ? 'Prijavi se' : busy ? 'Čuvamo…' : attempt ? 'Potvrdi kod i uključi obaveštenje' : followsWishlist ? 'Prati sve satove sa liste' : 'Obavesti me preko WhatsApp-a')}
         </button>
       </div>
     </form>

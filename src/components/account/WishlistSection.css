@@ -300,3 +300,22 @@
 .wishlist-alert-settings__heading { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
 .wishlist-alert-settings__heading button { display: grid; place-items: center; flex: 0 0 32px; min-height: 32px; border-radius: 5px; }
 .wishlist-alert-settings__heading button:hover { background: #e2efe5; }
+
+.wishlist-alert-settings__card .product-alert-modal__whatsapp-form { display: grid; gap: 8px; margin: 0; }
+.wishlist-alert-settings__card .product-alert-modal__whatsapp-form label { font-size: .8rem; font-weight: 650; }
+.wishlist-alert-settings__card .product-alert-modal__whatsapp-form input[type="tel"] {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--wishlist-line);
+  border-radius: 8px;
+  font-size: 1rem;
+}
+.wishlist-alert-settings__card .product-alert-modal__whatsapp-form .product-alert-modal__privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.wishlist-alert-settings__card .product-alert-modal__privacy-note svg { flex-shrink: 0; }
+.wishlist-alert-settings__card .product-alert-modal__footer button { background: #214d35; color: #fff; }
