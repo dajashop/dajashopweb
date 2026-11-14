@@ -31,11 +31,13 @@ export default function WhatsAppSubscription({ contact = '', purpose = 'newslett
     timer = setTimeout(() => void poll(), 5000);
     return () => { stopped = true; clearTimeout(timer); };
   }, [url, token, confirmed]);
+  const isPriceAlert = purpose === 'price_change';
+  const canRequest = (isPriceAlert || accepted) && Boolean(phone.trim()) && !busy;
   const label = purpose === 'newsletter'
     ? 'Želim da primam novosti i ponude putem WhatsApp-a.'
-    : purpose === 'price_change' ? 'Želim WhatsApp obaveštenja o promeni cene ovog artikla.'
-      : 'Želim WhatsApp obaveštenje kada se ovaj artikal vrati na stanje.';
+    : 'Želim WhatsApp obaveštenje kada se ovaj artikal vrati na stanje.';
   const request = async () => {
+    if (!canRequest || url) return;
     setBusy(true); setError('');
     try {
       const result = await apiRequest('/whatsapp/subscriptions/request', { method: 'POST', auth: false,
@@ -47,15 +49,15 @@ export default function WhatsAppSubscription({ contact = '', purpose = 'newslett
     finally { setBusy(false); }
   };
   return <div className="whatsapp-subscription">
-    <p>{t('Potvrdite prijavu slanjem pripremljene poruke u WhatsApp-u. Link važi 30 minuta. Prijava postaje aktivna tek kada pošaljete poruku sa unetog broja.')}</p>
+    <p>{t(isPriceAlert ? 'Tražite WhatsApp obaveštenja o promeni cene ovog artikla. Za potvrdu pošaljite pripremljenu poruku sa unetog broja u roku od 30 minuta.' : 'Potvrdite prijavu slanjem pripremljene poruke u WhatsApp-u. Link važi 30 minuta. Prijava postaje aktivna tek kada pošaljete poruku sa unetog broja.')}</p>
     <label>{t('Broj telefona')}<input type="tel" autoComplete="tel" inputMode="tel" placeholder="+381641234567" value={phone}
-      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (accepted && phone.trim() && !busy && !url) void request(); } }}
+      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (!isPriceAlert && canRequest && !url) void request(); } }}
       disabled={busy} onChange={e => { setPhone(e.target.value); setUrl(''); setConfirmed(false); }} /></label>
-    <label className="whatsapp-subscription__consent"><input type="checkbox" checked={accepted} disabled={busy}
-      onChange={e => { setAccepted(e.target.checked); setUrl(''); setConfirmed(false); }} />{t(label)}</label>
+    {!isPriceAlert && <label className="whatsapp-subscription__consent"><input type="checkbox" checked={accepted} disabled={busy}
+      onChange={e => { setAccepted(e.target.checked); setUrl(''); setConfirmed(false); }} />{t(label)}</label>}
     <p>{t('Odjava u svakom trenutku: pošaljite STOP u WhatsApp razgovoru. Time isključujete WhatsApp novosti i obaveštenja.')} <a href={localizePath('/whatsapp-privacy')}>{t('Politika privatnosti')}</a></p>
     {error && <p role="alert">{t(error)}</p>}
     {confirmed ? <p role="status">{t('WhatsApp prijava je potvrđena.')}</p> : url ? <a className="whatsapp-subscription__continue" href={url} target="_blank" rel="noopener noreferrer">{t('Otvori WhatsApp i potvrdi prijavu')}</a>
-      : <button type="button" disabled={!accepted || !phone.trim() || busy} onClick={() => void request()}>{t(busy ? 'Čuvamo…' : 'Nastavi u WhatsApp-u')}</button>}
+      : <button type="button" disabled={!canRequest} onClick={() => void request()}>{t(busy ? 'Čuvamo…' : isPriceAlert ? 'Obavesti me preko WhatsApp-a' : 'Nastavi u WhatsApp-u')}</button>}
   </div>;
 }

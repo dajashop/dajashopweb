@@ -470,6 +470,8 @@
   "Unesite broj telefona u međunarodnom formatu, npr. +381601234567.": "Enter a phone number in international format, e.g. +381601234567.",
   "Prijava za obaveštenje nije uspela.": "Could not set up the notification.",
   "Obavesti me": "Notify me",
+  "Obavesti me preko WhatsApp-a": "Notify me on WhatsApp",
+  "Tražite WhatsApp obaveštenja o promeni cene ovog artikla. Za potvrdu pošaljite pripremljenu poruku sa unetog broja u roku od 30 minuta.": "Request WhatsApp alerts when this item's price changes. To confirm, send the prepared message from the number you entered within 30 minutes.",
   "Javićemo vam": "We will notify you",
   "Način obaveštavanja": "Notification method",
   "Sačuvana email adresa": "Saved email address",

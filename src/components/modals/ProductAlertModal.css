@@ -59,7 +59,8 @@
   min-height: 0;
   padding: var(--content-padding);
   padding-bottom: 14px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   scrollbar-width: none;
   overflow-anchor: none;
   scroll-behavior: auto;
@@ -292,6 +293,27 @@
   .product-alert-modal__hero { row-gap: 7px; margin-bottom: 9px; }
   .product-alert-modal form { gap: 7px; }
 }
+
+.product-alert-modal.is-whatsapp .product-alert-modal__hero {
+  min-height: 0;
+  margin-bottom: 8px;
+  row-gap: 8px;
+}
+.product-alert-modal.is-whatsapp .product-alert-modal__icon { display: none; }
+.product-alert-modal.is-whatsapp .product-alert-modal__photo { margin-left: 0; overflow: hidden; }
+.product-alert-modal.is-whatsapp .product-alert-modal__photo img {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+}
+.product-alert-modal .whatsapp-subscription {
+  gap: 8px;
+  margin-top: 8px;
+  font-size: .82rem;
+  line-height: 1.4;
+}
+.product-alert-modal .whatsapp-subscription p { margin: 0; }
 
 /* The shell stays fixed; only its contents scroll while the keyboard is open. */
 .product-alert-modal.is-keyboard-open {

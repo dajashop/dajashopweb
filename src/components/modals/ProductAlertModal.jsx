@@ -150,8 +150,8 @@ export default function ProductAlertModal({
       if (!keyboardOpen || !editing) return;
       const field = active.getBoundingClientRect();
       const area = content.getBoundingClientRect();
-      const note = content.querySelector('.product-alert-modal__footnote').getBoundingClientRect();
-      const target = note.bottom - field.top + 20 <= content.clientHeight ? note.bottom : field.bottom;
+      const note = content.querySelector('.product-alert-modal__footnote')?.getBoundingClientRect();
+      const target = note && note.bottom - field.top + 20 <= content.clientHeight ? note.bottom : field.bottom;
       const delta = target - area.bottom + 8;
       if (delta > 0) content.scrollTop += delta;
     };
@@ -176,7 +176,7 @@ export default function ProductAlertModal({
     };
     const preventBackgroundPan = (event) => {
       if (event.touches.length > 1) return;
-      if (!keyboardOpen || !content.contains(event.target)) event.preventDefault();
+      if (!content.contains(event.target)) event.preventDefault();
     };
     measurePanel();
     updateViewport();
@@ -318,7 +318,7 @@ export default function ProductAlertModal({
   return createPortal(
     <div className="product-alert-modal__overlay" role="presentation" data-lenis-prevent>
       <div
-        className="product-alert-modal"
+        className={`product-alert-modal${deliveryChannel === 'whatsapp' ? ' is-whatsapp' : ''}`}
         ref={dialogRef}
         tabIndex={-1}
         role="dialog"
