@@ -1,8 +1,9 @@
 {
   "Unesite broj za WhatsApp obaveštenja o ceni. Ako broj nije potvrđen na vašem nalogu, poslaćemo vam kod.": "Enter a number for WhatsApp price alerts. If it isn’t verified on your account, we’ll send you a code.",
   "Prijavite se da potvrdite svoj broj i uključite WhatsApp obaveštenja o ceni.": "Sign in to verify your number and enable WhatsApp price alerts.",
-  "Kod smo poslali preko WhatsApp-a.": "We sent the code via WhatsApp.",
-  "Kod smo poslali SMS-om.": "We sent the code by SMS.",
+  "Kod je poslat preko WhatsApp-a na {number}.": "We sent a WhatsApp code to {number}.",
+  "Kod je poslat SMS-om na {number}.": "We sent an SMS code to {number}.",
+  "Promeni broj": "Change number",
   "Verifikacioni kod": "Verification code",
   "Potvrdi kod i uključi obaveštenje": "Verify code and enable alert",
   "Pošalji novi kod": "Send a new code",

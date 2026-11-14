@@ -302,7 +302,29 @@
 .product-alert-modal__footer.product-alert-modal__footer--whatsapp { margin-top: 0; }
 .product-alert-modal__footer--whatsapp > button { background: #166534; }
 .product-alert-modal__footer--whatsapp > button:hover:not(:disabled) { background: #14532d; }
-.product-alert-modal__whatsapp-form { margin-top: 10px; }
+.product-alert-modal__whatsapp-form {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+.product-alert-modal__whatsapp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.product-alert-modal__whatsapp-actions button {
+  min-height: 36px;
+  max-width: 100%;
+  text-align: left;
+  font-size: .82rem;
+  text-decoration: underline;
+}
+.product-alert-modal__footer--whatsapp > button {
+  padding: 8px 10px;
+  white-space: normal;
+}
+.product-alert-modal__footer--whatsapp > button svg { flex-shrink: 0; }
 
 /* The shell stays fixed; only its contents scroll while the keyboard is open. */
 .product-alert-modal.is-keyboard-open {

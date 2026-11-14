@@ -79,29 +79,29 @@ export default function WhatsAppPriceAlertForm({ product, initialPhone, onSignIn
 
   return (
     <form className="product-alert-modal__whatsapp-form" onSubmit={event => void submit(event)}>
-      <p id={`${id}-instructions`} className="product-alert-modal__whatsapp-instructions">
-        {t(user ? 'Unesite broj za WhatsApp obaveštenja o ceni. Ako broj nije potvrđen na vašem nalogu, poslaćemo vam kod.' : 'Prijavite se da potvrdite svoj broj i uključite WhatsApp obaveštenja o ceni.')}
+      <p id={`${id}-instructions`} className="product-alert-modal__whatsapp-instructions" role="status">
+        {attempt
+          ? t(attempt.channel === 'sms' ? 'Kod je poslat SMS-om na {number}.' : 'Kod je poslat preko WhatsApp-a na {number}.', { number })
+          : t(user ? 'Unesite broj za WhatsApp obaveštenja o ceni. Ako broj nije potvrđen na vašem nalogu, poslaćemo vam kod.' : 'Prijavite se da potvrdite svoj broj i uključite WhatsApp obaveštenja o ceni.')}
       </p>
       {user && <>
-      <label htmlFor={`${id}-phone`}>{t('Broj telefona')}</label>
-      <input id={`${id}-phone`} type="tel" autoComplete="tel" placeholder="+381601234567"
-        aria-describedby={`${id}-instructions`} value={phone} disabled={busy}
-        onChange={event => {
-          setPhone(event.target.value);
-          setAttempt(null);
-          setCode('');
-          setError('');
-        }} />
+        <label htmlFor={`${id}-entry`}>{t(attempt ? 'Verifikacioni kod' : 'Broj telefona')}</label>
+        <input id={`${id}-entry`} type="tel"
+          inputMode={attempt ? 'numeric' : 'tel'}
+          autoComplete={attempt ? 'one-time-code' : 'tel'}
+          placeholder={attempt ? undefined : '+381601234567'}
+          maxLength={attempt ? 6 : undefined}
+          aria-describedby={`${id}-instructions`} value={attempt ? code : phone} disabled={busy}
+          onChange={event => {
+            if (attempt) setCode(event.target.value.replace(/\D/g, ''));
+            else setPhone(event.target.value);
+            setError('');
+          }} />
       </>}
-      {user && attempt && <>
-        <p className="product-alert-modal__whatsapp-instructions" role="status">
-          {t(attempt.channel === 'sms' ? 'Kod smo poslali SMS-om.' : 'Kod smo poslali preko WhatsApp-a.')}
-        </p>
-        <label htmlFor={`${id}-code`}>{t('Verifikacioni kod')}</label>
-        <input id={`${id}-code`} type="tel" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
-          value={code} disabled={busy} onChange={event => setCode(event.target.value.replace(/\D/g, ''))} />
+      {user && attempt && <div className="product-alert-modal__whatsapp-actions">
         <button type="button" disabled={busy} onClick={event => void submit(event, true)}>{t('Pošalji novi kod')}</button>
-      </>}
+        <button type="button" disabled={busy} onClick={() => { setAttempt(null); setCode(''); setError(''); }}>{t('Promeni broj')}</button>
+      </div>}
       <p className="product-alert-modal__privacy-note">
         <ShieldCheck size={17} aria-hidden="true" />
         <span>{t('Odjava: pošaljite STOP u WhatsApp-u.')} <a href={localizePath('/whatsapp-privacy')}>{t('Politika privatnosti')}</a></span>
