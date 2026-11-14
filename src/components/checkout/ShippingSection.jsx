@@ -5,12 +5,6 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Truck, MapPin, CheckCircle2, MessageSquare } from 'lucide-react'; // Dodata MessageSquare
 import GoogleMapEmbed from '../privacy/GoogleMapEmbed.jsx';
 
-// Prosleđujemo URL mape kao prop ili konstantu ako je potrebno
-const SHOP_ADDRESS_QUERY = 'Obrenoviceva bb, Nis, Srbija';
-const MAP_EMBED_URL = `https://www.google.com/maps/embed/v1/place?key=${
-  import.meta.env.VITE_GOOGLE_MAPS_KEY
-}&q=${encodeURIComponent(SHOP_ADDRESS_QUERY)}`;
-
 export default function ShippingSection({
   shippingMethod,
   setShippingMethod,
@@ -189,7 +183,6 @@ export default function ShippingSection({
                 loading="lazy"
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
-                src={MAP_EMBED_URL}
               />
             </div>
           </motion.section>

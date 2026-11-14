@@ -12,12 +12,6 @@ import {
 import GoogleMapEmbed from '../privacy/GoogleMapEmbed.jsx';
 import EngravingSummary from '../engraving/EngravingSummary';
 
-const MAP_API_KEY = 'AIzaSyCwDMD-56pwnAqgEDqNCT8uMxFy_mPbAe0';
-const SHOP_ADDRESS_QUERY = 'Obrenoviceva bb, Nis, Srbija';
-const MAP_EMBED_URL = `https://www.google.com/maps/embed/v1/place?key=${MAP_API_KEY}&q=${encodeURIComponent(
-  SHOP_ADDRESS_QUERY
-)}`;
-
 // --- [NOVO] Funkcija za gramatiku (Vokativ) ---
 function toVocative(name) {
   if (!name) return 'Kupče';
@@ -191,7 +185,6 @@ function OrderConfirmationModal({ order, money, onClose }) {
                         style={{ border: 0 }}
                         loading="lazy"
                         allowFullScreen
-                        src={MAP_EMBED_URL}
                       />
                     </motion.div>
                   )}

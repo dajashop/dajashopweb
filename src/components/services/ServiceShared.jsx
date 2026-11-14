@@ -2,6 +2,7 @@ import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Battery, Check, ChevronRight, Link2, Mail, MapPin, Phone, Radio, Scissors, Sparkles } from 'lucide-react';
 import { seoConfig } from '../../config/seo.js';
+import { SHOP_GOOGLE_MAPS_URL } from '../../services/googleMaps.js';
 import ServiceVisual from './ServiceVisual.jsx';
 
 const icons = { engraving: Sparkles, battery: Battery, strap: Link2, sizing: Scissors, remote: Radio };
@@ -51,7 +52,6 @@ export function ServiceVisit({ service }) {
   const { business } = seoConfig;
   const phone = business.phone.replace(/[^+\d]/g, '');
   const subject = encodeURIComponent(service ? `Upit: ${service.title}` : 'Upit za uslugu');
-  const query = encodeURIComponent(`${business.name}, ${business.street}, ${business.city}`);
   return <section className="services-visit" id="posetite-nas" aria-labelledby="services-visit-title">
     <div className="services-visit__copy">
       <span className="services-location"><MapPin size={20} aria-hidden="true" />{translateText("Naša radnja u Nišu")}</span>
@@ -67,7 +67,7 @@ export function ServiceVisit({ service }) {
       <h3>{translateText(business.name)}</h3>
       <p>{business.name}</p>
       <address>{translateText(business.street)}<br />{translateText(business.postalCode)} {translateText(business.city)}</address>
-      <a className="services-inline-link" href={`https://www.google.com/maps/search/?api=1&query=${query}`} target="_blank" rel="noopener noreferrer">{translateText("Otvorite mapu ")}<ArrowUpRight size={20} aria-hidden="true" /><span className="services-sr-only">{translateText(" (novi prozor)")}</span></a>
+      <a className="services-inline-link" href={SHOP_GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer">{translateText("Otvorite mapu ")}<ArrowUpRight size={20} aria-hidden="true" /><span className="services-sr-only">{translateText(" (novi prozor)")}</span></a>
       <Link className="services-inline-link" to="/contact">{translateText("Kontakt i radno vreme ")}<ChevronRight size={20} aria-hidden="true" /></Link>
     </div>
   </section>;

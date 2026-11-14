@@ -11,6 +11,22 @@ export function getGoogleMapsApiKey() {
   return apiKey && apiKey !== 'none' ? apiKey : '';
 }
 
+// Place ID from the DajaShop Google Maps business listing.
+export const SHOP_PLACE_ID = import.meta.env.VITE_GOOGLE_SHOP_PLACE_ID?.trim()
+  || 'ChIJ4Sm7GROxVUcRBECM65JEmH8';
+export const SHOP_GOOGLE_MAPS_URL = 'https://www.google.com/maps/search/?' + new URLSearchParams({
+  api: '1',
+  query: 'Daja Shop, Niš',
+  query_place_id: SHOP_PLACE_ID,
+});
+
+export function getShopMapEmbedUrl() {
+  const key = getGoogleMapsApiKey();
+  if (!key) return '';
+  const params = new URLSearchParams({ key, q: 'place_id:' + SHOP_PLACE_ID });
+  return 'https://www.google.com/maps/embed/v1/place?' + params;
+}
+
 function mapsPlacesIsReady() {
   return Boolean(window.google?.maps?.places);
 }

@@ -12,14 +12,6 @@ import { apiRequest } from '../services/apiClient.js';
  * @description Stranica za kontakt sa detaljima i formom.
  */
 
-// KORIŠĆENJE ISTOG PRINICIPA KAO U ShippingSection.jsx
-
-const SHOP_ADDRESS_QUERY = 'Obrenoviceva bb, Niš, Srbija';
-const MAP_EMBED_URL = `https://www.google.com/maps/embed/v1/place?key=${
-  import.meta.env.VITE_GOOGLE_MAPS_KEY
-}&q=${encodeURIComponent(SHOP_ADDRESS_QUERY)}`;
-// NAPOMENA: Za produkciju, MAP_API_KEY se obično čita iz import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-
 export default function Contact() {
   const { t: translateText } = useStorefront();
 
@@ -123,7 +115,6 @@ export default function Contact() {
               loading="lazy"
               allowFullScreen
               referrerPolicy="no-referrer-when-downgrade"
-              src={MAP_EMBED_URL}
             />
           </div>
           <p

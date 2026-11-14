@@ -1,10 +1,5 @@
 import { isGoogleAllowed } from './consentStorage.js';
-import { getGoogleMapsApiKey, loadGoogleMapsPlaces } from './googleMaps.js';
-
-// Place ID encoded by the feature ID in the owner's Google Maps profile URL.
-export const SHOP_PLACE_ID = import.meta.env.VITE_GOOGLE_SHOP_PLACE_ID?.trim()
-  || 'ChIJ4Sm7GROxVUcRBECM65JEmH8';
-export const SHOP_GOOGLE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=Daja+Shop&query_place_id=${encodeURIComponent(SHOP_PLACE_ID)}`;
+import { getGoogleMapsApiKey, loadGoogleMapsPlaces, SHOP_PLACE_ID } from './googleMaps.js';
 
 let pendingRequest = null;
 

@@ -2,9 +2,10 @@ import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { useState } from 'react';
 import { MapPinned } from 'lucide-react';
 import { useConsent } from '../../context/ConsentContext.jsx';
+import { getShopMapEmbedUrl, SHOP_GOOGLE_MAPS_URL } from '../../services/googleMaps.js';
 import './GoogleMapEmbed.css';
 
-export default function GoogleMapEmbed({ src, title, className = '', ...iframeProps }) {
+export default function GoogleMapEmbed({ title, className = '', ...iframeProps }) {
   const { t: translateText } = useStorefront();
 
   const { googleAllowed, requestGooglePermission } = useConsent();
@@ -18,6 +19,11 @@ export default function GoogleMapEmbed({ src, title, className = '', ...iframePr
       setRequesting(false);
     }
   };
+
+  const src = getShopMapEmbedUrl();
+  if (!src) {
+    return <a href={SHOP_GOOGLE_MAPS_URL} target="_blank" rel="noopener noreferrer">{translateText("Otvorite mapu ")}</a>;
+  }
 
   if (!googleAllowed) {
     return (
