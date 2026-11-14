@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { BellOff, BellRing, Mail, MessageCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { BellOff, BellRing, Mail, MessageCircle, X } from 'lucide-react';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
@@ -11,7 +11,12 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
   const { t, language } = useStorefront();
   const { user } = useAuth();
   const { policy } = useConsent();
-  const [tracking, setTracking] = useState([]);
+  const [tracking, setTracking] = useState(null);
+  const [hintReady, setHintReady] = useState(false);
+  const [hintDismissed, setHintDismissed] = useState(false);
+  const settingsRef = useRef(null);
+  const menuRef = useRef(null);
+  const triggerRef = useRef(null);
   const account = user?.id;
   const [channel, setChannel] = useState('email');
   const [whatsappAvailable, setWhatsappAvailable] = useState(false);
@@ -39,7 +44,7 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
         if (!signal.aborted) setTracking(result?.channels || []);
       }).catch(() => {});
     };
-    setTracking([]);
+    setTracking(null);
     refresh();
     window.addEventListener('daja:product-alerts-changed', refresh);
     window.addEventListener('focus', refresh);
@@ -49,6 +54,41 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
       window.removeEventListener('focus', refresh);
     };
   }, [account]);
+
+  useEffect(() => {
+    if (!account) return undefined;
+    setHintReady(false);
+    setHintDismissed(false);
+    const timer = window.setTimeout(() => setHintReady(true), 10_000);
+    return () => window.clearTimeout(timer);
+  }, [account]);
+
+  useEffect(() => {
+    const closeOutside = (event) => {
+      const menu = menuRef.current;
+      if (menu?.open && !confirm && !settingsRef.current?.contains(event.target)) menu.open = false;
+    };
+    const closeOnEscape = (event) => {
+      if (event.key !== 'Escape') return;
+      if (confirm) {
+        setConfirm(false);
+        return;
+      }
+      const menu = menuRef.current;
+      if (menu?.open) {
+        menu.open = false;
+        triggerRef.current?.focus();
+      } else if (hintReady && tracking?.length === 0 && settingsRef.current?.contains(event.target)) {
+        setHintDismissed(true);
+      }
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [confirm, hintReady, tracking]);
 
   async function change(enable) {
     if (busy) return;
@@ -62,7 +102,7 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
         const { active, skipped, alreadyEnabled } = await productAlertsApi.subscribeWishlist({
           channel, language, accepted: true, ...(policy?.version ? { policyVersion: policy.version } : {}),
         });
-        setTracking(current => [...new Set([...current, channel])]);
+        setTracking(current => [...new Set([...(current || []), channel])]);
         setNotice(alreadyEnabled ? t('Praćenje uključeno') : t('Automatsko praćenje je uključeno. Pratimo {active} satova, nedostupnih: {skipped}.', { active, skipped }));
       } else {
         await privacyApi.unsubscribeProductAlerts('both', { kind: 'all' });
@@ -78,13 +118,15 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
 
   if (!user) return null;
   const canSubscribe = channel === 'email' ? user.emailVerified : whatsappAvailable && user.phoneVerified;
-  const alreadyTracking = tracking.includes(channel);
-  return <div className="wishlist-alert-settings">
-    <details className="wishlist-alert-settings__menu">
-      <summary>
-        <BellRing size={16} aria-hidden="true" />
+  const alreadyTracking = tracking?.includes(channel);
+  const showHint = hintReady && !hintDismissed && tracking?.length === 0;
+  return <div ref={settingsRef} className="wishlist-alert-settings">
+    <details ref={menuRef} className="wishlist-alert-settings__menu"
+      onToggle={event => { if (event.currentTarget.open) setHintDismissed(true); }}>
+      <summary ref={triggerRef}>
+        <BellRing className={showHint ? 'wishlist-alert-settings__bell--nudge' : undefined} size={16} aria-hidden="true" />
         {t('Prati listu')}
-        {tracking.length > 0 && <span className="wishlist-alert-settings__dot" title={t('Praćenje uključeno')} aria-label={t('Praćenje uključeno')} />}
+        {tracking?.length > 0 && <span className="wishlist-alert-settings__dot" title={t('Praćenje uključeno')} aria-label={t('Praćenje uključeno')} />}
       </summary>
       <section className="wishlist-alert-settings__card" aria-label={t('Praćenje cena za celu listu želja')}>
         <h4>{t('Praćenje cena za celu listu želja')}</h4>
@@ -115,6 +157,12 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
         {error && <p role="alert">{t(error)}</p>}
       </section>
     </details>
+    {showHint && <aside className="wishlist-alert-settings__hint">
+      <p role="status">{t('Pratite listu želja i javićemo vam kad se cena nekog sata promeni.')}</p>
+      <button type="button" aria-label={t('Zatvori obaveštenje')} onClick={() => setHintDismissed(true)}>
+        <X size={16} aria-hidden="true" />
+      </button>
+    </aside>}
     <ConfirmModal isOpen={confirm} onClose={() => setConfirm(false)} onConfirm={() => void change(false)}
       title={t('Odjavi sva obaveštenja o satovima')}
       description={t('Isključićete sva email i WhatsApp obaveštenja o satovima. Prijava na novosti ostaje aktivna ako je uključena.')}
