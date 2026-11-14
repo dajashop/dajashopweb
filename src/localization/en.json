@@ -1,4 +1,12 @@
 {
+  "Šta pratimo?": "What should we track?",
+  "Ovaj sat": "This watch",
+  "Cela lista želja": "Entire wishlist",
+  "Prijavite se da pratite sve satove sa liste želja.": "Sign in to track every watch on your wishlist.",
+  "Prvo dodajte satove na listu želja.": "Add some watches to your wishlist first.",
+  "Pratimo satove koji su trenutno na listi. Obaveštenja stižu na {contact}.": "We’ll track the watches currently on your list and send alerts to {contact}.",
+  "Otvori profil": "Open profile",
+  "Isključi email i WhatsApp obaveštenja za {watch}.": "Turn off email and WhatsApp alerts for {watch}.",
   "Saznajte kad se cena promeni": "Know when the price changes",
   "Pratite sve satove koji su sada na listi želja. Javićemo vam kad se cena nekog od njih promeni.": "Track the watches currently on your wishlist. We’ll let you know when any of their prices change.",
   "Praćenje uključeno": "Tracking is on",

@@ -8,6 +8,7 @@ import {
   productAlertsApi,
   novostiApi,
 } from '../../services/dajaPlatform.js';
+import { useWishlist } from '../../context/WishlistProvider.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
 import './ProductAlertModal.css';
@@ -25,10 +26,13 @@ export default function ProductAlertModal({
   onSubscribed,
 }) {
   const dialogRef = useRef(null);
-  const { t: translateText, localizePath, money } = useStorefront();
+  const { t: translateText, localizePath, money, language } = useStorefront();
 
   const { policy } = useConsent();
   const { user, showAuth } = useAuth();
+  const { wishlist, flushWishlist } = useWishlist();
+  const [scope, setScope] = useState('watch');
+  const [wishlistResult, setWishlistResult] = useState(null);
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -43,6 +47,8 @@ export default function ProductAlertModal({
 
   useEffect(() => {
     setDeliveryChannel('email');
+    setScope('watch');
+    setWishlistResult(null);
   }, [isOpen, product?.id, product?.variantId, type]);
 
   useEffect(() => {
@@ -254,8 +260,38 @@ export default function ProductAlertModal({
   const useAccountContact = authenticated && (!isEmailChannel || selectedEmail.toLowerCase() === String(initialEmail).trim().toLowerCase());
   const emailAlreadySubscribed = newsletterSubscribed && (!authenticated || useAccountContact);
 
+  const isWishlistScope = type === 'price_change' && scope === 'wishlist';
+  const wishlistContact = isEmailChannel ? user?.email : user?.phoneNumber;
+  const verifiedWishlistContact = Boolean(wishlistContact && (isEmailChannel
+    ? user?.emailVerified
+    : user?.phoneVerified && /^\+381[1-9]\d{6,11}$/.test(wishlistContact)));
+
+  async function subscribeWishlist() {
+    if (!user) {
+      onClose();
+      showAuth('login');
+      return;
+    }
+    if (submitting || !wishlist.length || !verifiedWishlistContact || wishlistResult) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await flushWishlist();
+      const result = await productAlertsApi.subscribeWishlist({
+        channel: deliveryChannel, language, accepted: true,
+        ...(policy?.version ? { policyVersion: policy.version } : {}),
+      });
+      setWishlistResult(result);
+    } catch (requestError) {
+      setError(requestError.message || 'Prijava za obaveštenje nije uspela.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (isWishlistScope) { await subscribeWishlist(); return; }
     if (!notificationChannelAvailable(deliveryChannel)) { setError(notificationChannelNotice(deliveryChannel)); return; }
     if (needsEmailInput && !selectedEmail) {
       setError('Unesite email adresu za obaveštenje.');
@@ -365,10 +401,40 @@ export default function ProductAlertModal({
         </div>
         </div>
         <form id="product-alert-subscription-form" onSubmit={handleSubmit}>
-          <NotificationChannelPicker variant="cards" value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setError(''); }} disabled={submitting}
+          <div className="product-alert-modal__choices">
+          <NotificationChannelPicker variant="cards" value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setWishlistResult(null); setError(''); }} disabled={submitting}
             contact={phone} purpose={type} productId={product.id} variantId={product.variantId} channelOnly={type === 'price_change'} />
+          {type === 'price_change' && <fieldset className="product-alert-modal__scope" disabled={submitting}>
+            <legend>{translateText('Šta pratimo?')}</legend>
+            <div>
+              {[['watch', 'Ovaj sat'], ['wishlist', 'Cela lista želja']].map(([value, label]) => (
+                <label key={value}>
+                  <input type="radio" name="price-alert-scope" checked={scope === value}
+                    onChange={() => { setScope(value); setWishlistResult(null); setError(''); }} />
+                  <span>{translateText(label)}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>}
+          </div>
+          {isWishlistScope && <div className="product-alert-modal__wishlist-summary" aria-live="polite">
+            {wishlistResult ? (
+              <p>{translateText('Praćenje cena uključeno za {active} satova. Nedostupnih: {skipped}.', wishlistResult)}</p>
+            ) : !user ? (
+              <p>{translateText('Prijavite se da pratite sve satove sa liste želja.')}</p>
+            ) : wishlist.length === 0 ? (
+              <p>{translateText('Prvo dodajte satove na listu želja.')}</p>
+            ) : verifiedWishlistContact ? (
+              <p>{translateText('Pratimo satove koji su trenutno na listi. Obaveštenja stižu na {contact}.', { contact: wishlistContact })}</p>
+            ) : (
+              <p>{translateText(isEmailChannel ? 'Potvrdite email adresu naloga pre uključivanja email obaveštenja.'
+                : 'Potvrdite broj telefona u profilu pre uključivanja WhatsApp obaveštenja.')} <Link to="/account/profile" onClick={onClose}>{translateText('Otvori profil')}</Link></p>
+            )}
+            {error && <p role="alert" className="product-alert-modal__error">{translateText(error)}</p>}
+          </div>}
 
-          {deliveryChannel !== 'whatsapp' && <>
+
+          {!isWishlistScope && deliveryChannel !== 'whatsapp' && <>
           {isEmailChannel && reusableGuestEmail ? (
             <div className="product-alert-modal__saved-contact">
               <strong>{translateText("Email za obaveštenje")}</strong>
@@ -443,19 +509,25 @@ export default function ProductAlertModal({
           {error && <p role="alert" className="product-alert-modal__error">{translateText(error)}</p>}
           </>}
         </form>
-        {deliveryChannel === 'whatsapp' && type === 'price_change' &&
+        {!isWishlistScope && deliveryChannel === 'whatsapp' && type === 'price_change' &&
           <WhatsAppPriceAlertForm key={`${product.id}:${product.variantId}`} product={product} initialPhone={phone}
             onSignIn={() => { onClose(); showAuth('login'); }} />}
-        {deliveryChannel !== 'whatsapp' && <div className="product-alert-modal__footer">
+        {isWishlistScope && !wishlistResult && (
+          <div className={`product-alert-modal__footer${isEmailChannel ? '' : ' product-alert-modal__footer--whatsapp'}`}>
+            <button type="submit" form="product-alert-subscription-form"
+              disabled={submitting || Boolean(user && (!wishlist.length || !verifiedWishlistContact))}>
+              {submitting ? <LoaderCircle size={19} aria-hidden="true" /> : <Bell size={19} aria-hidden="true" />}
+              {translateText(submitting ? 'Čuvamo…' : user ? 'Prati sve satove sa liste' : 'Prijavi se')}
+            </button>
+          </div>
+        )}
+        {!isWishlistScope && deliveryChannel !== 'whatsapp' && <div className="product-alert-modal__footer">
           <button type="submit" form="product-alert-subscription-form" disabled={submitting || !notificationChannelAvailable(deliveryChannel)}>
             {submitting ? <LoaderCircle size={19} aria-hidden="true" /> : <Bell size={19} aria-hidden="true" />}
             {translateText(submitting ? 'Čuvamo…' : 'Uključi obaveštenje')}
           </button>
           <p className="product-alert-modal__footnote"><Check size={14} aria-hidden="true" />{translateText('Novosti i ponude su opcione. Vi birate šta primate.')}</p>
         </div>}
-        {user && type === 'price_change' && <Link className="product-alert-modal__wishlist-link" to="/account/wishlist" onClick={onClose}>
-          {translateText('Praćenje cena za celu listu želja')}
-        </Link>}
         </div>
         </div>
       </div>

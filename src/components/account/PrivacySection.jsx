@@ -25,6 +25,7 @@ export default function PrivacySection({ user }) {
   const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [confirmWatch, setConfirmWatch] = useState(null);
   const [confirmAll, setConfirmAll] = useState(false);
   const [preview, setPreview] = useState(null);
 
@@ -233,7 +234,7 @@ export default function PrivacySection({ user }) {
                       {hasPrice && <b>{money(Number(alert.price))}</b>}
                     </div>
                   </div>
-                  <button type="button" onClick={() => void unsubscribeAlert(alert)} disabled={Boolean(busy)}>
+                  <button type="button" onClick={() => setConfirmWatch({ alert, name })} disabled={Boolean(busy)}>
                     {translateText(busy === `alert:${alert.id}` ? 'Odjavljujemo…' : 'Odjavi ovaj sat')}
                   </button>
                 </li>
@@ -244,6 +245,11 @@ export default function PrivacySection({ user }) {
       </article>
 
       </div>
+      <ConfirmModal isOpen={Boolean(confirmWatch)} onClose={() => setConfirmWatch(null)}
+        onConfirm={() => { if (confirmWatch) void unsubscribeAlert(confirmWatch.alert); }}
+        title={translateText('Odjavi ovaj sat')}
+        description={translateText('Isključi email i WhatsApp obaveštenja za {watch}.', { watch: confirmWatch?.name })}
+        confirmText={translateText('Potvrdi odjavu')} isDanger />
       {preview && (
         <div className="privacy-section__image-modal" role="dialog" aria-modal="true" aria-label={translateText(`Slika artikla: ${preview.name}`)} onClick={() => setPreview(null)}>
           <div className="privacy-section__image-modal-content" onClick={(event) => event.stopPropagation()}>
