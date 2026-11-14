@@ -169,7 +169,7 @@
   .wishlist-body { padding: 10px; }
 }
 
-.wishlist-header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.wishlist-section .wishlist-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 8px 12px; }
 .wishlist-alert-settings { position: relative; min-width: 0; }
 .wishlist-alert-settings__trigger {
   display: flex;
@@ -177,22 +177,29 @@
   gap: 7px;
   min-height: 36px;
   padding: 6px 10px;
-  border: 1px solid #dbe6de;
+  border: 1px solid var(--wishlist-line);
   border-radius: 8px;
-  color: #214d35;
-  background: #f2f7f3;
+  color: var(--color-text, #111);
+  background: var(--color-bg, #fff);
   font-size: .8rem;
   font-weight: 650;
   cursor: pointer;
   list-style: none;
 }
+.wishlist-alert-settings__trigger:hover { background: var(--color-surface, #f1f1f4); }
+.wishlist-alert-settings__trigger.is-tracking {
+  border-color: #d7e9df;
+  background: #f0f8f3;
+  color: #236445;
+}
+.wishlist-alert-settings__trigger.is-tracking:hover { background: #e2efe5; }
 .wishlist-alert-settings__trigger:focus-visible { outline: 2px solid #24573c; outline-offset: 2px; }
 .wishlist-alert-settings__dot { width: 7px; height: 7px; border-radius: 50%; background: #337351; }
 .wishlist-alert-settings__card {
   position: absolute;
   z-index: 12;
   inset-block-start: calc(100% + 8px);
-  inset-inline-end: 0;
+  inset-inline-start: 0;
   display: grid;
   gap: 10px;
   width: min(280px, calc(100vw - 40px));
@@ -250,17 +257,16 @@
 .wishlist-alert-settings__stop svg { flex-shrink: 0; }
 .wishlist-section .watch-alert-controls { display: grid; gap: 6px; min-width: 0; }
 
-@media (max-width: 380px) {
+@media (max-width: 600px) {
   .wishlist-alert-settings { position: static; }
   .wishlist-header { position: relative; }
-  .wishlist-alert-settings__card { inset-inline-end: 0; }
 }
 
 .wishlist-alert-settings__hint {
   position: absolute;
   z-index: 11;
   inset-block-start: calc(100% + 8px);
-  inset-inline-end: 0;
+  inset-inline-start: 0;
   display: flex;
   align-items: flex-start;
   gap: 6px;

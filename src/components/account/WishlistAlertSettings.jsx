@@ -127,7 +127,7 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
   const alreadyTracking = tracking?.includes(channel);
   const showHint = hintReady && !hintDismissed && !menuOpen && !confirm && tracking?.length === 0;
   return <div ref={settingsRef} className="wishlist-alert-settings">
-    <button ref={triggerRef} type="button" className="wishlist-alert-settings__trigger" aria-expanded={menuOpen}
+    <button ref={triggerRef} type="button" className={`wishlist-alert-settings__trigger${tracking?.length > 0 ? ' is-tracking' : ''}`} aria-expanded={menuOpen}
       onClick={() => setMenuOpen(open => !open)}>
         <BellRing className={showHint ? 'wishlist-alert-settings__bell--nudge' : undefined} size={16} aria-hidden="true" />
         {t('Prati listu')}
