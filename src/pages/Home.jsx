@@ -549,7 +549,7 @@ export default function Home() {
           )}
         </div>
         <div className="best__cta">
-          <Link to="/catalog?sort=popular" className="btn btn--dark">{translateText("Pogledajte sve ")}<ArrowRight size={16} />
+          <Link to="/catalog" className="btn btn--dark">{translateText("Pogledajte sve ")}<ArrowRight size={16} />
           </Link>
         </div>
       </section>

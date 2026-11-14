@@ -23,7 +23,7 @@ import { seoConfig } from '../config/seo.js';
 
 // Hookovi
 import usePublicListing from '../hooks/usePublicListing.js';
-import { catalogPageRequest } from '../utils/catalogPageRequest.js';
+import { catalogPageRequest, DEFAULT_CATALOG_SORT } from '../utils/catalogPageRequest.js';
 import useFilterConfiguration from '../hooks/useFilterConfiguration.js';
 import { configuredFilterParams, configuredFilterChips, filterLeaves, selectionKey } from '../utils/filterConfiguration.js';
 import { diameterValue, isDiameterSpec } from '../utils/catalogFilters.js';
@@ -39,8 +39,8 @@ const scrollPositions = new Map();
 const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 const SORT_OPTIONS = [
-  { value: 'popular', label: 'Popularnost' },
   { value: 'newest', label: 'Najnovije' },
+  { value: 'popular', label: 'Popularnost' },
   { value: 'price-desc', label: 'Cena ↓' },
   { value: 'price-asc', label: 'Cena ↑' },
   { value: 'name', label: 'Naziv A-Z' },
@@ -131,11 +131,11 @@ export default function Catalog({ department = 'satovi', seo }) {
   const activeSeo = landing ? landing : brandPath ? { ...baseSeo, path: brandPath, title: `${brandName} satovi`, description: brandDescription(brandName) } : baseSeo;
   const hasFilteredCatalogUrl = [...sp.keys()].some(key => ![...(landing ? ['landing'] : []), 'page', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid', ...(!landing && brandPath ? [`cf_${brandEntry?.node.id}`, 'brand'] : []), ...(!landing && isGenderPage ? [`cf_${genderEntry?.node.id}`, 'gender'] : [])].includes(key));
   const navType = useNavigationType();
-  const sortParam = sp.get('sort') || 'popular';
+  const sortParam = sp.get('sort') || DEFAULT_CATALOG_SORT;
 
   const handleSortChange = (val) => {
     const next = new URLSearchParams(sp);
-    if (val) next.set('sort', val);
+    if (val && val !== DEFAULT_CATALOG_SORT) next.set('sort', val);
     else next.delete('sort');
     next.delete('page');
     setSp(next, { replace: true });

@@ -1,4 +1,5 @@
 import { normalizeProduct } from '../services/dajaPlatform.js';
+import { DEFAULT_CATALOG_SORT } from './catalogPageRequest.js';
 import { automaticFilterConfiguration, configuredFilterParams, filterConfiguredProducts, filterLeaves, numericFilterValue, optionMatches, selectionKey, sourceValues } from './filterConfiguration.js';
 
 // Compatibility for the short interval when the web update reaches users
@@ -19,7 +20,7 @@ export function legacyListing(rawItems, route, savedConfiguration) {
   if (!configuration) throw new Error('Filteri trenutno nisu dostupni.');
   const params = configuredFilterParams(new URLSearchParams(request.get('params')),configuration,fixedGender);
   const filtered = filterConfiguredProducts(products,params,configuration,{fixedGender});
-  const sort = params.get('sort');
+  const sort = params.get('sort') || DEFAULT_CATALOG_SORT;
   const collator = new Intl.Collator('sr-RS',{sensitivity:'base'});
   filtered.sort((a,b) => {
     if (sort === 'newest') {
