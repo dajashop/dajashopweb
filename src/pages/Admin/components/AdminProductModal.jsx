@@ -2062,7 +2062,7 @@ export default function AdminProductModal({
                       onChange={(event) => handleChange('supplierUrl', event.target.value)}
                       onBlur={(event) => previewSupplier('ekka', event.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200"
-                      placeholder="https://ekka.rs/proizvodi/..."
+                      placeholder="https://ekka.rs/32985-casio-ltpb-165gl-2b.html"
                     />
                     <SupplierStockPreview result={supplierPreviews.ekka} />
                   </label>
