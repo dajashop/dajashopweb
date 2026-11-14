@@ -1,4 +1,8 @@
 {
+  "Prati listu": "Track wishlist",
+  "Novi satovi se prate automatski. Kad uklonite sat sa liste, njegovo automatsko praćenje prestaje.": "New watches are tracked automatically. Removing a watch stops its automatic tracking.",
+  "Pratimo postojeće i nove satove sa liste želja. Obaveštenja stižu na {contact}.": "We’ll track current and future watches on your wishlist. Alerts go to {contact}.",
+  "Automatsko praćenje je uključeno. Pratimo {active} satova, nedostupnih: {skipped}.": "Automatic tracking is on. Tracking {active} watches, with {skipped} unavailable.",
   "Šta pratimo?": "What should we track?",
   "Ovaj sat": "This watch",
   "Cela lista želja": "Entire wishlist",

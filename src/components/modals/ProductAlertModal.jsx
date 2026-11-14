@@ -30,7 +30,7 @@ export default function ProductAlertModal({
 
   const { policy } = useConsent();
   const { user, showAuth } = useAuth();
-  const { wishlist, flushWishlist } = useWishlist();
+  const { flushWishlist } = useWishlist();
   const [scope, setScope] = useState('watch');
   const [wishlistResult, setWishlistResult] = useState(null);
   const [deliveryChannel, setDeliveryChannel] = useState('email');
@@ -272,7 +272,7 @@ export default function ProductAlertModal({
       showAuth('login');
       return;
     }
-    if (submitting || !wishlist.length || !verifiedWishlistContact || wishlistResult) return;
+    if (submitting || !verifiedWishlistContact || wishlistResult) return;
     setSubmitting(true);
     setError('');
     try {
@@ -419,13 +419,11 @@ export default function ProductAlertModal({
           </div>
           {isWishlistScope && <div className="product-alert-modal__wishlist-summary" aria-live="polite">
             {wishlistResult ? (
-              <p>{translateText('Praćenje cena uključeno za {active} satova. Nedostupnih: {skipped}.', wishlistResult)}</p>
+              <p>{wishlistResult.alreadyEnabled ? translateText('Praćenje uključeno') : translateText('Automatsko praćenje je uključeno. Pratimo {active} satova, nedostupnih: {skipped}.', wishlistResult)}</p>
             ) : !user ? (
               <p>{translateText('Prijavite se da pratite sve satove sa liste želja.')}</p>
-            ) : wishlist.length === 0 ? (
-              <p>{translateText('Prvo dodajte satove na listu želja.')}</p>
             ) : verifiedWishlistContact ? (
-              <p>{translateText('Pratimo satove koji su trenutno na listi. Obaveštenja stižu na {contact}.', { contact: wishlistContact })}</p>
+              <p>{translateText('Pratimo postojeće i nove satove sa liste želja. Obaveštenja stižu na {contact}.', { contact: wishlistContact })}</p>
             ) : (
               <p>{translateText(isEmailChannel ? 'Potvrdite email adresu naloga pre uključivanja email obaveštenja.'
                 : 'Potvrdite broj telefona u profilu pre uključivanja WhatsApp obaveštenja.')} <Link to="/account/profile" onClick={onClose}>{translateText('Otvori profil')}</Link></p>
@@ -515,7 +513,7 @@ export default function ProductAlertModal({
         {isWishlistScope && !wishlistResult && (
           <div className={`product-alert-modal__footer${isEmailChannel ? '' : ' product-alert-modal__footer--whatsapp'}`}>
             <button type="submit" form="product-alert-subscription-form"
-              disabled={submitting || Boolean(user && (!wishlist.length || !verifiedWishlistContact))}>
+              disabled={submitting || Boolean(user && !verifiedWishlistContact)}>
               {submitting ? <LoaderCircle size={19} aria-hidden="true" /> : <Bell size={19} aria-hidden="true" />}
               {translateText(submitting ? 'Čuvamo…' : user ? 'Prati sve satove sa liste' : 'Prijavi se')}
             </button>

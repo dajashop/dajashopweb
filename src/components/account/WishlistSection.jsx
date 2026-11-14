@@ -117,9 +117,8 @@ function WishlistSection() {
         <h3>{translateText("Lista želja")}{' '}
           <span className="wishlist-count">{wishlist.length}</span>
         </h3>
+        <WishlistAlertSettings onBeforeSubscribe={flushWishlist} />
       </div>
-
-      <WishlistAlertSettings hasItems={wishlist.length > 0} onBeforeSubscribe={flushWishlist} />
 
       {wishlist.length === 0 ? (
         <div className="empty-state card glass flex flex-col items-center justify-center py-16 text-center">

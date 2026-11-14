@@ -1110,23 +1110,25 @@ export const customerApi = {
       const nextIds = new Set(
         next.map((item) => item.id || item.productId).filter(Boolean),
       );
+      const previousById = new Map(current.map(item => [item.id || item.productId, item]));
+      const changed = next.filter(item => JSON.stringify(item) !== JSON.stringify(previousById.get(item.id || item.productId)));
+      const removed = current.filter(item => !nextIds.has(item.id || item.productId));
       await Promise.all(
-        current
-          .filter((item) => !nextIds.has(item.id || item.productId))
-          .map((item) =>
+        removed.map((item) =>
             apiRequest(
               `/customers/me/wishlist/${encodeURIComponent(item.id || item.productId)}`,
               { ...options, method: 'DELETE' },
             ),
           ),
       );
-      for (const item of next) {
+      for (const item of changed) {
         await apiRequest('/customers/me/wishlist', {
           ...options,
           method: 'POST',
           body: { item },
         });
       }
+      if (changed.length || removed.length) window.dispatchEvent(new Event('daja:product-alerts-changed'));
       return next;
     });
   },
@@ -1316,6 +1318,7 @@ export function subscribeReaderFind(sessionId, onEvent, onError) {
 }
 
 export const productAlertsApi = {
+  wishlistStatus(options) { return apiRequest('/product-alerts/wishlist', options); },
   async subscribeWishlist(payload) {
     const result = await apiRequest('/product-alerts/wishlist', { method: 'POST', body: payload });
     window.dispatchEvent(new Event('daja:product-alerts-changed'));
