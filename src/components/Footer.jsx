@@ -172,8 +172,6 @@ export default function Footer() {
               <img className="footer__brand-logo" src={brandLogo} alt="DajaShop" width="181" height="105" />
             </Link>
             <p className="footer__desc">{translateText("Vaša pouzdana destinacija za originalne satove od 2007. Kvalitet, tradicija i stil na jednom mestu.")}</p>
-            <p className="footer__business-name">{seoConfig.business.legalName}</p>
-            <p className="footer__business-name">{translateText("PIB")}: 104852069</p>
             <SocialLinks className="footer__socials" />
           </div>
 
@@ -199,7 +197,7 @@ export default function Footer() {
                   aria-label={translateText("Adresa")}
                 >
                   <MapPin size={18} />
-                  <span>{translateText("Obrenoviceva bb, 18105 Niš")}</span>
+                  <span>{translateText("Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105 Niš")}</span>
                 </Link>
               </li>
               <li>

@@ -68,7 +68,7 @@ export default function Contact() {
             </div>
             <div>
               <h3>{translateText("Adresa i lokacija")}</h3>
-              <p>{seoConfig.business.legalName}</p>
+              <p>{seoConfig.business.name}</p>
               <address>{translateText(seoConfig.business.street)}<br />{translateText("18105 Niš, Srbija")}</address>
               <p>
                 {/* Link za Google Maps navigaciju (koristi dinamičku adresu) */}
@@ -132,7 +132,7 @@ export default function Contact() {
               fontSize: '0.9rem',
               color: 'var(--color-muted)',
             }}
-          >{translateText("Posetite nas u Nišu, na adresi Obrenoviceva bb, 18105. Radujemo se Vašoj poseti!")}</p>
+          >{translateText("Posetite nas u Nišu, na adresi Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105. Radujemo se Vašoj poseti!")}</p>
         </div>
       </div>
 

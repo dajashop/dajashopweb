@@ -153,7 +153,7 @@ function OrderConfirmationModal({ order, money, onClose }) {
 
             {isPickup ? (
               <>
-                <p>{translateText("Obrenoviceva bb, 18105 Niš")}</p>
+                <p>{translateText("Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105 Niš")}</p>
                 <p>{translateText("Vaš kontakt telefon: ")}{translateText(order.customer.phone || 'Nije unet')}
                 </p>
 

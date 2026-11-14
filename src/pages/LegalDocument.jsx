@@ -36,7 +36,7 @@ export default function LegalDocument({ kind }) {
       <SEOHead title={translateText(title)} noIndex={true} />
       <header>
         <h1>{translateText(title)}</h1>
-        <p>{seoConfig.business.legalName}</p>
+        <p>{seoConfig.business.name}</p>
         <address>{translateText(seoConfig.business.street)}<br />{seoConfig.business.postalCode} {seoConfig.business.city}</address>
         {document?.updatedAt && <p>{translateText("Verzija / datum: ")}{translateText(document.version || document.updatedAt)}</p>}
       </header>

@@ -89,7 +89,7 @@ export default function ShippingSection({
               <MapPin size={20} className="text-primary" />
               <div>
                 <span className="radio-title">{translateText("Preuzimanje u prodavnici")}</span>
-                <span className="radio-desc">{translateText("Obrenoviceva bb, 18105 Niš (Uvek besplatno)")}</span>
+                <span className="radio-desc">{translateText("Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105 Niš (Uvek besplatno)")}</span>
               </div>
             </div>
             <div
@@ -177,7 +177,7 @@ export default function ShippingSection({
                     color: 'var(--text)',
                   }}
                 >{translateText("Daja Shop Niš")}</p>
-                <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{translateText("Obrenoviceva bb, 18105 Niš")}</p>
+                <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{translateText("Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105 Niš")}</p>
               </div>
             </div>
             <div className="map-container">

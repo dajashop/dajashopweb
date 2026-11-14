@@ -171,14 +171,6 @@
   height: auto;
 }
 
-.footer__business-name {
-  margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.65;
-  color: var(--color-text, #111);
-  overflow-wrap: anywhere;
-}
-
 .footer__desc {
   font-size: 0.95rem;
   line-height: 1.65;
