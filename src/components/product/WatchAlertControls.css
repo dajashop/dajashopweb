@@ -1,0 +1,14 @@
+.watch-alert-controls__tracking,
+.watch-alert-controls__unsubscribe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  grid-area: 1 / 1;
+}
+.watch-alert-controls .is-subscribed { display: grid; }
+.watch-alert-controls__tracking { visibility: hidden; }
+@media (hover: hover) and (pointer: fine) {
+  .watch-alert-controls .is-subscribed:not(:hover):not(:focus-visible):not([aria-busy="true"]) .watch-alert-controls__tracking { visibility: visible; }
+  .watch-alert-controls .is-subscribed:not(:hover):not(:focus-visible):not([aria-busy="true"]) .watch-alert-controls__unsubscribe { visibility: hidden; }
+}

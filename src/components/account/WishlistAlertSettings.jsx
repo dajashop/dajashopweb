@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, BellOff } from 'lucide-react';
+import { BellOff, BellRing, Mail, MessageCircle } from 'lucide-react';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useConsent } from '../../context/ConsentContext.jsx';
@@ -52,25 +52,39 @@ export default function WishlistAlertSettings({ hasItems, onBeforeSubscribe }) {
 
   if (!user) return null;
   const canSubscribe = hasItems && (channel === 'email' ? user.emailVerified : whatsappAvailable && user.phoneVerified);
-  return <section className="wishlist-alert-settings">
-    {hasItems && <>
-      <h4>{t('Praćenje cena za celu listu želja')}</h4>
-      <p>{t('Uključite obaveštenja za satove koji su trenutno na listi. Svaki sat možete odjaviti zasebno.')}</p>
-      <div className="wishlist-alert-settings__actions">
-        <select value={channel} disabled={busy} onChange={event => setChannel(event.target.value)} aria-label={t('Način obaveštavanja')}>
-          <option value="email">{t('Email')}</option>
-          <option value="whatsapp" disabled={!whatsappAvailable}>WhatsApp</option>
-        </select>
-        <button className="wishlist-alert-btn" type="button" disabled={busy || !canSubscribe} onClick={() => void change(true)}>
-          <Bell size={16} aria-hidden="true" />{t('Prati sve satove sa liste')}
-        </button>
+  return <section className="wishlist-alert-settings" aria-label={t('Praćenje cena za celu listu želja')}>
+    {hasItems && <div className="wishlist-alert-settings__card">
+      <div className="wishlist-alert-settings__intro">
+        <span className="wishlist-alert-settings__icon"><BellRing size={24} aria-hidden="true" /></span>
+        <div>
+          <h4>{t('Saznajte kad se cena promeni')}</h4>
+          <p>{t('Pratite sve satove koji su sada na listi želja. Javićemo vam kad se cena nekog od njih promeni.')}</p>
+        </div>
       </div>
-      {!canSubscribe && <p>{t(channel === 'email'
-        ? 'Potvrdite email adresu naloga pre uključivanja email obaveštenja.'
-        : 'Potvrdite broj telefona u profilu pre uključivanja WhatsApp obaveštenja.')}</p>}
-    </>}
-    <button type="button" className="wishlist-alert-btn" disabled={busy} onClick={() => setConfirm(true)}>
-      <BellOff size={16} aria-hidden="true" />{t('Odjavi sva obaveštenja o satovima')}
+      <div className="wishlist-alert-settings__form">
+        <fieldset className="wishlist-alert-settings__channels" disabled={busy}>
+          <legend>{t('Gde da vam javimo?')}</legend>
+          <div>
+            <label>
+              <input type="radio" name="wishlist-alert-channel" checked={channel === 'email'} onChange={() => setChannel('email')} />
+              <Mail size={16} aria-hidden="true" /> {t('Email')}
+            </label>
+            <label>
+              <input type="radio" name="wishlist-alert-channel" checked={channel === 'whatsapp'} disabled={!whatsappAvailable} onChange={() => setChannel('whatsapp')} />
+              <MessageCircle size={16} aria-hidden="true" /> WhatsApp
+            </label>
+          </div>
+        </fieldset>
+        <button className="wishlist-alert-settings__primary" type="button" disabled={busy || !canSubscribe} onClick={() => void change(true)}>
+          {t(busy ? 'Čuvamo…' : 'Prati sve satove sa liste')}
+        </button>
+        {!canSubscribe && <p>{t(channel === 'email'
+          ? 'Potvrdite email adresu naloga pre uključivanja email obaveštenja.'
+          : 'Potvrdite broj telefona u profilu pre uključivanja WhatsApp obaveštenja.')}</p>}
+      </div>
+    </div>}
+    <button type="button" className="wishlist-alert-settings__stop" disabled={busy} onClick={() => setConfirm(true)}>
+      <BellOff size={15} aria-hidden="true" />{t('Odjavi sva obaveštenja o satovima')}
     </button>
     <ConfirmModal isOpen={confirm} onClose={() => setConfirm(false)} onConfirm={() => void change(false)}
       title={t('Odjavi sva obaveštenja o satovima')}

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import './WatchAlertControls.css';
+import { Bell, BellOff, BellRing } from 'lucide-react';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { privacyApi, productAlertsApi, productAlertSubscriptions } from '../../services/dajaPlatform.js';
@@ -6,18 +8,18 @@ import { privacyApi, productAlertsApi, productAlertSubscriptions } from '../../s
 export default function WatchAlertControls({ product, onSubscribe, status }) {
   const { t } = useStorefront();
   const { user } = useAuth();
-  const [pending, setPending] = useState('');
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const productId = product?.id;
   const variantId = product?.variantId;
 
-  async function unsubscribe(channel) {
+  async function unsubscribe() {
     if (pending) return;
-    setPending(channel);
+    setPending(true);
     setError('');
     try {
       if (user) {
-        await privacyApi.unsubscribeProductAlerts(channel, { kind: 'watch', productId, variantId });
+        await privacyApi.unsubscribeProductAlerts('both', { kind: 'watch', productId, variantId });
       } else {
         const { managementToken } = productAlertSubscriptions.contact();
         if (!managementToken) throw new Error('Prijavite se ili otvorite link za odjavu iz obaveštenja.');
@@ -28,25 +30,24 @@ export default function WatchAlertControls({ product, onSubscribe, status }) {
     } catch (requestError) {
       setError(requestError.message || 'Odjava od obaveštenja nije uspela.');
     } finally {
-      setPending('');
+      setPending(false);
     }
   }
 
   if (!variantId) return null;
-  const channels = ['email', 'whatsapp'].filter(channel => status[channel].length > 0);
-  if (channels.length === 2 && user) channels.push('both');
-  const labels = {
-    email: 'Odjavi email za ovaj sat',
-    whatsapp: 'Odjavi WhatsApp za ovaj sat',
-    both: 'Odjavi ovaj sat na oba kanala',
-  };
+  const subscribed = status.email.length > 0 || status.whatsapp.length > 0;
+  if (!subscribed && !onSubscribe) return null;
 
   return <div className="watch-alert-controls">
-    {onSubscribe && <button type="button" className="wishlist-alert-btn" onClick={onSubscribe}>{t('Obavesti me')}</button>}
-    {channels.map(channel =>
-      <button key={channel} type="button" className="wishlist-alert-btn is-subscribed" disabled={Boolean(pending)}
-        onClick={() => void unsubscribe(channel)}>
-        {t(pending === channel ? 'Odjavljujemo…' : labels[channel])}
+    {subscribed ? (
+      <button type="button" className="wishlist-alert-btn is-subscribed" disabled={pending} aria-busy={pending} aria-label={t('Odjavi ovaj sat')}
+        onClick={() => void unsubscribe()}>
+        <span className="watch-alert-controls__tracking"><BellRing size={15} aria-hidden="true" />{t('Praćenje uključeno')}</span>
+        <span className="watch-alert-controls__unsubscribe"><BellOff size={15} aria-hidden="true" />{t(pending ? 'Odjavljujemo…' : 'Odjavi ovaj sat')}</span>
+      </button>
+    ) : (
+      <button type="button" className="wishlist-alert-btn" onClick={onSubscribe}>
+        <Bell size={15} aria-hidden="true" />{t('Obavesti me')}
       </button>
     )}
     {error && <p role="alert">{t(error)}</p>}

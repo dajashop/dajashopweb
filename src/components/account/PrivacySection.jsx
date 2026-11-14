@@ -94,7 +94,7 @@ export default function PrivacySection({ user }) {
   const unsubscribeAlert = async (alert) => {
     setBusy(`alert:${alert.id}`);
     try {
-      await privacyApi.unsubscribeProductAlerts(alert.channel || 'email', {
+      await privacyApi.unsubscribeProductAlerts('both', {
         kind: 'watch', productId: alert.productId, variantId: alert.variantId,
       });
       await refresh();
@@ -124,10 +124,14 @@ export default function PrivacySection({ user }) {
   const newsletterActive = snapshot?.newsletter?.active === true;
   const alertsByWatch = new Map();
   for (const alert of snapshot?.alerts || []) {
-    const key = [alert.channel || 'email', alert.productId, alert.variantId].join(':');
+    const key = [alert.productId, alert.variantId].join(':');
     const current = alertsByWatch.get(key);
-    if (current) current.types.add(alert.type);
-    else alertsByWatch.set(key, { ...alert, types: new Set([alert.type]) });
+    if (current) {
+      current.types.add(alert.type);
+      current.channels.add(alert.channel || 'email');
+    } else {
+      alertsByWatch.set(key, { ...alert, types: new Set([alert.type]), channels: new Set([alert.channel || 'email']) });
+    }
   }
   const alerts = [...alertsByWatch.values()];
   const hasEmail = Boolean(user?.email);
@@ -195,7 +199,7 @@ export default function PrivacySection({ user }) {
             title={translateText('Odjavi sva obaveštenja o satovima')}
             description={translateText('Isključićete sva email i WhatsApp obaveštenja o satovima. Prijava na novosti ostaje aktivna ako je uključena.')}
             confirmText={translateText('Potvrdi odjavu')} isDanger />
-        {alerts.some(alert => alert.channel === 'whatsapp') &&
+        {alerts.some(alert => alert.channels.has('whatsapp')) &&
           <p>{translateText('Za odjavu ovog sata odgovorite na njegovu WhatsApp poruku sa STOP SAT. Za sve satove pošaljite STOP SATOVI.')}</p>}
         {alerts.length === 0 ? (
           <p>{translateText("Nemate aktivna obaveštenja o artiklima.")}</p>
@@ -225,12 +229,12 @@ export default function PrivacySection({ user }) {
                     </button>
                     <div className="privacy-section__alert-details">
                       <strong>{translateText(name)}</strong>
-                      <span>{[...alert.types].map(type => translateText(alertLabel[type] || 'Obaveštenje')).join(' / ')} · {alert.channel === 'whatsapp' ? 'WhatsApp' : translateText('Email')}</span>
+                      <span>{[...alert.types].map(type => translateText(alertLabel[type] || 'Obaveštenje')).join(' / ')} · {[...alert.channels].map(channel => channel === 'whatsapp' ? 'WhatsApp' : translateText('Email')).join(' + ')}</span>
                       {hasPrice && <b>{money(Number(alert.price))}</b>}
                     </div>
                   </div>
                   <button type="button" onClick={() => void unsubscribeAlert(alert)} disabled={Boolean(busy)}>
-                    {translateText(busy === `alert:${alert.id}` ? 'Odjavljujemo…' : 'Isključi')}
+                    {translateText(busy === `alert:${alert.id}` ? 'Odjavljujemo…' : 'Odjavi ovaj sat')}
                   </button>
                 </li>
               );
