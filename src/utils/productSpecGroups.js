@@ -1,3 +1,4 @@
+import { normalizedCatalogGender } from './catalogFilters.js';
 import { batteryGroups, batteryLabels } from './batteryCatalog.js';
 import { formatProductSpecLabel, visibleProductSpecs } from './catalogPresentation.js';
 import { eyewearDisplayValue, eyewearSpecLabels, isEyewearDepartment } from './eyewearCatalog.js';
@@ -6,7 +7,7 @@ const normalizeKey = (key) => String(key).trim().toLowerCase().normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'dj').replace(/[\s/-]+/g, '_');
 
 const watchGroups = [
-  ['general', 'Opšti podaci', ['serija', 'proizvodjac', 'proizvo_ac', 'uzrasna_grupa', 'garancija']],
+  ['general', 'Opšti podaci', ['pol', 'serija', 'proizvodjac', 'proizvo_ac', 'uzrasna_grupa', 'garancija']],
   ['functions', 'Funkcije', ['datum', 'dan_u_nedelji', 'hronograf', 'stoperica', 'alarm', 'tajmer', 'svetsko_vreme', 'dvojno_vreme', '12_24_casovni_format', 'satni_zvucni_signal', 'osvetljenje_displeja']],
   ['design', 'Dizajn i brojčanik', ['stil', 'oblik', 'prikaz', 'boja_brojcanika', 'boja_kucista', 'luminescencija']],
   ['case', 'Kućište i otpornost', ['materijal_kucista', 'precnik_kucista', 'dimenzije_kucista', 'debljina_kucista', 'tezina', 'staklo', 'vodootpornost']],
@@ -41,7 +42,7 @@ const remoteLabels = {
 };
 
 const watchLabels = {
-  serija: 'Serija', proizvodjac: 'Proizvođač', proizvo_ac: 'Proizvođač', uzrasna_grupa: 'Uzrasna grupa', garancija: 'Garancija',
+  pol: 'Pol', serija: 'Serija', proizvodjac: 'Proizvođač', proizvo_ac: 'Proizvođač', uzrasna_grupa: 'Uzrasna grupa', garancija: 'Garancija',
   tip_mehanizma: 'Tip mehanizma', mehanizam: 'Mehanizam', rezerva_snage: 'Rezerva snage',
   stil: 'Stil', oblik: 'Oblik', prikaz: 'Prikaz', boja_brojcanika: 'Boja brojčanika', boja_kucista: 'Boja kućišta', luminescencija: 'Luminescencija',
   materijal_kucista: 'Materijal kućišta', precnik_kucista: 'Prečnik kućišta', dimenzije_kucista: 'Dimenzije kućišta', debljina_kucista: 'Debljina kućišta', tezina: 'Težina', staklo: 'Staklo', vodootpornost: 'Vodootpornost',
@@ -79,6 +80,13 @@ export function productSpecGroups(product) {
     const label = labels[normalized] || fallback.charAt(0).toLocaleUpperCase('sr-Latn') + fallback.slice(1);
     const group = groups.find((item) => item.keys.includes(normalized)) || other;
     group.entries.push({ key, normalized, label, value: eyewear ? eyewearDisplayValue(normalized, value) : value });
+  }
+
+  const catalogGender = String(product?.gender ?? '').trim();
+  if (watch && catalogGender && !groups[0].entries.some(entry => entry.normalized === 'pol')) {
+    const gender = normalizedCatalogGender(catalogGender);
+    const value = { MUSKI: 'Muški', ZENSKI: 'Ženski', UNISEX: 'Unisex' }[gender];
+    if (value) groups[0].entries.push({ key: 'pol', normalized: 'pol', label: watchLabels.pol, value });
   }
 
   groups.forEach((group) => group.entries.sort((a, b) => group.keys.indexOf(a.normalized) - group.keys.indexOf(b.normalized)));
