@@ -9,13 +9,15 @@ import ConfirmModal from '../modals/ConfirmModal.jsx';
 
 export default function WishlistAlertSettings({ onBeforeSubscribe }) {
   const { t, language } = useStorefront();
-  const { user } = useAuth();
+  const { user, showAuth } = useAuth();
   const { policy } = useConsent();
   const [tracking, setTracking] = useState(null);
   const [hintReady, setHintReady] = useState(false);
   const [hintDismissed, setHintDismissed] = useState(false);
   const settingsRef = useRef(null);
-  const menuRef = useRef(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [statusError, setStatusError] = useState(null);
+  const [statusRetry, setStatusRetry] = useState(0);
   const triggerRef = useRef(null);
   const account = user?.id;
   const [channel, setChannel] = useState('email');
@@ -41,10 +43,14 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
       controller = new AbortController();
       const { signal } = controller;
       productAlertsApi.wishlistStatus({ signal }).then(result => {
-        if (!signal.aborted) setTracking(result?.channels || []);
-      }).catch(() => {});
+        if (signal.aborted) return;
+        if (!Array.isArray(result?.channels)) throw new Error('Wishlist tracking status is missing');
+        setTracking(result.channels);
+        setStatusError(null);
+      }).catch(err => {
+        if (!signal.aborted) setStatusError(err.status === 401 ? 'session' : 'unavailable');
+      });
     };
-    setTracking(null);
     refresh();
     window.addEventListener('daja:product-alerts-changed', refresh);
     window.addEventListener('focus', refresh);
@@ -53,10 +59,13 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
       window.removeEventListener('daja:product-alerts-changed', refresh);
       window.removeEventListener('focus', refresh);
     };
-  }, [account]);
+  }, [account, statusRetry]);
 
   useEffect(() => {
     if (!account) return undefined;
+    setTracking(null);
+    setStatusError(null);
+    setMenuOpen(false);
     setHintReady(false);
     setHintDismissed(false);
     const timer = window.setTimeout(() => setHintReady(true), 10_000);
@@ -64,31 +73,25 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
   }, [account]);
 
   useEffect(() => {
+    if (!menuOpen && !confirm) return undefined;
     const closeOutside = (event) => {
-      const menu = menuRef.current;
-      if (menu?.open && !confirm && !settingsRef.current?.contains(event.target)) menu.open = false;
+      if (!confirm && !settingsRef.current?.contains(event.target)) setMenuOpen(false);
     };
     const closeOnEscape = (event) => {
       if (event.key !== 'Escape') return;
-      if (confirm) {
-        setConfirm(false);
-        return;
-      }
-      const menu = menuRef.current;
-      if (menu?.open) {
-        menu.open = false;
+      if (confirm) setConfirm(false);
+      else {
+        setMenuOpen(false);
         triggerRef.current?.focus();
-      } else if (hintReady && tracking?.length === 0 && settingsRef.current?.contains(event.target)) {
-        setHintDismissed(true);
       }
     };
-    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('pointerdown', closeOutside, true);
     document.addEventListener('keydown', closeOnEscape);
     return () => {
-      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('pointerdown', closeOutside, true);
       document.removeEventListener('keydown', closeOnEscape);
     };
-  }, [confirm, hintReady, tracking]);
+  }, [menuOpen, confirm]);
 
   async function change(enable) {
     if (busy) return;
@@ -102,15 +105,18 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
         const { active, skipped, alreadyEnabled } = await productAlertsApi.subscribeWishlist({
           channel, language, accepted: true, ...(policy?.version ? { policyVersion: policy.version } : {}),
         });
+        setStatusError(null);
         setTracking(current => [...new Set([...(current || []), channel])]);
         setNotice(alreadyEnabled ? t('Praćenje uključeno') : t('Automatsko praćenje je uključeno. Pratimo {active} satova, nedostupnih: {skipped}.', { active, skipped }));
       } else {
         await privacyApi.unsubscribeProductAlerts('both', { kind: 'all' });
+        setStatusError(null);
         setTracking([]);
         setNotice(t('Isključena su sva obaveštenja o satovima.'));
       }
     } catch (requestError) {
-      setError(requestError.message || 'Pokušajte ponovo.');
+      if (requestError.status === 401) setStatusError('session');
+      else setError(requestError.message || 'Pokušajte ponovo.');
     } finally {
       setBusy(false);
     }
@@ -119,17 +125,22 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
   if (!user) return null;
   const canSubscribe = channel === 'email' ? user.emailVerified : whatsappAvailable && user.phoneVerified;
   const alreadyTracking = tracking?.includes(channel);
-  const showHint = hintReady && !hintDismissed && tracking?.length === 0;
+  const showHint = hintReady && !hintDismissed && !menuOpen && !confirm && tracking?.length === 0;
   return <div ref={settingsRef} className="wishlist-alert-settings">
-    <details ref={menuRef} className="wishlist-alert-settings__menu"
-      onToggle={event => { if (event.currentTarget.open) setHintDismissed(true); }}>
-      <summary ref={triggerRef}>
+    <button ref={triggerRef} type="button" className="wishlist-alert-settings__trigger" aria-expanded={menuOpen}
+      onClick={() => setMenuOpen(open => !open)}>
         <BellRing className={showHint ? 'wishlist-alert-settings__bell--nudge' : undefined} size={16} aria-hidden="true" />
         {t('Prati listu')}
         {tracking?.length > 0 && <span className="wishlist-alert-settings__dot" title={t('Praćenje uključeno')} aria-label={t('Praćenje uključeno')} />}
-      </summary>
-      <section className="wishlist-alert-settings__card" aria-label={t('Praćenje cena za celu listu želja')}>
-        <h4>{t('Praćenje cena za celu listu želja')}</h4>
+    </button>
+    {menuOpen && <section className="wishlist-alert-settings__card" aria-label={t('Praćenje cena za celu listu želja')}>
+        <div className="wishlist-alert-settings__heading">
+          <h4>{t('Praćenje cena za celu listu želja')}</h4>
+          <button type="button" aria-label={t('Zatvori')} onClick={() => {
+            setMenuOpen(false);
+            triggerRef.current?.focus();
+          }}><X size={16} aria-hidden="true" /></button>
+        </div>
         <p>{t('Novi satovi se prate automatski. Kad uklonite sat sa liste, njegovo automatsko praćenje prestaje.')}</p>
         <fieldset className="wishlist-alert-settings__channels" disabled={busy}>
           <legend>{t('Gde da vam javimo?')}</legend>
@@ -153,11 +164,26 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
         <button type="button" className="wishlist-alert-settings__stop" disabled={busy} onClick={() => setConfirm(true)}>
           <BellOff size={15} aria-hidden="true" />{t('Odjavi sva obaveštenja o satovima')}
         </button>
+        {statusError && <p role="alert">
+          {t(statusError === 'session' ? 'Za praćenje liste prijavite se ponovo.' : 'Status praćenja trenutno nije dostupan.')}{' '}
+          <button type="button" className="wishlist-alert-settings__stop" onClick={() => {
+            if (statusError === 'session') {
+              setMenuOpen(false);
+              showAuth('login');
+            } else {
+              setStatusRetry(value => value + 1);
+            }
+          }}>{t(statusError === 'session' ? 'Prijavite se ponovo' : 'Proveri ponovo')}</button>
+        </p>}
         {notice && <p role="status">{notice}</p>}
         {error && <p role="alert">{t(error)}</p>}
-      </section>
-    </details>
-    {showHint && <aside className="wishlist-alert-settings__hint">
+    </section>}
+    {showHint && <aside className="wishlist-alert-settings__hint" onKeyDown={event => {
+      if (event.key === 'Escape') {
+        setHintDismissed(true);
+        triggerRef.current?.focus();
+      }
+    }}>
       <p role="status">{t('Pratite listu želja i javićemo vam kad se cena nekog sata promeni.')}</p>
       <button type="button" aria-label={t('Zatvori obaveštenje')} onClick={() => setHintDismissed(true)}>
         <X size={16} aria-hidden="true" />
