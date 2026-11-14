@@ -673,8 +673,14 @@ export default function AuthModal() {
         isLogin ? 'Prijava uspešna' : 'Registracija uspešna',
         'Broj telefona verifikovan ✅'
       );
-    } catch {
-      alert(translateText('Nevažeći kod.'));
+    } catch (err) {
+      if (err.code === 'INVALID_CREDENTIALS') {
+        setAwaitPhoneCode(false);
+        setSmsCode('');
+        alert(translateText('Za prijavu brojem prvo se prijavite postojećim nalogom, pa u profilu dodajte i SMS kodom potvrdite taj broj.'));
+      } else {
+        alert(translateText(err.message || 'Nevažeći kod.'));
+      }
     } finally {
       setLoading(false);
     }
