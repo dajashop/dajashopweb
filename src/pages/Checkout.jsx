@@ -11,7 +11,7 @@ import { CHECKOUT_UNAVAILABLE_MESSAGE, useCheckoutAvailability } from '../hooks/
 
 import { PASSWORD_RULE } from '../data/validationRules.js';
 import { AnimatePresence } from 'framer-motion';
-import { customerApi, ordersApi } from '../services/dajaPlatform.js';
+import { ordersApi } from '../services/dajaPlatform.js';
 
 // Uvoz komponenti
 import OrderConfirmationModal from '../components/checkout/OrderConfirmationModal';
@@ -89,40 +89,6 @@ export default function Checkout() {
   const finalTotal = subtotalAfterDiscount + finalShipping;
 
   const requiredForCourier = shippingMethod === 'courier';
-
-  // --- AUTOFILL EFEKAT ---
-  useEffect(() => {
-    const fetchLastAddress = async () => {
-      if (user && !formData.address && !formData.phone) {
-        try {
-          const addresses = await customerApi.listAddresses();
-          if (addresses.length) {
-            const savedAddr = addresses[0];
-            const parts = (savedAddr.name || '').trim().split(/\s+/);
-            const fName = parts[0] || '';
-            const lName = parts.slice(1).join(' ') || '';
-
-            setFormData((prev) => ({
-              ...prev,
-              name: fName,
-              surname: lName,
-              email: user.email || prev.email,
-              phone: savedAddr.phone || '',
-              address: savedAddr.address || '',
-              addressDetails: '',
-              city: savedAddr.city || '',
-              postalCode: savedAddr.zip || '',
-            }));
-          } else {
-            setFormData((prev) => ({ ...prev, email: user.email || '' }));
-          }
-        } catch (error) {
-          console.error(error);
-        }
-      }
-    };
-    fetchLastAddress();
-  }, [user, setFormData]);
 
   useEffect(() => {
     if (shippingMethod === 'pickup') {

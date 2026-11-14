@@ -91,7 +91,6 @@ export default function DeliveryForm({
   const { googleAllowed, requestGooglePermission } = useConsent();
 
   // --- REF ZA PRAĆENJE AUTOMATSKE SELEKCIJE ---
-  const hasAutoSelected = useRef(false);
 
   const [mapsReady, setMapsReady] = useState(false);
   const [mapsLoadError, setMapsLoadError] = useState(false);
@@ -101,6 +100,7 @@ export default function DeliveryForm({
 
   // --- STATE ZA ADRESE ---
   const [savedAddresses, setSavedAddresses] = useState([]);
+  const [addressAccount, setAddressAccount] = useState(null);
   const [isAddressSelectorOpen, setIsAddressSelectorOpen] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState('new');
   const [addressSuggestions, setAddressSuggestions] = useState([]);
@@ -165,9 +165,9 @@ export default function DeliveryForm({
       if (setFormData) {
         setFormData((prev) => ({
           ...prev,
-          name: fName,
-          surname: lName,
-          phone: addr.phone || '',
+          name: fName || prev.name,
+          surname: lName || prev.surname,
+          phone: addr.phone || prev.phone,
           address: addr.address || '',
           addressDetails: '',
           city: addr.city || '',
@@ -179,29 +179,67 @@ export default function DeliveryForm({
     setIsAddressSelectorOpen(false);
   };
 
-  // --- FETCH ADRESA ---
-  useEffect(() => {
-    hasAutoSelected.current = false; // Reset na promenu usera
+  const [profileName = '', ...profileSurname] = (user?.displayName || '').trim().split(/\s+/);
+  const profileLastName = profileSurname.join(' ');
+  const profileEmail = user?.email || '';
+  const profilePhone = user?.phoneNumber || '';
+  const accountId = user?.id || user?.uid;
 
-    const fetchAddresses = async () => {
-      if (!user) return;
-      try {
-        const addresses = await customerApi.listAddresses();
+  useEffect(() => {
+    if (!accountId || !setFormData) return;
+    setFormData(prev => ({
+      ...prev,
+      name: prev.name || profileName,
+      surname: prev.surname || profileLastName,
+      email: prev.email || profileEmail,
+      phone: prev.phone || profilePhone,
+    }));
+  }, [accountId, profileName, profileLastName, profileEmail, profilePhone, setFormData]);
+
+  useEffect(() => {
+    setSavedAddresses([]);
+    setSelectedAddressId('new');
+    if (!accountId) return undefined;
+
+    let cancelled = false;
+    customerApi.listAddresses().then(addresses => {
+      if (!cancelled) {
         setSavedAddresses(addresses);
-      } catch (err) {
-        console.error('Error fetching addresses', err);
+        setAddressAccount(accountId);
       }
-    };
-    fetchAddresses();
-  }, [user]);
+    }).catch(err => {
+      if (!cancelled) console.error('Error fetching addresses', err);
+    });
+    return () => { cancelled = true; };
+  }, [accountId]);
 
-  // --- AUTOMATSKA SELEKCIJA ---
+  const defaultAddress = addressAccount === accountId ? savedAddresses[0] : undefined;
+  const [autoAddressUsed, setAutoAddressUsed] = useState(false);
+
   useEffect(() => {
-    if (savedAddresses.length > 0 && !hasAutoSelected.current) {
-      selectAddress(savedAddresses[0]);
-      hasAutoSelected.current = true;
-    }
-  }, [savedAddresses]);
+    setAutoAddressUsed(false);
+  }, [accountId]);
+
+  useEffect(() => {
+    if (!accountId || !defaultAddress || autoAddressUsed || !setFormData) return;
+    const [name = '', ...surname] = (defaultAddress.name || '').trim().split(/\s+/);
+    const canFillAddress = requiredForCourier && !formData.address && !formData.addressDetails &&
+      !formData.city && !formData.postalCode;
+    if (canFillAddress) setSelectedAddressId(defaultAddress.id);
+    if (requiredForCourier) setAutoAddressUsed(true);
+    setFormData(prev => ({
+      ...prev,
+      name: prev.name || name,
+      surname: prev.surname || surname.join(' '),
+      phone: prev.phone || defaultAddress.phone || '',
+      ...(canFillAddress ? {
+        address: defaultAddress.address || '',
+        city: defaultAddress.city || '',
+        postalCode: defaultAddress.zip || '',
+      } : {}),
+    }));
+  }, [accountId, autoAddressUsed, defaultAddress, requiredForCourier, formData.address,
+    formData.addressDetails, formData.city, formData.postalCode, setFormData]);
 
   // --- HELPER: ODABIR IKONICE ---
   const getAddressIcon = (addr, size = 18) => {
