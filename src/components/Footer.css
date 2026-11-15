@@ -223,7 +223,7 @@
   line-height: 1.5;
 }
 
-.footer__contact-link {
+.footer__contact-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -233,12 +233,12 @@
   width: fit-content;
 }
 
-.footer__contact-link svg {
+.footer__contact-row svg {
   color: var(--color-primary, #c8a94e);
   flex-shrink: 0;
 }
 
-.footer__contact-link:hover {
+a.footer__contact-row:hover {
   color: var(--color-primary, #c8a94e);
   transform: translateX(4px);
 }

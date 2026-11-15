@@ -7,6 +7,7 @@ import {
   MapPin,
   Phone,
   Mail,
+  FileText,
   ArrowRight,
   Loader2,
   Check,
@@ -192,7 +193,7 @@ export default function Footer() {
               <li>
                 <Link
                   to="/contact"
-                  className="footer__contact-link"
+                  className="footer__contact-row"
                   aria-label={translateText("Adresa")}
                 >
                   <MapPin size={18} />
@@ -202,7 +203,7 @@ export default function Footer() {
               <li>
                 <a
                   href="tel:+381641262425"
-                  className="footer__contact-link"
+                  className="footer__contact-row"
                   aria-label={translateText("Telefonski broj")}
                 >
                   <Phone size={18} />
@@ -212,14 +213,17 @@ export default function Footer() {
               <li>
                 <a
                   href={`mailto:${seoConfig.business.email}`}
-                  className="footer__contact-link"
+                  className="footer__contact-row"
                   aria-label={translateText("Email adresa")}
                 >
                   <Mail size={18} />
                   <span>{seoConfig.business.email}</span>
                 </a>
               </li>
-              <li>{translateText("PIB")}: 104852069</li>
+              <li className="footer__contact-row">
+                <FileText size={18} aria-hidden="true" />
+                <span>{translateText("PIB")}: 104852069</span>
+              </li>
             </ul>
           </div>
 
