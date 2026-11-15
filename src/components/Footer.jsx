@@ -183,7 +183,6 @@ export default function Footer() {
               <Link to="/kolekcije-satova">{translateText("Brendovi i kolekcije")}</Link>
               <Link to="/about">{translateText("O nama")}</Link>
               <Link to="/usluge">{translateText("Usluge")}</Link>
-              <Link to="/contact">{translateText("Kontakt")}</Link>
             </nav>
           </div>
 
@@ -220,6 +219,7 @@ export default function Footer() {
                   <span>{seoConfig.business.email}</span>
                 </a>
               </li>
+              <li>{translateText("PIB")}: 104852069</li>
             </ul>
           </div>
 

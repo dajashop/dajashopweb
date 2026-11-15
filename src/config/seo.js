@@ -8,7 +8,6 @@ const publicSetting = value => {
   const setting = (value || '').trim();
   return /^@?(?:none|null|undefined|n\/a|your_.*|placeholder.*|example.*)$/iu.test(setting) ? '' : setting;
 };
-const configuredEmail = (import.meta.env.VITE_BUSINESS_EMAIL || '').trim();
 
 export const seoConfig = {
   siteUrl,
@@ -29,7 +28,7 @@ export const seoConfig = {
     postalCode: '18105',
     country: import.meta.env.VITE_BUSINESS_COUNTRY || 'RS',
     phone: import.meta.env.VITE_BUSINESS_PHONE || '+381641262425',
-    email: configuredEmail && configuredEmail.toLowerCase() !== 'info@dajashop.com' ? configuredEmail : 'cvelenis42@yahoo.com',
+    email: 'info@dajashop.rs',
     hours: import.meta.env.VITE_BUSINESS_HOURS || 'Mo-Fr 10:00-20:00, Sa 10:00-15:00',
   },
 };
