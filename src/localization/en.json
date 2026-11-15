@@ -2510,5 +2510,8 @@
   "Obim odjave": "Unsubscribe from",
   "Sve WhatsApp pretplate": "All WhatsApp subscriptions",
   "Sva WhatsApp praćenja cena": "All WhatsApp price alerts",
-  "Samo WhatsApp novosti": "WhatsApp newsletter only"
+  "Samo WhatsApp novosti": "WhatsApp newsletter only",
+  "Link za dugme": "Button link",
+  "Možeš da nalepiš link ovde ili u tekst poruke. Bez linka, dugme otvara katalog.": "Paste the link here or in the message. The button opens the catalog if no link is set.",
+  "Unesi pun link sa sajta https://dajashop.rs.": "Enter a full URL from https://dajashop.rs."
 }

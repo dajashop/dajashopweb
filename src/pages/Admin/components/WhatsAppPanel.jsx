@@ -8,6 +8,7 @@ export default function WhatsAppPanel() {
   const { t } = useStorefront();
   const [data, setData] = useState(null);
   const [text, setText] = useState('');
+  const [link, setLink] = useState('');
   const [language, setLanguage] = useState('sr');
   const [preview, setPreview] = useState(false);
   const [campaignId, setCampaignId] = useState(() => crypto.randomUUID());
@@ -16,15 +17,20 @@ export default function WhatsAppPanel() {
   const [notice, setNotice] = useState('');
   const [optOutPhone, setOptOutPhone] = useState('');
   const [optOutScope, setOptOutScope] = useState('all');
+  const embeddedLink = text.match(/https?:\/\/[^\s<>"']+/gi)?.map(value => value.replace(/[.,!;:)\]]+$/, ''))
+    .find(value => /^https:\/\/dajashop\.rs\//i.test(value));
+  const campaignLink = link.trim() || embeddedLink || 'https://dajashop.rs/catalog';
+  const validLink = /^https:\/\/dajashop\.rs\/[\S]+$/i.test(campaignLink);
   const refresh = async () => { try { setData(await apiRequest('/admin/whatsapp', { staff: true })); }
     catch (e) { setError(e.message); } };
   useEffect(() => { void refresh(); }, []);
   const send = async () => {
     setBusy(true); setError(''); setNotice('');
     try {
-      const result = await apiRequest('/admin/whatsapp/campaigns', { method: 'POST', staff: true, retry: false, body: { campaignId, text, language } });
+      const result = await apiRequest('/admin/whatsapp/campaigns', { method: 'POST', staff: true, retry: false,
+        body: { campaignId, text, language, ...(language === 'sr' && link.trim() ? { link: link.trim() } : {}) } });
       setNotice(t('Poruke dodate u red: ') + result.queued);
-      setCampaignId(crypto.randomUUID()); setText(''); setPreview(false); await refresh();
+      setCampaignId(crypto.randomUUID()); setText(''); setLink(''); setPreview(false); await refresh();
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
@@ -51,10 +57,18 @@ export default function WhatsAppPanel() {
       disabled={busy} value={text} onChange={e => { setText(e.target.value); setCampaignId(crypto.randomUUID()); setPreview(false); }} /></label>
     <p>{text.length}/800</p>
     <label>{t('Jezik primaoca')} <select disabled={busy} value={language} onChange={e => { setLanguage(e.target.value); setCampaignId(crypto.randomUUID()); setPreview(false); }}><option value="sr">Srpski</option><option value="en">English</option></select></label>
-    {!preview ? <button type="button" disabled={!data?.available || !text.trim() || busy} onClick={() => setPreview(true)}>{t('Pregled poruke')}</button>
+    {language === 'sr' && <label className="block">{t('Link za dugme')}
+      <input type="url" className="mt-2 block w-full border rounded-lg p-3" disabled={busy} value={link}
+        placeholder={embeddedLink || 'https://dajashop.rs/catalog'}
+        onChange={e => { setLink(e.target.value); setCampaignId(crypto.randomUUID()); setPreview(false); }} />
+      <span>{t('Možeš da nalepiš link ovde ili u tekst poruke. Bez linka, dugme otvara katalog.')}</span>
+      {!validLink && <span role="alert">{t('Unesi pun link sa sajta https://dajashop.rs.')}</span>}
+    </label>}
+    {!preview ? <button type="button" disabled={!data?.available || !text.trim() || busy || (language === 'sr' && !validLink)} onClick={() => setPreview(true)}>{t('Pregled poruke')}</button>
       : <div className="border rounded-lg p-4 space-y-3">
-        <p className="whitespace-pre-wrap">{language === 'en' ? `DajaShop commercial message · News and offers\n\n${text}\n\nSend STOP for the newsletter or STOP ALL for all WhatsApp subscriptions.` : `DajaShop komercijalna poruka · Novosti i ponude\n\n${text}\n\nPošaljite STOP za novosti ili STOP SVE za sve WhatsApp pretplate.`}</p>
-        <p>{language === 'en' ? 'Unsubscribe from news · Unsubscribe from all' : 'Odjavi novosti · Odjavi sve'}</p>
+        <p className="whitespace-pre-wrap">{language === 'en' ? `DajaShop commercial message · News and offers\n\n${text}\n\nSend STOP for the newsletter or STOP ALL for all WhatsApp subscriptions.` : `DajaShop novosti i ponude\n\nMožda je baš ovo sat koji nedostaje u tvojoj kolekciji.\n\n${text}\n\nOtvori izdvojenu ponudu preko dugmeta ispod.\n\nSTOP za novosti · STOP SVE za sve WhatsApp pretplate`}</p>
+        {language === 'sr' && <a href={campaignLink} target="_blank" rel="noopener noreferrer">Pogledaj ponudu</a>}
+        {language === 'en' && <p>Unsubscribe from news · Unsubscribe from all</p>}
         <button type="button" disabled={busy} onClick={() => void send()}>{t(busy ? 'Slanje...' : 'Pošalji potvrđenim pretplatnicima')}</button>
         <button type="button" disabled={busy} onClick={() => setPreview(false)}>{t('Izmeni poruku')}</button>
       </div>}
