@@ -13,9 +13,26 @@
 .loading-card-text { color: transparent; background: linear-gradient(transparent 22%, var(--color-border, #e9ecef) 22% 78%, transparent 78%); box-decoration-break: clone; -webkit-box-decoration-break: clone; border-radius: 3px; }
 .loading-card-heart { display: block; width: 18px; height: 18px; border-radius: 50%; }
 .loading-card-admin { display: block; height: 36px; }
-.product-card--skeleton .loading-block, .product-card--skeleton .loading-card-text { animation: catalog-skeleton-pulse 1.2s ease-in-out infinite alternate; }
-@keyframes catalog-skeleton-pulse { to { opacity: .5; } }
-@media (prefers-reduced-motion: reduce) { .product-card--skeleton .loading-block, .product-card--skeleton .loading-card-text { animation: none; } }
+.catalog-card-gallery__skeleton { position: absolute; inset: 0; z-index: 2; border-radius: 0; pointer-events: none; }
 
-.catalog-card-gallery__skeleton { position: absolute; inset: 0; z-index: 2; border-radius: 0; pointer-events: none; animation: catalog-skeleton-pulse 1.2s ease-in-out infinite alternate; }
-@media (prefers-reduced-motion: reduce) { .catalog-card-gallery__skeleton { animation: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .product-card--skeleton .loading-block,
+  .product-card--skeleton .loading-card-text,
+  .catalog-card-gallery__skeleton {
+    background-image: linear-gradient(100deg, transparent 38%, rgb(255 255 255 / 70%) 50%, transparent 62%);
+    background-size: 250% 100%;
+    background-repeat: no-repeat;
+    animation: catalog-skeleton-shimmer 1.4s linear infinite;
+  }
+
+  .product-card--skeleton .loading-card-text {
+    background-image: linear-gradient(100deg, transparent 38%, rgb(255 255 255 / 70%) 50%, transparent 62%),
+      linear-gradient(transparent 22%, var(--color-border, #e9ecef) 22% 78%, transparent 78%);
+    background-size: 250% 56%, 100% 100%;
+  }
+}
+
+@keyframes catalog-skeleton-shimmer {
+  from { background-position: 100% center, center; }
+  to { background-position: 0% center, center; }
+}
