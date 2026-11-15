@@ -184,7 +184,10 @@ export async function apiRequest(path, options = {}) {
   if (!BROWSER_SESSIONS_ENABLED) return legacy.apiRequest(path, options);
   const { method = 'GET', query, body, headers = {}, auth = true, staff: staffRequest = false, retry = true, signal } = options;
   const mutation = !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
-  const changesSession = mutation && /^\/customer-auth\/(?:login|register|phone\/verify|logout)$/.test(path);
+  const changesSession = mutation && (
+    /^\/customer-auth\/(?:login|register|logout)$/.test(path) ||
+    (path === '/customer-auth/phone/verify' && !auth)
+  );
   if (changesSession && !options.sessionLocked) return withSessionLock(() => apiRequest(path, { ...options, sessionLocked: true }));
   if (auth || mutation) await initializeBrowserSession();
   if (auth && customer && !changesSession && expiresAt <= Date.now() + 30_000 && !path.startsWith('/customer-auth/refresh')) await refreshCustomer();

@@ -50,7 +50,7 @@ export async function requestFirebasePhone(phone, purpose) {
     // Firebase's SMS and reCAPTCHA locale, regardless of browser preferences.
     auth.languageCode = pathLanguage(window.location.pathname);
     const challenge = await apiRequest('/customer-auth/phone/start', {
-      method: 'POST', auth: purpose === 'link', body: { phone, purpose },
+      method: 'POST', auth: purpose !== 'login', body: { phone, purpose },
     });
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -77,7 +77,7 @@ export async function requestFirebasePhone(phone, purpose) {
   }
 }
 
-export async function confirmFirebasePhone(phone, code, purpose) {
+export async function confirmFirebasePhone(phone, code, purpose, newPassword) {
   const attempt = pending;
   if (!attempt || attempt.phone !== phone || attempt.purpose !== purpose) {
     throw new Error('Kod je istekao ili nije ispravan. Zatražite novi kod.');
@@ -91,8 +91,8 @@ export async function confirmFirebasePhone(phone, code, purpose) {
   try {
     const firebaseIdToken = await credential.user.getIdToken();
     return await apiRequest('/customer-auth/phone/verify', {
-      method: 'POST', auth: purpose === 'link',
-      body: { phone, purpose, firebaseIdToken, challengeToken: attempt.challengeToken },
+      method: 'POST', auth: purpose !== 'login',
+      body: { phone, purpose, firebaseIdToken, challengeToken: attempt.challengeToken, ...(purpose === 'password' ? { newPassword } : {}) },
     });
   } finally {
     await authSdk.signOut(auth);

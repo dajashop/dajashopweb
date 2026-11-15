@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import { customerApi } from '../../services/dajaPlatform';
+import { requestFirebasePhone, confirmFirebasePhone } from '../../services/firebasePhone.js';
 
 // Google Icon (Inline SVG)
 const GoogleIcon = () => (
@@ -55,6 +56,9 @@ export default function SecuritySection({ user }) {
 
   // State za Lozinku
   const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [sentPhone, setSentPhone] = useState('');
+  const [smsCode, setSmsCode] = useState('');
   const [passForm, setPassForm] = useState({
     current: '',
     new: '',
@@ -92,6 +96,25 @@ export default function SecuritySection({ user }) {
     setPassForm({ ...passForm, [e.target.name]: e.target.value });
   };
 
+  const sendPasswordCode = async () => {
+    const value = phone.replace(/[\s()-]/g, '');
+    const number = value.startsWith('+') ? value : `+381${value.replace(/^0/, '')}`;
+    if (!/^\+381[1-9]\d{6,11}$/.test(number)) {
+      flash('Greška', translateText('Unesite ispravan broj telefona iz Srbije.'), 'error');
+      return;
+    }
+    setLoading(true);
+    try {
+      await requestFirebasePhone(number, 'password');
+      setSentPhone(number);
+      setSmsCode('');
+    } catch (error) {
+      flash('Greška', translateText(error.message), 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const onUpdatePassword = async (e) => {
     e.preventDefault();
     if (passForm.new.length < 8) {
@@ -105,24 +128,30 @@ export default function SecuritySection({ user }) {
 
     setLoading(true);
     try {
-      await customerApi.updatePassword({
-        currentPassword: hasPassword ? passForm.current : undefined,
-        newPassword: passForm.new,
-      });
+      if (hasPassword) {
+        await customerApi.updatePassword({ currentPassword: passForm.current, newPassword: passForm.new });
+      } else {
+        if (!sentPhone || !/^\d{6}$/.test(smsCode)) return;
+        await confirmFirebasePhone(sentPhone, smsCode, 'password', passForm.new);
+      }
       await refreshUser();
 
       flash(
         'Uspeh',
         hasPassword
           ? 'Lozinka je uspešno promenjena.'
-          : 'Lozinka je dodata. Sada se možete prijaviti i emailom i lozinkom.',
+          : translateText('Lozinka je dodata i broj telefona je potvrđen.'),
         'success',
       );
       setIsEditingPassword(false);
+      setSentPhone('');
+      setSmsCode('');
       setPassForm({ current: '', new: '', confirm: '' });
     } catch (error) {
       console.error(error);
-      if (
+      if (!hasPassword) {
+        flash('Greška', translateText(error.message), 'error');
+      } else if (
         error.status === 401 ||
         error.code === 'auth/wrong-password' ||
         error.code === 'auth/invalid-credential'
@@ -168,7 +197,10 @@ export default function SecuritySection({ user }) {
 
               {!isEditingPassword && (
                 <button
-                  onClick={() => setIsEditingPassword(true)}
+                  onClick={() => {
+                    setPhone(user?.phoneNumber || '');
+                    setIsEditingPassword(true);
+                  }}
                   className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-bg-subtle)] text-xs font-bold text-[var(--color-text)] transition shadow-sm"
                 >
                   {translateText(hasPassword ? 'Promeni lozinku' : 'Dodaj lozinku')}
@@ -203,6 +235,51 @@ export default function SecuritySection({ user }) {
                     onSubmit={onUpdatePassword}
                     className="flex flex-col gap-3 mt-2"
                   >
+                    {!hasPassword && (
+                      <>
+                        <p className="text-sm text-[var(--color-muted)]">
+                          {translateText('Za dodavanje lozinke potvrdite broj SMS kodom. Broj će se sačuvati kao potvrđen na vašem nalogu.')}
+                          {' '}
+                          {translateText(isGoogleLinked
+                            ? 'Ako je prijava starija od 10 minuta, prijavite se ponovo preko Google-a.'
+                            : 'Ako je prijava starija od 10 minuta, prijavite se ponovo.')}
+                        </p>
+                        {!user?.emailVerified && (
+                          <p className="text-sm">{translateText('Prvo potvrdite email adresu u svom profilu.')}</p>
+                        )}
+                        <input
+                          type="tel"
+                          autoComplete="tel"
+                          aria-label={translateText('Broj telefona')}
+                          placeholder="+381 6…"
+                          value={phone}
+                          disabled={loading || Boolean(sentPhone)}
+                          onChange={(event) => setPhone(event.target.value)}
+                          className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2"
+                        />
+                        {!sentPhone ? (
+                          <button type="button" onClick={sendPasswordCode} disabled={loading || !user?.emailVerified || !phone.trim()}>
+                            {translateText(loading ? 'Slanje...' : 'Pošalji SMS kod')}
+                          </button>
+                        ) : (
+                          <>
+                            <p className="text-sm">{translateText('SMS kod je poslat na')} {sentPhone}.</p>
+                            <input
+                              inputMode="numeric"
+                              autoComplete="one-time-code"
+                              aria-label={translateText('SMS kod')}
+                              placeholder={translateText('SMS kod')}
+                              value={smsCode}
+                              onChange={(event) => setSmsCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                              className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg px-3 py-2"
+                            />
+                            <button type="button" disabled={loading} onClick={() => { setSentPhone(''); setSmsCode(''); }}>
+                              {translateText('Promeni broj ili zatraži novi SMS kod')}
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
                     {hasPassword && (
                       <div className="input-group">
                         <input
@@ -220,6 +297,8 @@ export default function SecuritySection({ user }) {
                       <input
                         type="password"
                         name="new"
+                          autoComplete="new-password"
+                          maxLength={240}
                         placeholder={translateText("Nova lozinka (min. 8)")}
                         value={passForm.new}
                         onChange={handlePassChange}
@@ -231,6 +310,8 @@ export default function SecuritySection({ user }) {
                       <input
                         type="password"
                         name="confirm"
+                        autoComplete="new-password"
+                        maxLength={240}
                         placeholder={translateText("Potvrdite novu lozinku")}
                         value={passForm.confirm}
                         onChange={handlePassChange}
@@ -242,15 +323,18 @@ export default function SecuritySection({ user }) {
                     <div className="flex gap-2 mt-2 justify-end">
                       <button
                         type="button"
+                        disabled={loading}
                         onClick={() => {
                           setIsEditingPassword(false);
+                          setSentPhone('');
+                          setSmsCode('');
                           setPassForm({ current: '', new: '', confirm: '' });
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-bg-subtle)] transition"
                       >{translateText("Otkaži")}</button>
                       <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || (!hasPassword && (!sentPhone || smsCode.length !== 6))}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold text-[var(--color-bg)] bg-[var(--color-primary)] hover:opacity-90 transition flex items-center gap-2"
                       >
                         {loading ? (
