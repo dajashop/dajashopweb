@@ -92,10 +92,10 @@ export default function PrivacySection({ user }) {
     }
   };
 
-  const unsubscribeAlert = async (alert) => {
+  const unsubscribeAlert = async (alert, channel = 'both') => {
     setBusy(`alert:${alert.id}`);
     try {
-      await privacyApi.unsubscribeProductAlerts('both', {
+      await privacyApi.unsubscribeProductAlerts(channel, {
         kind: 'watch', productId: alert.productId, variantId: alert.variantId,
       });
       await refresh();
@@ -130,6 +130,7 @@ export default function PrivacySection({ user }) {
     if (current) {
       current.types.add(alert.type);
       current.channels.add(alert.channel || 'email');
+      if (alert.watchCode) current.watchCode = alert.watchCode;
     } else {
       alertsByWatch.set(key, { ...alert, types: new Set([alert.type]), channels: new Set([alert.channel || 'email']) });
     }
@@ -201,7 +202,7 @@ export default function PrivacySection({ user }) {
             description={translateText('Isključićete sva email i WhatsApp obaveštenja o satovima. Prijava na novosti ostaje aktivna ako je uključena.')}
             confirmText={translateText('Potvrdi odjavu')} isDanger />
         {alerts.some(alert => alert.channels.has('whatsapp')) &&
-          <p>{translateText('Za odjavu ovog sata odgovorite na njegovu WhatsApp poruku sa STOP SAT. Za sve satove pošaljite STOP SATOVI.')}</p>}
+          <p>{translateText('Pošaljite STOP CENE da isključite sva WhatsApp praćenja cena ili MOJI SATOVI za pojedinačne šifre.')}</p>}
         {alerts.length === 0 ? (
           <p>{translateText("Nemate aktivna obaveštenja o artiklima.")}</p>
         ) : (
@@ -231,12 +232,17 @@ export default function PrivacySection({ user }) {
                     <div className="privacy-section__alert-details">
                       <strong>{translateText(name)}</strong>
                       <span>{[...alert.types].map(type => translateText(alertLabel[type] || 'Obaveštenje')).join(' / ')} · {[...alert.channels].map(channel => channel === 'whatsapp' ? 'WhatsApp' : translateText('Email')).join(' + ')}</span>
+                      {alert.watchCode && <span>{translateText('WhatsApp šifra za odjavu: {code}', { code: alert.watchCode })}</span>}
                       {hasPrice && <b>{money(Number(alert.price))}</b>}
                     </div>
                   </div>
                   <button type="button" onClick={() => setConfirmWatch({ alert, name })} disabled={Boolean(busy)}>
                     {translateText(busy === `alert:${alert.id}` ? 'Odjavljujemo…' : 'Odjavi ovaj sat')}
                   </button>
+                  {alert.channels.has('whatsapp') && <button type="button" disabled={Boolean(busy)}
+                    onClick={() => setConfirmWatch({ alert, name, channel: 'whatsapp' })}>
+                    {translateText('Odjavi samo WhatsApp za ovaj sat')}
+                  </button>}
                 </li>
               );
             })}
@@ -246,9 +252,9 @@ export default function PrivacySection({ user }) {
 
       </div>
       <ConfirmModal isOpen={Boolean(confirmWatch)} onClose={() => setConfirmWatch(null)}
-        onConfirm={() => { if (confirmWatch) void unsubscribeAlert(confirmWatch.alert); }}
+        onConfirm={() => { if (confirmWatch) void unsubscribeAlert(confirmWatch.alert, confirmWatch.channel); }}
         title={translateText('Odjavi ovaj sat')}
-        description={translateText('Isključi email i WhatsApp obaveštenja za {watch}.', { watch: confirmWatch?.name })}
+        description={translateText(confirmWatch?.channel === 'whatsapp' ? 'Isključi WhatsApp obaveštenja za {watch}.' : 'Isključi email i WhatsApp obaveštenja za {watch}.', { watch: confirmWatch?.name })}
         confirmText={translateText('Potvrdi odjavu')} isDanger />
       {preview && (
         <div className="privacy-section__image-modal" role="dialog" aria-modal="true" aria-label={translateText(`Slika artikla: ${preview.name}`)} onClick={() => setPreview(null)}>

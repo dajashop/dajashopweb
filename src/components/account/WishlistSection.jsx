@@ -34,6 +34,7 @@ function WishlistAlertButton({ item, alerts }) {
   for (const alert of alerts) {
     if (alert.productId === product.id && alert.variantId === product.variantId) {
       status[alert.channel === 'whatsapp' ? 'whatsapp' : 'email'].push(alert.type);
+      if (alert.channel === 'whatsapp' && alert.watchCode) status.whatsappWatchCode = alert.watchCode;
     }
   }
   return <>

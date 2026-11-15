@@ -2498,5 +2498,17 @@
   "DajaShop je prodavnica satova u Nišu, na adresi Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105. Na našem sajtu možete pregledati modele, uporediti njihove karakteristike i poručiti sat. Ako vam je potreban savet, kontaktirajte nas ili posetite prodavnicu.": "DajaShop is a watch shop in Niš at Obrenovićeva bb, underground passage, unit C31, 18105. Browse our models, compare their features and order a watch on our website. Contact us or visit our shop for advice.",
   "Naša prodavnica nalazi se u Nišu, na adresi Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105. Za informacije o dostupnosti modela i dolasku pozovite nas ili pošaljite Viber poruku na +381 64 126 24 25.": "Our shop is in Niš at Obrenovićeva bb, underground passage, unit C31, 18105. For availability and visiting information, call or message us on Viber at +381 64 126 24 25.",
   "Nalazimo se u Nišu, na adresi Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105. Satove iz naše ponude možete pogledati u prodavnici ili na dajashop.rs. Za pomoć pri izboru sata i pitanja o porudžbini dostupni smo telefonom, preko Vibera i emaila.": "Find us in Niš at Obrenovićeva bb, underground passage, unit C31, 18105. View our watches in store or at dajashop.rs. For help choosing a watch or questions about your order, contact us by phone, Viber or email.",
-  "DajaShop je prodavnica satova u Nišu, na adresi Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105. Upoznajte našu ponudu i kontaktirajte nas za pomoć pri izboru sata.": "DajaShop is a watch shop in Niš at Obrenovićeva bb, underground passage, unit C31, 18105. Explore our collection and contact us for help choosing a watch."
+  "DajaShop je prodavnica satova u Nišu, na adresi Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105. Upoznajte našu ponudu i kontaktirajte nas za pomoć pri izboru sata.": "DajaShop is a watch shop in Niš at Obrenovićeva bb, underground passage, unit C31, 18105. Explore our collection and contact us for help choosing a watch.",
+  "Za odjavu samo novosti pošaljite STOP. Za sve WhatsApp pretplate pošaljite STOP SVE.": "Send STOP to unsubscribe from the newsletter only. Send STOP ALL to turn off all WhatsApp subscriptions.",
+  "Pošaljite MOJI SATOVI za šifre, zatim STOP SAT i šifru za odjavu jednog sata. STOP CENE gasi sva WhatsApp praćenja cena.": "Send MY WATCHES for your codes, then STOP WATCH followed by the code to unsubscribe from one watch. STOP PRICES turns off all WhatsApp price alerts.",
+  "Pošaljite STOP CENE da isključite sva WhatsApp praćenja cena ili MOJI SATOVI za pojedinačne šifre.": "Send STOP PRICES to turn off all WhatsApp price alerts or MY WATCHES for individual codes.",
+  "WhatsApp šifra za odjavu: {code}": "WhatsApp unsubscribe code: {code}",
+  "Odjavi samo WhatsApp za ovaj sat": "Turn off WhatsApp only for this watch",
+  "Isključi WhatsApp obaveštenja za {watch}.": "Turn off WhatsApp alerts for {watch}.",
+  "Evidentiraj zahtev kupca za WhatsApp odjavu": "Record a customer WhatsApp opt-out",
+  "WhatsApp odjava je evidentirana.": "WhatsApp opt-out recorded.",
+  "Obim odjave": "Unsubscribe from",
+  "Sve WhatsApp pretplate": "All WhatsApp subscriptions",
+  "Sva WhatsApp praćenja cena": "All WhatsApp price alerts",
+  "Samo WhatsApp novosti": "WhatsApp newsletter only"
 }

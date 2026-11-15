@@ -144,6 +144,7 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
           }}><X size={16} aria-hidden="true" /></button>
         </div>
         <p>{t('Novi satovi se prate automatski. Kad uklonite sat sa liste, njegovo automatsko praćenje prestaje.')}</p>
+        {channel === 'whatsapp' && <p>{t('Pošaljite STOP CENE da isključite sva WhatsApp praćenja cena ili MOJI SATOVI za pojedinačne šifre.')}</p>}
         <fieldset className="wishlist-alert-settings__channels" disabled={busy}>
           <legend>{t('Gde da vam javimo?')}</legend>
           <div>

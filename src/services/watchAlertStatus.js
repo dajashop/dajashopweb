@@ -23,7 +23,7 @@ export function useWatchAlertStatus(productId, variantId) {
       productAlertsApi.status(productId, { variantId, ...(!account && managementToken ? { managementToken } : {}) },
         { auth: Boolean(account), signal })
         .then(data => {
-          if (!signal.aborted) setCurrent({ key, email: data?.types || [], whatsapp: data?.whatsappTypes || [] });
+          if (!signal.aborted) setCurrent({ key, email: data?.types || [], whatsapp: data?.whatsappTypes || [], whatsappWatchCode: data?.whatsappWatchCode });
         })
         .catch(error => {
           if (signal.aborted) return;
