@@ -186,7 +186,7 @@ export default function Contact() {
             ></textarea>
           </div>
 
-          <button type="submit" className="btn--primary">
+          <button type="submit">
             {translateText(status === 'sending' ? 'Šaljemo poruku…' : 'Pošalji poruku')}
           </button>
           </fieldset>
