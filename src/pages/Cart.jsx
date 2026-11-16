@@ -307,6 +307,8 @@ export default function Cart() {
         </div>
       </div>
 
+      {items.length > 0 && <div className="cart__checkout-intro"><p>{translateText('Sve spremno za sledeći korak?')}</p><span>{translateText('Podaci → Isporuka → Plaćanje')}</span></div>}
+
       {items.length === 0 && (
         <motion.div
           className="empty glass card"
@@ -518,7 +520,7 @@ export default function Cart() {
               <span className="cart__totalPrice">{money(finalTotal)}</span>
             </div>
 
-            <Link to="/checkout" className="btn btn-primary checkout-btn" aria-disabled={loading || restoring !== null} onClick={event => { if (loading || restoring !== null) event.preventDefault(); }}>{translateText("Nastavi na plaćanje ")}<ArrowRight size={18} aria-hidden />
+            <Link to="/checkout" className="btn btn-primary checkout-btn" aria-disabled={loading || restoring !== null} onClick={event => { if (loading || restoring !== null) event.preventDefault(); }}>{translateText('Završi kupovinu')}<ArrowRight size={18} aria-hidden />
             </Link>
 
             <div className="cart__note">
@@ -526,6 +528,7 @@ export default function Cart() {
           </motion.div>
         </div>
       )}
+      {items.length > 0 && <div className="cart__mobile-checkout"><div><span>{translateText('Ukupno za plaćanje')}</span><strong>{money(finalTotal)}</strong></div><Link to="/checkout" aria-disabled={loading || restoring !== null} onClick={event => { if (loading || restoring !== null) event.preventDefault(); }}>{translateText('Nastavi')}<ArrowRight size={18} aria-hidden /></Link></div>}
       {saved.items.length > 0 && <section className="cart__saved" aria-labelledby="saved-cart-title">
         <div className="cart__saved-heading"><h2 id="saved-cart-title"><Bookmark size={20} aria-hidden="true" />{translateText(" Sačuvano za kasnije ")}<span>{translateText(saved.items.length)}</span></h2>
           <p>{translateText("Proizvodi sačuvani za kasnije nisu deo trenutne porudžbine. Vratite ih u korpu kada budete želeli da ih kupite.")}</p>

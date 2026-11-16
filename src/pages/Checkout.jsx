@@ -1,306 +1,180 @@
-import { formatDeliveryAddress } from '../components/checkout/deliveryAddress.js';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, Check, LockKeyhole, ShoppingBag } from 'lucide-react';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
-import React, { useState, useEffect, useRef } from 'react';
-import './Checkout.css';
 import { useCart } from '../hooks/useCart.js';
 import { useFormValidator } from '../hooks/useFormValidator.js';
 import { useAuth } from '../hooks/useAuth.js';
-import { useFlash } from '../hooks/useFlash.js';
 import { usePromo } from '../hooks/usePromo.js';
 import { CHECKOUT_UNAVAILABLE_MESSAGE, useCheckoutAvailability } from '../hooks/useCheckoutAvailability.js';
-
-import { PASSWORD_RULE } from '../data/validationRules.js';
-import { AnimatePresence } from 'framer-motion';
 import { ordersApi } from '../services/dajaPlatform.js';
-
-// Uvoz komponenti
-import OrderConfirmationModal from '../components/checkout/OrderConfirmationModal';
+import { formatDeliveryAddress } from '../components/checkout/deliveryAddress.js';
 import DeliveryForm from '../components/checkout/DeliveryForm';
 import ShippingSection from '../components/checkout/ShippingSection';
 import PaymentSection from '../components/checkout/PaymentSection';
 import OrderSummary from '../components/checkout/OrderSummary';
+import OrderConfirmation from '../components/checkout/OrderConfirmation.jsx';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import { commerceSeoConfig } from '../config/seo.js';
+import { FORM_RULES } from '../data/validationRules.js';
+import './Checkout.css';
+
+const STEPS = ['Podaci', 'Isporuka', 'Plaćanje', 'Potvrda'];
+const ADDRESS_FIELDS = ['address', 'city', 'postalCode'];
+const CONTACT_FIELDS = ['name', 'surname', 'email', 'phone'];
 
 export default function Checkout() {
-  const { t: translateText, money } = useStorefront();
-
+  const { t, money, moneyRsd } = useStorefront();
   const { items, total, dispatch } = useCart();
-  const { user, authReady, register } = useAuth();
-  const { flash } = useFlash();
-
-  // 2. KORISTIMO HOOK (On će automatski povući kod iz localStorage)
+  const { user, authReady, showAuth } = useAuth();
   const { appliedPromo, removePromo, loading: promoLoading } = usePromo({ user, authReady, items, total });
-
-  const [payMethod, setPayMethod] = useState('cod');
+  const [step, setStep] = useState(0);
   const [shippingMethod, setShippingMethod] = useState('courier');
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [orderData, setOrderData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const submissionInProgress = useRef(false);
+  const stepHeading = useRef(null);
+  const previousStep = useRef(0);
   const { availability, isChecking, checkAvailability, markUnavailable } = useCheckoutAvailability();
-
-  const [submitCount, setSubmitCount] = useState(0);
-  const [showRegPopover, setShowRegPopover] = useState(false);
-  const [createAccount, setCreateAccount] = useState(false);
-  const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(null);
-  const [popoverDismissed, setPopoverDismissed] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
-
-  const {
-    formData,
-    errors,
-    handleChange,
-    handleBlur,
-    validateAll,
-    setFormData,
-  } = useFormValidator({
-    name: '',
-    surname: '',
-    email: '',
-    phone: '',
-    address: '',
-    addressDetails: '',
-    city: '',
-    postalCode: '',
+  const { formData, errors, handleChange, handleBlur, validateAll, setFormData } = useFormValidator({
+    name: '', surname: '', email: '', phone: '', address: '', addressDetails: '', city: '', postalCode: '',
   });
 
-  // 3. REKALKULACIJA SA POPUSTOM
-  // Važno: Moramo osigurati da je iznos popusta tačan za trenutne artikle
-  // (Hook vraća 'amount', ali za svaki slučaj možemo ponovo validirati na mount)
-
-  // Računanje cena
   const discountAmount = appliedPromo ? appliedPromo.amount : 0;
-  const subtotalAfterDiscount = total - discountAmount;
-
-  const FREE_SHIPPING_LIMIT = commerceSeoConfig.freeShippingThreshold;
-  const COURIER_COST = 380;
-  // Besplatna dostava se gleda na iznos POSLE popusta (obično je tako u prodaji)
-  const isFreeShipping = appliedPromo?.freeShipping || subtotalAfterDiscount >= FREE_SHIPPING_LIMIT;
-
-  const finalShipping =
-    shippingMethod === 'pickup' || appliedPromo?.freeShipping
-      ? 0
-      : isFreeShipping
-        ? 0
-        : COURIER_COST;
-
+  const subtotalAfterDiscount = Math.max(0, total - discountAmount);
+  const isFreeShipping = appliedPromo?.freeShipping || subtotalAfterDiscount >= commerceSeoConfig.freeShippingThreshold;
+  const finalShipping = shippingMethod === 'pickup' || isFreeShipping ? 0 : 380;
   const finalTotal = subtotalAfterDiscount + finalShipping;
-
-  const requiredForCourier = shippingMethod === 'courier';
-
-  useEffect(() => {
-    if (shippingMethod === 'pickup') {
-      setFormData((prev) => ({
-        ...prev,
-        address: '',
-        addressDetails: '',
-        city: '',
-        postalCode: '',
-      }));
-    }
-  }, [shippingMethod, setFormData]);
+  const payMethod = shippingMethod === 'pickup' ? 'pickup' : 'cod';
+  const busy = isProcessing || promoLoading || !authReady;
+  const actionDisabled = busy || (step === 2 && availability !== 'available');
+  const actionLabel = isProcessing ? 'Slanje porudžbine…' : step === 0 ? 'Nastavi na isporuku' : step === 1 ? 'Nastavi na plaćanje' : availability === 'checking' ? 'Provera dostupnosti…' : availability === 'unavailable' ? 'Trenutno nije dostupno' : 'Potvrdi porudžbinu';
 
   useEffect(() => {
-    const t = setTimeout(() => window.dispatchEvent(new Event('resize')), 400);
-    return () => clearTimeout(t);
-  }, [shippingMethod, createAccount, showRegPopover, errors]);
+    if (previousStep.current === step) return;
+    previousStep.current = step;
+    stepHeading.current?.focus({ preventScroll: true });
+    stepHeading.current?.scrollIntoView({ behavior: 'instant', block: 'start' });
+  }, [step]);
 
-  const getRegistrationPasswordError = (value) =>
-    PASSWORD_RULE.regex.test(String(value || '').trim())
-      ? null
-      : PASSWORD_RULE.message;
-
-  const handleRegistrationPasswordChange = (value) => {
-    setPassword(value);
-    setPasswordError(value.trim() ? getRegistrationPasswordError(value) : null);
+  const focusFirstError = () => {
+    requestAnimationFrame(() => {
+      const input = document.querySelector('.checkout-left [aria-invalid="true"]');
+      input?.focus({ preventScroll: true });
+      input?.scrollIntoView({ behavior: 'instant', block: 'center' });
+    });
   };
 
-  const handleConfirmReg = async () => {
-    if (!formData.name.trim() || !formData.surname.trim()) {
-      flash('Greška', 'Unesite ime i prezime.', 'error');
+  const changeStep = (nextStep) => {
+    if (busy || orderData || nextStep === step) return;
+    if (nextStep < step) { setStep(nextStep); return; }
+    const skip = step === 0 ? ADDRESS_FIELDS : shippingMethod === 'pickup' ? ADDRESS_FIELDS : [];
+    if (!validateAll(skip)) {
+      if (CONTACT_FIELDS.some(name => !FORM_RULES[name].regex.test(formData[name]))) setStep(0);
+      focusFirstError();
       return;
     }
-    if (!formData.email && !formData.phone) {
-      flash('Greška', 'Unesite email.', 'error');
+    setSubmitError('');
+    setStep(Math.min(step + 1, nextStep));
+  };
+
+  const placeOrder = async () => {
+    if (submissionInProgress.current || orderData || !items.length || actionDisabled) return;
+    if (!validateAll(shippingMethod === 'pickup' ? ADDRESS_FIELDS : [])) {
+      const contactError = CONTACT_FIELDS.some(name => !FORM_RULES[name].regex.test(formData[name]));
+      setStep(contactError ? 0 : 1);
+      focusFirstError();
       return;
     }
-    const nextPasswordError = getRegistrationPasswordError(password);
-    if (nextPasswordError) {
-      setPasswordError(nextPasswordError);
-      flash('Greška', nextPasswordError, 'error');
-      return;
-    }
-    setIsRegistering(true);
+    submissionInProgress.current = true;
+    setIsProcessing(true);
+    setSubmitError('');
     try {
-      await register({
-        identity: formData.email || formData.phone,
-        password: password,
-        name: `${formData.name} ${formData.surname}`,
+      if (!(await checkAvailability())) return;
+      const { addressDetails, ...customerDetails } = formData;
+      const newOrder = await ordersApi.create({
+        customer: {
+          ...customerDetails,
+          address: shippingMethod === 'courier' ? formatDeliveryAddress(formData.address, addressDetails) : '',
+          city: shippingMethod === 'courier' ? formData.city : '',
+          postalCode: shippingMethod === 'courier' ? formData.postalCode : '',
+          uid: user ? user.uid : 'guest',
+        },
+        items, subtotal: total, promoCode: appliedPromo?.code || null, discountAmount,
+        subtotalAfterDiscount, shippingCost: finalShipping, shippingMethod,
+        paymentMethod: payMethod, finalTotal,
       });
-      flash('Uspeh', 'Nalog kreiran.', 'success');
-      setShowRegPopover(false);
-      setPassword('');
-      setPasswordError(null);
-    } catch (err) {
-      flash('Greška', 'Došlo je do greške pri registraciji.', 'error');
+      // Preserve the server receipt independently of the cart cleared below.
+      setOrderData(newOrder);
+      setStep(3);
+      removePromo();
+      dispatch({ type: 'CLEAR' });
+    } catch (error) {
+      const unavailable = !error.status || error.status >= 500;
+      if (unavailable) markUnavailable();
+      setSubmitError(unavailable ? CHECKOUT_UNAVAILABLE_MESSAGE : error.status === 409 && items.some(item => item.engraving)
+        ? 'Gravura je promenjena. Otvorite je u korpi i ponovo potvrdite dizajn.'
+        : error.message || 'Nismo uspeli da sačuvamo porudžbinu. Pokušajte ponovo.');
     } finally {
-      setIsRegistering(false);
+      submissionInProgress.current = false;
+      setIsProcessing(false);
     }
   };
 
-  const handleDismissReg = () => {
-    setShowRegPopover(false);
-    setPopoverDismissed(true);
-    setPassword('');
-    setPasswordError(null);
-  };
-
-  const handlePlaceOrder = async () => {
-    if (submissionInProgress.current || isProcessing || promoLoading || availability !== 'available') return;
-    const fieldsToSkip =
-      shippingMethod === 'pickup' ? ['address', 'city', 'postalCode'] : [];
-
-    if (validateAll(fieldsToSkip)) {
-      submissionInProgress.current = true;
-      setIsProcessing(true);
-
-      try {
-        // Recheck immediately before sending, even if the last background check passed.
-        if (!(await checkAvailability())) return;
-
-        if (createAccount && !user && password) {
-          try {
-            await register({
-              identity: formData.email,
-              password: password,
-              name: `${formData.name} ${formData.surname}`,
-            });
-          } catch (err) {
-            console.warn('Auto-reg failed', err);
-          }
-        }
-
-        const { addressDetails, ...customerDetails } = formData;
-        const newOrder = await ordersApi.create({
-          customer: {
-            ...customerDetails,
-            address: requiredForCourier ? formatDeliveryAddress(formData.address, addressDetails) : '',
-            uid: user ? user.uid : 'guest',
-          },
-          items,
-          subtotal: total,
-          promoCode: appliedPromo ? appliedPromo.code : null,
-          discountAmount,
-          subtotalAfterDiscount,
-          shippingCost: finalShipping,
-          shippingMethod,
-          paymentMethod: payMethod,
-          finalTotal,
-        });
-
-        removePromo();
-
-        setOrderData(newOrder);
-        setShowSuccessModal(true);
-        dispatch({ type: 'CLEAR' });
-      } catch (error) {
-        console.error('Greška pri slanju porudžbine:', error);
-        const unavailable = !error.status || error.status >= 500;
-        if (unavailable) markUnavailable();
-        flash(
-          'Greška',
-          unavailable ? CHECKOUT_UNAVAILABLE_MESSAGE : items.some((item) => item.engraving) ? `Porudžbina nije poslata. ${error.status === 409 ? 'Gravura je promenjena. Otvorite je u korpi i ponovo potvrdite dizajn.' : error.message}` : 'Nismo uspeli da sačuvamo porudžbinu. Pokušajte ponovo.',
-          'error',
-        );
-      } finally {
-        submissionInProgress.current = false;
-        setIsProcessing(false);
-      }
-    } else {
-      setSubmitCount((prev) => prev + 1);
-      setTimeout(() => {
-        const firstError = document.querySelector('.input-error');
-        if (firstError)
-          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    }
-  };
-
-  const preventFormSubmit = (e) => e.preventDefault();
-  const getInputClass = (n) => (errors[n] ? 'input-error' : '');
+  const continueCheckout = () => step < 2 ? changeStep(step + 1) : void placeOrder();
+  const empty = !items.length && !orderData;
 
   return (
-    <div className="container checkout-page">
-      <SEOHead title={translateText("Plaćanje")} noIndex={true} />
-      <h1 className="checkout-title">{translateText("Naplata i Isporuka")}</h1>
-      <form className="checkout-layout" onSubmit={preventFormSubmit} noValidate>
-        <div className="checkout-left">
-          <DeliveryForm
-            formData={formData}
-            setFormData={setFormData}
-            errors={errors}
-            handleChange={handleChange}
-            handleBlur={handleBlur}
-            submitCount={submitCount}
-            user={user}
-            getInputClass={getInputClass}
-            shippingMethod={shippingMethod}
-            requiredForCourier={requiredForCourier}
-            showSuccessModal={showSuccessModal}
-            password={password}
-            passwordError={passwordError}
-            onPasswordChange={handleRegistrationPasswordChange}
-            showRegPopover={showRegPopover}
-            setShowRegPopover={setShowRegPopover}
-            handleDismissReg={handleDismissReg}
-            handleConfirmReg={handleConfirmReg}
-            isRegistering={isRegistering}
-            popoverDismissed={popoverDismissed}
-            createAccount={createAccount}
-            validateAll={validateAll}
-            flash={flash}
-          />
-          <ShippingSection
-            shippingMethod={shippingMethod}
-            setShippingMethod={setShippingMethod}
-            isFreeShipping={isFreeShipping}
-            COURIER_COST={COURIER_COST}
-            money={money}
-            finalShipping={finalShipping}
-          />
-          <PaymentSection payMethod={payMethod} setPayMethod={setPayMethod} />
-        </div>
+    <div className="container checkout-page checkout-flow">
+      <SEOHead title={t('Plaćanje')} noIndex />
+      <header className="checkout-heading">
+        {!orderData && <Link className="checkout-back-link" to="/cart"><ArrowLeft size={16} />{t('Nazad u korpu')}</Link>}
+        <div className="checkout-heading-row"><h1>{t(orderData ? 'Hvala na porudžbini' : 'Završite kupovinu')}</h1><span className="checkout-trust"><LockKeyhole size={16} />{t('Sigurna kupovina')}</span></div>
+        <p>{t(orderData ? 'Sve je na jednom mestu. Vaša porudžbina je primljena.' : 'Vaši podaci, način isporuke i potvrda. Još samo nekoliko koraka.')}</p>
+      </header>
 
-        <div className="checkout-right">
-          <OrderSummary
-            total={total}
-            shippingMethod={shippingMethod}
-            finalShipping={finalShipping}
-            finalTotal={finalTotal}
-            handlePlaceOrder={handlePlaceOrder}
-            money={money}
-            isLoading={isProcessing || promoLoading}
-            availability={availability}
-            isCheckingAvailability={isChecking}
-            onCheckAvailability={checkAvailability}
-            // 6. PROSLEĐUJEMO PODATKE O POPUSTU U SUMMARY
-            appliedPromo={appliedPromo}
-            discountAmount={discountAmount}
-          />
-        </div>
-      </form>
+      {empty ? <section className="checkout-empty"><ShoppingBag size={40} /><h2>{t('Korpa je prazna')}</h2><p>{t('Dodajte proizvode u korpu da biste nastavili kupovinu.')}</p><Link className="btn btn-primary" to="/catalog">{t('Pogledaj ponudu')}</Link></section> : <>
+        <nav className="checkout-progress" aria-label={t('Koraci porudžbine')}>
+          <ol>{STEPS.map((label, index) => <li key={label} className={[(index === step ? 'is-current' : ''), (index < step || orderData ? 'is-complete' : '')].join(' ')}>
+            <button type="button" aria-current={index === step ? 'step' : undefined} disabled={busy || !!orderData || index > step} onClick={() => changeStep(index)}>
+              <span className="checkout-progress-number">{index < step || orderData ? <Check size={17} aria-hidden="true" /> : index + 1}</span><span>{t(label)}</span>
+            </button>
+          </li>)}</ol>
+        </nav>
 
-      <AnimatePresence>
-        {showSuccessModal && orderData && (
-          <OrderConfirmationModal
-            order={orderData}
-            money={money}
-            onClose={() => setShowSuccessModal(false)}
-          />
-        )}
-      </AnimatePresence>
+        <div className="checkout-layout">
+          <div className="checkout-left">
+            <h2 ref={stepHeading} tabIndex={-1} className="checkout-step-heading">{t(['Vaši podaci', 'Kako želite da preuzmete porudžbinu?', 'Pregledajte i potvrdite', 'Porudžbina je uspešno primljena'][step])}</h2>
+            {orderData ? <OrderConfirmation order={orderData} /> : <form id="checkout-form" noValidate onSubmit={event => { event.preventDefault(); continueCheckout(); }}>
+              <fieldset disabled={isProcessing} className="checkout-fields">
+                {step === 0 && <p className="checkout-step-intro">{user ? t('Proverite kontakt podatke za ovu porudžbinu.') : <>{t('Kupujete kao gost. Nalog možete sačuvati nakon poručivanja.')} <button type="button" onClick={() => showAuth('login')} className="checkout-text-button">{t('Već imate nalog? Prijavite se')}</button></>}</p>}
+                {step === 1 && <ShippingSection shippingMethod={shippingMethod} setShippingMethod={setShippingMethod} isFreeShipping={isFreeShipping} COURIER_COST={380} money={money} />}
+                <div hidden={step === 2 || (step === 1 && shippingMethod === 'pickup')}>
+                  <DeliveryForm formData={formData} setFormData={setFormData} errors={errors} handleChange={handleChange} handleBlur={handleBlur} user={user} getInputClass={name => errors[name] ? 'input-error' : ''} requiredForCourier={shippingMethod === 'courier'} section={step === 0 ? 'contact' : 'address'} />
+                </div>
+                {step === 2 && <>
+                  <PaymentSection shippingMethod={shippingMethod} />
+                  <div className="checkout-review">
+                    <section><div className="checkout-review-heading"><h3>{t('Kontakt podaci')}</h3><button type="button" className="checkout-text-button" onClick={() => changeStep(0)}>{t('Izmeni')}</button></div><p>{formData.name} {formData.surname}</p><p>{formData.email}</p><p>{formData.phone}</p></section>
+                    <section><div className="checkout-review-heading"><h3>{t('Isporuka')}</h3><button type="button" className="checkout-text-button" onClick={() => changeStep(1)}>{t('Izmeni')}</button></div><p>{t(shippingMethod === 'pickup' ? 'Preuzimanje u prodavnici' : 'Isporuka kurirskom službom')}</p><p>{shippingMethod === 'pickup' ? t('Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105 Niš') : formatDeliveryAddress(formData.address, formData.addressDetails)}</p>{shippingMethod !== 'pickup' && <p>{formData.postalCode} {formData.city}</p>}</section>
+                  </div>
+                  <p className="checkout-terms">{t('Potvrdom porudžbine prihvatate')} <Link to="/terms">{t('uslove kupovine')}</Link>. <Link to="/privacy">{t('Politika privatnosti')}</Link>.</p>
+                </>}
+                {submitError && <div className="checkout-inline-error" role="alert">{t(submitError)} <Link to="/cart">{t('Pregledaj korpu')}</Link></div>}
+                <div className="checkout-step-actions">
+                  {step > 0 && <button type="button" className="checkout-back-button" onClick={() => changeStep(step - 1)} disabled={busy}><ArrowLeft size={17} />{t('Nazad')}</button>}
+                  <button type="submit" className="checkout-action" disabled={actionDisabled} aria-busy={isProcessing}>{t(actionLabel)}<ArrowRight size={18} /></button>
+                </div>
+              </fieldset>
+            </form>}
+          </div>
+          <aside className="checkout-right" aria-label={t('Pregled porudžbine')}>
+            <OrderSummary items={orderData?.items || items} total={orderData?.subtotal ?? total} finalShipping={orderData?.shippingCost ?? finalShipping} finalTotal={orderData?.finalTotal ?? finalTotal} money={money} availability={availability} isCheckingAvailability={isChecking} onCheckAvailability={checkAvailability} promoCode={orderData ? orderData.promoCode : appliedPromo?.code} discountAmount={orderData?.discountAmount ?? discountAmount} confirmed={!!orderData} />
+          </aside>
+        </div>
+        {!orderData && <div className="checkout-mobile-action"><div><span>{t('Ukupno za plaćanje')}</span><strong>{moneyRsd(finalTotal)}</strong></div><button type="submit" form="checkout-form" className="checkout-action" disabled={actionDisabled} aria-busy={isProcessing}>{t(step === 2 ? actionLabel : 'Nastavi')}<ArrowRight size={18} /></button></div>}
+      </>}
     </div>
   );
 }

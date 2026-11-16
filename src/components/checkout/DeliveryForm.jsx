@@ -1,5 +1,5 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
-﻿import React, {
+import React, {
   useState,
   useEffect,
   useRef,
@@ -15,21 +15,10 @@ import {
   Loader2,
   ChevronDown,
   Check,
-  UserPlus,
-  X,
-  Lock,
-  ArrowRight,
   Phone,
-  Home,
-  Briefcase,
   Plus,
-  Edit2,
-  Building2,
-  Heart,
-  MessageSquare, // Dodata ikonica za napomenu
 } from 'lucide-react';
 import ErrorMessage from './ErrorMessage';
-import { formatDeliveryAddress } from './deliveryAddress.js';
 
 import { customerApi } from '../../services/dajaPlatform';
 import { loadGoogleMapsPlaces } from '../../services/googleMaps';
@@ -43,10 +32,7 @@ import { useConsent } from '../../context/ConsentContext.jsx';
 import { getFlagUrl } from '../../utils/flags.js';
 import { PHONE_COUNTRIES as COUNTRY_CODES } from '../../data/phoneCountries.js';
 import PhoneCountryPicker from '../ui/PhoneCountryPicker.jsx';
-import {
-  ADDRESS_ICONS,
-  ADDRESS_ICON_ORDER,
-} from '../../utils/accountHelpers';
+import { ADDRESS_ICONS } from '../../utils/accountHelpers';
 
 const POPULAR_DOMAINS = [
   'gmail.com',
@@ -63,29 +49,15 @@ export default function DeliveryForm({
   errors,
   handleChange,
   handleBlur,
-  submitCount,
   user,
   getInputClass,
-  shippingMethod,
   requiredForCourier,
-  showSuccessModal,
-  password,
-  passwordError,
-  onPasswordChange,
-  showRegPopover,
-  setShowRegPopover,
-  handleDismissReg,
-  handleConfirmReg,
-  isRegistering,
-  popoverDismissed,
-  createAccount,
-  validateAll,
-  flash,
-  // NOVO: Props za napomenu
+  section = "contact",
 }) {
-  const { t: translateText } = useStorefront();
+  const { t: translateText, language } = useStorefront();
 
   const reduceMotion = useReducedMotion();
+  const countryNames = useMemo(() => new Intl.DisplayNames([language === 'en' ? 'en' : 'sr-Latn'], { type: 'region' }), [language]);
   const emailInputRef = useRef(null);
   const addressSelectorRef = useRef(null);
   const { googleAllowed, requestGooglePermission } = useConsent();
@@ -105,19 +77,7 @@ export default function DeliveryForm({
   const [selectedAddressId, setSelectedAddressId] = useState('new');
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [addressPrediction, setAddressPrediction] = useState('');
-
-  const DEFAULT_ADDRESS_ICON = 'home';
-  const defaultAddressLabel =
-    ADDRESS_ICONS[DEFAULT_ADDRESS_ICON]?.label || 'Kuća';
-
-  // --- STATE ZA ČUVANJE ADRESE ---
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [newAddressLabel, setNewAddressLabel] =
-    useState(defaultAddressLabel);
-  const [newAddressIcon, setNewAddressIcon] =
-    useState(DEFAULT_ADDRESS_ICON);
-  const [isSavingAddress, setIsSavingAddress] = useState(false);
-  const [manualLabelEdited, setManualLabelEdited] = useState(false);
+  const [countryCode, setCountryCode] = useState('RS');
 
   // --- TELEFON LOGIKA ---
   const { phonePrefix, localPhone } = useMemo(() => {
@@ -137,6 +97,7 @@ export default function DeliveryForm({
   }, [formData.phone]);
 
   const selectedCountry =
+    COUNTRY_CODES.find((c) => c.code === countryCode && c.dial === phonePrefix) ||
     COUNTRY_CODES.find((c) => c.dial === phonePrefix) ||
     COUNTRY_CODES.find((c) => c.code === 'RS');
 
@@ -165,9 +126,9 @@ export default function DeliveryForm({
       if (setFormData) {
         setFormData((prev) => ({
           ...prev,
-          name: fName || prev.name,
-          surname: lName || prev.surname,
-          phone: addr.phone || prev.phone,
+          name: prev.name || fName,
+          surname: prev.surname || lName,
+          phone: prev.phone || addr.phone,
           address: addr.address || '',
           addressDetails: '',
           city: addr.city || '',
@@ -260,9 +221,9 @@ export default function DeliveryForm({
   };
 
   const getSelectedAddressLabel = () => {
-    if (selectedAddressId === 'new') return 'Nova adresa (Ručni unos)';
+    if (selectedAddressId === 'new') return translateText('Nova adresa (Ručni unos)');
     const addr = savedAddresses.find((a) => a.id === selectedAddressId);
-    return addr ? `${addr.label || 'Adresa'} - ${addr.address}` : 'Nova adresa';
+    return addr ? `${addr.label || translateText('Adresa')} - ${addr.address}` : translateText('Nova adresa');
   };
 
   const getSelectedAddressIcon = () => {
@@ -276,15 +237,6 @@ export default function DeliveryForm({
   function normalizeAddress(val = '') {
     return val.trim().toLowerCase();
   }
-
-  const deliveryAddress = formatDeliveryAddress(formData.address, formData.addressDetails);
-  const addressExists = useMemo(
-    () =>
-      savedAddresses.some(
-        (a) => normalizeAddress(a.address) === normalizeAddress(deliveryAddress)
-      ),
-    [savedAddresses, deliveryAddress]
-  );
 
   const buildAddressSuggestions = useCallback(
     (value) => {
@@ -351,11 +303,11 @@ export default function DeliveryForm({
     search: searchGoogleAddress,
     select: selectGoogleAddress,
     clear: clearGoogleAddressSuggestions,
-  } = useAddressAutocomplete({ enabled: mapsReady, onSelect: applyGoogleAddress });
+  } = useAddressAutocomplete({ enabled: mapsReady && section === 'address', onSelect: applyGoogleAddress });
 
   // --- GOOGLE MAPS INIT ---
   useEffect(() => {
-    if (!googleAllowed) {
+    if (!googleAllowed || section !== 'address') {
       setMapsReady(false);
       setMapsLoadError(false);
       return undefined;
@@ -378,7 +330,7 @@ export default function DeliveryForm({
     return () => {
       cancelled = true;
     };
-  }, [googleAllowed]);
+  }, [googleAllowed, section]);
 
   // --- CLICK OUTSIDE ---
   useEffect(() => {
@@ -398,66 +350,6 @@ export default function DeliveryForm({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // --- CTA LOGIKA ZA ČUVANJE ADRESE ---
-  const courierFieldsFilled =
-    requiredForCourier &&
-    formData.name &&
-    formData.surname &&
-    (formData.phone || formData.email) &&
-    formData.address &&
-    formData.city &&
-    formData.postalCode;
-
-  const canShowSaveCta =
-    !!user &&
-    requiredForCourier &&
-    courierFieldsFilled &&
-    !addressExists;
-
-  const handleOpenSaveModal = () => {
-    if (!canShowSaveCta) return;
-    if (validateAll && !validateAll()) return;
-    setManualLabelEdited(false);
-    setShowSaveModal(true);
-  };
-
-  const handleSaveAddress = async () => {
-    if (!validateAll || !validateAll()) return;
-    if (!user?.uid) return;
-
-    const label = (newAddressLabel || '').trim() || 'Adresa';
-    const icon = newAddressIcon || 'mapPin';
-
-    const payload = {
-      label,
-      icon,
-      name: `${formData.name} ${formData.surname}`.trim(),
-      address: deliveryAddress,
-      city: formData.city,
-      zip: formData.postalCode,
-      phone: formData.phone,
-    };
-
-    try {
-      setIsSavingAddress(true);
-      const savedAddress = await customerApi.addAddress(payload);
-      const fullAddress = { ...payload, ...savedAddress };
-      setSavedAddresses((prev) => [fullAddress, ...prev]);
-      selectAddress(fullAddress);
-      setShowSaveModal(false);
-      setNewAddressLabel(defaultAddressLabel);
-      setNewAddressIcon(DEFAULT_ADDRESS_ICON);
-      setManualLabelEdited(false);
-      if (flash)
-        flash('Uspeh', 'Adresa sačuvana za sledeću kupovinu.', 'success');
-    } catch (error) {
-      console.error('Greška pri čuvanju adrese', error);
-      if (flash) flash('Greška', 'Nismo mogli da sačuvamo adresu.', 'error');
-    } finally {
-      setIsSavingAddress(false);
-    }
-  };
 
   // --- HANDLERS ---
   const handleEmailInput = (e) => {
@@ -500,15 +392,6 @@ export default function DeliveryForm({
       }
     }
     setPrediction(newPrediction);
-    if (
-      !user &&
-      !popoverDismissed &&
-      !createAccount &&
-      val.length > 6 &&
-      val.includes('@')
-    ) {
-      setShowRegPopover(true);
-    }
   };
   const handleKeyDown = (e) => {
     if (e.key === 'Tab' && prediction) {
@@ -525,15 +408,15 @@ export default function DeliveryForm({
     setShowEmailSuggestions(false);
     setPrediction('');
     emailInputRef.current?.focus();
-    if (!user && !popoverDismissed && !createAccount) setShowRegPopover(true);
   };
   const handleCountrySelect = (country) => {
+    setCountryCode(country.code);
     const full = `${country.dial} ${localPhone}`;
     handleChange({ target: { name: 'phone', value: full } });
   };
   const handleLocalPhoneChange = (e) => {
     const val = e.target.value;
-    const full = `${phonePrefix} ${val}`;
+    const full = val.startsWith('+') || val.startsWith('00') ? val.replace(/^00/, '+') : `${phonePrefix} ${val.replace(/^0+/, '')}`;
     handleChange({ target: { name: 'phone', value: full } });
   };
   const handleAddressInput = (e) => {
@@ -555,12 +438,10 @@ export default function DeliveryForm({
 
   return (
     <section
-      className={`checkout-section card glass ${
-        showSuccessModal ? 'z-high' : ''
-      }`}
+      className="checkout-section checkout-delivery-form"
     >
       {/* STILOVI SA TEMATSKIM VARIJABLAMA */}
-      <style>{translateText(`
+      <style>{`
         .address-selector-wrapper { position: relative; margin-bottom: 24px; z-index: 40; }
         
         .address-selector-btn {
@@ -605,15 +486,12 @@ export default function DeliveryForm({
             color: var(--color-primary); 
         }
 
-      `)}</style>
+      `}</style>
 
-      <div className="section-header">
-        <div className="step-badge">1</div>
-        <h2>{translateText("Podaci za isporuku")}</h2>
-      </div>
+      {section === "address" && <h3 className="checkout-address-heading">{translateText("Adresa za isporuku")}</h3>}
 
       {/* --- ADDRESS SELECTOR --- */}
-      {user && savedAddresses.length > 0 && (
+      {section === "address" && user && savedAddresses.length > 0 && (
         <div className="address-selector-wrapper" ref={addressSelectorRef}>
           <button
             type="button"
@@ -621,8 +499,8 @@ export default function DeliveryForm({
             onClick={() => setIsAddressSelectorOpen(!isAddressSelectorOpen)}
           >
             <div className="flex items-center gap-3">
-              {translateText(getSelectedAddressIcon())}
-              <span>{translateText(getSelectedAddressLabel())}</span>
+              {getSelectedAddressIcon()}
+              <span>{getSelectedAddressLabel()}</span>
             </div>
             <ChevronDown
               size={16}
@@ -649,13 +527,13 @@ export default function DeliveryForm({
                     }`}
                     onClick={() => selectAddress(addr)}
                   >
-                    {translateText(getAddressIcon(addr))}
+                    {getAddressIcon(addr)}
                     <div className="flex flex-col">
                       <span className="font-bold text-sm text-[var(--color-text)]">
-                        {translateText(addr.label || 'Adresa')}
+                        {addr.label || translateText('Adresa')}
                       </span>
                       <span className="text-xs opacity-70">
-                        {translateText(addr.address)}, {translateText(addr.city)}
+                        {addr.address}, {addr.city}
                       </span>
                     </div>
                     {selectedAddressId === addr.id && (
@@ -690,12 +568,18 @@ export default function DeliveryForm({
 
       {/* --- FORMA --- */}
       <div className="form-grid">
+        <div className="checkout-contact-fields form-grid full-width" hidden={section !== "contact"}>
         <div className="input-wrapper-col">
           <div className={`input-group ${getInputClass('name')}`}>
             <User className="input-icon" size={18} />
+            <label className="checkout-field-label" htmlFor="checkout-name">{translateText("Ime")}</label>
             <input
               type="text"
               name="name"
+              id="checkout-name"
+              autoComplete="given-name"
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "checkout-name-error" : undefined}
               placeholder={translateText("Ime")}
               value={formData.name}
               onChange={handleChange}
@@ -704,15 +588,20 @@ export default function DeliveryForm({
             />
           </div>
           <AnimatePresence mode="wait">
-            {errors.name && <ErrorMessage message={errors.name} />}
+            {errors.name && <div id="checkout-name-error"><ErrorMessage message={errors.name} /></div>}
           </AnimatePresence>
         </div>
         <div className="input-wrapper-col">
           <div className={`input-group ${getInputClass('surname')}`}>
             <User className="input-icon" size={18} />
+            <label className="checkout-field-label" htmlFor="checkout-surname">{translateText("Prezime")}</label>
             <input
               type="text"
               name="surname"
+              id="checkout-surname"
+              autoComplete="family-name"
+              aria-invalid={!!errors.surname}
+              aria-describedby={errors.surname ? "checkout-surname-error" : undefined}
               placeholder={translateText("Prezime")}
               value={formData.surname}
               onChange={handleChange}
@@ -721,7 +610,7 @@ export default function DeliveryForm({
             />
           </div>
           <AnimatePresence mode="wait">
-            {errors.surname && <ErrorMessage message={errors.surname} />}
+            {errors.surname && <div id="checkout-surname-error"><ErrorMessage message={errors.surname} /></div>}
           </AnimatePresence>
         </div>
 
@@ -731,54 +620,61 @@ export default function DeliveryForm({
             className={`input-group ghost-container ${getInputClass('email')}`}
           >
             <div className="ghost-overlay" style={{ paddingLeft: '42px' }}>
-              <span className="invisible-text">{translateText(formData.email)}</span>
-              <span className="prediction-text">{translateText(prediction)}</span>
+              <span className="invisible-text">{formData.email}</span>
+              <span className="prediction-text">{prediction}</span>
               {prediction && (
                 <span className="tab-hint-inline">
                   <ArrowRightToLine size={10} />{translateText(" Tab")}</span>
               )}
             </div>
             <Mail className="input-icon z-index-fix" size={18} />
+            <label className="checkout-field-label" htmlFor="checkout-email">{translateText("E-mail adresa")}</label>
             <input
               ref={emailInputRef}
               type="email"
               name="email"
+              id="checkout-email"
+              autoComplete="email"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "checkout-email-error" : undefined}
               placeholder={translateText("E-mail adresa")}
               value={formData.email}
               onChange={handleEmailInput}
               onKeyDown={handleKeyDown}
               onBlur={handleBlur}
               required
-              autoComplete="email"
               className="real-input"
             />
             {showEmailSuggestions && (
               <ul className="email-dropdown">
                 {emailSuggestions.map((s) => (
-                  <li
-                    key={s}
+                  <li key={s}><button
+                    type="button"
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      selectEmail(s);
                     }}
+                    onClick={() => selectEmail(s)}
                   >
-                    {translateText(s.split('@')[0])}
-                    <span className="domain">@{translateText(s.split('@')[1])}</span>
-                  </li>
+                    {s.split('@')[0]}
+                    <span className="domain">@{s.split('@')[1]}</span>
+                  </button></li>
                 ))}
               </ul>
             )}
           </div>
           <AnimatePresence mode="wait">
-            {errors.email && <ErrorMessage message={errors.email} />}
+            {errors.email && <div id="checkout-email-error"><ErrorMessage message={errors.email} /></div>}
           </AnimatePresence>
         </div>
 
         {/* TELEFON */}
         <div className="input-wrapper-col full-width">
           <div className="flex gap-2">
+            <select className="checkout-native-country" aria-label={translateText('Pozivni broj države')} value={selectedCountry.code} onChange={event => handleCountrySelect(COUNTRY_CODES.find(country => country.code === event.target.value))}>
+              {COUNTRY_CODES.map(country => <option key={country.code} value={country.code}>{country.dial} — {countryNames.of(country.code)}</option>)}
+            </select>
             <PhoneCountryPicker
-              className="relative w-[110px] shrink-0"
+              className="checkout-desktop-country relative w-[110px] shrink-0"
               country={selectedCountry}
               onSelect={handleCountrySelect}
               renderTrigger={({ isOpen, toggle }) => (
@@ -788,8 +684,8 @@ export default function DeliveryForm({
                   onClick={toggle}
                 >
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <img src={getFlagUrl(selectedCountry.code)} alt={translateText(selectedCountry.code)} className="w-5 h-auto rounded-[2px]" />
-                    <span className="text-sm font-medium text-[var(--color-text)]">{translateText(selectedCountry.dial)}</span>
+                    <img src={getFlagUrl(selectedCountry.code)} alt={selectedCountry.code} className="w-5 h-auto rounded-[2px]" />
+                    <span className="text-sm font-medium text-[var(--color-text)]">{selectedCountry.dial}</span>
                   </div>
                   <ChevronDown size={14} className={`text-[var(--color-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -800,9 +696,15 @@ export default function DeliveryForm({
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]"
                 size={18}
               />
-              <input
+              <label className="checkout-field-label" htmlFor="checkout-phone-local">{translateText("Telefon")}</label>
+            <input
                 type="tel"
                 name="phone-local"
+              id="checkout-phone-local"
+              autoComplete="tel-national"
+              inputMode="tel"
+              aria-invalid={!!errors.phone}
+              aria-describedby={errors.phone ? "checkout-phone-error" : undefined}
                 placeholder="64 1234567"
                 style={{ paddingLeft: 36 }}
                 value={localPhone}
@@ -817,13 +719,14 @@ export default function DeliveryForm({
             </div>
           </div>
           <AnimatePresence mode="wait">
-            {errors.phone && <ErrorMessage message={errors.phone} />}
+            {errors.phone && <div id="checkout-phone-error"><ErrorMessage message={errors.phone} /></div>}
           </AnimatePresence>
         </div>
 
+        </div>
         {/* ADRESA (Pojavljuje se samo za kurira) */}
         <AnimatePresence initial={false}>
-          {requiredForCourier && (
+          {section === "address" && requiredForCourier && (
             <motion.div
               className="full-width form-grid"
               initial={{ opacity: 0, height: 0 }}
@@ -841,9 +744,9 @@ export default function DeliveryForm({
                   )}`}
                 >
                   <div className="ghost-overlay" style={{ paddingLeft: '42px' }}>
-                    <span className="invisible-text">{translateText(formData.address)}</span>
+                    <span className="invisible-text">{formData.address}</span>
                     <span className="prediction-text">
-                      {translateText(addressPrediction)}
+                      {addressPrediction}
                     </span>
                     {addressPrediction && (
                       <span className="tab-hint-inline">
@@ -856,9 +759,14 @@ export default function DeliveryForm({
                     }`}
                     size={18}
                   />
-                  <input
+                  <label className="checkout-field-label" htmlFor="checkout-address">{translateText("Ulica i kućni broj")}</label>
+            <input
                     type="text"
                     name="address"
+              id="checkout-address"
+              autoComplete="shipping address-line1"
+              aria-invalid={!!errors.address}
+              aria-describedby={errors.address ? "checkout-address-error" : undefined}
                     placeholder={
                       translateText(!googleAllowed
                         ? 'Unesite adresu ručno ili uključite predloge'
@@ -879,7 +787,6 @@ export default function DeliveryForm({
                       if (!googleAllowed) void requestGooglePermission();
                     }}
                     required={requiredForCourier}
-                    autoComplete="new-password"
                     className="real-input"
                   />
                   {googleAddressLoading && (
@@ -904,8 +811,8 @@ export default function DeliveryForm({
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => void selectGoogleAddress(suggestion)}
                           >
-                            <strong>{translateText(addressPredictionPrimaryText(suggestion))}</strong>
-                            <small>{translateText(addressPredictionSecondaryText(suggestion) || addressPredictionLabel(suggestion))}</small>
+                            <strong>{addressPredictionPrimaryText(suggestion)}</strong>
+                            <small>{addressPredictionSecondaryText(suggestion) || addressPredictionLabel(suggestion)}</small>
                           </button>
                         </li>
                       ))}
@@ -913,17 +820,18 @@ export default function DeliveryForm({
                   )}
                 </div>
                 <AnimatePresence mode="wait">
-                  {errors.address && <ErrorMessage message={errors.address} />}
+                  {errors.address && <div id="checkout-address-error"><ErrorMessage message={errors.address} /></div>}
                 </AnimatePresence>
               </div>
-              <div className="input-wrapper-col">
+              <div className="input-wrapper-col full-width">
                 <div className="input-group">
+                  <label className="checkout-field-label" htmlFor="checkout-addressDetails">{translateText("Stan, sprat i ulaz (opciono)")}</label>
                   <input
                     type="text"
                     name="addressDetails"
-                    aria-label={translateText("Kućni broj / stan (opciono)")}
-                    placeholder={translateText("Kućni broj / stan (opciono)")}
-                    autoComplete="address-line2"
+                    id="checkout-addressDetails"
+                    placeholder={translateText("Stan, sprat i ulaz (opciono)")}
+                    autoComplete="shipping address-line2"
                     value={formData.addressDetails}
                     onChange={handleChange}
                     maxLength={80}
@@ -933,9 +841,14 @@ export default function DeliveryForm({
               </div>
               <div className="input-wrapper-col">
                 <div className={`input-group ${getInputClass('city')}`}>
-                  <input
+                  <label className="checkout-field-label" htmlFor="checkout-city">{translateText("Grad")}</label>
+            <input
                     type="text"
                     name="city"
+              id="checkout-city"
+              autoComplete="shipping address-level2"
+              aria-invalid={!!errors.city}
+              aria-describedby={errors.city ? "checkout-city-error" : undefined}
                     placeholder={translateText("Grad")}
                     value={formData.city}
                     onChange={handleChange}
@@ -945,14 +858,21 @@ export default function DeliveryForm({
                   />
                 </div>
                 <AnimatePresence mode="wait">
-                  {errors.city && <ErrorMessage message={errors.city} />}
+                  {errors.city && <div id="checkout-city-error"><ErrorMessage message={errors.city} /></div>}
                 </AnimatePresence>
               </div>
               <div className="input-wrapper-col">
                 <div className={`input-group ${getInputClass('postalCode')}`}>
-                  <input
+                  <label className="checkout-field-label" htmlFor="checkout-postalCode">{translateText("Poštanski broj")}</label>
+            <input
                     type="text"
                     name="postalCode"
+              id="checkout-postalCode"
+              autoComplete="shipping postal-code"
+              aria-invalid={!!errors.postalCode}
+              aria-describedby={errors.postalCode ? "checkout-postalCode-error" : undefined}
+              inputMode="numeric"
+              maxLength={5}
                     placeholder={translateText("Poštanski broj")}
                     value={formData.postalCode}
                     onChange={handleChange}
@@ -963,7 +883,7 @@ export default function DeliveryForm({
                 </div>
                 <AnimatePresence mode="wait">
                   {errors.postalCode && (
-                    <ErrorMessage message={errors.postalCode} />
+                    <div id="checkout-postalCode-error"><ErrorMessage message={errors.postalCode} /></div>
                   )}
                 </AnimatePresence>
               </div>
@@ -971,195 +891,7 @@ export default function DeliveryForm({
           )}
         </AnimatePresence>
 
-        {canShowSaveCta && (
-          <div
-            className="full-width save-address-cta"
-            style={{ gridColumn: '1 / -1' }}
-          >
-            <div className="save-address-card">
-              <div>
-                <p className="save-title">{translateText("Sačuvaj ovu adresu")}</p>
-                <p className="save-subtitle">{translateText("Spremaj je za sledeću porudžbinu i popuni automatski.")}</p>
-              </div>
-              <button
-                type="button"
-                className="save-address-btn"
-                onClick={handleOpenSaveModal}
-              >
-                <Plus size={16} />{translateText("Sačuvaj adresu")}</button>
-            </div>
-          </div>
-        )}
-
-        {/* REGISTER POPOUT */}
-        <AnimatePresence>
-          {showRegPopover && !user && (
-            <motion.div
-              className="reg-popover full-width"
-              style={{ gridColumn: '1 / -1' }}
-              initial={{ opacity: 0, y: 10, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: 'auto' }}
-              exit={{ opacity: 0, y: 10, height: 0 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-            >
-              <div className="reg-popover-header">
-                <div>
-                  <div className="reg-popover-title">
-                    <UserPlus size={18} className="text-primary mr-2" />{translateText(" Novi kupac? Kreirajte nalog odmah.")}</div>
-                  <span className="reg-popover-desc">{translateText("Unesite lozinku i registrujte se za bržu kupovinu.")}</span>
-                </div>
-                <button
-                  type="button"
-                  className="reg-close-btn"
-                  onClick={handleDismissReg}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              <div
-                className={`input-group ${passwordError ? 'input-error' : ''}`}
-                style={{ marginBottom: 0 }}
-              >
-                <Lock
-                  className="input-icon"
-                  size={16}
-                  style={{ color: 'var(--primary)' }}
-                />
-                <input
-                  type="password"
-                  placeholder={translateText("Lozinka (min. 8, veliko slovo i broj)")}
-                  value={password}
-                  onChange={(e) => onPasswordChange(e.target.value)}
-                  autoComplete="new-password"
-                />
-              </div>
-              <AnimatePresence mode="wait">
-                {passwordError && <ErrorMessage message={passwordError} />}
-              </AnimatePresence>
-              <button
-                type="button"
-                className="reg-confirm-btn"
-                onClick={handleConfirmReg}
-                disabled={isRegistering}
-              >
-                {translateText(isRegistering ? (
-                  <Loader2 className="animate-spin" size={18} />
-                ) : (
-                  'Potvrdi i Registruj se'
-                ))}
-                {!isRegistering && <ArrowRight size={16} />}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
-
-      {/* SAVE ADDRESS MODAL */}
-      <AnimatePresence>
-        {showSaveModal && (
-          <motion.div
-            className="save-modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowSaveModal(false)}
-          >
-            <motion.div
-              className="save-modal"
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              transition={{ type: 'spring', duration: 0.35, bounce: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="save-modal-header">
-                <div>
-                  <p className="save-modal-title">{translateText("Sačuvaj adresu")}</p>
-                  <p className="save-modal-desc">{translateText("Daj naziv i odaberi ikonicu da je brže pronađeš.")}</p>
-                </div>
-                <button
-                  type="button"
-                  className="save-close-btn"
-                  onClick={() => setShowSaveModal(false)}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              <label className="save-input-label">{translateText("Naziv adrese")}<div className="save-input-wrapper">
-                  <Edit2 size={16} className="save-input-icon" />
-                  <input
-                    type="text"
-                    value={newAddressLabel}
-                    onChange={(e) => {
-                      setNewAddressLabel(e.target.value);
-                      setManualLabelEdited(true);
-                    }}
-                    placeholder={translateText("Kuća, Posao...")}
-                  />
-                </div>
-              </label>
-
-              <div className="icon-grid">
-                {(ADDRESS_ICON_ORDER?.length
-                  ? ADDRESS_ICON_ORDER
-                  : Object.keys(ADDRESS_ICONS)
-                )
-                  .filter((key) => ADDRESS_ICONS[key])
-                  .map((key) => {
-                    const val = ADDRESS_ICONS[key];
-                    const IconComp = val.icon;
-                    const isActive = newAddressIcon === key;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        className={`icon-pill ${isActive ? 'active' : ''}`}
-                        onClick={() => {
-                          setNewAddressIcon(key);
-                          if (!manualLabelEdited || !newAddressLabel.trim()) {
-                            setNewAddressLabel(val.label);
-                          }
-                        }}
-                        title={translateText(val.label)}
-                      >
-                        <IconComp size={18} />
-                        <span>{translateText(val.label)}</span>
-                      </button>
-                    );
-                  })}
-              </div>
-
-              <button
-                type="button"
-                className="save-primary-btn"
-                onClick={handleSaveAddress}
-                disabled={isSavingAddress}
-              >
-                {translateText(isSavingAddress ? (
-                  <>
-                    <Loader2 className="animate-spin" size={16} />{translateText("ČUVANJE...")}</>
-                ) : (
-                  'Sačuvaj'
-                ))}
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </section>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
