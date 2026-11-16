@@ -85,9 +85,16 @@ const emailFeedback = {
 
 function OrderEmailRow({ orderId, message }) {
   const [retryState, setRetryState] = useState(null);
-  const received = message.feedback === 'Delivery';
-  const deliveryTime = formatOrderTime(message.feedbackAt);
-  const reason = emailFeedback[message.feedback] ?? emailStatuses[message.status] ?? 'Nema zapisa o slanju';
+  const deliveryAt = message.sesDeliveredAt ?? (message.feedback === 'Delivery' ? message.feedbackAt : null);
+  const received = Boolean(deliveryAt || message.feedback === 'Delivery');
+  const deliveryTime = formatOrderTime(deliveryAt);
+  const waitingForSes = Boolean(message.sesTimeoutAt && message.status === 'pending' && !message.firebaseQueued);
+  const reason = emailFeedback[message.feedback] ?? (waitingForSes ? 'Čeka SES potvrdu ili sledeći pokušaj' :
+    emailStatuses[message.status] ?? 'Nema zapisa o slanju');
+  const label = received ? 'Dostavljeno serveru primaoca' : message.icloudAcceptedAt && !emailFeedback[message.feedback]
+    ? 'iCloud prihvatio' : reason;
+  const bad = ['failed', 'expired', 'suppressed'].includes(message.status) || ['Bounce', 'Complaint', 'Reject'].includes(message.feedback);
+  const transport = [message.sentViaSes && 'AWS SES', message.icloudAcceptedAt && 'Firebase / iCloud'].filter(Boolean).join(' i ');
   const queued = retryState?.queued && message.status === retryState.status && message.attempts === retryState.attempts;
 
   async function retry() {
@@ -101,20 +108,29 @@ function OrderEmailRow({ orderId, message }) {
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 py-1.5 text-sm">
-      <span className="break-words text-neutral-700">{message.recipient}</span>
-      <details className="group text-right">
-        <summary className={`relative inline-block cursor-pointer list-none rounded-md px-2 py-0.5 font-semibold [&::-webkit-details-marker]:hidden ${received ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
-          {received ? 'Primljeno' : 'Nije primljeno'}
-          {received && (
-            <span aria-hidden="true" className="pointer-events-none absolute bottom-full right-0 z-10 mb-1 hidden whitespace-nowrap rounded-md bg-neutral-900 px-2 py-1 font-normal text-white group-hover:block group-open:hidden">
-              {deliveryTime}
-            </span>
-          )}
+    <div className="py-1.5 text-sm">
+      <details>
+        <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-2 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 break-words text-neutral-700">{message.recipient}</span>
+          <span className={`rounded-md px-2 py-0.5 font-semibold ${received ? 'bg-emerald-50 text-emerald-800' : bad ? 'bg-red-50 text-red-800' : 'bg-neutral-100 text-neutral-700'}`}>
+            {label}
+          </span>
         </summary>
-        <div className="mt-1 max-w-48 text-neutral-600">
-          <p>{received ? deliveryTime : queued ? 'Ponovno slanje zakazano.' : reason}</p>
-          {!received && message.canRetry && message.id && !queued && (
+        <div className="mt-2 space-y-1 border-l border-neutral-200 pl-2 text-neutral-600">
+          {message.tag && <p>{message.tag === 'order-status-update' ? 'Promena statusa porudžbine' :
+            message.tag === 'new-order-notification' ? 'Interno obaveštenje o porudžbini' : 'Potvrda porudžbine'}</p>}
+          {transport && <p>Servis za slanje · {transport}</p>}
+          {message.firebaseQueued && !transport && <p>Zakazano preko Firebase / iCloud</p>}
+          {Number.isInteger(message.attempts) && <p>Pokušaji slanja · {message.attempts}</p>}
+          {message.queuedAt && <p>Stavljeno u red · {formatOrderTime(message.queuedAt)}</p>}
+          {message.sesTimeoutAt && <p>SES timeout · {formatOrderTime(message.sesTimeoutAt)}</p>}
+          {message.sentAt && message.sentViaSes && <p>Prvi zabeležen prijem kod servisa · {formatOrderTime(message.sentAt)}</p>}
+          {message.icloudAcceptedAt && <p>iCloud prihvatio · {formatOrderTime(message.icloudAcceptedAt)}</p>}
+          {received && deliveryAt && <p>Server primaoca prihvatio · {deliveryTime}</p>}
+          {message.icloudAcceptedAt && !received && <p>Dostava primaocu nije potvrđena u DAJA.</p>}
+          {message.nextAttemptAt && <p>Sledeći pokušaj · {formatOrderTime(message.nextAttemptAt)}</p>}
+          {queued && <p>Ponovno slanje zakazano.</p>}
+          {!received && !waitingForSes && message.canRetry && message.id && !queued && (
             <button type="button" disabled={retryState?.busy} onClick={retry} className="mt-1 font-semibold text-blue-700 underline disabled:opacity-50">
               {retryState?.busy ? 'Zakazivanje…' : 'Probaj ponovo'}
             </button>
@@ -133,10 +149,10 @@ function OrderEmailStatus({ order }) {
   if (order.customer.email && !messages.some(message => message.tag === 'order-confirmation')) {
     messages.push({ recipient: order.customer.email, status: order.customerEmailDisabled ? 'suppressed' : null });
   }
-  const shopReceived = shopMessages.some(message => message.feedback === 'Delivery');
+  const shopReceived = shopMessages.some(message => message.sesDeliveredAt || message.feedback === 'Delivery');
   const shopDeliveryTime = shopMessages
-    .filter(message => message.feedback === 'Delivery' && message.feedbackAt)
-    .map(message => message.feedbackAt)
+    .map(message => message.sesDeliveredAt ?? (message.feedback === 'Delivery' ? message.feedbackAt : null))
+    .filter(Boolean)
     .sort()[0];
 
   return (
@@ -149,7 +165,7 @@ function OrderEmailStatus({ order }) {
               <summary className="flex cursor-pointer list-none items-start justify-between gap-2 text-neutral-700 [&::-webkit-details-marker]:hidden">
                 <span>DajaShop</span>
                 <span className={`relative rounded-md px-2 py-0.5 font-semibold ${shopReceived ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
-                  {shopReceived ? 'Primljeno' : 'Nije primljeno'}
+                  {shopReceived ? 'Dostavljeno' : 'Pogledaj statuse'}
                   {shopDeliveryTime && (
                     <span aria-hidden="true" className="pointer-events-none absolute bottom-full right-0 z-10 mb-1 hidden whitespace-nowrap rounded-md bg-neutral-900 px-2 py-1 font-normal text-white group-hover:block group-open:hidden">
                       {formatOrderTime(shopDeliveryTime)}
