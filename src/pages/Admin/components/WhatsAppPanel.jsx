@@ -4,6 +4,14 @@ import { useStorefront } from '../../../localization/StorefrontContext.jsx';
 
 const states = { queued: 'U redu za slanje', sending: 'Slanje...', accepted: 'Meta je prihvatila poruku',
   sent: 'Poslato', delivered: 'Isporučeno', read: 'Pročitano', failed: 'Neuspešno', unknown: 'Ishod slanja nije potvrđen', cancelled: 'Otkazano' };
+const deliveryReasons = {
+  132001: 'Meta ne nalazi šablon za ovaj jezik (132001)',
+  recipient_frequency_limit: 'Dostignut limit poruka za ovaj broj',
+  daily_frequency_limit: 'Dostignut dnevni limit slanja',
+  outdated_price: 'Cena se ponovo promenila',
+  legacy_price_snapshot: 'Nedostaje sačuvana cena za proveru',
+  product_image_unavailable: 'Slika proizvoda nije dostupna za slanje',
+};
 export default function WhatsAppPanel() {
   const { t } = useStorefront();
   const [data, setData] = useState(null);
@@ -85,7 +93,7 @@ export default function WhatsAppPanel() {
     </form>
     <p>{t('Nepotvrđeni ishod se ne šalje automatski ponovo da ne bi stigla duplirana poruka.')}</p>
     <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr><th>{t('Vreme')}</th><th>{t('Šablon')}</th><th>{t('Status')}</th><th>{t('Šifra greške')}</th></tr></thead>
-      <tbody>{(data?.deliveries || []).map(d => <tr key={d.id}><td>{new Date(d.createdAt).toLocaleString()}</td><td>{d.templateName}</td><td>{t(states[d.state] || d.state)}</td><td>{d.errorCode || '—'}</td></tr>)}</tbody>
+      <tbody>{(data?.deliveries || []).map(d => <tr key={d.id}><td>{new Date(d.createdAt).toLocaleString()}</td><td>{d.templateName}</td><td>{t(states[d.state] || d.state)}</td><td>{d.errorCode ? t(deliveryReasons[d.errorCode] || d.errorCode) : '—'}</td></tr>)}</tbody>
     </table></div>
   </section>;
 }
