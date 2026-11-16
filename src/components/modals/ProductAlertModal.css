@@ -326,6 +326,80 @@
 }
 .product-alert-modal__footer--whatsapp > button svg { flex-shrink: 0; }
 
+.product-alert-modal__body:has(.product-alert-modal__success) { flex: 1; }
+.product-alert-modal__content:has(.product-alert-modal__success) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.product-alert-modal__content:has(.product-alert-modal__success) > :not(.product-alert-modal__success) {
+  flex-shrink: 0;
+}
+.product-alert-modal__success {
+  flex: 1 0 auto;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 17px;
+  min-height: 148px;
+  margin-top: 12px;
+  padding: 24px 14px;
+  border-radius: 18px;
+  background: radial-gradient(ellipse at center, #e8f5ed, #f8fbf9 68%, #fff);
+  color: #174b35;
+  text-align: center;
+}
+.product-alert-modal__success p { margin: 0; font-size: .93rem; font-weight: 650; }
+.product-alert-modal__success-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(145deg, #268557, #13593d);
+  box-shadow: 0 6px 16px #174b3529, 0 0 0 7px #d8ede1;
+  animation: product-alert-success-pop 440ms cubic-bezier(.18, .85, .35, 1.24) both;
+}
+.product-alert-modal__success-mark::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border: 1px solid #67ac88;
+  border-radius: inherit;
+  opacity: 0;
+  animation: product-alert-success-ripple 760ms 150ms ease-out both;
+}
+.product-alert-modal__success-mark svg {
+  width: 44px;
+  stroke: currentColor;
+  stroke-width: 3.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.product-alert-modal__success-mark path {
+  stroke-dasharray: 1;
+  animation: product-alert-success-draw 390ms 130ms ease-out both;
+}
+@keyframes product-alert-success-pop {
+  from { opacity: 0; transform: scale(.62); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes product-alert-success-ripple {
+  from { opacity: .7; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.48); }
+}
+@keyframes product-alert-success-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-alert-modal__success-mark,
+  .product-alert-modal__success-mark::after,
+  .product-alert-modal__success-mark path { animation: none; }
+}
+
 /* The shell stays fixed; only its contents scroll while the keyboard is open. */
 .product-alert-modal.is-keyboard-open {
   height: var(--resting-panel-height);

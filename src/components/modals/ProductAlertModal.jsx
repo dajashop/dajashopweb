@@ -506,6 +506,7 @@ export default function ProductAlertModal({
         </form>
         {deliveryChannel === 'whatsapp' && type === 'price_change' &&
           <WhatsAppPriceAlertForm key={`${product.id}:${product.variantId}:${scope}`} product={product} initialPhone={phone}
+            animatedSuccess
             onBeforeSubscribe={isWishlistScope ? flushWishlist : undefined}
             onSignIn={() => { onClose(); showAuth('login'); }} />}
         {isWishlistScope && isEmailChannel && !wishlistResult && (

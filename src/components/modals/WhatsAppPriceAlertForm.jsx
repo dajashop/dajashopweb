@@ -9,7 +9,7 @@ import {
   confirmPhoneCode, phoneVerificationCapabilities, requestPhoneCode,
 } from '../../services/phoneVerification.js';
 
-export default function WhatsAppPriceAlertForm({ product, initialPhone = '', onSignIn, onBeforeSubscribe, onWishlistSubscribed }) {
+export default function WhatsAppPriceAlertForm({ product, initialPhone = '', onSignIn, onBeforeSubscribe, onWishlistSubscribed, animatedSuccess = false }) {
   const { user, refreshUser } = useAuth();
   const { policy } = useConsent();
   const { t, language, localizePath } = useStorefront();
@@ -97,9 +97,22 @@ export default function WhatsAppPriceAlertForm({ product, initialPhone = '', onS
     }
   }
 
-  if (active) return <p role="status">{wishlistResult
-    ? t(wishlistResult.alreadyEnabled ? 'Praćenje uključeno' : 'Automatsko praćenje je uključeno. Pratimo {active} satova, nedostupnih: {skipped}.', wishlistResult)
-    : t('Obaveštenje o promeni cene je uključeno.')}</p>;
+  if (active) {
+    const message = wishlistResult
+      ? t(wishlistResult.alreadyEnabled ? 'Praćenje uključeno' : 'Automatsko praćenje je uključeno. Pratimo {active} satova, nedostupnih: {skipped}.', wishlistResult)
+      : t('Obaveštenje o promeni cene je uključeno.');
+    if (!animatedSuccess) return <p role="status">{message}</p>;
+    return (
+      <div className="product-alert-modal__success" role="status">
+        <span className="product-alert-modal__success-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none">
+            <path d="M12 24l8 8 16-16" pathLength="1" />
+          </svg>
+        </span>
+        <p>{wishlistResult ? message : t('Praćenje uključeno')}</p>
+      </div>
+    );
+  }
 
   return (
     <form className="product-alert-modal__whatsapp-form" onSubmit={event => void submit(event)}>
