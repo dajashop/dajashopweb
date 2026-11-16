@@ -23,6 +23,8 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
   const account = user?.id;
   const [channel, setChannel] = useState('email');
   const [whatsappAvailable, setWhatsappAvailable] = useState(false);
+  const [couponAvailable, setCouponAvailable] = useState(false);
+  const [couponConsent, setCouponConsent] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
@@ -47,6 +49,8 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
         if (signal.aborted) return;
         if (!Array.isArray(result?.channels)) throw new Error('Wishlist tracking status is missing');
         setTracking(result.channels);
+        setCouponAvailable(result.couponAvailable === true);
+        setCouponConsent(result.couponConsent === true);
         setStatusError(null);
       }).catch(err => {
         if (!signal.aborted) setStatusError(err.status === 401 ? 'session' : 'unavailable');
@@ -65,6 +69,8 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
   useEffect(() => {
     if (!account) return undefined;
     setTracking(null);
+    setCouponAvailable(false);
+    setCouponConsent(false);
     setStatusError(null);
     setMenuOpen(false);
     setHintReady(false);
@@ -123,6 +129,20 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
     }
   }
 
+  async function changeCouponConsent(accepted) {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const result = await apiRequest('/product-alerts/wishlist/coupons', { method: 'PATCH', body: { accepted } });
+      setCouponConsent(result.couponConsent === true);
+    } catch (requestError) {
+      setError(requestError.message || t('Pokušajte ponovo.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!user) return null;
 
   const alreadyTracking = tracking?.includes(channel);
@@ -172,6 +192,12 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
         )}
         {channel === 'email' && !user.emailVerified &&
           <p>{t('Potvrdite email adresu naloga pre uključivanja email obaveštenja.')}</p>}
+        {channel === 'whatsapp' && alreadyTracking && (couponConsent || (couponAvailable && language === 'sr')) &&
+          <label>
+            <input type="checkbox" checked={couponConsent} disabled={busy}
+              onChange={event => void changeCouponConsent(event.target.checked)} />
+            {t('Želim da mi DajaShop preko WhatsApp-a šalje lične kupone za satove sa liste želja kada im poraste redovna cena.')}
+          </label>}
         <button type="button" className="wishlist-alert-settings__stop" disabled={busy} onClick={() => setConfirm(true)}>
           <BellOff size={15} aria-hidden="true" />{t('Odjavi sva obaveštenja o satovima')}
         </button>
