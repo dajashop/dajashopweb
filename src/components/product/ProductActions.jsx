@@ -6,7 +6,6 @@ import { useFlash } from '../../hooks/useFlash.js';
 import { productAlertSubscriptions } from '../../services/dajaPlatform.js';
 import { storefrontFeatures } from '../../config/storefrontFeatures.js';
 import ProductAlertModal from '../modals/ProductAlertModal.jsx';
-import WatchAlertControls from './WatchAlertControls.jsx';
 import { useWatchAlertStatus } from '../../services/watchAlertStatus.js';
 import './ProductActions.css';
 import { isProcurementUnavailable } from '../../utils/productAvailability.js';
@@ -101,8 +100,6 @@ export default function ProductActions({ product, onAdd, onWishlist, isLiked, di
         </button>
         )}
       </div>
-
-      {subscribedTypes.length > 0 && <WatchAlertControls product={product} status={alerts} />}
 
       <ProductAlertModal
         isOpen={Boolean(guestAlertType)}

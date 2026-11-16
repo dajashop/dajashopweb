@@ -218,17 +218,3 @@
   }
 }
 .product-actions .cta-button:disabled { opacity: .5; cursor: not-allowed; }
-
-.product-actions .watch-alert-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-.product-actions .watch-alert-controls button {
-  border: 1px solid var(--color-border, #dedee3);
-  border-radius: 8px;
-  min-height: 36px;
-  padding: 6px 10px;
-  font-size: .8rem;
-}

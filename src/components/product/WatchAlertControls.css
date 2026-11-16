@@ -1,14 +1,58 @@
-.watch-alert-controls__tracking,
-.watch-alert-controls__unsubscribe {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  grid-area: 1 / 1;
+.watch-alert-controls { min-width: 0; }
+
+.watch-alert-controls__active {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 2px 8px;
+  padding: 8px 5px 8px 9px;
+  border: 1px solid #d7e9df;
+  border-radius: var(--wishlist-control-radius, 9px);
+  background: #f0f8f3;
+  color: #24573c;
 }
-.watch-alert-controls .is-subscribed { display: grid; }
-.watch-alert-controls__tracking { visibility: hidden; }
-@media (hover: hover) and (pointer: fine) {
-  .watch-alert-controls .is-subscribed:not(:hover):not(:focus-visible):not([aria-busy="true"]) .watch-alert-controls__tracking { visibility: visible; }
-  .watch-alert-controls .is-subscribed:not(:hover):not(:focus-visible):not([aria-busy="true"]) .watch-alert-controls__unsubscribe { visibility: hidden; }
+
+.watch-alert-controls__bell { margin-top: 2px; }
+.watch-alert-controls__details {
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.watch-alert-controls__details strong { font-size: 13px; font-weight: 700; }
+.watch-alert-controls__details span { color: #43584c; }
+.watch-alert-controls__details b { font-variant-numeric: tabular-nums; }
+
+.watch-alert-controls__stop,
+.watch-alert-controls__stop-whatsapp {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.watch-alert-controls__stop {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+}
+.watch-alert-controls__stop-whatsapp {
+  grid-column: 2 / -1;
+  justify-self: start;
+  min-height: 32px;
+  padding-inline: 4px;
+  font-size: 12px;
+  text-align: start;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.watch-alert-controls__active button:hover:not(:disabled) { background: #e2efe5; }
+.watch-alert-controls__active button:disabled { opacity: .55; cursor: default; }
+.watch-alert-controls > [role="alert"] { margin: 5px 0 0; font-size: 12px; color: #9d2929; }
+
+@media (pointer: coarse) {
+  .watch-alert-controls__stop { width: 44px; height: 44px; }
+  .watch-alert-controls__stop-whatsapp { min-height: 44px; }
 }

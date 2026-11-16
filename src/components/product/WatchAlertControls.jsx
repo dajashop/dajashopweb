@@ -39,26 +39,37 @@ export default function WatchAlertControls({ product, onSubscribe, status }) {
   }
 
   if (!variantId) return null;
-  const subscribed = status.email.length > 0 || status.whatsapp.length > 0;
+  const hasEmail = status.email.length > 0;
+  const hasWhatsApp = status.whatsapp.length > 0;
+  const subscribed = hasEmail || hasWhatsApp;
   if (!subscribed && !onSubscribe) return null;
 
   return <div className="watch-alert-controls">
     {subscribed ? (
-      <button type="button" className="wishlist-alert-btn is-subscribed" disabled={pending} aria-busy={pending} aria-label={t('Odjavi ovaj sat')}
-        onClick={() => { setChannel('both'); setConfirm(true); }}>
-        <span className="watch-alert-controls__tracking"><BellRing size={15} aria-hidden="true" />{t('Praćenje uključeno')}</span>
-        <span className="watch-alert-controls__unsubscribe"><BellOff size={15} aria-hidden="true" />{t(pending ? 'Odjavljujemo…' : 'Odjavi ovaj sat')}</span>
-      </button>
+      <div className="watch-alert-controls__active">
+        <BellRing className="watch-alert-controls__bell" size={16} aria-hidden="true" />
+        <div className="watch-alert-controls__details">
+          <strong>{t('Praćenje uključeno')}</strong>
+          <span>{hasEmail && hasWhatsApp ? 'Email · WhatsApp' : hasWhatsApp ? 'WhatsApp' : 'Email'}</span>
+          {hasWhatsApp && status.whatsappWatchCode && (
+            <span>{t('Šifra za odjavu')} <b>{status.whatsappWatchCode}</b></span>
+          )}
+        </div>
+        <button type="button" className="watch-alert-controls__stop" disabled={pending} aria-busy={pending}
+          title={t('Odjavi ovaj sat')} aria-label={t(pending ? 'Odjavljujemo…' : 'Odjavi ovaj sat')}
+          onClick={() => { setChannel(hasWhatsApp && !hasEmail && user ? 'whatsapp' : 'both'); setConfirm(true); }}>
+          <BellOff size={17} aria-hidden="true" />
+        </button>
+        {user && hasEmail && hasWhatsApp && (
+          <button type="button" className="watch-alert-controls__stop-whatsapp" disabled={pending}
+            onClick={() => { setChannel('whatsapp'); setConfirm(true); }}>
+            {t('Odjavi samo WhatsApp')}
+          </button>
+        )}
+      </div>
     ) : (
       <button type="button" className="wishlist-alert-btn" onClick={onSubscribe}>
         <Bell size={15} aria-hidden="true" />{t('Obavesti me')}
-      </button>
-    )}
-    {status.whatsappWatchCode && <p>{t('WhatsApp šifra za odjavu: {code}', { code: status.whatsappWatchCode })}</p>}
-    {user && status.whatsapp.length > 0 && (
-      <button type="button" className="wishlist-alert-btn" disabled={pending}
-        onClick={() => { setChannel('whatsapp'); setConfirm(true); }}>
-        {t('Odjavi samo WhatsApp za ovaj sat')}
       </button>
     )}
     {confirm && createPortal(
