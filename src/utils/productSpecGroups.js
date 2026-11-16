@@ -83,10 +83,12 @@ export function productSpecGroups(product) {
   }
 
   const catalogGender = String(product?.gender ?? '').trim();
-  if (watch && catalogGender && !groups[0].entries.some(entry => entry.normalized === 'pol')) {
+  if (watch && catalogGender) {
     const gender = normalizedCatalogGender(catalogGender);
-    const value = { MUSKI: 'Muški', ZENSKI: 'Ženski', UNISEX: 'Unisex' }[gender];
-    if (value) groups[0].entries.push({ key: 'pol', normalized: 'pol', label: watchLabels.pol, value });
+    const value = { MUSKI: 'Muški', ZENSKI: 'Ženski', UNISEX: 'Unisex', DECIJI: 'Dečiji' }[gender];
+    const existing = groups[0].entries.find(entry => entry.normalized === 'pol');
+    if (gender === 'DECIJI' && existing) existing.value = value;
+    if (value && !existing) groups[0].entries.push({ key: 'pol', normalized: 'pol', label: watchLabels.pol, value });
   }
 
   groups.forEach((group) => group.entries.sort((a, b) => group.keys.indexOf(a.normalized) - group.keys.indexOf(b.normalized)));

@@ -1762,6 +1762,7 @@ export default function AdminProductModal({
     ...(isEyewearDepartment ? [{ value: '', label: 'Nije izabrano' }, { value: 'UNISEX', label: 'Unisex' }] : [{ value: '', label: 'Unisex' }]),
     { value: 'MUŠKI', label: 'Muški' },
     { value: 'ŽENSKI', label: 'Ženski' },
+    ...(isWatchDepartment ? [{ value: 'Dečiji', label: 'Dečiji' }] : []),
   ];
 
   const fallbackSeoTitle = `${form.brand || ''} ${form.name || ''}`.trim();
