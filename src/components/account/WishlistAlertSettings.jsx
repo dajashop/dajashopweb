@@ -34,10 +34,10 @@ export default function WishlistAlertSettings({ onBeforeSubscribe }) {
     const controller = new AbortController();
     apiRequest('/whatsapp/capabilities', { auth: false, signal: controller.signal })
       .then(result => { if (!controller.signal.aborted) setWhatsappAvailable(result?.available === true &&
-        (result?.priceAlertLanguages ?? ['sr']).includes(language)); })
+        (result?.priceAlertLanguages ?? ['sr']).includes('sr')); })
       .catch(() => {});
     return () => controller.abort();
-  }, [language]);
+  }, []);
 
   useEffect(() => {
     if (!account) return undefined;

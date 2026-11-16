@@ -44,17 +44,16 @@ export function ChannelOptions({ value, onChange, disabled, channels, available,
 }
 
 export default function NotificationChannelPicker({ value, onChange, disabled, variant, contact, purpose, productId, variantId, channelOnly = false }) {
-  const { language } = useStorefront();
   const [whatsappAvailable, setWhatsAppAvailable] = useState(false);
   useEffect(() => {
     let current = true;
     apiRequest('/whatsapp/capabilities', { auth: false }).then(data => {
       if (current) setWhatsAppAvailable(data?.available === true &&
         (purpose !== 'back_in_stock' || data?.backInStockAvailable === true) &&
-        (purpose !== 'price_change' || (data?.priceAlertLanguages ?? ['sr']).includes(language)));
+        (purpose !== 'price_change' || (data?.priceAlertLanguages ?? ['sr']).includes('sr')));
     }).catch(() => {});
     return () => { current = false; };
-  }, [purpose, language]);
+  }, [purpose]);
   return <div className={variant === 'cards' ? undefined : 'notification-channel'}>
     <ChannelOptions value={value} onChange={onChange} disabled={disabled}
       compact={variant !== 'cards'}

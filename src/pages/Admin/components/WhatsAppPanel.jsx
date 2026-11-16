@@ -11,6 +11,7 @@ const deliveryReasons = {
   outdated_price: 'Cena se ponovo promenila',
   legacy_price_snapshot: 'Nedostaje sačuvana cena za proveru',
   product_image_unavailable: 'Slika proizvoda nije dostupna za slanje',
+  language_replaced: 'Poruka spremljena na starom jeziku',
 };
 export default function WhatsAppPanel() {
   const { t } = useStorefront();
@@ -64,7 +65,7 @@ export default function WhatsAppPanel() {
     <label className="block">{t('Tekst novosti')}<textarea className="mt-2 block w-full border rounded-lg p-3" rows={5} maxLength={800}
       disabled={busy} value={text} onChange={e => { setText(e.target.value); setCampaignId(crypto.randomUUID()); setPreview(false); }} /></label>
     <p>{text.length}/800</p>
-    <label>{t('Jezik primaoca')} <select disabled={busy} value={language} onChange={e => { setLanguage(e.target.value); setCampaignId(crypto.randomUUID()); setPreview(false); }}><option value="sr">Srpski</option><option value="en">English</option></select></label>
+    <label>{t('Jezik poruke')} <select disabled={busy} value={language} onChange={e => { setLanguage(e.target.value); setCampaignId(crypto.randomUUID()); setPreview(false); }}><option value="sr">Srpski</option><option value="en">English ({t('rezerva')})</option></select></label>
     {language === 'sr' && <label className="block">{t('Link za dugme')}
       <input type="url" className="mt-2 block w-full border rounded-lg p-3" disabled={busy} value={link}
         placeholder={embeddedLink || 'https://dajashop.rs/catalog'}
@@ -92,8 +93,8 @@ export default function WhatsAppPanel() {
       <button type="submit" disabled={busy || !/^\+381[1-9]\d{6,11}$/.test(optOutPhone.trim())}>{t('Potvrdi odjavu')}</button>
     </form>
     <p>{t('Nepotvrđeni ishod se ne šalje automatski ponovo da ne bi stigla duplirana poruka.')}</p>
-    <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr><th>{t('Vreme')}</th><th>{t('Šablon')}</th><th>{t('Status')}</th><th>{t('Šifra greške')}</th></tr></thead>
-      <tbody>{(data?.deliveries || []).map(d => <tr key={d.id}><td>{new Date(d.createdAt).toLocaleString()}</td><td>{d.templateName}</td><td>{t(states[d.state] || d.state)}</td><td>{d.errorCode ? t(deliveryReasons[d.errorCode] || d.errorCode) : '—'}</td></tr>)}</tbody>
+    <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr><th>{t('Vreme')}</th><th>{t('Šablon')}</th><th>{t('Jezik poruke')}</th><th>{t('Status')}</th><th>{t('Šifra greške')}</th></tr></thead>
+      <tbody>{(data?.deliveries || []).map(d => <tr key={d.id}><td>{new Date(d.createdAt).toLocaleString()}</td><td>{d.templateName}</td><td>{d.language || '—'}</td><td>{t(states[d.state] || d.state)}</td><td>{d.errorCode ? t(deliveryReasons[d.errorCode] || d.errorCode) : '—'}</td></tr>)}</tbody>
     </table></div>
   </section>;
 }
