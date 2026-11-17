@@ -13,12 +13,22 @@
     }
 
     .page-scrollbar {
-      display: block;
+      display: grid;
+      grid-template-rows: 16px minmax(0, 1fr) 16px;
       position: fixed;
       inset: 0 0 0 auto;
-      width: 14px;
+      width: 12px;
       z-index: 65;
       pointer-events: none;
+    }
+
+    .page-scrollbar__lane {
+      grid-row: 2;
+    }
+
+    .page-scrollbar__control {
+      opacity: 0;
+      transition: opacity .45s ease;
     }
 
     .page-scrollbar__thumb {
@@ -26,15 +36,12 @@
       border-radius: 999px;
       border: 3px solid transparent;
       background: rgba(100, 100, 100, .55) padding-box;
-      opacity: 0;
-      transition: opacity .45s ease;
       cursor: grab;
       touch-action: none;
       user-select: none;
     }
 
-    .page-scrollbar[data-active] .page-scrollbar__thumb,
-    .page-scrollbar__thumb:is(:hover, :focus-visible, [data-dragging]) {
+    .page-scrollbar:is([data-active], :has(.page-scrollbar__control:is(:hover, :focus-visible, [data-dragging]))) .page-scrollbar__control {
       opacity: 1;
       pointer-events: auto;
       transition-duration: .22s;
@@ -44,7 +51,7 @@
       background-color: rgba(100, 100, 100, .85);
     }
 
-    .page-scrollbar__thumb:focus-visible {
+    .page-scrollbar__control:focus-visible {
       outline: 2px solid var(--color-text);
       outline-offset: -2px;
     }
@@ -52,11 +59,30 @@
     .page-scrollbar__thumb[data-dragging] {
       cursor: grabbing;
     }
+
+    .page-scrollbar__arrow {
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: #666;
+      cursor: pointer;
+    }
+
+    .page-scrollbar__arrow--up { grid-row: 1; }
+    .page-scrollbar__arrow--down { grid-row: 3; }
+
+    .page-scrollbar__arrow:is(:hover, :focus-visible) {
+      background: rgba(100, 100, 100, .16);
+      color: var(--color-text);
+    }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-scrollbar__thumb {
+  .page-scrollbar__control {
     transition: none;
   }
 }

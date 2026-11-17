@@ -1,17 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 import './PageScrollbar.css';
+
+const SCROLL_STEP = 40;
 
 export default function PageScrollbar() {
   const { t } = useStorefront();
   const trackRef = useRef(null);
+  const laneRef = useRef(null);
   const dragRef = useRef(null);
   const [metrics, setMetrics] = useState(null);
 
   useEffect(() => {
     const root = document.scrollingElement;
     const track = trackRef.current;
-    if (!root || !track) return;
+    const lane = laneRef.current;
+    if (!root || !track || !lane) return;
 
     let frame = 0;
     let idleTimer;
@@ -19,7 +24,7 @@ export default function PageScrollbar() {
       frame = 0;
       const { clientHeight: viewport, scrollHeight, scrollTop } = root;
       const max = Math.max(0, scrollHeight - viewport);
-      const height = track.clientHeight;
+      const height = lane.clientHeight;
       if (!max || height <= 28) {
         setMetrics(null);
         return;
@@ -42,7 +47,7 @@ export default function PageScrollbar() {
     };
     const observer = new ResizeObserver(schedule);
     observer.observe(track.parentElement);
-    observer.observe(track);
+    observer.observe(lane);
     window.addEventListener('scroll', reveal, { passive: true });
     window.addEventListener('pointermove', revealAtEdge, { passive: true });
     window.addEventListener('resize', schedule);
@@ -60,6 +65,7 @@ export default function PageScrollbar() {
   }, []);
 
   const scrollTo = top => window.scrollTo({ top, behavior: 'instant' });
+  const scrollStep = direction => window.scrollBy({ top: direction * SCROLL_STEP, behavior: 'instant' });
   const startDrag = event => {
     if (event.button !== 0 || !event.isPrimary || !metrics.travel) return;
     dragRef.current = {
@@ -87,7 +93,7 @@ export default function PageScrollbar() {
     const { max, viewport } = metrics;
     const top = document.scrollingElement.scrollTop;
     const targets = {
-      ArrowUp: top - 40, ArrowDown: top + 40,
+      ArrowUp: top - SCROLL_STEP, ArrowDown: top + SCROLL_STEP,
       PageUp: top - viewport, PageDown: top + viewport, Home: 0, End: max,
     };
     if (!Object.hasOwn(targets, event.key)) return;
@@ -97,25 +103,39 @@ export default function PageScrollbar() {
 
   return (
     <div className="page-scrollbar" ref={trackRef}>
-      {metrics && <div
-        className="page-scrollbar__thumb"
-        role="scrollbar"
-        tabIndex={0}
-        aria-label={t('Pomeranje stranice')}
-        aria-controls="root"
-        aria-orientation="vertical"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(metrics.value / metrics.max * 100)}
-        style={{
-          height: metrics.size,
-          transform: `translateY(${metrics.value / metrics.max * metrics.travel}px)`,
-        }}
-        onPointerDown={startDrag}
-        onPointerMove={moveDrag}
-        onLostPointerCapture={stopDrag}
-        onKeyDown={handleKey}
-      />}
+      {metrics && <button
+        type="button"
+        className="page-scrollbar__control page-scrollbar__arrow page-scrollbar__arrow--up"
+        aria-label={t('Skroluj gore')}
+        onClick={() => scrollStep(-1)}
+      ><ChevronUp size={10} aria-hidden="true" /></button>}
+      <div className="page-scrollbar__lane" ref={laneRef}>
+        {metrics && <div
+          className="page-scrollbar__control page-scrollbar__thumb"
+          role="scrollbar"
+          tabIndex={0}
+          aria-label={t('Pomeranje stranice')}
+          aria-controls="root"
+          aria-orientation="vertical"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(metrics.value / metrics.max * 100)}
+          style={{
+            height: metrics.size,
+            transform: `translateY(${metrics.value / metrics.max * metrics.travel}px)`,
+          }}
+          onPointerDown={startDrag}
+          onPointerMove={moveDrag}
+          onLostPointerCapture={stopDrag}
+          onKeyDown={handleKey}
+        />}
+      </div>
+      {metrics && <button
+        type="button"
+        className="page-scrollbar__control page-scrollbar__arrow page-scrollbar__arrow--down"
+        aria-label={t('Skroluj dole')}
+        onClick={() => scrollStep(1)}
+      ><ChevronDown size={10} aria-hidden="true" /></button>}
     </div>
   );
 }
