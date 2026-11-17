@@ -231,6 +231,7 @@ export default function DeliveryForm({
 
   useEffect(() => {
     setSavedAddresses([]);
+    onAddressesReady?.([]);
     setSelectedAddressId('new');
     if (!accountId) return undefined;
 
@@ -245,7 +246,7 @@ export default function DeliveryForm({
       if (!cancelled) console.error('Error fetching addresses', err);
     });
     return () => { cancelled = true; };
-  }, [accountId]);
+  }, [accountId, onAddressesReady]);
 
   const defaultAddress = addressAccount === accountId ? savedAddresses[0] : undefined;
   const [autoAddressUsed, setAutoAddressUsed] = useState(false);
