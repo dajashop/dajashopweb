@@ -1,4 +1,5 @@
 import CheckoutFooter from './components/checkout/CheckoutFooter.jsx';
+import CheckoutScrollbar from './components/checkout/CheckoutScrollbar.jsx';
 import { catalogLanding } from './data/catalogLandings.js';
 import AppRoutes from './router.jsx';
 import EngravingSync from './components/engraving/EngravingSync';
@@ -71,7 +72,7 @@ export default function App() {
         {!['/checkout', '/product-alert-confirm', '/newsletter-confirm', '/verify-email', '/reset-password', '/unsubscribe'].includes(pathname) && <NewsletterModal />}
         {pageStatus ? <PageStatus status={pageStatus} /> : <AppRoutes />}
       </main>
-      {pathname === '/checkout' ? <CheckoutFooter /> : <Footer />}
+      {pathname === '/checkout' ? <><CheckoutFooter /><CheckoutScrollbar /></> : <Footer />}
     </div>
   );
 }

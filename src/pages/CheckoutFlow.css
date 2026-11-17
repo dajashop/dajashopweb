@@ -23,7 +23,6 @@
 @media(max-width:700px) { .checkout-footer__grid { grid-template-columns: 1fr; gap: 24px; } .checkout-footer { padding-bottom: calc(110px + env(safe-area-inset-bottom)); } }
 
 /* The footer fills the bottom of short pages; longer pages scroll naturally. */
-html:has(.app-checkout) { overflow-y: auto; scrollbar-gutter: stable both-edges; }
 .app-checkout { min-height: 100dvh; display: flex; flex-direction: column; }
 .app-checkout > main { flex: 1 0 auto; }
 .app-checkout > .checkout-footer { flex-shrink: 0; margin-top: auto; }

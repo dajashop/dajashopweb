@@ -1,0 +1,46 @@
+.checkout-scrollbar {
+  display: none;
+}
+
+@media (forced-colors: none) {
+  html:has(.checkout-scrollbar) {
+    scrollbar-width: none;
+  }
+
+  html:has(.checkout-scrollbar)::-webkit-scrollbar {
+    display: none;
+  }
+
+  .checkout-scrollbar {
+    display: block;
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: 14px;
+    z-index: 65;
+    pointer-events: none;
+  }
+
+  .checkout-scrollbar__thumb {
+    width: 100%;
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background: rgba(100, 100, 100, .55) padding-box;
+    pointer-events: auto;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .checkout-scrollbar__thumb:is(:hover, :focus-visible, :active) {
+    background-color: rgba(100, 100, 100, .85);
+  }
+
+  .checkout-scrollbar__thumb:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: -2px;
+  }
+
+  .checkout-scrollbar__thumb:active {
+    cursor: grabbing;
+  }
+}
