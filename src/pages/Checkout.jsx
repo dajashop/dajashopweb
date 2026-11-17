@@ -18,8 +18,8 @@ import { postalCodeForCity } from '../data/serbiaPostalCodes.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import './Checkout.css';
 import './CheckoutFlow.css';
-const fields = ['name','surname','email','phone','address','city','postalCode'];
-const valid = data => fields.every(key => FORM_RULES[key].regex.test(String(data[key] || '').trim()));
+const addressFields = ['address','city','postalCode'];
+const fieldsToSkipForStep = target => target === 1 ? addressFields : [];
 export default function Checkout() {
  const { t, money, moneyRsd, displayCurrency } = useStorefront();
  const { items, total, dispatch } = useCart();
@@ -53,7 +53,7 @@ export default function Checkout() {
  const amount=order?.finalTotal ?? total-discount+shipping;
  const address=formatDeliveryAddress(form.formData.address,form.formData.addressDetails);
  const sameAddress=a=>a.address?.trim().toLowerCase()===address.trim().toLowerCase() && a.city?.trim().toLowerCase()===form.formData.city.trim().toLowerCase() && a.zip===form.formData.postalCode && a.name===`${form.formData.name} ${form.formData.surname}`.trim() && a.phone===form.formData.phone;
- useEffect(()=>{ if(user && addresses?.length && !auto.current && !touched.current && valid(form.formData)){auto.current=true;setStep(2);} },[user,addresses,form.formData]);
+ useEffect(()=>{ if(user && addresses?.length && !auto.current && !touched.current && form.isValid()){auto.current=true;setStep(2);} },[user,addresses,form.formData]);
  const go=n=>{touched.current=true;setError('');setStep(n);requestAnimationFrame(()=>{heading.current?.focus();if (heading.current?.getBoundingClientRect().top < 0) heading.current.scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'});});};
  const savedAddressChoices = user ? addresses ?? [] : [];
  const selectedAddress = savedAddressChoices.find(savedAddress =>
@@ -73,12 +73,20 @@ export default function Checkout() {
      postalCode: choice?.zip || postalCodeForCity(choice?.city),
    };
    form.setFormData(previous => ({ ...previous, ...deliveryFields }));
-   if (['address', 'city', 'postalCode'].some(key => !FORM_RULES[key].regex.test(deliveryFields[key]))) go(1);
+   if (addressFields.some(key => !FORM_RULES[key].regex.test(deliveryFields[key]))) go(1);
  };
- const validate=()=>{const skip=step===0?['address','city','postalCode']:[];const ok=form.validateAll(skip);if(!ok){setSubmitCount(v=>v+1);requestAnimationFrame(()=>document.querySelector('.checkout-flow .input-error input')?.focus());}return ok;};
+ const navigateToStep = target => {
+   if (lock.current || target === step) return;
+   if (target > step && !form.validateAll(fieldsToSkipForStep(target))) {
+     setSubmitCount(v=>v+1);
+     requestAnimationFrame(()=>document.querySelector('.checkout-flow .input-error input')?.focus());
+     return;
+   }
+   go(target);
+ };
  async function next(){
   if(lock.current)return;
-  if(step<2){if(validate())go(step+1);return;}
+  if(step<2){navigateToStep(step+1);return;}
   if(!form.validateAll()){go(0);return;}
   lock.current=true;setBusy(true);setError('');
   try {
@@ -108,7 +116,7 @@ export default function Checkout() {
    <div className="flow-track"><motion.div animate={{width: order ? '100%' : `${step * 50}%`}} transition={{duration: reduce ? 0 : .25}}/></div>
    {[User,MapPin,Check].map((Icon,i) => (
     <button type="button" key={i} aria-current={!order && step===i?'step':undefined} aria-hidden={order ? true : undefined}
-     disabled={Boolean(order) || i>step} onClick={()=>go(i)} className={i<=step?'active':''}>
+     disabled={Boolean(order) || busy || (i > step && !form.isValid(fieldsToSkipForStep(i)))} onClick={()=>navigateToStep(i)} className={i<=step?'active':''}>
      <span>{order ? i===1 && <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <motion.path d="m5 12 4 4L19 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
        initial={{pathLength: reduce ? 1 : 0}} animate={{pathLength: 1}} transition={{delay:reduce?0:.42,duration:reduce?0:.24}}/>

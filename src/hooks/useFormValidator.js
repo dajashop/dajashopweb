@@ -39,35 +39,25 @@ export function useFormValidator(initialState) {
     return true;
   };
 
-  // --- GLAVNA VALIDACIJA NA DUGME ---
-  // Prima listu polja koja treba preskočiti (npr. ['address', 'city'] za Pickup)
-  const validateAll = (fieldsToSkip = []) => {
+  const getErrors = (fieldsToSkip) => {
     const newErrors = {};
-    let isValid = true;
-
-    Object.keys(formData).forEach((key) => {
-      // Ako je polje u listi za preskakanje, ignoriši ga
-      if (fieldsToSkip.includes(key)) return;
-
+    for (const [key, value] of Object.entries(formData)) {
       const rule = FORM_RULES[key];
-      const value = formData[key];
-
-      // 1. Provera REGEX-a (ako je uneto nešto)
-      if (rule && value && !rule.regex.test(value)) {
-        newErrors[key] = rule.message;
-        isValid = false;
-      }
-
-      // 2. PROVERA PRAZNIH POLJA
-      // Ako nema vrednosti, a postoji pravilo -> OBAVEZNO JE
-      if (!value && rule) {
+      if (!rule || fieldsToSkip.includes(key)) continue;
+      if (!value || !String(value).trim()) {
         newErrors[key] = 'Ovo polje je obavezno.';
-        isValid = false;
+      } else if (!rule.regex.test(value)) {
+        newErrors[key] = rule.message;
       }
-    });
+    }
+    return newErrors;
+  };
 
+  const isValid = (fieldsToSkip = []) => Object.keys(getErrors(fieldsToSkip)).length === 0;
+  const validateAll = (fieldsToSkip = []) => {
+    const newErrors = getErrors(fieldsToSkip);
     setErrors(newErrors);
-    return isValid;
+    return Object.keys(newErrors).length === 0;
   };
 
   return {
@@ -76,6 +66,7 @@ export function useFormValidator(initialState) {
     errors,
     handleChange,
     handleBlur,
+    isValid,
     validateAll,
   };
 }
