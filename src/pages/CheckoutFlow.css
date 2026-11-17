@@ -46,7 +46,7 @@ html:has(.app-checkout) { overflow-y: auto; scrollbar-gutter: stable both-edges;
 @media(min-width:1024px) { .flow-summary { margin-top:72px; } }
 @media(max-width:1023px) { .checkout-flow { padding-bottom:24px; } .app-checkout > main { padding-bottom:96px !important; } }
 
-.app-checkout > main.container { width: min(1440px, 82.8%); }
+.app-checkout > main.container { width: min(1360px, 78.2%); }
 .flow-progress { --step-inset: 34px; height: 68px; }
 .flow-progress .flow-track { left: var(--step-inset); right: var(--step-inset); transition: left .42s ease, right .42s ease, opacity .3s ease; }
 .flow-progress button { position: absolute; translate: -50% 0; transition: left .42s ease, opacity .3s ease; }
@@ -72,3 +72,16 @@ html:has(.app-checkout) { overflow-y: auto; scrollbar-gutter: stable both-edges;
 .flow-receipt-actions a:hover { background: var(--color-surface); }
 @media(max-width:700px) { .app-checkout > main.container { width: 92%; } .flow-receipt-grid { grid-template-columns: 1fr; } }
 @media(prefers-reduced-motion:reduce) { .flow-progress *, .flow-progress--complete button:nth-of-type(2) span { transition: none; } }
+
+.flow-address-choice label { display: block; margin-bottom: 8px; font-weight: 650; }
+.flow-address-choice select {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-accent);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+.flow-address-choice select:focus-visible { outline: 2px solid var(--flow-green); outline-offset: 2px; }

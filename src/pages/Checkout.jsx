@@ -14,6 +14,7 @@ import { commerceSeoConfig } from '../config/seo.js';
 import DeliveryForm from '../components/checkout/DeliveryForm';
 import EngravingSummary from '../components/engraving/EngravingSummary';
 import { formatDeliveryAddress } from '../components/checkout/deliveryAddress.js';
+import { postalCodeForCity } from '../data/serbiaPostalCodes.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import './Checkout.css';
 import './CheckoutFlow.css';
@@ -54,6 +55,26 @@ export default function Checkout() {
  const sameAddress=a=>a.address?.trim().toLowerCase()===address.trim().toLowerCase() && a.city?.trim().toLowerCase()===form.formData.city.trim().toLowerCase() && a.zip===form.formData.postalCode && a.name===`${form.formData.name} ${form.formData.surname}`.trim() && a.phone===form.formData.phone;
  useEffect(()=>{ if(user && addresses?.length && !auto.current && !touched.current && valid(form.formData)){auto.current=true;setStep(2);} },[user,addresses,form.formData]);
  const go=n=>{touched.current=true;setError('');setStep(n);requestAnimationFrame(()=>{heading.current?.focus();if (heading.current?.getBoundingClientRect().top < 0) heading.current.scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'});});};
+ const savedAddressChoices = user ? addresses ?? [] : [];
+ const selectedAddress = savedAddressChoices.find(savedAddress =>
+   savedAddress.address === address && savedAddress.city === form.formData.city &&
+   (savedAddress.zip || postalCodeForCity(savedAddress.city)) === form.formData.postalCode
+ );
+ const chooseDeliveryAddress = event => {
+   const id = event.target.value;
+   const choice = savedAddressChoices.find(savedAddress => String(savedAddress.id) === id);
+   if (!choice && id !== 'new') return;
+
+   touched.current = true;
+   const deliveryFields = {
+     address: choice?.address || '',
+     addressDetails: '',
+     city: choice?.city || '',
+     postalCode: choice?.zip || postalCodeForCity(choice?.city),
+   };
+   form.setFormData(previous => ({ ...previous, ...deliveryFields }));
+   if (['address', 'city', 'postalCode'].some(key => !FORM_RULES[key].regex.test(deliveryFields[key]))) go(1);
+ };
  const validate=()=>{const skip=step===0?['address','city','postalCode']:[];const ok=form.validateAll(skip);if(!ok){setSubmitCount(v=>v+1);requestAnimationFrame(()=>document.querySelector('.checkout-flow .input-error input')?.focus());}return ok;};
  async function next(){
   if(lock.current)return;
@@ -103,7 +124,21 @@ export default function Checkout() {
   </div>}
  </div>
  </div>{!order&&<details className="flow-mobile-summary"><summary>{t('Pregled porudžbine')} · {price(amount)}</summary>{summary}</details>}
- {!order?<><form autoComplete="off" onSubmit={event=>event.preventDefault()} className={`flow-form flow-step-${step}`} onChangeCapture={()=>{touched.current=true;}}><DeliveryForm {...form} user={user} step={step} shippingMethod="courier" requiredForCourier getInputClass={n=>form.errors[n]?'input-error':''} submitCount={submitCount} onAddressesReady={setAddresses} setShowRegPopover={()=>{}} popoverDismissed showRegPopover={false} showSuccessModal={false}/></form>{step===1&&<details className="flow-note"><summary>{t('Dodaj napomenu kuriru')}</summary><label htmlFor="courier-note">{t('Napomena kuriru (opciono)')}</label><textarea id="courier-note" value={note} onChange={e=>setNote(e.target.value)} maxLength={200} placeholder={t('Na primer: interfon ne radi, pozovite me.')} /></details>}{step===2&&<section className="flow-review flow-review-confirm"><div className="flow-review-title"><Check size={22}/><h2>{t('Proverite podatke')}</h2></div><p className="flow-muted">{t('Još jedan pogled i porudžbina je spremna.')}</p><p>{form.formData.name} {form.formData.surname}<br/>{form.formData.email}<br/>{form.formData.phone}</p><button type="button" onClick={()=>go(0)}>{t('Izmeni podatke')}</button><hr/><p>{address}<br/>{form.formData.postalCode} {form.formData.city}</p><button type="button" onClick={()=>go(1)}>{t('Izmeni ili izaberi adresu')}</button><hr/><p><Truck size={18}/> {t('Isporuka kurirskom službom')}</p><p className="flow-payment-badge">{t('Plaćanje pouzećem')}</p>{note&&<p>{note}</p>}</section>}{error&&<p role="alert" className="flow-error">{error}</p>}{step>0&&<button className="flow-back" type="button" onClick={()=>go(step-1)}><ArrowLeft size={16}/>{t('Nazad')}</button>}<div className="flow-mobile-action"><div><small>{t('Ukupno')}</small><strong>{price(amount)}</strong></div>{action}</div></>:<><section className="flow-review flow-receipt">
+ {!order?<><form autoComplete="off" onSubmit={event=>event.preventDefault()} className={`flow-form flow-step-${step}`} onChangeCapture={()=>{touched.current=true;}}><DeliveryForm {...form} user={user} step={step} shippingMethod="courier" requiredForCourier getInputClass={n=>form.errors[n]?'input-error':''} submitCount={submitCount} onAddressesReady={setAddresses} setShowRegPopover={()=>{}} popoverDismissed showRegPopover={false} showSuccessModal={false}/></form>{step===1&&<details className="flow-note"><summary>{t('Dodaj napomenu kuriru')}</summary><label htmlFor="courier-note">{t('Napomena kuriru (opciono)')}</label><textarea id="courier-note" value={note} onChange={e=>setNote(e.target.value)} maxLength={200} placeholder={t('Na primer: interfon ne radi, pozovite me.')} /></details>}{step===2&&<section className="flow-review flow-review-confirm"><div className="flow-review-title"><Check size={22}/><h2>{t('Proverite podatke')}</h2></div><p className="flow-muted">{t('Još jedan pogled i porudžbina je spremna.')}</p><p>{form.formData.name} {form.formData.surname}<br/>{form.formData.email}<br/>{form.formData.phone}</p><button type="button" onClick={()=>go(0)}>{t('Izmeni podatke')}</button><hr/>{savedAddressChoices.length > 1 && (
+ <div className="flow-address-choice">
+  <label htmlFor="review-delivery-address">{t('Adresa za dostavu')}</label>
+  <select id="review-delivery-address" value={selectedAddress?.id ?? ''} onChange={chooseDeliveryAddress} disabled={busy}>
+   <option value="" disabled>{t('Trenutno uneta adresa')}</option>
+   {savedAddressChoices.map(savedAddress => (
+    <option key={savedAddress.id} value={savedAddress.id}>
+     {[savedAddress.label, savedAddress.address, [savedAddress.zip, savedAddress.city].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}
+    </option>
+   ))}
+   <option value="new">{t('Unesi novu adresu')}</option>
+  </select>
+ </div>
+)}
+<p>{address}<br/>{form.formData.postalCode} {form.formData.city}</p><button type="button" onClick={()=>go(1)}>{t('Izmeni adresu')}</button><hr/><p><Truck size={18}/> {t('Isporuka kurirskom službom')}</p><p className="flow-payment-badge">{t('Plaćanje pouzećem')}</p>{note&&<p>{note}</p>}</section>}{error&&<p role="alert" className="flow-error">{error}</p>}{step>0&&<button className="flow-back" type="button" onClick={()=>go(step-1)}><ArrowLeft size={16}/>{t('Nazad')}</button>}<div className="flow-mobile-action"><div><small>{t('Ukupno')}</small><strong>{price(amount)}</strong></div>{action}</div></>:<><section className="flow-review flow-receipt">
   <h2>{t('Podaci za isporuku')}</h2>
   <div className="flow-receipt-grid">
    <div><MapPin size={20}/><div><strong>{order.customer?.name} {order.customer?.surname}</strong><p>{order.customer?.address}<br/>{order.customer?.postalCode} {order.customer?.city}</p></div></div>
