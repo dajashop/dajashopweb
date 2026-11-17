@@ -1,19 +1,193 @@
-import React from 'react';
-import { Truck, MapPin, CheckCircle2 } from 'lucide-react';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
+import React from 'react';
+// eslint-disable-next-line no-unused-vars
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { Truck, MapPin, CheckCircle2, MessageSquare } from 'lucide-react'; // Dodata MessageSquare
 import GoogleMapEmbed from '../privacy/GoogleMapEmbed.jsx';
 
-export default function ShippingSection({ shippingMethod, setShippingMethod, isFreeShipping, COURIER_COST, money }) {
-  const { t } = useStorefront();
-  return <section className="checkout-section checkout-shipping">
-    <fieldset className="checkout-fields"><legend>{t('Način isporuke')}</legend><div className="shipping-options">
-      {[{ value: 'courier', title: 'Isporuka kurirskom službom', description: 'Na adresu koju izaberete', Icon: Truck }, { value: 'pickup', title: 'Preuzimanje u prodavnici', description: 'DAJA Shop, Niš', Icon: MapPin }].map(({ value, title, description, Icon }) => <label className={'radio-card ' + (shippingMethod === value ? 'selected' : '')} key={value}>
-        <input type="radio" name="shipping" value={value} checked={shippingMethod === value} className="checkout-choice-input" onChange={() => setShippingMethod(value)} />
-        <div className="radio-info"><Icon size={23} /><div><span className="radio-title">{t(title)}</span><span className="radio-desc">{t(description)}</span></div></div>
-        <span className={'radio-price ' + (value === 'pickup' || isFreeShipping ? 'checkout-free' : '')}>{value === 'pickup' || isFreeShipping ? t('Besplatna') : money(COURIER_COST)}</span>
-        <div className="radio-check"><CheckCircle2 size={16} /></div>
-      </label>)}
-    </div></fieldset>
-    {shippingMethod === 'pickup' && <div className="checkout-pickup-location"><h3>{t('Lokacija prodavnice:')}</h3><p>{t('Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105 Niš')}</p><details><summary>{t('Prikaži lokaciju na mapi')}</summary><div className="map-container"><GoogleMapEmbed title={t('Daja Shop Lokacija')} width="100%" height="240" loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" /></div></details></div>}
-  </section>;
+export default function ShippingSection({
+  shippingMethod,
+  setShippingMethod,
+  isFreeShipping,
+  COURIER_COST,
+  money,
+  finalShipping, // NOVO: Props za napomenu kuriru
+  orderNote,
+  setOrderNote,
+}) {
+  const { t: translateText } = useStorefront();
+
+  const reduceMotion = useReducedMotion();
+  const detailTransition = {
+    height: { duration: reduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] },
+    opacity: { duration: reduceMotion ? 0 : 0.14 },
+    marginTop: { duration: reduceMotion ? 0 : 0.24 },
+    marginBottom: { duration: reduceMotion ? 0 : 0.24 },
+  };
+  return (
+    <>
+      <section className="checkout-section card glass">
+        <div className="section-header">
+          <div className="step-badge">2</div>
+          <h2>{translateText("Način isporuke")}</h2>
+        </div>
+        <div className="shipping-options">
+          <label
+            className={`radio-card ${
+              shippingMethod === 'courier' ? 'selected' : ''
+            }`}
+          >
+            <div className="radio-info">
+              <Truck size={20} className="text-primary" />
+              <div>
+                <span className="radio-title">{translateText("Isporuka kurirskom službom")}</span>
+                <span className="radio-desc">
+                  {translateText(isFreeShipping
+                    ? 'Besplatna dostava'
+                    : `Cena: ${money(COURIER_COST)}`)}
+                </span>
+              </div>
+            </div>
+            <div className="radio-price">
+              {isFreeShipping ? (
+                <span
+                  className="text-success"
+                  style={{
+                    textAlign: 'right',
+                    minWidth: '100px',
+                    display: 'inline-block',
+                  }}
+                >{translateText("Besplatna")}</span>
+              ) : (
+                <span>{money(COURIER_COST)}</span>
+              )}
+            </div>
+            <input
+              type="radio"
+              name="shipping"
+              value="courier"
+              checked={shippingMethod === 'courier'}
+              className="checkout-choice-input"
+              onChange={() => setShippingMethod('courier')}
+            />
+            <div className="radio-check">
+              <CheckCircle2 size={16} />
+            </div>
+          </label>
+          <label
+            className={`radio-card ${
+              shippingMethod === 'pickup' ? 'selected' : ''
+            }`}
+          >
+            <div className="radio-info">
+              <MapPin size={20} className="text-primary" />
+              <div>
+                <span className="radio-title">{translateText("Preuzimanje u prodavnici")}</span>
+                <span className="radio-desc">{translateText("Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105 Niš (Uvek besplatno)")}</span>
+              </div>
+            </div>
+            <div
+              className="radio-price"
+              style={{ textAlign: 'right', minWidth: '100px' }}
+            >
+              <span className="text-success">{translateText("Besplatna")}</span>
+            </div>
+            <input
+              type="radio"
+              name="shipping"
+              value="pickup"
+              checked={shippingMethod === 'pickup'}
+              className="checkout-choice-input"
+              onChange={() => setShippingMethod('pickup')}
+            />
+            <div className="radio-check">
+              <CheckCircle2 size={16} />
+            </div>
+          </label>
+        </div>
+        {/* --- [NOVO] PROFESIONALNA NAPOMENA ZA KURIRA (samo za kurirsku službu) --- */}
+        <AnimatePresence initial={false}>
+          {shippingMethod === 'courier' && (
+            <motion.div
+              className="checkout-shipping-note full-width"
+              initial={{ opacity: 0, height: 0, marginTop: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginTop: 24 }}
+              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+              transition={detailTransition}
+              style={{ overflow: 'hidden' }}
+            >
+              <label
+                htmlFor="order-note-textarea"
+                className="text-sm font-semibold text-[var(--color-text)] mb-3 block flex items-center gap-2 select-none"
+              >
+                <MessageSquare
+                  size={18}
+                  // Koristim direktan stil ovde jer su klase nepoznate
+                  style={{ color: 'var(--color-primary)' }}
+                />{translateText("Dodatne instrukcije za kurira (Opciono)")}</label>
+
+              <div
+                // Imitacija input-group stila korišćenjem tematskih varijabli
+                className="checkout-note-field w-full bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] focus-within:border-[var(--color-primary)] transition-colors duration-200"
+              >
+                <textarea
+                  id="order-note-textarea"
+                  value={orderNote}
+                  onChange={(e) => setOrderNote(e.target.value)}
+                  placeholder={translateText("Npr. interfon ne radi, molimo Vas da nas pozovete 10 minuta pre isporuke, ili ostavite paket kod komšije (broj 15).")}
+                  rows={3}
+                  maxLength={200}
+                  className="w-full p-4 bg-transparent focus:outline-none text-[var(--color-text)] placeholder:text-[var(--color-muted)] resize-none"
+                  style={{
+                    minHeight: '100px',
+                    fontFamily: 'inherit',
+                    lineHeight: '1.5',
+                  }}
+                />
+              </div>
+              <p className="text-xs text-[var(--color-muted)] mt-2">{translateText("Unesite do 200 karaktera. Detaljne instrukcije pomažu da Vaša isporuka protekne glatko i efikasno.")}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {/* -------------------------------------------------------------------------- */}
+      </section>
+      <AnimatePresence initial={false}>
+        {shippingMethod === 'pickup' && (
+          <motion.section
+            className="checkout-section card glass pickup-details"
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 20 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={detailTransition}
+            style={{ overflow: 'hidden', padding: 0 }}
+          >
+            <div style={{ padding: '24px' }}>
+              <h3>{translateText("Lokacija prodavnice:")}</h3>
+              <div className="location-box" style={{ marginTop: '12px' }}>
+                <p
+                  style={{
+                    marginBottom: '4px',
+                    fontWeight: '700',
+                    color: 'var(--text)',
+                  }}
+                >{translateText("Daja Shop Niš")}</p>
+                <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{translateText("Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105 Niš")}</p>
+              </div>
+            </div>
+            <div className="map-container">
+              <GoogleMapEmbed
+                className="map-iframe"
+                title={translateText("Daja Shop Lokacija")}
+                width="100%"
+                height="100%"
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
+    </>
+  );
 }
