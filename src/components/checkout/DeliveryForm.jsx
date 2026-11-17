@@ -1,3 +1,4 @@
+import { postalCodeForCity, normalizePostalCity } from '../../data/serbiaPostalCodes.js';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
 ﻿import React, {
   useState,
@@ -99,6 +100,23 @@ export default function DeliveryForm({
     handleChange({ target: { name: 'name', value: name } });
     handleChange({ target: { name: 'surname', value: rest.join(' ') } });
   };
+
+  const postalFill = useRef({ city: '', value: '' });
+  useEffect(() => {
+    const city = normalizePostalCity(formData.city);
+    const previous = postalFill.current;
+    const timer = window.setTimeout(() => {
+      const inferred = postalCodeForCity(city);
+      setFormData(prev => {
+        if (normalizePostalCity(prev.city) !== city) return prev;
+        const ours = previous.value && prev.postalCode === previous.value;
+        if (prev.postalCode && !ours) return prev;
+        postalFill.current = { city, value: inferred };
+        return prev.postalCode === inferred ? prev : { ...prev, postalCode: inferred };
+      });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [formData.city, formData.postalCode, setFormData]);
 
   const reduceMotion = useReducedMotion();
   const emailInputRef = useRef(null);
@@ -345,9 +363,9 @@ export default function DeliveryForm({
       if (setFormData) {
         setFormData((prev) => ({
           ...prev,
-          address: address.address || prev.address,
+          address: /\d/.test(prev.address) ? prev.address : address.address || prev.address,
           city: address.city || prev.city,
-          postalCode: address.postalCode || prev.postalCode,
+          postalCode: address.postalCode || (normalizePostalCity(address.city || prev.city) === normalizePostalCity(prev.city) ? prev.postalCode : '') || postalCodeForCity(address.city || prev.city),
         }));
       } else {
         if (address.address)
@@ -558,16 +576,12 @@ export default function DeliveryForm({
     searchGoogleAddress(e.target.value);
   };
   const handleAddressKeyDown = (e) => {
-    if (e.key === 'Tab' && googleAddressSuggestions.length > 0) {
+    if ((e.key === 'Tab' && !e.shiftKey || e.key === 'ArrowDown') && googleAddressSuggestions.length > 0) {
       e.preventDefault();
-      void selectGoogleAddress(googleAddressSuggestions[0]);
-      return;
-    }
-    if (e.key === 'Tab' && addressPrediction && addressSuggestions.length > 0) {
-      e.preventDefault();
-      selectAddress(addressSuggestions[0]);
-    }
+      document.querySelector('.checkout-google-address-suggestions button')?.focus();
+    } else if (e.key === 'Escape') clearGoogleAddressSuggestions();
   };
+
 
   return (
     <section
@@ -824,7 +838,7 @@ export default function DeliveryForm({
         <AnimatePresence initial={false}>
           {requiredForCourier && (
             <motion.div
-              className="full-width form-grid"
+              className="full-width form-grid flow-address-fields"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -864,7 +878,7 @@ export default function DeliveryForm({
                     onKeyDown={handleAddressKeyDown}
                     onBlur={(event) => {
                       handleBlur(event);
-                      window.setTimeout(clearGoogleAddressSuggestions, 120);
+                      if (!event.relatedTarget?.closest('.checkout-google-address-suggestions')) clearGoogleAddressSuggestions();
                     }}
                     onFocus={() => {
                       if (!googleAllowed) void requestGooglePermission();
@@ -887,13 +901,23 @@ export default function DeliveryForm({
                       </div>
                     )}
                   {googleAddressSuggestions.length > 0 && (
-                    <ul className="checkout-google-address-suggestions" role="listbox" aria-label={translateText("Predlozi adrese")}>
+                    <ul className="checkout-google-address-suggestions" onBlur={event => {
+                      if (!event.currentTarget.contains(event.relatedTarget)) clearGoogleAddressSuggestions();
+                    }} onKeyDown={event => {
+                      const buttons = [...event.currentTarget.querySelectorAll('button')];
+                      const i = buttons.indexOf(document.activeElement);
+                      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                        event.preventDefault(); buttons[(i + (event.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length]?.focus();
+                      } else if (event.key === 'Escape') {
+                        event.preventDefault(); document.getElementById('checkout-address')?.focus(); clearGoogleAddressSuggestions();
+                      }
+                    }} aria-label={translateText("Predlozi adrese")}>
                       {googleAddressSuggestions.map((suggestion) => (
                         <li key={suggestion.placeId}>
                           <button
                             type="button"
                             onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => void selectGoogleAddress(suggestion)}
+                            onClick={() => void selectGoogleAddress(suggestion).then(() => document.getElementById('checkout-address')?.focus())}
                           >
                             <strong>{translateText(addressPredictionPrimaryText(suggestion))}</strong>
                             <small>{translateText(addressPredictionSecondaryText(suggestion) || addressPredictionLabel(suggestion))}</small>
@@ -906,21 +930,6 @@ export default function DeliveryForm({
                 <AnimatePresence mode="wait">
                   {errors.address && <ErrorMessage message={errors.address} />}
                 </AnimatePresence>
-              </div>
-              <div className="input-wrapper-col"><label className="checkout-field-label" htmlFor="checkout-addressDetails">{translateText("Stan / sprat (opciono)")}</label>
-                <div className="input-group">
-                  <input
-                    type="text"
-                    name="addressDetails" id="checkout-addressDetails"
-                    aria-label={translateText("Stan / sprat (opciono)")}
-                    placeholder={translateText("Stan 5, drugi sprat")}
-                    autoComplete="address-line2"
-                    value={formData.addressDetails}
-                    onChange={handleChange}
-                    maxLength={80}
-                    className="pl-4"
-                  />
-                </div>
               </div>
               <div className="input-wrapper-col"><label className="checkout-field-label" htmlFor="checkout-city">{translateText("Grad")}</label>
                 <div className={`input-group ${getInputClass('city')}`}>
@@ -943,7 +952,7 @@ export default function DeliveryForm({
                 <div className={`input-group ${getInputClass('postalCode')}`}>
                   <input
                     type="text"
-                    name="postalCode" id="checkout-postalCode" autoComplete="postal-code"
+                    inputMode="numeric" name="postalCode" id="checkout-postalCode" autoComplete="postal-code"
                     placeholder={translateText("18000")}
                     value={formData.postalCode}
                     onChange={handleChange}
@@ -982,6 +991,7 @@ export default function DeliveryForm({
           </div>
         )}
 
+        {step === 1 && <small className="flow-postal-credit">{translateText('Poštanski brojevi:')} <a href="https://www.geonames.org/" target="_blank" rel="noreferrer">GeoNames</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a></small>}
         {/* REGISTER POPOUT */}
         <AnimatePresence>
           {showRegPopover && !user && (

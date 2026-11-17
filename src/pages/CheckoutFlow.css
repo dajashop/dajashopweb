@@ -21,3 +21,27 @@
 .checkout-footer a:hover,.checkout-footer button:hover { text-decoration: underline; }
 .checkout-footer :focus-visible { outline: 2px solid var(--color-text); outline-offset: 4px; }
 @media(max-width:700px) { .checkout-footer__grid { grid-template-columns: 1fr; gap: 24px; } .checkout-footer { padding-bottom: calc(110px + env(safe-area-inset-bottom)); } }
+
+/* The footer fills the bottom of short pages; longer pages scroll naturally. */
+html:has(.app-checkout) { overflow-y: auto; scrollbar-gutter: stable both-edges; }
+.app-checkout { min-height: 100dvh; display: flex; flex-direction: column; }
+.app-checkout > main { flex: 1 0 auto; }
+.app-checkout > .checkout-footer { flex-shrink: 0; margin-top: auto; }
+.app-checkout > main.container,.app-checkout .checkout-footer > .container { width: min(1600px, 92%); }
+.checkout-flow { padding-bottom: 32px; }
+.flow-address-fields > .input-wrapper-col.full-width { grid-column: 1 / -1 !important; }
+.checkout-flow .checkout-google-address-suggestions button:focus-visible { outline: 2px solid var(--flow-green); outline-offset: -3px; background: var(--color-surface); }
+.flow-postal-credit { display: block; margin-top: 12px; color: var(--color-muted); font-size: 11px; }
+.flow-postal-credit a { text-decoration: underline; }
+.flow-review-confirm { padding: 28px; background: var(--color-bg); }
+.flow-review-title { display:flex; align-items:center; gap:12px; }
+.flow-review-title svg { color:var(--flow-green); }
+.flow-review-title h2 { margin:0; }
+.flow-review-confirm hr { border:0; border-top:1px solid var(--color-accent); margin:20px 0; }
+.flow-review-confirm > p:not(.flow-muted) { font-size:16px; }
+.flow-review-confirm > button { padding:8px 14px; border:1px solid var(--color-accent); border-radius:10px; text-decoration:none; font-size:14px; }
+.flow-payment-badge { display:flex;align-items:center;gap:10px;background:var(--color-surface);border-radius:12px;padding:14px 16px;font-weight:600; }
+.flow-success { padding:36px 24px; }
+.flow-save { border:2px solid var(--flow-green); }
+@media(min-width:1024px) { .flow-summary { margin-top:72px; } }
+@media(max-width:1023px) { .checkout-flow { padding-bottom:24px; } .app-checkout > main { padding-bottom:96px !important; } }

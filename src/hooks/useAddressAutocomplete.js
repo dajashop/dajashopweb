@@ -82,13 +82,18 @@ export function useAddressAutocomplete({ enabled, onSelect }) {
   );
 
   const select = useCallback(async (placePrediction) => {
+    const selectionId = ++latestRequestRef.current;
+    window.clearTimeout(timeoutRef.current);
     try {
       const place = placePrediction.toPlace();
       await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
+      if (selectionId !== latestRequestRef.current) return;
       onSelectRef.current?.(googlePlaceToAddress(place));
+    } catch (error) {
+      console.warn('Izbor adrese nije dostupan:', error);
     } finally {
       sessionTokenRef.current = null;
-      clear();
+      if (selectionId === latestRequestRef.current) clear();
     }
   }, [clear]);
 
