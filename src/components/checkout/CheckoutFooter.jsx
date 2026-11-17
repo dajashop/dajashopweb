@@ -19,7 +19,7 @@ export default function CheckoutFooter() {
           <Link to="/contact">{business.street}, {business.postalCode} {business.city}</Link></div>
         <div><h2>{t('Radno vreme')}</h2><p>{t('Pon – Pet:')} 10:00 – 20:00<br/>{t('Subota:')} 10:00 – 15:00<br/>{t('Nedelja: Zatvoreno')}</p></div>
       </div>
-      <div className="checkout-footer__bottom"><small>© {new Date().getFullYear()} Daja Shop. {t('Sva prava zadržana.')}</small>
+      <div className="checkout-footer__bottom"><small>© {new Date().getFullYear()} Daja Shop. {t('Sva prava zadržana.')} · <a href="https://www.geonames.org/">GeoNames</a> · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></small>
         <nav aria-label={t('Informacije o kupovini')}><Link to="/cart">{t('Povratak u korpu')}</Link><Link to="/terms">{t('Uslovi korišćenja')}</Link><Link to="/privacy">{t('Politika privatnosti')}</Link><button type="button" onClick={openSettings}>{t('Podešavanja privatnosti')}</button></nav>
       </div>
     </div>

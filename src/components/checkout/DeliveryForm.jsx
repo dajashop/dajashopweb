@@ -877,14 +877,13 @@ export default function DeliveryForm({
                     onChange={handleAddressInput}
                     onKeyDown={handleAddressKeyDown}
                     onBlur={(event) => {
-                      handleBlur(event);
                       if (!event.relatedTarget?.closest('.checkout-google-address-suggestions')) clearGoogleAddressSuggestions();
                     }}
                     onFocus={() => {
                       if (!googleAllowed) void requestGooglePermission();
                     }}
                     required={requiredForCourier}
-                    autoComplete="street-address"
+                    autoComplete="off"
                     className="real-input"
                   />
                   {googleAddressLoading && (
@@ -935,11 +934,10 @@ export default function DeliveryForm({
                 <div className={`input-group ${getInputClass('city')}`}>
                   <input
                     type="text"
-                    name="city" id="checkout-city" autoComplete="address-level2"
+                    name="city" id="checkout-city" autoComplete="off"
                     placeholder={translateText("Niš")}
                     value={formData.city}
                     onChange={handleChange}
-                    onBlur={handleBlur}
                     required={requiredForCourier}
                     className="pl-4"
                   />
@@ -952,11 +950,10 @@ export default function DeliveryForm({
                 <div className={`input-group ${getInputClass('postalCode')}`}>
                   <input
                     type="text"
-                    inputMode="numeric" name="postalCode" id="checkout-postalCode" autoComplete="postal-code"
+                    inputMode="numeric" name="postalCode" id="checkout-postalCode" autoComplete="off"
                     placeholder={translateText("18000")}
                     value={formData.postalCode}
                     onChange={handleChange}
-                    onBlur={handleBlur}
                     required={requiredForCourier}
                     className="pl-4"
                   />
@@ -991,7 +988,6 @@ export default function DeliveryForm({
           </div>
         )}
 
-        {step === 1 && <small className="flow-postal-credit">{translateText('Poštanski brojevi:')} <a href="https://www.geonames.org/" target="_blank" rel="noreferrer">GeoNames</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a></small>}
         {/* REGISTER POPOUT */}
         <AnimatePresence>
           {showRegPopover && !user && (
