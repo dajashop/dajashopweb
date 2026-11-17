@@ -1167,6 +1167,7 @@ export const customerApi = {
 };
 
 export const ordersApi = {
+  claim(id, claimToken) { return apiRequest(`/orders/${encodeURIComponent(id)}/claim`, { method: 'POST', body: { claimToken } }); },
   async create(payload) {
     const data = await apiRequest('/orders', {
       method: 'POST',

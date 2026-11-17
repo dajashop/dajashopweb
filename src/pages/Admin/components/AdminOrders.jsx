@@ -566,7 +566,7 @@ export default function AdminOrders() {
                                         </span>
                                       ) : (
                                         <>
-                                          <p>{order.customer.address}</p>
+                                          <p>{order.customer.address}</p>{order.note && <p>Napomena kuriru: {order.note}</p>}
                                           <p>
                                             {order.customer.postalCode}{' '}
                                             {order.customer.city}

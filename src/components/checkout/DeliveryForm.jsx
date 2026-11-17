@@ -58,6 +58,8 @@ const POPULAR_DOMAINS = [
 ];
 
 export default function DeliveryForm({
+  step = 0,
+  onAddressesReady,
   formData,
   setFormData,
   errors,
@@ -205,6 +207,7 @@ export default function DeliveryForm({
     customerApi.listAddresses().then(addresses => {
       if (!cancelled) {
         setSavedAddresses(addresses);
+        onAddressesReady?.(addresses);
         setAddressAccount(accountId);
       }
     }).catch(err => {
@@ -507,7 +510,7 @@ export default function DeliveryForm({
       val.length > 6 &&
       val.includes('@')
     ) {
-      setShowRegPopover(true);
+      setShowRegPopover(false);
     }
   };
   const handleKeyDown = (e) => {
@@ -525,7 +528,7 @@ export default function DeliveryForm({
     setShowEmailSuggestions(false);
     setPrediction('');
     emailInputRef.current?.focus();
-    if (!user && !popoverDismissed && !createAccount) setShowRegPopover(true);
+    if (!user && !popoverDismissed && !createAccount) setShowRegPopover(false);
   };
   const handleCountrySelect = (country) => {
     const full = `${country.dial} ${localPhone}`;
@@ -607,7 +610,7 @@ export default function DeliveryForm({
 
       `)}</style>
 
-      <div className="section-header">
+      <div className="section-header legacy-form-heading">
         <div className="step-badge">1</div>
         <h2>{translateText("Podaci za isporuku")}</h2>
       </div>
@@ -689,14 +692,14 @@ export default function DeliveryForm({
       )}
 
       {/* --- FORMA --- */}
-      <div className="form-grid">
-        <div className="input-wrapper-col">
+      <div className={`form-grid checkout-fields step-${step}`}>
+        <div className="input-wrapper-col"><label className="checkout-field-label" htmlFor="checkout-name">{translateText("Ime")}</label>
           <div className={`input-group ${getInputClass('name')}`}>
             <User className="input-icon" size={18} />
             <input
               type="text"
-              name="name"
-              placeholder={translateText("Ime")}
+              name="name" id="checkout-name" autoComplete="given-name"
+              placeholder={translateText("Milan")}
               value={formData.name}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -707,13 +710,13 @@ export default function DeliveryForm({
             {errors.name && <ErrorMessage message={errors.name} />}
           </AnimatePresence>
         </div>
-        <div className="input-wrapper-col">
+        <div className="input-wrapper-col"><label className="checkout-field-label" htmlFor="checkout-surname">{translateText("Prezime")}</label>
           <div className={`input-group ${getInputClass('surname')}`}>
             <User className="input-icon" size={18} />
             <input
               type="text"
-              name="surname"
-              placeholder={translateText("Prezime")}
+              name="surname" id="checkout-surname" autoComplete="family-name"
+              placeholder={translateText("Petrović")}
               value={formData.surname}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -726,7 +729,7 @@ export default function DeliveryForm({
         </div>
 
         {/* EMAIL */}
-        <div className="input-wrapper-col full-width relative-wrapper email-input-container">
+        <div className="input-wrapper-col full-width relative-wrapper email-input-container"><label className="checkout-field-label" htmlFor="checkout-email">{translateText("Email adresa")}</label>
           <div
             className={`input-group ghost-container ${getInputClass('email')}`}
           >
@@ -742,7 +745,7 @@ export default function DeliveryForm({
             <input
               ref={emailInputRef}
               type="email"
-              name="email"
+              name="email" id="checkout-email"
               placeholder={translateText("E-mail adresa")}
               value={formData.email}
               onChange={handleEmailInput}
@@ -775,7 +778,7 @@ export default function DeliveryForm({
         </div>
 
         {/* TELEFON */}
-        <div className="input-wrapper-col full-width">
+        <div className="input-wrapper-col full-width"><label className="checkout-field-label" htmlFor="checkout-phone-local">{translateText("Telefon")}</label>
           <div className="flex gap-2">
             <PhoneCountryPicker
               className="relative w-[110px] shrink-0"
@@ -802,7 +805,7 @@ export default function DeliveryForm({
               />
               <input
                 type="tel"
-                name="phone-local"
+                name="phone-local" id="checkout-phone-local" autoComplete="tel-national"
                 placeholder="64 1234567"
                 style={{ paddingLeft: 36 }}
                 value={localPhone}
@@ -834,7 +837,7 @@ export default function DeliveryForm({
               // checkout-section već kontroliše slojeve iznad narednih sekcija.
               style={{ gridColumn: '1 / -1', overflow: 'visible' }}
             >
-              <div className="input-wrapper-col full-width">
+              <div className="input-wrapper-col full-width"><label className="checkout-field-label" htmlFor="checkout-address">{translateText("Ulica i broj")}</label>
                 <div
                   className={`input-group ghost-container ${getInputClass(
                     'address'
@@ -858,16 +861,8 @@ export default function DeliveryForm({
                   />
                   <input
                     type="text"
-                    name="address"
-                    placeholder={
-                      translateText(!googleAllowed
-                        ? 'Unesite adresu ručno ili uključite predloge'
-                        : mapsReady
-                        ? 'Počnite da kucate ulicu...'
-                        : mapsLoadError
-                          ? 'Unesite adresu ručno'
-                          : 'Učitavanje predloga adrese...')
-                    }
+                    name="address" id="checkout-address"
+                    placeholder={translateText("Obrenovićeva 12")}
                     value={formData.address}
                     onChange={handleAddressInput}
                     onKeyDown={handleAddressKeyDown}
@@ -879,7 +874,7 @@ export default function DeliveryForm({
                       if (!googleAllowed) void requestGooglePermission();
                     }}
                     required={requiredForCourier}
-                    autoComplete="new-password"
+                    autoComplete="street-address"
                     className="real-input"
                   />
                   {googleAddressLoading && (
@@ -916,13 +911,13 @@ export default function DeliveryForm({
                   {errors.address && <ErrorMessage message={errors.address} />}
                 </AnimatePresence>
               </div>
-              <div className="input-wrapper-col">
+              <div className="input-wrapper-col"><label className="checkout-field-label" htmlFor="checkout-addressDetails">{translateText("Stan / sprat (opciono)")}</label>
                 <div className="input-group">
                   <input
                     type="text"
-                    name="addressDetails"
-                    aria-label={translateText("Kućni broj / stan (opciono)")}
-                    placeholder={translateText("Kućni broj / stan (opciono)")}
+                    name="addressDetails" id="checkout-addressDetails"
+                    aria-label={translateText("Stan / sprat (opciono)")}
+                    placeholder={translateText("Stan 5, drugi sprat")}
                     autoComplete="address-line2"
                     value={formData.addressDetails}
                     onChange={handleChange}
@@ -931,12 +926,12 @@ export default function DeliveryForm({
                   />
                 </div>
               </div>
-              <div className="input-wrapper-col">
+              <div className="input-wrapper-col"><label className="checkout-field-label" htmlFor="checkout-city">{translateText("Grad")}</label>
                 <div className={`input-group ${getInputClass('city')}`}>
                   <input
                     type="text"
-                    name="city"
-                    placeholder={translateText("Grad")}
+                    name="city" id="checkout-city" autoComplete="address-level2"
+                    placeholder={translateText("Niš")}
                     value={formData.city}
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -948,12 +943,12 @@ export default function DeliveryForm({
                   {errors.city && <ErrorMessage message={errors.city} />}
                 </AnimatePresence>
               </div>
-              <div className="input-wrapper-col">
+              <div className="input-wrapper-col"><label className="checkout-field-label" htmlFor="checkout-postalCode">{translateText("Poštanski broj")}</label>
                 <div className={`input-group ${getInputClass('postalCode')}`}>
                   <input
                     type="text"
-                    name="postalCode"
-                    placeholder={translateText("Poštanski broj")}
+                    name="postalCode" id="checkout-postalCode" autoComplete="postal-code"
+                    placeholder={translateText("18000")}
                     value={formData.postalCode}
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -971,7 +966,7 @@ export default function DeliveryForm({
           )}
         </AnimatePresence>
 
-        {canShowSaveCta && (
+        {false && canShowSaveCta && (
           <div
             className="full-width save-address-cta"
             style={{ gridColumn: '1 / -1' }}
