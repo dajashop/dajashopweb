@@ -1,11 +1,11 @@
-import { useStorefront } from './localization/StorefrontContext.jsx';
+import CheckoutFooter from './components/checkout/CheckoutFooter.jsx';
 import { catalogLanding } from './data/catalogLandings.js';
 import AppRoutes from './router.jsx';
 import EngravingSync from './components/engraving/EngravingSync';
 import Header, { StorefrontNotice } from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import AuthModal from './components/AuthModal.jsx';
-import { Link, useLocation, useNavigationType } from 'react-router-dom';
+import { useLocation, useNavigationType } from 'react-router-dom';
 import NewsletterModal from './components/modals/NewsletterModal.jsx';
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import { useAuth } from './hooks/useAuth.js';
@@ -17,7 +17,6 @@ const BackgroundImageStatus = lazy(() => import('./pages/Admin/components/Backgr
 
 export default function App() {
   const { user, staffReady } = useAuth();
-  const { t } = useStorefront();
   const { pathname, state } = useLocation();
   const previousPath = useRef(pathname);
   const navType = useNavigationType();
@@ -72,7 +71,7 @@ export default function App() {
         {!['/checkout', '/product-alert-confirm', '/newsletter-confirm', '/verify-email', '/reset-password', '/unsubscribe'].includes(pathname) && <NewsletterModal />}
         {pageStatus ? <PageStatus status={pageStatus} /> : <AppRoutes />}
       </main>
-      {pathname === '/checkout' ? <footer className="flow-footer"><Link to="/cart">{t('Povratak u korpu')}</Link><Link to="/terms">{t('Uslovi korišćenja')}</Link><Link to="/privacy">{t('Politika privatnosti')}</Link><Link to="/contact">{t('Podrška')}</Link></footer> : <Footer />}
+      {pathname === '/checkout' ? <CheckoutFooter /> : <Footer />}
     </div>
   );
 }

@@ -87,6 +87,19 @@ export default function DeliveryForm({
 }) {
   const { t: translateText } = useStorefront();
 
+  const [fullName, setFullName] = useState(() => [formData.name, formData.surname].filter(Boolean).join(' '));
+  useEffect(() => {
+    const incoming = [formData.name, formData.surname].filter(Boolean).join(' ');
+    setFullName(current => current.trim().replace(/\s+/g, ' ') === incoming.trim() ? current : incoming);
+  }, [formData.name, formData.surname]);
+  const changeFullName = (event) => {
+    const value = event.target.value;
+    setFullName(value);
+    const [name = '', ...rest] = value.trim().split(/\s+/);
+    handleChange({ target: { name: 'name', value: name } });
+    handleChange({ target: { name: 'surname', value: rest.join(' ') } });
+  };
+
   const reduceMotion = useReducedMotion();
   const emailInputRef = useRef(null);
   const addressSelectorRef = useRef(null);
@@ -693,39 +706,22 @@ export default function DeliveryForm({
 
       {/* --- FORMA --- */}
       <div className={`form-grid checkout-fields step-${step}`}>
-        <div className="input-wrapper-col"><label className="checkout-field-label" htmlFor="checkout-name">{translateText("Ime")}</label>
-          <div className={`input-group ${getInputClass('name')}`}>
+        <div className="input-wrapper-col full-width">
+          <label className="checkout-field-label" htmlFor="checkout-full-name">{translateText("Ime i prezime")}</label>
+          <div className={`input-group ${errors.name || errors.surname ? 'input-error' : ''}`}>
             <User className="input-icon" size={18} />
-            <input
-              type="text"
-              name="name" id="checkout-name" autoComplete="given-name"
-              placeholder={translateText("Milan")}
-              value={formData.name}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              required
-            />
+            <input type="text" name="fullName" id="checkout-full-name" autoComplete="name"
+              placeholder={translateText("npr. Milan Petrović")} value={fullName}
+              onChange={changeFullName}
+              onBlur={() => {
+                handleBlur({ target: { name: 'name', value: formData.name } });
+                handleBlur({ target: { name: 'surname', value: formData.surname } });
+              }}
+              aria-invalid={Boolean(errors.name || errors.surname)}
+              aria-describedby={errors.name || errors.surname ? 'checkout-full-name-error' : undefined}
+              required />
           </div>
-          <AnimatePresence mode="wait">
-            {errors.name && <ErrorMessage message={errors.name} />}
-          </AnimatePresence>
-        </div>
-        <div className="input-wrapper-col"><label className="checkout-field-label" htmlFor="checkout-surname">{translateText("Prezime")}</label>
-          <div className={`input-group ${getInputClass('surname')}`}>
-            <User className="input-icon" size={18} />
-            <input
-              type="text"
-              name="surname" id="checkout-surname" autoComplete="family-name"
-              placeholder={translateText("Petrović")}
-              value={formData.surname}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              required
-            />
-          </div>
-          <AnimatePresence mode="wait">
-            {errors.surname && <ErrorMessage message={errors.surname} />}
-          </AnimatePresence>
+          {(errors.name || errors.surname) && <div id="checkout-full-name-error"><ErrorMessage message="Unesite ime i prezime." /></div>}
         </div>
 
         {/* EMAIL */}
@@ -746,7 +742,7 @@ export default function DeliveryForm({
               ref={emailInputRef}
               type="email"
               name="email" id="checkout-email"
-              placeholder={translateText("E-mail adresa")}
+              placeholder={translateText("npr. m***@gmail.com")}
               value={formData.email}
               onChange={handleEmailInput}
               onKeyDown={handleKeyDown}
@@ -806,7 +802,7 @@ export default function DeliveryForm({
               <input
                 type="tel"
                 name="phone-local" id="checkout-phone-local" autoComplete="tel-national"
-                placeholder="64 1234567"
+                placeholder={translateText("npr. 64 *** ****")}
                 style={{ paddingLeft: 36 }}
                 value={localPhone}
                 onChange={handleLocalPhoneChange}
