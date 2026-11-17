@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
-import './CheckoutScrollbar.css';
+import './PageScrollbar.css';
 
-export default function CheckoutScrollbar() {
+export default function PageScrollbar() {
   const { t } = useStorefront();
   const trackRef = useRef(null);
   const dragRef = useRef(null);
@@ -14,6 +14,7 @@ export default function CheckoutScrollbar() {
     if (!root || !track) return;
 
     let frame = 0;
+    let idleTimer;
     const update = () => {
       frame = 0;
       const { clientHeight: viewport, scrollHeight, scrollTop } = root;
@@ -30,18 +31,31 @@ export default function CheckoutScrollbar() {
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
+    const reveal = () => {
+      track.setAttribute('data-active', '');
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => track.removeAttribute('data-active'), 1000);
+      schedule();
+    };
+    const revealAtEdge = event => {
+      if (event.pointerType === 'mouse' && event.clientX >= window.innerWidth - 8) reveal();
+    };
     const observer = new ResizeObserver(schedule);
-    observer.observe(document.body);
+    observer.observe(track.parentElement);
     observer.observe(track);
-    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('scroll', reveal, { passive: true });
+    window.addEventListener('pointermove', revealAtEdge, { passive: true });
     window.addEventListener('resize', schedule);
     schedule();
 
     return () => {
       cancelAnimationFrame(frame);
+      clearTimeout(idleTimer);
       observer.disconnect();
-      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('scroll', reveal);
+      window.removeEventListener('pointermove', revealAtEdge);
       window.removeEventListener('resize', schedule);
+      track.removeAttribute('data-active');
     };
   }, []);
 
@@ -55,6 +69,7 @@ export default function CheckoutScrollbar() {
       scale: metrics.max / metrics.travel,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.setAttribute('data-dragging', '');
   };
   const moveDrag = event => {
     const drag = dragRef.current;
@@ -63,7 +78,9 @@ export default function CheckoutScrollbar() {
     }
   };
   const stopDrag = event => {
-    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+    if (dragRef.current?.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    event.currentTarget.removeAttribute('data-dragging');
   };
 
   const handleKey = event => {
@@ -79,9 +96,9 @@ export default function CheckoutScrollbar() {
   };
 
   return (
-    <div className="checkout-scrollbar" ref={trackRef}>
+    <div className="page-scrollbar" ref={trackRef}>
       {metrics && <div
-        className="checkout-scrollbar__thumb"
+        className="page-scrollbar__thumb"
         role="scrollbar"
         tabIndex={0}
         aria-label={t('Pomeranje stranice')}
