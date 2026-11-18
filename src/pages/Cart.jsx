@@ -1,4 +1,3 @@
-import ProgressiveImage from '../components/ui/ProgressiveImage.jsx';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useState, useEffect, useRef } from 'react';
 import './Cart.css';
@@ -7,6 +6,7 @@ import useSavedCartItems from '../hooks/useSavedCartItems.js';
 import { fetchProductBySlug } from '../services/products';
 import { useFlash } from '../hooks/useFlash';
 import { useCart } from '../hooks/useCart.js';
+import CartProductImage from '../components/CartProductImage.jsx';
 import CartImagePreview from '../components/CartImagePreview.jsx';
 import EngravingSummary from '../components/engraving/EngravingSummary';
 import { useUndo } from '../hooks/useUndo.js';
@@ -121,6 +121,7 @@ function PromoCodeSection({
           <Ticket size={18} className={`icon ${error ? 'text-red-500' : ''}`} />
           <input
             type="text"
+            aria-label={translateText("Promo kod")}
             placeholder={translateText("Kod")}
             value={code}
             onChange={(e) => setCode(e.target.value)}
@@ -198,10 +199,7 @@ export default function Cart() {
 
   const isFreeShipping = appliedPromo?.freeShipping || subtotalAfterDiscount >= FREE_SHIPPING_LIMIT;
   const missingForFree = FREE_SHIPPING_LIMIT - subtotalAfterDiscount;
-  const progressPct = Math.min(
-    100,
-    (subtotalAfterDiscount / FREE_SHIPPING_LIMIT) * 100,
-  );
+  const progressPct = isFreeShipping ? 100 : Math.max(0, (subtotalAfterDiscount / FREE_SHIPPING_LIMIT) * 100);
 
   const finalTotal =
     subtotalAfterDiscount + (isFreeShipping ? 0 : SHIPPING_COST);
@@ -344,7 +342,7 @@ export default function Cart() {
                   >
                     <button type="button" className="cart__image-button" onClick={() => setPreviewItem(it)} aria-label={translateText(`Uvećaj slike: ${it.name}`)}>
                       <ShoppingBag className="cart__image-fallback" size={28} aria-hidden="true" />
-                      {(it.image || it.thumb) && <ProgressiveImage key={it.image || it.thumb} className="cart__thumb" src={it.image || it.thumb} alt={translateText(it.name)} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
+                      <CartProductImage item={it} className="cart__thumb" />
                       <span className="cart__zoom"><ZoomIn size={16} aria-hidden="true" /></span>
                     </button>
 
@@ -425,25 +423,10 @@ export default function Cart() {
             <h3 className="summary-title">{translateText("Pregled porudžbine")}</h3>
 
             <div className="shipping-progress">
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '0.85rem',
-                  marginBottom: 6,
-                }}
-              >
+              <div className="shipping-progress__label">
                 {isFreeShipping ? (
-                  <span
-                    style={{
-                      color: 'var(--primary)',
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}
-                  >
-                    <Truck size={14} color="#40a840" />{translateText(" Imate besplatnu dostavu!")}</span>
+                  <span className="shipping-progress__complete">
+                    <Truck size={14} aria-hidden />{translateText(" Imate besplatnu dostavu!")}</span>
                 ) : (
                   <span style={{ color: 'var(--color-text)' }}>{translateText("Još")}{translateText(' ')}
                     <strong style={{ color: '#40a840', fontWeight: 700 }}>
@@ -534,7 +517,7 @@ export default function Cart() {
           {saved.items.map(item => <article key={item.lineId || item.id} className="cart__saved-item">
             <button type="button" className="cart__image-button" onClick={() => setPreviewItem(item)} aria-label={translateText(`Uvećaj slike: ${item.name}`)}>
               <ShoppingBag className="cart__image-fallback" size={24} aria-hidden="true" />
-              {(item.image || item.thumb) && <ProgressiveImage src={item.image || item.thumb} className="cart__thumb" alt={translateText(item.name)} loading="lazy" onError={event => { event.currentTarget.hidden = true; }} />}
+              <CartProductImage item={item} className="cart__thumb" />
               <span className="cart__zoom"><ZoomIn size={14} aria-hidden="true" /></span>
             </button>
             <div className="cart__saved-meta"><Link to={`/product/${item.slug}`} className="cart__name">{translateText(item.name)}</Link><div className="cart__brand">{translateText(item.brand)}</div>

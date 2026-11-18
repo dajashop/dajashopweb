@@ -11,6 +11,7 @@ import { useCheckoutAvailability, CHECKOUT_UNAVAILABLE_MESSAGE } from '../hooks/
 import { ordersApi, customerApi } from '../services/dajaPlatform.js';
 import { PASSWORD_RULE, FORM_RULES } from '../data/validationRules.js';
 import { commerceSeoConfig } from '../config/seo.js';
+import CartProductImage from '../components/CartProductImage.jsx';
 import DeliveryForm from '../components/checkout/DeliveryForm';
 import EngravingSummary from '../components/engraving/EngravingSummary';
 import { formatDeliveryAddress } from '../components/checkout/deliveryAddress.js';
@@ -107,7 +108,7 @@ export default function Checkout() {
   }catch(e){setSaveMessage(t(e.message)||t('Čuvanje nije uspelo. Pokušajte ponovo.'));}finally{setSaveBusy(false);}
  }
  const price=value=><>{moneyRsd(value)}{displayCurrency!=='RSD'&&<small> ({money(value)})</small>}</>;
- const summary=<><h2>{t('Pregled porudžbine')}</h2><div className="flow-products">{(order?.items||items).map((item,i)=><div className="flow-product" key={item.lineId||`${item.id}-${i}`}><img src={item.image||item.thumb} alt=""/><div><strong>{item.name}</strong><p>{item.qty||item.quantity||1} × {price(item.price)}</p>{item.engraving&&<EngravingSummary item={item}/>}</div></div>)}</div><dl><div><dt>{t('Međuzbir')}</dt><dd>{price(order?.subtotal??total)}</dd></div>{(order?.discountAmount??discount)>0&&<div><dt>{t('Popust')}</dt><dd>−{price(order?.discountAmount??discount)}</dd></div>}<div><dt>{t('Isporuka')}</dt><dd>{(order?.shippingCost??shipping)===0?t('Besplatna'):price(order?.shippingCost??shipping)}</dd></div><div className="flow-total"><dt>{t('Ukupno')}</dt><dd>{price(amount)}</dd></div></dl><p className="flow-muted">{t('Plaćanje se vrši u dinarima (RSD).')}</p></>;
+ const summary=<><h2>{t('Pregled porudžbine')}</h2><div className="flow-products">{(order?.items||items).map((item,i)=><div className="flow-product" key={item.lineId||`${item.id}-${i}`}><CartProductImage item={item} showPlaceholder/><div><strong>{item.name}</strong><p>{item.qty||item.quantity||1} × {price(item.price)}</p>{item.engraving&&<EngravingSummary item={item}/>}</div></div>)}</div><dl><div><dt>{t('Međuzbir')}</dt><dd>{price(order?.subtotal??total)}</dd></div>{(order?.discountAmount??discount)>0&&<div><dt>{t('Popust')}</dt><dd>−{price(order?.discountAmount??discount)}</dd></div>}<div><dt>{t('Isporuka')}</dt><dd>{(order?.shippingCost??shipping)===0?t('Besplatna'):price(order?.shippingCost??shipping)}</dd></div><div className="flow-total"><dt>{t('Ukupno')}</dt><dd>{price(amount)}</dd></div></dl><p className="flow-muted">{t('Plaćanje se vrši u dinarima (RSD).')}</p></>;
  const action=<button type="button" className="flow-primary" disabled={busy||promo.loading||!items.length} onClick={next}>{t(busy?'Slanje porudžbine…':step===0?'Nastavi na adresu':step===1?'Nastavi na potvrdu':'Potvrdi porudžbinu')}<ArrowRight size={18}/></button>;
  return <div className="checkout-page checkout-flow"><SEOHead title={t('Plaćanje')} noIndex/><div className="flow-layout"><div className="flow-left"><div ref={heading} tabIndex={-1} className="flow-heading">
  <div className={order ? 'flow-success' : undefined}>
