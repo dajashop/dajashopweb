@@ -2,6 +2,8 @@
 .navbar {
   border-top: 1px solid var(--color-border, rgba(0, 0, 0, 0.06));
   border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.06));
+  border-end-start-radius: inherit;
+  border-end-end-radius: inherit;
   background: var(--color-bg, #fff);
   color: var(--color-text, #111);
 }
