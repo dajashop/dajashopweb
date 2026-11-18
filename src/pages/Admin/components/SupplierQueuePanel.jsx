@@ -834,7 +834,9 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
                       void run('probe', async () => {
                         await adminCatalogApi.probeSupplier(p.providerCode);
                         setMessage(
-                          'Proba sajta je zakazana. Ručna pauza ostaje.',
+                          p.providerCode === 'qandq'
+                            ? 'Proba Stiliusa je dodata u red za DAJA Studio. Ručna pauza ostaje.'
+                            : 'Proba sajta je zakazana. Ručna pauza ostaje.',
                         );
                       })
                     }
@@ -897,10 +899,11 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
             Kako se tumači stanje kod dobavljača?
           </summary>
           <p className="mt-2">
-            Kod Ekke i Stiliusa „Na stanju” može značiti da je proizvodna
-            stranica dostupna kada sajt ne objavljuje stanje zaliha. Eksplicitna
-            oznaka odsustva zaliha ima prednost. Greška pristupa znači nepoznato
-            stanje. Ove provere ne menjaju lokalne zalihe ili cenu firme.
+            Kod Stiliusa se stanje čita iz oznake zaliha na stranici artikla.
+            Kod Ekke „Na stanju” može značiti da je stranica artikla dostupna
+            kada sajt ne objavljuje stanje zaliha. Eksplicitna oznaka odsustva
+            zaliha ima prednost. Greška pristupa znači nepoznato stanje.
+            Ove provere ne menjaju lokalne zalihe ili cenu firme.
           </p>
         </details>
         </>}

@@ -152,7 +152,7 @@ function SupplierLinkSummary({ product, provider, label, withDivider, canWrite }
   const url = product[`${provider}Url`];
   if (!url) return null;
   const status = product[`${provider}Status`];
-  const stock = product[`${provider}StockStatus`] ?? (provider === 'qandq' && status === 'available' ? 'in_stock' : null);
+  const stock = product[`${provider}StockStatus`];
   const linkId = product[`${provider}LinkId`];
   const lastGoodResult = product[`${provider}LastGoodResult`];
   const amount = lastGoodResult?.regularPrice === true ? product[`${provider}PriceAmount`] : null;
@@ -193,7 +193,7 @@ function SupplierLinkSummary({ product, provider, label, withDivider, canWrite }
     </div>
     {amount == null && <span className="text-neutral-500">{status === 'checking' ? 'Prikupljanje redovne cene…' : 'Redovna cena nije potvrđena'}</span>}
     <div className="flex items-baseline gap-2">
-      <span className={`font-semibold ${stock === 'out_of_stock' || status === 'missing' ? 'text-red-700' : status === 'available' ? 'text-emerald-700' : 'text-amber-700'}`}>{statusText}</span>
+      <span className={`font-semibold ${stock === 'out_of_stock' || status === 'missing' ? 'text-red-700' : status === 'available' && stock === 'in_stock' ? 'text-emerald-700' : 'text-amber-700'}`}>{statusText}</span>
       <SupplierCountdown nextCheckAt={product[`${provider}NextCheckAt`]} />
     </div>
     {reason && <span className="whitespace-normal text-neutral-500">{reason}</span>}
