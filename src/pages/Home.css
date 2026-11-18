@@ -759,6 +759,36 @@
   }
 }
 
+@media (max-width: 768px) {
+  .app-root > main:has(> .home) {
+    width: 100%;
+  }
+
+  .home {
+    display: grid;
+    grid-template-columns: 1fr min(100%, var(--site-content-width)) 1fr;
+  }
+
+  .home > * {
+    grid-column: 2;
+  }
+
+  .home > :is(.brandstrip, .best) {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .home .brandstrip__row,
+  .home > .best {
+    width: 100%;
+  }
+
+  .best .section__head {
+    width: min(100%, var(--site-content-width));
+    margin-inline: auto;
+  }
+}
+
 /* MOOD CARDS */
 .mood-grid {
   display: grid;
