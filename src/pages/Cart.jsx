@@ -358,37 +358,36 @@ export default function Cart() {
                         <Bookmark size={13} aria-hidden="true" />{translateText(" Sačuvaj za kasnije")}</button>
                     </div>
 
-                    <div className="cart__qtyWrap">
-                      <button
-                        className="qty__btn"
-                        type="button"
-                        aria-label={translateText(it.qty === 1 ? `Ukloni ${it.name}` : `Smanji količinu: ${it.name}`)}
-                        onClick={() => handleDecrease(it)}
-                      >
-                        <Minus size={14} />
-                      </button>
+                    <div className="cart__purchase">
+                      <div className="cart__price">{money(it.price * it.qty)}</div>
+                      <div className="cart__qtyWrap">
+                        <button
+                          className="qty__btn"
+                          type="button"
+                          aria-label={translateText(it.qty === 1 ? `Ukloni ${it.name}` : `Smanji količinu: ${it.name}`)}
+                          onClick={() => handleDecrease(it)}
+                        >
+                          <Minus size={14} />
+                        </button>
 
-                      <QtyInput value={it.qty} id={it.lineId || it.id} dispatch={dispatch} />
+                        <QtyInput value={it.qty} id={it.lineId || it.id} dispatch={dispatch} />
 
-                      <button
-                        className="qty__btn"
-                        type="button"
-                        aria-label={translateText(`Povećaj količinu: ${it.name}`)}
-                        disabled={it.qty >= 99}
-                        onClick={() =>
-                          dispatch({
-                            type: 'SET_QTY',
-                            id: it.lineId || it.id,
-                            qty: clampQty(it.qty + 1),
-                          })
-                        }
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-
-                    <div className="cart__price">
-                      {money(it.price * it.qty)}
+                        <button
+                          className="qty__btn"
+                          type="button"
+                          aria-label={translateText(`Povećaj količinu: ${it.name}`)}
+                          disabled={it.qty >= 99}
+                          onClick={() =>
+                            dispatch({
+                              type: 'SET_QTY',
+                              id: it.lineId || it.id,
+                              qty: clampQty(it.qty + 1),
+                            })
+                          }
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
                     </div>
 
                     <button
