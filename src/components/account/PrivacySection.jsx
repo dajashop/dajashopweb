@@ -236,13 +236,15 @@ export default function PrivacySection({ user }) {
                       {hasPrice && <b>{money(Number(alert.price))}</b>}
                     </div>
                   </div>
-                  <button type="button" onClick={() => setConfirmWatch({ alert, name })} disabled={Boolean(busy)}>
-                    {translateText(busy === `alert:${alert.id}` ? 'Odjavljujemo…' : 'Odjavi ovaj sat')}
-                  </button>
-                  {alert.channels.has('whatsapp') && <button type="button" disabled={Boolean(busy)}
-                    onClick={() => setConfirmWatch({ alert, name, channel: 'whatsapp' })}>
-                    {translateText('Odjavi samo WhatsApp za ovaj sat')}
-                  </button>}
+                  <div className="privacy-section__alert-actions">
+                    <button type="button" onClick={() => setConfirmWatch({ alert, name })} disabled={Boolean(busy)}>
+                      {translateText(busy === `alert:${alert.id}` ? 'Odjavljujemo…' : 'Odjavi ovaj sat')}
+                    </button>
+                    {alert.channels.has('whatsapp') && <button type="button" disabled={Boolean(busy)}
+                      onClick={() => setConfirmWatch({ alert, name, channel: 'whatsapp' })}>
+                      {translateText('Odjavi samo WhatsApp za ovaj sat')}
+                    </button>}
+                  </div>
                 </li>
               );
             })}
