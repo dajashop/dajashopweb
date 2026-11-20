@@ -14,13 +14,14 @@ import { commerceSeoConfig } from '../config/seo.js';
 import CartProductImage from '../components/CartProductImage.jsx';
 import DeliveryForm from '../components/checkout/DeliveryForm';
 import EngravingSummary from '../components/engraving/EngravingSummary';
-import { formatDeliveryAddress } from '../components/checkout/deliveryAddress.js';
-import { postalCodeForCity } from '../data/serbiaPostalCodes.js';
+import { formatDeliveryAddress, sameDeliveryAddress, savedAddressFields } from '../components/checkout/deliveryAddress.js';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import './Checkout.css';
 import './CheckoutFlow.css';
 const addressFields = ['address','city','postalCode'];
 const fieldsToSkipForStep = target => target === 1 ? addressFields : [];
+const noAddresses = [];
+const normalizeEmail = email => (email || '').trim().toLowerCase();
 export default function Checkout() {
  const { t, money, moneyRsd, displayCurrency } = useStorefront();
  const { items, total, dispatch } = useCart();
@@ -36,16 +37,43 @@ export default function Checkout() {
    for (let i = step + 1; i <= n; i++) navigate(location.pathname + location.search, { state: { ...location.state, checkoutStep: i }, preventScrollReset: true });
  };
  const [order,setOrder]=useState(null), [note,setNote]=useState(''), [busy,setBusy]=useState(false), [error,setError]=useState('');
- const [addresses,setAddresses]=useState(null), [password,setPassword]=useState(''), [saveBusy,setSaveBusy]=useState(false), [saveMessage,setSaveMessage]=useState(''), [saved,setSaved]=useState(false), [dismissed,setDismissed]=useState(false);
+ const [addressBook, setAddressBook] = useState(null);
+ const [addressReload, setAddressReload] = useState(0);
+ const [receiptOwner, setReceiptOwner] = useState(null);
+ const [linked, setLinked] = useState(false);
+ const [password, setPassword] = useState('');
+ const [registered, setRegistered] = useState(false);
+ const [verifyEmail, setVerifyEmail] = useState(false);
+ const [saveBusy, setSaveBusy] = useState(false);
+ const [saveNotice, setSaveNotice] = useState(null);
+ const [saved, setSaved] = useState(false);
+ const [dismissed, setDismissed] = useState(false);
  const [submitCount,setSubmitCount]=useState(0);
- const lock=useRef(false), touched=useRef(false), auto=useRef(false), linked=useRef(false), heading=useRef(null);
+ const lock=useRef(false), saveLock=useRef(false), touched=useRef(false), auto=useRef(false), heading=useRef(null);
  const reduce=useReducedMotion();
+ const accountId = user?.id || user?.uid;
+ const currentAddressBook = accountId && addressBook?.accountId === accountId && addressBook.reload === addressReload ? addressBook : null;
+ const savedAddressChoices = currentAddressBook?.addresses ?? noAddresses;
  useEffect(() => {
-   // A refreshed deep step has no form draft; restart safely without a submit.
-   if (step > 0 && !form.formData.name && !form.formData.email && !user) {
+   if (!accountId) {
+     setAddressBook(null);
+     return undefined;
+   }
+   let cancelled = false;
+   customerApi.listAddresses().then(addresses => {
+     if (!cancelled) setAddressBook({ accountId, reload: addressReload, addresses });
+   }).catch(() => {
+     if (!cancelled) setAddressBook({ accountId, reload: addressReload, error: true });
+   });
+   return () => { cancelled = true; };
+ }, [accountId, addressReload]);
+
+ useEffect(() => {
+   // The history entry survives a reload, but the form draft does not.
+   if (step > 0 && !order && !form.formData.name && !form.formData.email) {
      navigate(location.pathname + location.search, { replace: true, state: { ...location.state, checkoutStep: 0 } });
    }
- }, [authReady]);
+ }, [step, order, form.formData.name, form.formData.email, location.pathname, location.search, location.state, navigate]);
  useEffect(() => {
    heading.current?.focus({ preventScroll: true });
  }, [step]);
@@ -53,26 +81,26 @@ export default function Checkout() {
  const shipping=promo.appliedPromo?.freeShipping || total-discount>=commerceSeoConfig.freeShippingThreshold ? 0 : 380;
  const amount=order?.finalTotal ?? total-discount+shipping;
  const address=formatDeliveryAddress(form.formData.address,form.formData.addressDetails);
- const sameAddress=a=>a.address?.trim().toLowerCase()===address.trim().toLowerCase() && a.city?.trim().toLowerCase()===form.formData.city.trim().toLowerCase() && a.zip===form.formData.postalCode && a.name===`${form.formData.name} ${form.formData.surname}`.trim() && a.phone===form.formData.phone;
- useEffect(()=>{ if(user && addresses?.length && !auto.current && !touched.current && form.isValid()){auto.current=true;setStep(2);} },[user,addresses,form.formData]);
- const go=n=>{touched.current=true;setError('');setStep(n);requestAnimationFrame(()=>{heading.current?.focus();if (heading.current?.getBoundingClientRect().top < 0) heading.current.scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'});});};
- const savedAddressChoices = user ? addresses ?? [] : [];
  const selectedAddress = savedAddressChoices.find(savedAddress =>
-   savedAddress.address === address && savedAddress.city === form.formData.city &&
-   (savedAddress.zip || postalCodeForCity(savedAddress.city)) === form.formData.postalCode
+   sameDeliveryAddress(savedAddress, { address, city: form.formData.city, zip: form.formData.postalCode })
  );
+ useEffect(() => {
+   if (!order && step < 2 && selectedAddress && !auto.current && !touched.current && form.isValid()) {
+     auto.current = true;
+     setStep(2);
+   }
+ }, [order, step, selectedAddress, form.formData]);
+ const go=n=>{touched.current=true;setError('');setStep(n);requestAnimationFrame(()=>{heading.current?.focus();if (heading.current?.getBoundingClientRect().top < 0) heading.current.scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'});});};
+ const onAddressSaved = savedAddress => setAddressBook(current => current?.accountId === accountId
+   ? { ...current, addresses: [savedAddress, ...(current.addresses ?? noAddresses)] }
+   : current);
  const chooseDeliveryAddress = event => {
    const id = event.target.value;
    const choice = savedAddressChoices.find(savedAddress => String(savedAddress.id) === id);
    if (!choice && id !== 'new') return;
 
    touched.current = true;
-   const deliveryFields = {
-     address: choice?.address || '',
-     addressDetails: '',
-     city: choice?.city || '',
-     postalCode: choice?.zip || postalCodeForCity(choice?.city),
-   };
+   const deliveryFields = savedAddressFields(choice);
    form.setFormData(previous => ({ ...previous, ...deliveryFields }));
    if (addressFields.some(key => !FORM_RULES[key].regex.test(deliveryFields[key]))) go(1);
  };
@@ -88,24 +116,72 @@ export default function Checkout() {
  async function next(){
   if(lock.current)return;
   if(step<2){navigateToStep(step+1);return;}
-  if(!form.validateAll()){go(0);return;}
+  if(!form.validateAll()){go(form.isValid(addressFields) ? 1 : 0);return;}
   lock.current=true;setBusy(true);setError('');
   try {
    if(!items.length)throw new Error(t('Vaša korpa je prazna.'));
    if(!(await health.checkAvailability()))throw new Error(t(CHECKOUT_UNAVAILABLE_MESSAGE));
    const result=await ordersApi.create({customer:{...form.formData,address,uid:user?.uid||'guest'},items,subtotal:total,discountAmount:discount,subtotalAfterDiscount:total-discount,shippingCost:shipping,finalTotal:amount,promoCode:promo.appliedPromo?.code||null,shippingMethod:'courier',paymentMethod:'cod',note});
+   setReceiptOwner(accountId);
    setOrder(result);promo.removePromo();dispatch({type:'CLEAR'});requestAnimationFrame(()=>heading.current?.scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'}));
   }catch(e){setError(t(e.message)||t(CHECKOUT_UNAVAILABLE_MESSAGE));}finally{lock.current=false;setBusy(false);}
  }
- async function save(){
-  if(saveBusy)return;setSaveBusy(true);setSaveMessage('');
-  try{
-   if(!user){if(!PASSWORD_RULE.regex.test(password))throw new Error(t(PASSWORD_RULE.message));await register({identity:form.formData.email,password,name:`${form.formData.name} ${form.formData.surname}`});setPassword('');}
-   if(order.claimToken&&!linked.current){await ordersApi.claim(order.docId,order.claimToken);linked.current=true;}
-   const existing=await customerApi.listAddresses();
-   if(!existing.some(sameAddress))await customerApi.addAddress({label:'Kuća',icon:'home',name:`${form.formData.name} ${form.formData.surname}`,phone:form.formData.phone,address,city:form.formData.city,zip:form.formData.postalCode,isDefault:existing.length===0});
-   setSaved(true);setSaveMessage(t('Podaci su sačuvani. Proverite email za potvrdu naloga.'));
-  }catch(e){setSaveMessage(t(e.message)||t('Čuvanje nije uspelo. Pokušajte ponovo.'));}finally{setSaveBusy(false);}
+ const receiptCustomer = order?.customer;
+ const receiptEmail = normalizeEmail(receiptCustomer?.email);
+ const receiptAddress = receiptCustomer && {
+   name: [receiptCustomer.name, receiptCustomer.surname].filter(Boolean).join(' '),
+   phone: receiptCustomer.phone,
+   address: receiptCustomer.address,
+   city: receiptCustomer.city,
+   zip: receiptCustomer.postalCode,
+ };
+ const guestOrder = Boolean(order?.claimToken);
+ const matchesOrderEmail = Boolean(accountId && receiptEmail && receiptEmail === normalizeEmail(user?.email));
+ const ownsOrder = Boolean(order && accountId && (guestOrder ? linked && matchesOrderEmail : receiptOwner === accountId));
+ const offerRegistration = guestOrder && authReady && !accountId && !registered;
+ const offerLink = guestOrder && !linked && matchesOrderEmail;
+ const offerAddress = ownsOrder && receiptAddress && currentAddressBook?.addresses && !saved &&
+   !savedAddressChoices.some(entry => sameDeliveryAddress(entry, receiptAddress));
+ const receiptAction = offerRegistration ? 'register' : offerLink ? 'link' : offerAddress ? 'address' : null;
+ const useDifferentEmail = guestOrder && accountId && !matchesOrderEmail && !linked;
+ const canRetryAddresses = ownsOrder && !saved && currentAddressBook?.error;
+ const receiptActionLabels = {
+   register: 'Sačuvaj nalog i adresu', link: 'Poveži porudžbinu sa nalogom', address: 'Sačuvaj adresu',
+ };
+
+ async function save() {
+   if (saveLock.current || !receiptAction || !receiptAddress) return;
+   saveLock.current = true;
+   setSaveBusy(true);
+   setSaveNotice(null);
+
+   try {
+     if (receiptAction === 'register') {
+       if (!PASSWORD_RULE.regex.test(password)) throw new Error(t(PASSWORD_RULE.message));
+       const result = await register({ identity: receiptEmail, password, name: receiptAddress.name });
+       setRegistered(true);
+       setVerifyEmail(result === 'email-verify');
+       setPassword('');
+     }
+     if (receiptAction === 'register' || receiptAction === 'link') {
+       await ordersApi.claim(order.docId, order.claimToken);
+       setLinked(true);
+       setSaveNotice({ text: 'Porudžbina je povezana sa nalogom.' });
+     }
+     if (receiptAction !== 'link') {
+       const existing = await customerApi.listAddresses();
+       if (!existing.some(entry => sameDeliveryAddress(entry, receiptAddress))) {
+         await customerApi.addAddress({ label: 'Kuća', icon: 'home', ...receiptAddress, isDefault: existing.length === 0 });
+       }
+       setSaved(true);
+       setSaveNotice({ text: 'Adresa je sačuvana za sledeću kupovinu.' });
+     }
+   } catch (e) {
+     setSaveNotice({ text: e.message || 'Čuvanje nije uspelo. Pokušajte ponovo.', error: true });
+   } finally {
+     saveLock.current = false;
+     setSaveBusy(false);
+   }
  }
  const price=value=><>{moneyRsd(value)}{displayCurrency!=='RSD'&&<small> ({money(value)})</small>}</>;
  const summaryTitle = t('Pregled porudžbine');
@@ -134,7 +210,7 @@ export default function Checkout() {
  </>;
  const actionLabel = ['Nastavi na adresu', 'Nastavi na potvrdu', 'Potvrdi porudžbinu'][step];
  const action = (
-  <button type="button" className="flow-primary" disabled={busy || promo.loading || !items.length} onClick={next}>
+  <button type="button" className="flow-primary" disabled={!authReady || busy || promo.loading || !items.length} onClick={next}>
    {t(busy ? 'Slanje porudžbine…' : actionLabel)}
    <ArrowRight size={18} aria-hidden="true" />
   </button>
@@ -174,7 +250,8 @@ export default function Checkout() {
  {!order ? <>
  <form autoComplete="off" onSubmit={event => event.preventDefault()} className={`flow-form flow-step-${step}`} onChangeCapture={() => { touched.current = true; }}>
   <DeliveryForm {...form} user={user} step={step} shippingMethod="courier" requiredForCourier
-   getInputClass={n => form.errors[n] ? 'input-error' : ''} submitCount={submitCount} onAddressesReady={setAddresses}
+   getInputClass={n => form.errors[n] ? 'input-error' : ''} submitCount={submitCount}
+   savedAddresses={savedAddressChoices} onAddressSaved={onAddressSaved}
    setShowRegPopover={() => {}} popoverDismissed showRegPopover={false} showSuccessModal={false} />
  </form>
  {step === 1 && <details className="flow-note">
@@ -193,11 +270,13 @@ export default function Checkout() {
   </div>
   <div className="flow-review-group">
    <div className="flow-review-group-heading">
-    <label htmlFor="review-delivery-address">{t('Adresa za dostavu')}</label>
+    {savedAddressChoices.length > 0
+     ? <label htmlFor="review-delivery-address">{t('Adresa za dostavu')}</label>
+     : <h3>{t('Adresa za dostavu')}</h3>}
     <button type="button" onClick={() => go(1)}>{t('Izmeni adresu')}</button>
    </div>
    <p>{address}<br />{form.formData.postalCode} {form.formData.city}</p>
-   <select id="review-delivery-address" value={selectedAddress?.id ?? ''} onChange={chooseDeliveryAddress} disabled={busy}>
+   {savedAddressChoices.length > 0 && <select id="review-delivery-address" value={selectedAddress?.id ?? ''} onChange={chooseDeliveryAddress} disabled={busy}>
     <option value="" disabled>{t('Trenutno uneta adresa')}</option>
     {savedAddressChoices.map(savedAddress => (
      <option key={savedAddress.id} value={savedAddress.id}>
@@ -205,7 +284,7 @@ export default function Checkout() {
      </option>
     ))}
     <option value="new">{t('Unesi novu adresu')}</option>
-   </select>
+   </select>}
   </div>
   <div className="flow-review-group flow-review-methods">
    <p><Truck size={18} aria-hidden="true" />{t('Isporuka kurirskom službom')}</p>
@@ -222,8 +301,35 @@ export default function Checkout() {
    <div><MapPin size={20}/><div><strong>{order.customer?.name} {order.customer?.surname}</strong><p>{order.customer?.address}<br/>{order.customer?.postalCode} {order.customer?.city}</p></div></div>
    <div><Truck size={20}/><div><strong>{t('Isporuka kurirskom službom')}</strong><p>{t('Plaćanje pouzećem')}</p>{order.note&&<p>{order.note}</p>}</div></div>
   </div>
- </section>{!dismissed&&(!user||order.claimToken||!addresses?.some(sameAddress))&&<section className="flow-save"><h2>{t('Sačuvaj podatke za sledeću kupovinu')}</h2>{!saved&&<>{!user&&<><label htmlFor="save-password">{t('Lozinka')}</label><input id="save-password" type="password" autoComplete="new-password" placeholder={t('Najmanje 8 karaktera, veliko slovo i broj')} value={password} onChange={e=>setPassword(e.target.value)}/></>}<button type="button" className="flow-primary" disabled={saveBusy} onClick={save}>{t(saveBusy?'Čuvanje…':user?'Sačuvaj adresu':'Sačuvaj nalog i adresu')}</button>{!user&&<button type="button" onClick={()=>showAuth('login')}>{t('Već imate nalog? Prijavite se')}</button>}<button type="button" onClick={()=>setDismissed(true)}>{t('Preskoči')}</button></>}{saveMessage&&<p role="status">{saveMessage}</p>}</section>}<div className="flow-mobile-summary"><h2>{summaryTitle}</h2>{summary}</div><div className="flow-receipt-actions">
-  {user && (!order.claimToken || linked.current) && <Link to="/orders"><Truck size={18}/>{t('Moje porudžbine')}</Link>}
+ </section>
+ {!dismissed && (receiptAction || saveBusy || useDifferentEmail || canRetryAddresses || saveNotice || verifyEmail) && (
+  <section className="flow-save">
+   {receiptAction && <>
+    <h2>{t(receiptAction === 'link' ? 'Porudžbina na vašem nalogu' : 'Sačuvaj podatke za sledeću kupovinu')}</h2>
+    {receiptAction === 'register' && <>
+     <label htmlFor="save-password">{t('Lozinka')}</label>
+     <input id="save-password" type="password" autoComplete="new-password" placeholder={t('Najmanje 8 karaktera, veliko slovo i broj')}
+      value={password} onChange={e => setPassword(e.target.value)} disabled={saveBusy} />
+    </>}
+   </>}
+   {(receiptAction || saveBusy) && <button type="button" className="flow-primary" disabled={saveBusy} onClick={save}>
+    {t(saveBusy ? 'Čuvanje…' : receiptActionLabels[receiptAction])}
+   </button>}
+   {receiptAction === 'register' && <button type="button" disabled={saveBusy} onClick={() => showAuth('login')}>
+    {t('Već imate nalog? Prijavite se')}
+   </button>}
+   {useDifferentEmail && <p>{t('Za povezivanje porudžbine prijavite se sa email adresom iz porudžbine.')}</p>}
+   {canRetryAddresses && <>
+    <p>{t('Nismo mogli da učitamo sačuvane adrese.')}</p>
+    <button type="button" onClick={() => setAddressReload(value => value + 1)}>{t('Pokušaj ponovo')}</button>
+   </>}
+   {(receiptAction || canRetryAddresses || useDifferentEmail) && <button type="button" disabled={saveBusy} onClick={() => setDismissed(true)}>{t('Preskoči')}</button>}
+   {saveNotice && <p className="flow-save-notice" role={saveNotice.error ? 'alert' : 'status'}>{t(saveNotice.text)}</p>}
+   {verifyEmail && <p className="flow-save-notice">{t('Proverite email za potvrdu naloga.')}</p>}
+  </section>
+ )}
+ <div className="flow-mobile-summary"><h2>{summaryTitle}</h2>{summary}</div><div className="flow-receipt-actions">
+  {ownsOrder && <Link to="/orders"><Truck size={18}/>{t('Moje porudžbine')}</Link>}
   <Link to="/catalog">{t('Nastavi kupovinu')}<ArrowRight size={18}/></Link>
  </div></>}
  </div><aside className="flow-summary"><h2>{summaryTitle}</h2>{summary}{!order&&action}</aside></div></div>;

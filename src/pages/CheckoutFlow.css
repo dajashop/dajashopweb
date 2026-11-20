@@ -145,6 +145,7 @@
 .app-checkout > main.container,.app-checkout .checkout-footer > .container { width: min(1600px, 92%); }
 .checkout-flow { padding-bottom: 32px; }
 .flow-address-fields > .input-wrapper-col.full-width { grid-column: 1 / -1 !important; }
+.flow-address-suggestions-optin { min-height: 44px; color: var(--color-muted); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 .checkout-flow .checkout-google-address-suggestions button:focus-visible { outline: 2px solid var(--flow-green); outline-offset: -3px; background: var(--color-surface); }
 .flow-postal-credit { display: block; margin-top: 12px; color: var(--color-muted); font-size: 11px; }
 .flow-postal-credit a { text-decoration: underline; }
@@ -187,6 +188,9 @@
 .flow-review-methods svg { flex: none; color: var(--color-muted); }
 .flow-success { padding:36px 24px; }
 .flow-save { border:2px solid var(--flow-green); }
+.flow-save-notice { margin: 12px 0 0; font-size: 14px; }
+.flow-save-notice:first-child { margin-top: 0; }
+.flow-save-notice[role="alert"] { color: #9d241c; }
 @media(min-width:1024px) { .flow-summary { margin-top:72px; } }
 @media(max-width:1023px) { .checkout-flow { padding-bottom:24px; } .app-checkout > main { padding-bottom:calc(96px + env(safe-area-inset-bottom, 0px)) !important; } }
 

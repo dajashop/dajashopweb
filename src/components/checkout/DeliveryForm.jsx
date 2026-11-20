@@ -30,7 +30,7 @@ import {
   MessageSquare, // Dodata ikonica za napomenu
 } from 'lucide-react';
 import ErrorMessage from './ErrorMessage';
-import { formatDeliveryAddress } from './deliveryAddress.js';
+import { formatDeliveryAddress, sameDeliveryAddress, savedAddressFields } from './deliveryAddress.js';
 
 import { customerApi } from '../../services/dajaPlatform';
 import { loadGoogleMapsPlaces } from '../../services/googleMaps';
@@ -60,7 +60,8 @@ const POPULAR_DOMAINS = [
 
 export default function DeliveryForm({
   step = 0,
-  onAddressesReady,
+  savedAddresses,
+  onAddressSaved,
   formData,
   setFormData,
   errors,
@@ -132,10 +133,7 @@ export default function DeliveryForm({
   const [prediction, setPrediction] = useState('');
 
   // --- STATE ZA ADRESE ---
-  const [savedAddresses, setSavedAddresses] = useState([]);
-  const [addressAccount, setAddressAccount] = useState(null);
   const [isAddressSelectorOpen, setIsAddressSelectorOpen] = useState(false);
-  const [selectedAddressId, setSelectedAddressId] = useState('new');
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [addressPrediction, setAddressPrediction] = useState('');
 
@@ -177,19 +175,13 @@ export default function DeliveryForm({
   const selectAddress = (addr) => {
     setAddressPrediction('');
     if (!addr) {
-      setSelectedAddressId('new');
       if (setFormData) {
         setFormData((prev) => ({
           ...prev,
-          address: '',
-          addressDetails: '',
-          city: '',
-          postalCode: '',
+          ...savedAddressFields(null),
         }));
       }
     } else {
-      setSelectedAddressId(addr.id);
-
       const fullName = addr.name || '';
       const parts = fullName.trim().split(/\s+/);
       const fName = parts[0] || '';
@@ -201,10 +193,7 @@ export default function DeliveryForm({
           name: fName || prev.name,
           surname: lName || prev.surname,
           phone: addr.phone || prev.phone,
-          address: addr.address || '',
-          addressDetails: '',
-          city: addr.city || '',
-          postalCode: addr.zip || '',
+          ...savedAddressFields(addr),
           email: prev.email || user?.email || '',
         }));
       }
@@ -229,26 +218,7 @@ export default function DeliveryForm({
     }));
   }, [accountId, profileName, profileLastName, profileEmail, profilePhone, setFormData]);
 
-  useEffect(() => {
-    setSavedAddresses([]);
-    onAddressesReady?.([]);
-    setSelectedAddressId('new');
-    if (!accountId) return undefined;
-
-    let cancelled = false;
-    customerApi.listAddresses().then(addresses => {
-      if (!cancelled) {
-        setSavedAddresses(addresses);
-        onAddressesReady?.(addresses);
-        setAddressAccount(accountId);
-      }
-    }).catch(err => {
-      if (!cancelled) console.error('Error fetching addresses', err);
-    });
-    return () => { cancelled = true; };
-  }, [accountId, onAddressesReady]);
-
-  const defaultAddress = addressAccount === accountId ? savedAddresses[0] : undefined;
+  const defaultAddress = savedAddresses[0];
   const [autoAddressUsed, setAutoAddressUsed] = useState(false);
 
   useEffect(() => {
@@ -260,18 +230,13 @@ export default function DeliveryForm({
     const [name = '', ...surname] = (defaultAddress.name || '').trim().split(/\s+/);
     const canFillAddress = requiredForCourier && !formData.address && !formData.addressDetails &&
       !formData.city && !formData.postalCode;
-    if (canFillAddress) setSelectedAddressId(defaultAddress.id);
     if (requiredForCourier) setAutoAddressUsed(true);
     setFormData(prev => ({
       ...prev,
       name: prev.name || name,
       surname: prev.surname || surname.join(' '),
       phone: prev.phone || defaultAddress.phone || '',
-      ...(canFillAddress ? {
-        address: defaultAddress.address || '',
-        city: defaultAddress.city || '',
-        postalCode: defaultAddress.zip || '',
-      } : {}),
+      ...(canFillAddress ? savedAddressFields(defaultAddress) : {}),
     }));
   }, [accountId, autoAddressUsed, defaultAddress, requiredForCourier, formData.address,
     formData.addressDetails, formData.city, formData.postalCode, setFormData]);
@@ -294,6 +259,11 @@ export default function DeliveryForm({
     return <IconComp size={size} className="text-[var(--color-primary)]" />;
   };
 
+  const deliveryAddress = formatDeliveryAddress(formData.address, formData.addressDetails);
+  const selectedAddressId = savedAddresses.find(saved => sameDeliveryAddress(saved, {
+    address: deliveryAddress, city: formData.city, zip: formData.postalCode,
+  }))?.id ?? 'new';
+
   const getSelectedAddressLabel = () => {
     if (selectedAddressId === 'new') return 'Nova adresa (Ručni unos)';
     const addr = savedAddresses.find((a) => a.id === selectedAddressId);
@@ -311,15 +281,6 @@ export default function DeliveryForm({
   function normalizeAddress(val = '') {
     return val.trim().toLowerCase();
   }
-
-  const deliveryAddress = formatDeliveryAddress(formData.address, formData.addressDetails);
-  const addressExists = useMemo(
-    () =>
-      savedAddresses.some(
-        (a) => normalizeAddress(a.address) === normalizeAddress(deliveryAddress)
-      ),
-    [savedAddresses, deliveryAddress]
-  );
 
   const buildAddressSuggestions = useCallback(
     (value) => {
@@ -448,7 +409,7 @@ export default function DeliveryForm({
     !!user &&
     requiredForCourier &&
     courierFieldsFilled &&
-    !addressExists;
+    selectedAddressId === 'new';
 
   const handleOpenSaveModal = () => {
     if (!canShowSaveCta) return;
@@ -478,7 +439,7 @@ export default function DeliveryForm({
       setIsSavingAddress(true);
       const savedAddress = await customerApi.addAddress(payload);
       const fullAddress = { ...payload, ...savedAddress };
-      setSavedAddresses((prev) => [fullAddress, ...prev]);
+      onAddressSaved(fullAddress);
       selectAddress(fullAddress);
       setShowSaveModal(false);
       setNewAddressLabel(defaultAddressLabel);
@@ -880,9 +841,6 @@ export default function DeliveryForm({
                     onBlur={(event) => {
                       if (!event.relatedTarget?.closest('.checkout-google-address-suggestions')) clearGoogleAddressSuggestions();
                     }}
-                    onFocus={() => {
-                      if (!googleAllowed) void requestGooglePermission();
-                    }}
                     required={requiredForCourier}
                     autoComplete="off"
                     className="real-input"
@@ -930,6 +888,9 @@ export default function DeliveryForm({
                 <AnimatePresence mode="wait">
                   {errors.address && <ErrorMessage message={errors.address} />}
                 </AnimatePresence>
+                {!googleAllowed && <button type="button" className="flow-address-suggestions-optin" onClick={() => void requestGooglePermission({ force: true })}>
+                  {translateText('Uključi Google predloge adresa')}
+                </button>}
               </div>
               <div className="input-wrapper-col"><label className="checkout-field-label" htmlFor="checkout-city">{translateText("Grad")}</label>
                 <div className={`input-group ${getInputClass('city')}`}>
