@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { User, MapPin, Check, ArrowLeft, ArrowRight, Truck } from 'lucide-react';
+import { User, MapPin, Check, ArrowLeft, ArrowRight, Truck, ShoppingBag, ChevronDown, Banknote } from 'lucide-react';
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useCart } from '../hooks/useCart.js';
 import { useAuth } from '../hooks/useAuth.js';
@@ -108,9 +108,38 @@ export default function Checkout() {
   }catch(e){setSaveMessage(t(e.message)||t('Čuvanje nije uspelo. Pokušajte ponovo.'));}finally{setSaveBusy(false);}
  }
  const price=value=><>{moneyRsd(value)}{displayCurrency!=='RSD'&&<small> ({money(value)})</small>}</>;
- const summary=<><h2>{t('Pregled porudžbine')}</h2><div className="flow-products">{(order?.items||items).map((item,i)=><div className="flow-product" key={item.lineId||`${item.id}-${i}`}><CartProductImage item={item} showPlaceholder/><div><strong>{item.name}</strong><p>{item.qty||item.quantity||1} × {price(item.price)}</p>{item.engraving&&<EngravingSummary item={item}/>}</div></div>)}</div><dl><div><dt>{t('Međuzbir')}</dt><dd>{price(order?.subtotal??total)}</dd></div>{(order?.discountAmount??discount)>0&&<div><dt>{t('Popust')}</dt><dd>−{price(order?.discountAmount??discount)}</dd></div>}<div><dt>{t('Isporuka')}</dt><dd>{(order?.shippingCost??shipping)===0?t('Besplatna'):price(order?.shippingCost??shipping)}</dd></div><div className="flow-total"><dt>{t('Ukupno')}</dt><dd>{price(amount)}</dd></div></dl><p className="flow-muted">{t('Plaćanje se vrši u dinarima (RSD).')}</p></>;
- const action=<button type="button" className="flow-primary" disabled={busy||promo.loading||!items.length} onClick={next}>{t(busy?'Slanje porudžbine…':step===0?'Nastavi na adresu':step===1?'Nastavi na potvrdu':'Potvrdi porudžbinu')}<ArrowRight size={18}/></button>;
- return <div className="checkout-page checkout-flow"><SEOHead title={t('Plaćanje')} noIndex/><div className="flow-layout"><div className="flow-left"><div ref={heading} tabIndex={-1} className="flow-heading">
+ const summaryTitle = t('Pregled porudžbine');
+ const summary = <>
+  <div className="flow-products">
+   {(order?.items || items).map((item, i) => (
+    <div className="flow-product" key={item.lineId || `${item.id}-${i}`}>
+     <CartProductImage item={item} className="flow-product-image" showPlaceholder />
+     <div>
+      <strong>{item.name}</strong>
+      <p>{item.qty || item.quantity || 1} × {price(item.price)}</p>
+      {item.engraving && <EngravingSummary item={item} />}
+     </div>
+    </div>
+   ))}
+  </div>
+  <dl>
+   <div><dt>{t('Međuzbir')}</dt><dd>{price(order?.subtotal ?? total)}</dd></div>
+   {(order?.discountAmount ?? discount) > 0 && (
+    <div><dt>{t('Popust')}</dt><dd>−{price(order?.discountAmount ?? discount)}</dd></div>
+   )}
+   <div><dt>{t('Isporuka')}</dt><dd>{(order?.shippingCost ?? shipping) === 0 ? t('Besplatna') : price(order?.shippingCost ?? shipping)}</dd></div>
+   <div className="flow-total"><dt>{t('Ukupno')}</dt><dd>{price(amount)}</dd></div>
+  </dl>
+  <p className="flow-muted">{t('Plaćanje se vrši u dinarima (RSD).')}</p>
+ </>;
+ const actionLabel = ['Nastavi na adresu', 'Nastavi na potvrdu', 'Potvrdi porudžbinu'][step];
+ const action = (
+  <button type="button" className="flow-primary" disabled={busy || promo.loading || !items.length} onClick={next}>
+   {t(busy ? 'Slanje porudžbine…' : actionLabel)}
+   <ArrowRight size={18} aria-hidden="true" />
+  </button>
+ );
+ return <div className={`checkout-page checkout-flow${!order && step === 2 ? ' flow-confirmation' : ''}`}><SEOHead title={t('Plaćanje')} noIndex/><div className="flow-layout"><div className="flow-left"><div ref={heading} tabIndex={-1} className="flow-heading">
  <div className={order ? 'flow-success' : undefined}>
   {!order && <h1>{t('Završite kupovinu')}</h1>}
   <nav className={`flow-progress ${order ? 'flow-progress--complete' : ''}`} aria-label={t('Koraci kupovine')}>
@@ -132,29 +161,70 @@ export default function Checkout() {
    {order.customer?.email && <p>{t('Potvrda porudžbine stići će na')} <strong>{order.customer.email}</strong></p>}
   </div>}
  </div>
- </div>{!order&&<details className="flow-mobile-summary"><summary>{t('Pregled porudžbine')} · {price(amount)}</summary>{summary}</details>}
- {!order?<><form autoComplete="off" onSubmit={event=>event.preventDefault()} className={`flow-form flow-step-${step}`} onChangeCapture={()=>{touched.current=true;}}><DeliveryForm {...form} user={user} step={step} shippingMethod="courier" requiredForCourier getInputClass={n=>form.errors[n]?'input-error':''} submitCount={submitCount} onAddressesReady={setAddresses} setShowRegPopover={()=>{}} popoverDismissed showRegPopover={false} showSuccessModal={false}/></form>{step===1&&<details className="flow-note"><summary>{t('Dodaj napomenu kuriru')}</summary><label htmlFor="courier-note">{t('Napomena kuriru (opciono)')}</label><textarea id="courier-note" value={note} onChange={e=>setNote(e.target.value)} maxLength={200} placeholder={t('Na primer: interfon ne radi, pozovite me.')} /></details>}{step===2&&<section className="flow-review flow-review-confirm"><div className="flow-review-title"><Check size={22}/><h2>{t('Proverite podatke')}</h2></div><p className="flow-muted">{t('Još jedan pogled i porudžbina je spremna.')}</p><p>{form.formData.name} {form.formData.surname}<br/>{form.formData.email}<br/>{form.formData.phone}</p><button type="button" onClick={()=>go(0)}>{t('Izmeni podatke')}</button><hr/>
- <div className="flow-address-choice">
-  <label htmlFor="review-delivery-address">{t('Adresa za dostavu')}</label>
-  <select id="review-delivery-address" value={selectedAddress?.id ?? ''} onChange={chooseDeliveryAddress} disabled={busy}>
-   <option value="" disabled>{t('Trenutno uneta adresa')}</option>
-   {savedAddressChoices.map(savedAddress => (
-    <option key={savedAddress.id} value={savedAddress.id}>
-     {[savedAddress.label, savedAddress.address, [savedAddress.zip, savedAddress.city].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}
-    </option>
-   ))}
-   <option value="new">{t('Unesi novu adresu')}</option>
-  </select>
  </div>
-<p>{address}<br/>{form.formData.postalCode} {form.formData.city}</p><button type="button" onClick={()=>go(1)}>{t('Izmeni adresu')}</button><hr/><p><Truck size={18}/> {t('Isporuka kurirskom službom')}</p><p className="flow-payment-badge">{t('Plaćanje pouzećem')}</p>{note&&<p>{note}</p>}</section>}{error&&<p role="alert" className="flow-error">{error}</p>}{step>0&&<button className="flow-back" type="button" onClick={()=>go(step-1)}><ArrowLeft size={16}/>{t('Nazad')}</button>}<div className="flow-mobile-action"><div><small>{t('Ukupno')}</small><strong>{price(amount)}</strong></div>{action}</div></>:<><section className="flow-review flow-receipt">
+ {!order && <details className="flow-mobile-summary">
+  <summary>
+   <span className="flow-summary-icon"><ShoppingBag size={19} aria-hidden="true" /></span>
+   <span>{summaryTitle}</span>
+   <strong>{price(amount)}</strong>
+   <ChevronDown className="flow-summary-chevron" size={18} aria-hidden="true" />
+  </summary>
+  <div className="flow-mobile-summary-body">{summary}</div>
+ </details>}
+ {!order ? <>
+ <form autoComplete="off" onSubmit={event => event.preventDefault()} className={`flow-form flow-step-${step}`} onChangeCapture={() => { touched.current = true; }}>
+  <DeliveryForm {...form} user={user} step={step} shippingMethod="courier" requiredForCourier
+   getInputClass={n => form.errors[n] ? 'input-error' : ''} submitCount={submitCount} onAddressesReady={setAddresses}
+   setShowRegPopover={() => {}} popoverDismissed showRegPopover={false} showSuccessModal={false} />
+ </form>
+ {step === 1 && <details className="flow-note">
+  <summary>{t('Dodaj napomenu kuriru')}</summary>
+  <label htmlFor="courier-note">{t('Napomena kuriru (opciono)')}</label>
+  <textarea id="courier-note" value={note} onChange={e => setNote(e.target.value)} maxLength={200} placeholder={t('Na primer: interfon ne radi, pozovite me.')} />
+ </details>}
+ {step === 2 && <section className="flow-review flow-review-confirm" aria-labelledby="flow-review-title">
+  <div className="flow-review-title"><Check size={20} aria-hidden="true" /><h2 id="flow-review-title">{t('Proverite podatke')}</h2></div>
+  <div className="flow-review-group">
+   <div className="flow-review-group-heading">
+    <h3>{t('Kontakt')}</h3>
+    <button type="button" onClick={() => go(0)}>{t('Izmeni podatke')}</button>
+   </div>
+   <p><strong>{form.formData.name} {form.formData.surname}</strong><br />{form.formData.email}<br />{form.formData.phone}</p>
+  </div>
+  <div className="flow-review-group">
+   <div className="flow-review-group-heading">
+    <label htmlFor="review-delivery-address">{t('Adresa za dostavu')}</label>
+    <button type="button" onClick={() => go(1)}>{t('Izmeni adresu')}</button>
+   </div>
+   <p>{address}<br />{form.formData.postalCode} {form.formData.city}</p>
+   <select id="review-delivery-address" value={selectedAddress?.id ?? ''} onChange={chooseDeliveryAddress} disabled={busy}>
+    <option value="" disabled>{t('Trenutno uneta adresa')}</option>
+    {savedAddressChoices.map(savedAddress => (
+     <option key={savedAddress.id} value={savedAddress.id}>
+      {[savedAddress.label, savedAddress.address, [savedAddress.zip, savedAddress.city].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}
+     </option>
+    ))}
+    <option value="new">{t('Unesi novu adresu')}</option>
+   </select>
+  </div>
+  <div className="flow-review-group flow-review-methods">
+   <p><Truck size={18} aria-hidden="true" />{t('Isporuka kurirskom službom')}</p>
+   <p><Banknote size={18} aria-hidden="true" />{t('Plaćanje pouzećem')}</p>
+   {note && <p className="flow-muted">{note}</p>}
+  </div>
+ </section>}
+ {error && <p role="alert" className="flow-error">{error}</p>}
+ {step > 0 && <button className="flow-back" type="button" onClick={() => go(step - 1)}><ArrowLeft size={16} />{t('Nazad')}</button>}
+ <div className="flow-mobile-action"><div><small>{t('Ukupno')}</small><strong>{price(amount)}</strong></div>{action}</div>
+ </> : <><section className="flow-review flow-receipt">
   <h2>{t('Podaci za isporuku')}</h2>
   <div className="flow-receipt-grid">
    <div><MapPin size={20}/><div><strong>{order.customer?.name} {order.customer?.surname}</strong><p>{order.customer?.address}<br/>{order.customer?.postalCode} {order.customer?.city}</p></div></div>
    <div><Truck size={20}/><div><strong>{t('Isporuka kurirskom službom')}</strong><p>{t('Plaćanje pouzećem')}</p>{order.note&&<p>{order.note}</p>}</div></div>
   </div>
- </section>{!dismissed&&(!user||order.claimToken||!addresses?.some(sameAddress))&&<section className="flow-save"><h2>{t('Sačuvaj podatke za sledeću kupovinu')}</h2>{!saved&&<>{!user&&<><label htmlFor="save-password">{t('Lozinka')}</label><input id="save-password" type="password" autoComplete="new-password" placeholder={t('Najmanje 8 karaktera, veliko slovo i broj')} value={password} onChange={e=>setPassword(e.target.value)}/></>}<button type="button" className="flow-primary" disabled={saveBusy} onClick={save}>{t(saveBusy?'Čuvanje…':user?'Sačuvaj adresu':'Sačuvaj nalog i adresu')}</button>{!user&&<button type="button" onClick={()=>showAuth('login')}>{t('Već imate nalog? Prijavite se')}</button>}<button type="button" onClick={()=>setDismissed(true)}>{t('Preskoči')}</button></>}{saveMessage&&<p role="status">{saveMessage}</p>}</section>}<div className="flow-mobile-summary">{summary}</div><div className="flow-receipt-actions">
+ </section>{!dismissed&&(!user||order.claimToken||!addresses?.some(sameAddress))&&<section className="flow-save"><h2>{t('Sačuvaj podatke za sledeću kupovinu')}</h2>{!saved&&<>{!user&&<><label htmlFor="save-password">{t('Lozinka')}</label><input id="save-password" type="password" autoComplete="new-password" placeholder={t('Najmanje 8 karaktera, veliko slovo i broj')} value={password} onChange={e=>setPassword(e.target.value)}/></>}<button type="button" className="flow-primary" disabled={saveBusy} onClick={save}>{t(saveBusy?'Čuvanje…':user?'Sačuvaj adresu':'Sačuvaj nalog i adresu')}</button>{!user&&<button type="button" onClick={()=>showAuth('login')}>{t('Već imate nalog? Prijavite se')}</button>}<button type="button" onClick={()=>setDismissed(true)}>{t('Preskoči')}</button></>}{saveMessage&&<p role="status">{saveMessage}</p>}</section>}<div className="flow-mobile-summary"><h2>{summaryTitle}</h2>{summary}</div><div className="flow-receipt-actions">
   {user && (!order.claimToken || linked.current) && <Link to="/orders"><Truck size={18}/>{t('Moje porudžbine')}</Link>}
   <Link to="/catalog">{t('Nastavi kupovinu')}<ArrowRight size={18}/></Link>
  </div></>}
- </div><aside className="flow-summary">{summary}{!order&&action}</aside></div></div>;
+ </div><aside className="flow-summary"><h2>{summaryTitle}</h2>{summary}{!order&&action}</aside></div></div>;
 }
