@@ -7,7 +7,7 @@
 .home {
   display: flex;
   flex-direction: column;
-  gap: clamp(28px, 4vw, 56px);
+  row-gap: clamp(28px, 4vw, 56px);
   background: var(--color-bg);
   color: var(--color-text);
   overflow-x: clip;
@@ -766,7 +766,7 @@
 
   .home {
     display: grid;
-    grid-template-columns: 1fr min(100%, var(--site-content-width)) 1fr;
+    grid-template-columns: minmax(0, 1fr) min(100%, var(--site-content-width)) minmax(0, 1fr);
   }
 
   .home > * {
