@@ -81,6 +81,10 @@
   }
 }
 
+@media (max-width: 1023px), (hover: none) and (pointer: coarse) {
+  .page-scrollbar { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page-scrollbar__control {
     transition: none;

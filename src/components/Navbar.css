@@ -278,16 +278,6 @@
     overscroll-behavior-y: none;
   }
 }
-@media (max-width: 1023px) {
-  .navbar__wrap > .navbar__row:first-of-type::-webkit-scrollbar {
-    display: initial;
-    height: 6px;
-  }
-  .navbar__wrap > .navbar__row:first-of-type {
-    scrollbar-width: thin;
-  }
-}
-
 /* === MOBILNI: poravnaj "Katalog" i čipove u ISTU liniju === */
 /* Ovaj blok je za mobilni i mora ostati, ali sada su desktop stilovi veoma slični */
 @media (max-width: 1023px) {

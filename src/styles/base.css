@@ -161,6 +161,27 @@ html.lenis body {
   }
 }
 
+/* Keep horizontal lists swipeable on phones without drawing a scrollbar. */
+@media (max-width: 1023px), (hover: none) and (pointer: coarse) {
+  ::-webkit-scrollbar:horizontal {
+    display: none;
+    height: 0;
+  }
+
+  html :is(
+    .navbar__row, .navbar__subrow, .header + :is(.navbar, nav, .NavBar),
+    .best-grid, .brandstrip__row, .cart-preview__thumbnails, .magazine-nav,
+    .product-tabs-container .tabs-header, .related-scroll-container, .wf-results__grid,
+    .wa-columns, .overflow-x-auto, .overflow-x-scroll
+  ) {
+    scrollbar-width: none;
+  }
+}
+
+@media (max-width: 700px) {
+  html .collections-menu__choices { scrollbar-width: none; }
+}
+
 /* Keep editable controls readable on phones, including dialogs portaled to
    body. Override compact component/Tailwind fonts without changing desktop
    forms or non-text controls. Do not disable browser/pinch zoom. */

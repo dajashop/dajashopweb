@@ -160,9 +160,4 @@
     text-align: left;
     font-size: 1.3rem;
   }
-
-  /* Na mobilnom je scrollbar tanji */
-  .related-scroll-container::-webkit-scrollbar {
-    height: 4px;
-  }
 }
