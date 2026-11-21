@@ -163,7 +163,7 @@ export default function SearchBar() {
     <button ref={mobileTrigger} type="button" className="s2__mobile-trigger" hidden={open}
       onClick={show} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id + '-panel' : undefined}
       aria-label={translateText('Pretraži modele, brendove i kolekcije')}>
-      <Search className="s2__mobile-icon" size={20} aria-hidden="true" />
+      <Search className="s2__mobile-icon" size={22} aria-hidden="true" />
       <span className={`s2__mobile-label${hasValue ? '' : ' s2__mobile-placeholder'}`}>{q || translateText('Pretraži modele, brendove…')}</span>
     </button>
     {translateText(open && createPortal(<div ref={panel} id={`${id}-panel`} style={position} className={`live-search ${mobile ? 'live-search--mobile' : 'live-search--desktop'}`} data-lenis-prevent
