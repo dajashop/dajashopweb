@@ -53,7 +53,7 @@ function useLockBody(isLocked) {
   }, [isLocked]);
 }
 
-function useHeaderHeight(active) {
+function useHeaderOffset(active) {
   useEffect(() => {
     if (!active) return;
     const root = document.documentElement;
@@ -64,8 +64,7 @@ function useHeaderHeight(active) {
 
     const setVar = () => {
       const h = findHeader();
-      const rect = h?.getBoundingClientRect();
-      const px = rect ? Math.round(rect.height) : 0;
+      const px = Math.max(0, Math.round(h?.getBoundingClientRect().bottom ?? 0));
       root.style.setProperty('--header-h', px + 'px');
     };
 
@@ -98,7 +97,7 @@ export default function FilterDrawer({ className = '', products, department, fix
   const [scrolledPastFab, setScrolledPastFab] = useState(false);
 
   useLockBody(open);
-  useHeaderHeight(open);
+  useHeaderOffset(open);
 
   useEffect(() => {
     if (!open) return;

@@ -1,12 +1,13 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import React, { useEffect, useState, useRef } from 'react';
 import './Header.css';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import NavBar from './NavBar.jsx';
 import SearchBar from './SearchBar.jsx';
 import { useCart } from '../hooks/useCart.js';
 import HeaderLoginButton from './HeaderLoginButton.jsx';
 import { useAuth } from '../hooks/useAuth.js';
+import useMobileHeaderSearch from '../hooks/useMobileHeaderSearch.js';
 // [NOVO] Dodat import za ShoppingBag
 import { Heart, ShoppingBag, X } from 'lucide-react';
 import { useWishlist } from '../context/WishlistProvider.jsx';
@@ -64,73 +65,86 @@ export default function Header() {
   const { user, staffReady } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadOrders, setUnreadOrders] = useState(0);
+  const { pathname } = useLocation();
+  const mobileSearchEnabled = pathname !== '/checkout';
 
   const anchorRef = useRef(null);
+  const startRef = useRef(null);
+  const stickyRef = useRef(null);
+  const gridRef = useRef(null);
+  const slotRef = useRef(null);
+  useMobileHeaderSearch({ enabled: mobileSearchEnabled, startRef, stickyRef, gridRef, slotRef });
 
   return (
-    <header className="header card shadow">
-      <div className="container header__grid">
-        <Link to="/" className="header__brand">
-          <span className="header__brand-sizing" aria-hidden="true">{translateText("DajaShop")}</span>
-          <img className="header__brand-logo" src={brandLogo} alt="DajaShop" />
-        </Link>
+    <>
+      <div ref={startRef} className="header-scroll-start" aria-hidden="true" hidden={!mobileSearchEnabled} />
+      <div ref={stickyRef} className="header-sticky" data-mobile-search={mobileSearchEnabled ? '' : undefined}>
+        <header className="header card shadow" data-site-header>
+          <div ref={gridRef} className="container header__grid">
+            <Link to="/" className="header__brand">
+              <span className="header__brand-sizing" aria-hidden="true">{translateText("DajaShop")}</span>
+              <img className="header__brand-logo" src={brandLogo} alt="DajaShop" />
+            </Link>
 
-        <div className="header__search">
-          <SearchBar />
-        </div>
+            <div className="header__search" role="search" aria-label={translateText('Pretraga')}>
+              <SearchBar />
+            </div>
 
-        <div className="header__actions">
-          <Link className="header__cart" to="/cart" aria-label={`${translateText('Korpa')} (${count})`}>
-            <ShoppingBag size={22} />
-            <span className="badge" aria-hidden="true">{count > 99 ? '99+' : count}</span>
-          </Link>
+            <div className="header__actions">
+              <Link className="header__cart" to="/cart" aria-label={`${translateText('Korpa')} (${count})`}>
+                <ShoppingBag size={22} />
+                <span className="badge" aria-hidden="true">{count > 99 ? '99+' : count}</span>
+              </Link>
+              <span ref={slotRef} className="header__search-slot" aria-hidden="true" />
 
-          <Link
-            className="header__wishlist"
-            to="/account/wishlist"
-            title={translateText("Lista želja")}
-          >
-            <Heart size={22} />
-            {wishlistCount > 0 && (
-              <span className="badge">{wishlistCount > 99 ? '99+' : wishlistCount}</span>
-            )}
-          </Link>
+              <Link
+                className="header__wishlist"
+                to="/account/wishlist"
+                title={translateText("Lista želja")}
+              >
+                <Heart size={22} />
+                {wishlistCount > 0 && (
+                  <span className="badge">{wishlistCount > 99 ? '99+' : wishlistCount}</span>
+                )}
+              </Link>
 
-          <StorefrontPreferences />
-          <HeaderLoginButton />
+              <StorefrontPreferences />
+              <HeaderLoginButton />
 
-          <button
-            ref={anchorRef}
-            className="hamburger"
-            aria-label={translateText(menuOpen ? 'Zatvori meni' : 'Otvori meni')}
-            aria-expanded={menuOpen}
-            aria-controls="hm-panel"
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            <span className="hamburger__line"></span>
-            <span className="hamburger__line"></span>
-            <span className="hamburger__line"></span>
-            {unreadOrders > 0 && (
-              <span className="hamburger__notification" aria-label={translateText(`${unreadOrders} novih porudžbina`)}>
-                {translateText(unreadOrders > 99 ? '99+' : unreadOrders)}
-              </span>
-            )}
-          </button>
-        </div>
+              <button
+                ref={anchorRef}
+                className="hamburger"
+                aria-label={translateText(menuOpen ? 'Zatvori meni' : 'Otvori meni')}
+                aria-expanded={menuOpen}
+                aria-controls="hm-panel"
+                onClick={() => setMenuOpen((v) => !v)}
+              >
+                <span className="hamburger__line"></span>
+                <span className="hamburger__line"></span>
+                <span className="hamburger__line"></span>
+                {unreadOrders > 0 && (
+                  <span className="hamburger__notification" aria-label={translateText(`${unreadOrders} novih porudžbina`)}>
+                    {translateText(unreadOrders > 99 ? '99+' : unreadOrders)}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <NavBar />
+
+          <HamburgerMenu
+            open={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            count={count}
+            cart={cart}
+            user={user}
+            staffReady={staffReady}
+            anchorEl={anchorRef}
+            onUnreadOrdersChange={setUnreadOrders}
+          />
+        </header>
       </div>
-
-      <NavBar />
-
-      <HamburgerMenu
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        count={count}
-        cart={cart}
-        user={user}
-        staffReady={staffReady}
-        anchorEl={anchorRef}
-        onUnreadOrdersChange={setUnreadOrders}
-      />
-    </header>
+    </>
   );
 }

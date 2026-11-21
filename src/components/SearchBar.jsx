@@ -72,12 +72,24 @@ export default function SearchBar() {
   useEffect(() => {
     const media = window.matchMedia('(max-width: 768px)');
     const update = () => { setMobile(media.matches); close(); };
-    setMobile(media.matches); media.addEventListener('change', update); return () => media.removeEventListener('change', update);
+    setMobile(media.matches);
+    if (media.addEventListener) media.addEventListener('change', update);
+    else media.addListener(update);
+    return () => {
+      if (media.removeEventListener) media.removeEventListener('change', update);
+      else media.removeListener(update);
+    };
   }, [close]);
   useEffect(() => {
     function shortcut(event) {
       const target = document.activeElement;
-      if (event.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName) && !target?.isContentEditable) { event.preventDefault(); if (window.matchMedia('(max-width: 768px)').matches) mobileTrigger.current?.click(); else inputRef.current?.focus(); }
+      if (event.key !== '/' || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName) || target?.isContentEditable) return;
+      const isMobile = window.matchMedia('(max-width: 768px)').matches;
+      const control = isMobile ? mobileTrigger.current : inputRef.current;
+      if (!control?.getClientRects().length) return;
+      event.preventDefault();
+      if (isMobile) control.click();
+      else control.focus();
     }
     window.addEventListener('keydown', shortcut); return () => window.removeEventListener('keydown', shortcut);
   }, []);
@@ -99,10 +111,12 @@ export default function SearchBar() {
       const bounds = anchor.current.getBoundingClientRect(); const width = Math.min(1080, window.innerWidth - 24);
       setPosition({ top: bounds.bottom + 10, left: Math.max(12, Math.min(bounds.left, window.innerWidth - width - 12)), width, maxHeight: Math.max(120, window.innerHeight - bounds.bottom - 24) });
     }
-    update(); const observer = new ResizeObserver(update); observer.observe(anchor.current);
+    update();
+    const observer = !mobile && typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null;
+    observer?.observe(anchor.current);
     window.addEventListener('resize', update); window.addEventListener('scroll', update, true);
     viewport?.addEventListener('resize', update); viewport?.addEventListener('scroll', update);
-    return () => { observer.disconnect(); window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); viewport?.removeEventListener('resize', update); viewport?.removeEventListener('scroll', update); };
+    return () => { observer?.disconnect(); window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); viewport?.removeEventListener('resize', update); viewport?.removeEventListener('scroll', update); };
   }, [open, mobile]);
   useLayoutEffect(() => {
     if (!open || !mobile) return;
@@ -139,18 +153,19 @@ export default function SearchBar() {
     recommendations={data?.recommendations||[]}
     onNavigate={go} onCorrect={correct} onLiteral={()=>setLiteral(true)} literal={literal} active={active} onActive={setActive} idPrefix={id} />;
   return <>
-    <div ref={anchor} className={`searchNeo ${open ? 'is-focused' : ''} ${hasValue ? 'has-value' : ''}`} role="search" aria-label={translateText("Pretraga")} tabIndex={-1}>
+    <div ref={anchor} className={`searchNeo ${open ? 'is-focused' : ''} ${hasValue ? 'has-value' : ''}`} tabIndex={-1}>
       <Search className="s2__leading" size={18} aria-hidden="true" />
-      <button ref={mobileTrigger} type="button" className="s2__mobile-trigger" hidden={open}
-        onClick={show} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id + '-panel' : undefined}
-        aria-label={translateText('Pretraži modele, brendove i kolekcije')}>
-        <span className={hasValue ? '' : 's2__mobile-placeholder'}>{q || translateText('Pretraži modele, brendove…')}</span>
-      </button>
       <input ref={inputRef} className="s2__input" value={q} maxLength={120} onChange={(event) => { setLiteral(false); setQ(event.target.value); }} onKeyDown={onKeyDown} onFocus={show}
         placeholder={translateText("Pretraži modele, brendove…")} inputMode="search" autoComplete="off" {...accessibility} aria-hidden={mobile ? 'true' : undefined} tabIndex={mobile ? -1 : 0} />
       <button type="button" className="s2__clear" onClick={clear} aria-label={translateText("Obriši pretragu")} tabIndex={hasValue ? 0 : -1}><X size={14} /></button>
       <button type="button" className="s2__submit" onClick={submit} disabled={q.trim().length < 2} aria-label={translateText("Prikaži sve rezultate")} tabIndex={hasValue ? 0 : -1}><ArrowRight size={18} /></button>
     </div>
+    <button ref={mobileTrigger} type="button" className="s2__mobile-trigger" hidden={open}
+      onClick={show} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id + '-panel' : undefined}
+      aria-label={translateText('Pretraži modele, brendove i kolekcije')}>
+      <Search className="s2__mobile-icon" size={20} aria-hidden="true" />
+      <span className={`s2__mobile-label${hasValue ? '' : ' s2__mobile-placeholder'}`}>{q || translateText('Pretraži modele, brendove…')}</span>
+    </button>
     {translateText(open && createPortal(<div ref={panel} id={`${id}-panel`} style={position} className={`live-search ${mobile ? 'live-search--mobile' : 'live-search--desktop'}`} data-lenis-prevent
       role={mobile ? 'dialog' : undefined} aria-modal={mobile ? 'true' : undefined} aria-label={translateText("Pretraga kataloga")} onKeyDown={mobile ? onKeyDown : undefined}>
       <div className="live-search__viewport">
