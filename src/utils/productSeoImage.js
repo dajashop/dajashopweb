@@ -4,3 +4,7 @@ export function productSeoImage(product) {
   const first = product?.images?.[0];
   return (typeof first === 'string' ? first : first?.url) || product?.mainImageUrl || product?.image || '';
 }
+
+export function productShareImage(product) {
+  return product?.images?.[0]?.thumb || product?.thumbnailUrl || productSeoImage(product);
+}

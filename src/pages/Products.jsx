@@ -29,7 +29,7 @@ import RelatedProducts from '../components/product/RelatedProducts.jsx';
 import ProductSpecs from '../components/product/ProductSpecs.jsx';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import ProductJsonLd from '../components/seo/ProductJsonLd.jsx';
-import { productSeoImage } from '../utils/productSeoImage.js';
+import { productShareImage } from '../utils/productSeoImage.js';
 import { isProcurementUnavailable } from '../utils/productAvailability.js';
 import BreadcrumbJsonLd from '../components/seo/BreadcrumbJsonLd.jsx';
 import { seoConfig } from '../config/seo.js';
@@ -132,11 +132,10 @@ export default function Product() {
 
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
   const productTitle = `${p.brand || ''} ${p.name || ''}`.trim();
-  const productImage = productSeoImage(p);
   const seoTitle = (language === 'en' ? p.attributes?._translations?.en?.metaTitle : p.seo?.metaTitle) || productTitle;
   const seoDescription = productSeoDescription(p, language);
   const seoKeywords = p.seo?.metaKeywords || undefined;
-  const seoImage = productImage;
+  const seoImage = productShareImage(p);
   const department = p.department || 'satovi';
   const departmentPath = DEPARTMENT_PATHS[department] || '/catalog';
   const departmentName = DEPARTMENT_LABELS[department] || 'Katalog';
