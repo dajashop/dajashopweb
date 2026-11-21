@@ -89,6 +89,7 @@
   z-index: 10;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: ". title close";
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
@@ -98,31 +99,32 @@
 }
 
 .fd-close {
-  justify-self: start;
+  grid-area: close;
+  justify-self: end;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 44px;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  background: transparent;
-  color: var(--color-text, #111);
+  border: 1px solid transparent;
+  background: #b91c1c;
+  color: #fff;
   font-weight: 700;
   cursor: pointer;
 }
-.fd-close:hover {
-  background: var(--accent-8, rgba(0, 0, 0, 0.06));
+.fd-close:hover,
+.fd-close:active {
+  background: #991b1b;
 }
 
 .fd-title {
+  grid-area: title;
   justify-self: center;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-weight: 800;
-}
-.fd-spacer {
-  justify-self: end;
 }
 
 .fd-content {

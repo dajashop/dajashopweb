@@ -237,7 +237,6 @@ export default function FilterDrawer({ className = '', products, department, fix
                   <span className="fd-badge">{translateText(activeCount)}</span>
                 )}
               </div>
-              <div className="fd-spacer" />
             </div>
 
             <div className={`fd-content${department === 'daljinski' ? ' fd-content--remote' : ''}`}>
