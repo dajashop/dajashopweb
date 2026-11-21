@@ -89,9 +89,9 @@ export default function Header() {
             <div className="header__search" role="search" aria-label={translateText('Pretraga')}>
               <SearchBar />
             </div>
+            <span ref={slotRef} className="header__search-slot" aria-hidden="true" />
 
             <div className="header__actions">
-              <span ref={slotRef} className="header__search-slot" aria-hidden="true" />
               <Link className="header__cart" to="/cart" aria-label={`${translateText('Korpa')} (${count})`}>
                 <ShoppingBag size={22} />
                 <span className="badge" aria-hidden="true">{count > 99 ? '99+' : count}</span>

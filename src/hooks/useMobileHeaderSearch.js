@@ -5,6 +5,7 @@ const EXPAND_NEAR_TOP = 54;
 const COLLAPSE_AFTER = 72;
 const SCROLL_DOWN = 16;
 const SCROLL_UP = 12;
+const COMPACT_LABEL_INSETS = 40; // Icon space and trailing padding.
 
 export default function useMobileHeaderSearch({ enabled, startRef, stickyRef, gridRef, slotRef }) {
   useLayoutEffect(() => {
@@ -15,11 +16,13 @@ export default function useMobileHeaderSearch({ enabled, startRef, stickyRef, gr
     const grid = gridRef.current;
     const surface = grid.parentElement;
     const slot = slotRef.current;
+    const compactLabel = grid.querySelector('.s2__mobile-compact-label');
     const media = window.matchMedia(MOBILE_HEADER);
     const scrollRoot = document.scrollingElement || document.documentElement;
     let frame = null;
     let previousY = null;
     let travel = 0;
+    let labelWidth = 0;
 
     const scrollIsLocked = () => document.body.style.position === 'fixed'
       || document.documentElement.classList.contains('mobile-search-open');
@@ -29,8 +32,12 @@ export default function useMobileHeaderSearch({ enabled, startRef, stickyRef, gr
       if (!media.matches) return;
       const gridBounds = grid.getBoundingClientRect();
       const slotBounds = slot.getBoundingClientRect();
+      labelWidth = compactLabel.getBoundingClientRect().width || labelWidth;
       grid.style.setProperty('--header-search-compact-x', `${slotBounds.left - gridBounds.left}px`);
       grid.style.setProperty('--header-search-compact-y', `${slotBounds.top - gridBounds.top}px`);
+      grid.style.setProperty('--header-search-compact-width', `${slotBounds.width}px`);
+      const fitsLabel = labelWidth > 0 && slotBounds.width >= labelWidth + COMPACT_LABEL_INSETS;
+      sticky.toggleAttribute('data-search-compact-label', fitsLabel);
     }
 
     function updateScroll() {
@@ -99,6 +106,8 @@ export default function useMobileHeaderSearch({ enabled, startRef, stickyRef, gr
 
     const sizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(onLayoutChange) : null;
     sizeObserver?.observe(start);
+    sizeObserver?.observe(slot);
+    sizeObserver?.observe(compactLabel);
     measureSlot();
     updateScroll();
 
@@ -120,6 +129,7 @@ export default function useMobileHeaderSearch({ enabled, startRef, stickyRef, gr
       window.removeEventListener('popstate', resetScroll);
       window.removeEventListener('resize', onLayoutChange);
       sticky.removeAttribute('data-search-collapsed');
+      sticky.removeAttribute('data-search-compact-label');
       sticky.removeAttribute('data-search-instant');
     };
   }, [enabled, startRef, stickyRef, gridRef, slotRef]);

@@ -165,6 +165,7 @@ export default function SearchBar() {
       aria-label={translateText('Pretraži modele, brendove i kolekcije')}>
       <Search className="s2__mobile-icon" size={22} aria-hidden="true" />
       <span className={`s2__mobile-label${hasValue ? '' : ' s2__mobile-placeholder'}`}>{q || translateText('Pretraži modele, brendove…')}</span>
+      <span className="s2__mobile-compact-label s2__mobile-placeholder" aria-hidden="true">{translateText('Pretraži')}</span>
     </button>
     {translateText(open && createPortal(<div ref={panel} id={`${id}-panel`} style={position} className={`live-search ${mobile ? 'live-search--mobile' : 'live-search--desktop'}`} data-lenis-prevent
       role={mobile ? 'dialog' : undefined} aria-modal={mobile ? 'true' : undefined} aria-label={translateText("Pretraga kataloga")} onKeyDown={mobile ? onKeyDown : undefined}>

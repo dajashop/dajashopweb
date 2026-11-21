@@ -352,9 +352,13 @@
 
   .header-sticky[data-mobile-search] .header__grid {
     position: relative;
-    grid-template-columns: minmax(0, 1fr) auto;
+    width: calc(100% - clamp(16px, 4vw, 32px));
+    grid-template-columns: minmax(0, clamp(68px, 19vw, 88px)) minmax(var(--header-search-target-size), 1fr) auto;
+    grid-template-areas:
+      "brand search-slot actions"
+      "search search search";
     row-gap: 0;
-    column-gap: clamp(4px, 2vw, 16px);
+    column-gap: clamp(4px, 1.25vw, 10px);
   }
 
   .header-sticky[data-mobile-search] .header__brand {
@@ -373,11 +377,17 @@
     transition: height var(--header-search-duration) var(--header-search-lift-ease);
   }
 
-  .header-sticky[data-mobile-search] .header__actions > :not(.header__search-slot) {
+  .header-sticky[data-mobile-search] .header__actions {
+    gap: clamp(2px, calc(4vw - 12px), 8px);
     z-index: 3;
   }
 
-  .header-sticky[data-mobile-search] .header__search-slot,
+  .header-sticky[data-mobile-search] .header__search-slot {
+    display: block;
+    grid-area: search-slot;
+    height: var(--header-search-target-size);
+  }
+
   .header-sticky[data-mobile-search] .header__actions > :is(.btn-ghost.pill, .header-user, .hamburger) {
     display: inline-grid;
     place-items: center;
@@ -397,15 +407,6 @@
   .header-sticky[data-mobile-search] .hamburger__notification {
     right: -4px;
   }
-}
-
-@media (max-width: 375px) {
-  .header-sticky[data-mobile-search] .header__grid {
-    width: calc(100% - 16px);
-    column-gap: 4px;
-  }
-
-  .header-sticky[data-mobile-search] .header__actions { gap: 2px; }
 }
 
 @media (max-width: 768px) and (prefers-reduced-motion: reduce) {
