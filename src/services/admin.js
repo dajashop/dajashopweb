@@ -9,40 +9,67 @@ import {
 export const ordersService = {
   subscribe(onData, onError) {
     let cancelled = false;
-
-    let inFlight = false;
+    let connected = false;
     let refreshAgain = false;
-    const load = async () => {
-      if (cancelled) return;
-      if (inFlight) { refreshAgain = true; return; }
-      inFlight = true;
+    let inFlight;
+    let timer;
+
+    async function load() {
+      clearTimeout(timer);
+      if (cancelled || document.hidden) return;
+      if (inFlight) {
+        refreshAgain = true;
+        return;
+      }
+      refreshAgain = false;
+      const controller = new AbortController();
+      inFlight = controller;
+      const timeout = setTimeout(() => controller.abort(), 20_000);
       try {
-        const items = await ordersApi.adminList();
+        const items = await ordersApi.adminList(controller.signal);
         if (!cancelled) onData(items);
       } catch (error) {
         if (!cancelled) onError?.(error);
       } finally {
-        inFlight = false;
-        if (refreshAgain && !cancelled) {
-          refreshAgain = false;
-          void load();
+        clearTimeout(timeout);
+        inFlight = undefined;
+        if (!cancelled && !document.hidden) {
+          if (refreshAgain) {
+            refreshAgain = false;
+            void load();
+          } else {
+            timer = setTimeout(load, connected ? 120_000 : 30_000);
+          }
         }
       }
+    }
+    const onChange = () => {
+      if (cancelled || document.hidden) return;
+      if (inFlight) {
+        refreshAgain = true;
+        return;
+      }
+      clearTimeout(timer);
+      timer = setTimeout(load, 250);
     };
-    void load();
+    const wake = () => {
+      clearTimeout(timer);
+      if (!document.hidden) void load();
+    };
     const stopRealtime = subscribeRealtime(
-      ['orders.created', 'orders.updated'], load, onError,
+      ['orders.created', 'orders.updated'], onChange, onError, ready => {
+        connected = ready;
+        wake();
+      },
     );
-    const refreshVisible = () => {
-      if (document.visibilityState === 'visible') void load();
-    };
-    const fallbackRefresh = window.setInterval(refreshVisible, 30_000);
-    document.addEventListener('visibilitychange', refreshVisible);
+    void load();
+    document.addEventListener('visibilitychange', wake);
 
     return () => {
       cancelled = true;
-      window.clearInterval(fallbackRefresh);
-      document.removeEventListener('visibilitychange', refreshVisible);
+      clearTimeout(timer);
+      inFlight?.abort();
+      document.removeEventListener('visibilitychange', wake);
       stopRealtime?.();
     };
   },

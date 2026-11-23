@@ -21,7 +21,8 @@ import {
   rfidApi,
   workforceApi,
 } from '../../../services/dajaPlatform';
-import { adminCatalogApi, readerStationApi, subscribeReaderFind, subscribeReaderSession } from '../../../services/dajaPlatform';
+import { adminCatalogApi, readerStationApi } from '../../../services/dajaPlatform';
+import { monitorReaderSession } from '../../../services/readerSessionMonitor';
 import FlashModal from '../../../components/modals/FlashModal.jsx';
 // --- NOVI IMPORT ---
 import ImageGalleryModal from '../../../components/modals/ImageGalleryModal.jsx';
@@ -285,10 +286,12 @@ export default function AdminProductModal({
   const [readerStations, setReaderStations] = useState([]);
   const [readerStationId, setReaderStationId] = useState('');
   const [scanSession, setScanSession] = useState(null);
-  const [scanPieceIndex, setScanPieceIndex] = useState(null);
   const [scanNotice, setScanNotice] = useState('');
   const [waitingForReaderRelease, setWaitingForReaderRelease] = useState(false);
   const readerSessionUnsubscribeRef = useRef(null);
+  const readerModalActive = useRef(true);
+  const readerStartPending = useRef(false);
+  const readerScanTarget = useRef(null);
   const [findSession, setFindSession] = useState(null);
   const [findSignal, setFindSignal] = useState(0);
   const findSessionUnsubscribeRef = useRef(null);
@@ -352,21 +355,34 @@ export default function AdminProductModal({
 
   useEffect(() => {
     let active = true;
+    readerModalActive.current = true;
     void readerStationApi.list().then((items) => {
       if (!active) return;
       const online = Array.isArray(items) ? items : [];
       setReaderStations(online);
       if (online.length === 1) setReaderStationId(online[0].id);
     }).catch(() => { if (active) setReaderStations([]); });
-    return () => { active = false; readerSessionUnsubscribeRef.current?.(); findSessionUnsubscribeRef.current?.(); };
+    return () => {
+      active = false;
+      readerModalActive.current = false;
+      readerSessionUnsubscribeRef.current?.();
+      findSessionUnsubscribeRef.current?.();
+    };
   }, []);
 
   useEffect(() => {
     if (!waitingForReaderRelease || !readerStationId) return undefined;
     let active = true;
+    let timer;
+    let request;
     const checkReader = async () => {
+      clearTimeout(timer);
+      if (!active || request || document.hidden) return;
+      const controller = new AbortController();
+      request = controller;
+      const timeout = setTimeout(() => controller.abort(), 8_000);
       try {
-        const items = await readerStationApi.list();
+        const items = await readerStationApi.list(controller.signal);
         if (!active) return;
         const online = Array.isArray(items) ? items : [];
         setReaderStations(online);
@@ -380,11 +396,20 @@ export default function AdminProductModal({
         }
       } catch {
         // Keep waiting; a temporary network failure must not claim that the reader is free.
+      } finally {
+        clearTimeout(timeout);
+        request = undefined;
+        if (active && !document.hidden) timer = setTimeout(checkReader, 4_000);
       }
     };
     void checkReader();
-    const interval = window.setInterval(() => { void checkReader(); }, 4_000);
-    return () => { active = false; window.clearInterval(interval); };
+    document.addEventListener('visibilitychange', checkReader);
+    return () => {
+      active = false;
+      request?.abort();
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', checkReader);
+    };
   }, [readerStationId, waitingForReaderRelease]);
 
   useEffect(() => {
@@ -911,9 +936,9 @@ export default function AdminProductModal({
 
   const cancelReaderSession = async () => {
     const id = scanSession?.id;
+    readerScanTarget.current = null;
     readerSessionUnsubscribeRef.current?.(); readerSessionUnsubscribeRef.current = null;
     setScanSession(null);
-    setScanPieceIndex(null);
     if (id) await readerStationApi.cancel(id).catch(() => undefined);
   };
   const cancelFindSession = async () => { const id = findSession?.id; findSessionUnsubscribeRef.current?.(); findSessionUnsubscribeRef.current = null; setFindSession(null); setFindSignal(0); if (id) await readerStationApi.cancelFind(id).catch(() => undefined); };
@@ -921,91 +946,107 @@ export default function AdminProductModal({
     const epc = validateEpcInput(selectedPiece.epc || '').value;
     if (!epc) { setScanNotice('Izabrani komad nema važeći EPC za pronalaženje.'); return; }
     if (!readerStationId) { setScanNotice('Nema online G2 čitača.'); return; }
+    if (readerStartPending.current) return;
+    readerStartPending.current = true;
     try {
       const created = await readerStationApi.startFind(readerStationId, crypto.randomUUID(), epc, { name: form.name || 'Artikal', sku: form.sku || undefined, barcode: selectedPiece.barcode || form.barcode || undefined, imageUrl: form.mainImageUrl || form.images?.[0]?.url || undefined });
-      setFindSession(created); setFindSignal(0); findSessionUnsubscribeRef.current?.();
-      findSessionUnsubscribeRef.current = subscribeReaderFind(created.id, (event) => { const data = event?.data || {}; if (data.sessionId !== created.id) return; if (event.event === 'reader.find.proximity') { setFindSignal(Math.round((data.proximity || 0) * 100)); setScanNotice(`Signal: ${Math.round((data.proximity || 0) * 100)}% · ${data.rssi ?? '—'} dBm`); } if (event.event === 'reader.find.completed' || event.event === 'reader.find.cancelled') { setScanNotice(event.event === 'reader.find.completed' ? 'Vreme za pronalaženje je isteklo.' : 'Traženje je zaustavljeno.'); setFindSession(null); } }, (error) => setScanNotice(error?.message || 'Reader Station veza nije dostupna.'));
+      if (!readerModalActive.current) {
+        void readerStationApi.cancelFind(created.id).catch(() => undefined);
+        return;
+      }
+      setFindSession(created);
+      setFindSignal(0);
       setScanNotice('G2 čitač traži izabrani RFID tag (najviše 5 minuta).');
-    } catch (error) { setScanNotice(error?.message || 'Ne mogu da pokrenem pronalaženje.'); }
+      findSessionUnsubscribeRef.current?.();
+      findSessionUnsubscribeRef.current = monitorReaderSession(created, 'find', data => {
+        if (data.status === 'completed' || data.status === 'cancelled' || data.status === 'expired') {
+          const notice = data.status === 'cancelled' ? 'Traženje je zaustavljeno.' : 'Vreme za pronalaženje je isteklo.';
+          setScanNotice(notice);
+          findSessionUnsubscribeRef.current = null;
+          setFindSession(null);
+        } else if (data.lastProximity) {
+          const { proximity, rssi } = data.lastProximity;
+          const percent = Math.round((proximity || 0) * 100);
+          setFindSignal(percent);
+          setScanNotice('Signal: ' + percent + '% · ' + (rssi ?? '—') + ' dBm');
+        }
+      }, error => setScanNotice(error?.message || 'Reader Station veza nije dostupna.'));
+    } catch (error) {
+      if (readerModalActive.current) setScanNotice(error?.message || 'Ne mogu da pokrenem pronalaženje.');
+    } finally {
+      readerStartPending.current = false;
+    }
   };
-
-  // Socket.IO delivers the result immediately in the usual case. This polling
-  // fallback reads the same persisted session if the scan happened while the
-  // browser socket was reconnecting, so EPC/barcode can never be lost.
-  useEffect(() => {
-    const sessionId = scanSession?.id;
-    if (!sessionId) return undefined;
-    let active = true;
-    const targetPieceIndex = scanPieceIndex ?? selectedPieceIndex;
-    const applySession = (data) => {
-      if (!active || !data) return;
-      if (data.epc) updatePiece(targetPieceIndex, 'epc', data.epc);
-      if (data.status === 'awaiting_barcode') {
-        setScanNotice(data.product?.found === false ? 'EPC je očitan, ali artikal nije pronađen.' : 'EPC je očitan. G2 sada čeka barkod.');
-        return;
-      }
-      if (data.status === 'completed') {
-        if (data.barcode) updatePiece(targetPieceIndex, 'barcode', data.barcode);
-        setScanNotice('Očitavanje je završeno. EPC i barkod su upisani u artikal.');
-        readerSessionUnsubscribeRef.current?.(); readerSessionUnsubscribeRef.current = null;
-        setScanSession(null); setScanPieceIndex(null);
-        return;
-      }
-      if (data.status === 'cancelled' || data.status === 'expired') {
-        setScanNotice(data.status === 'expired' ? 'Vreme za očitavanje je isteklo.' : 'Sesija je prekinuta.');
-        readerSessionUnsubscribeRef.current?.(); readerSessionUnsubscribeRef.current = null;
-        setScanSession(null); setScanPieceIndex(null);
-      }
-    };
-    const check = () => {
-      void readerStationApi.session(sessionId).then(applySession).catch(() => undefined);
-    };
-    check();
-    const interval = window.setInterval(check, 1_250);
-    return () => { active = false; window.clearInterval(interval); };
-  }, [scanSession?.id, scanPieceIndex, selectedPieceIndex]);
 
   const startReaderSession = async () => {
     if (!readerStationId) { setScanNotice('Nema online G2 čitača. Otvorite Reader Station aplikaciju na uređaju.'); return; }
+    if (readerStartPending.current) return;
+    readerStartPending.current = true;
     setWaitingForReaderRelease(false);
     setScanNotice('Šaljem zahtev G2 čitaču…');
+    const target = { index: selectedPieceIndex, removed: false };
+    readerScanTarget.current = target;
     try {
       const created = await readerStationApi.start(readerStationId, crypto.randomUUID(), {
         name: form.name || 'Novi artikal', sku: form.sku || undefined, barcode: form.barcode || undefined,
         imageUrl: form.mainImageUrl || form.images?.[0]?.url || form.seo?.ogImage || undefined,
         description: form.description || undefined
       });
-      const targetPieceIndex = selectedPieceIndex;
+      if (!readerModalActive.current) {
+        void readerStationApi.cancel(created.id).catch(() => undefined);
+        return;
+      }
+      let appliedEpc;
+      let latestStatus;
       setScanSession(created);
-      setScanPieceIndex(targetPieceIndex);
-      readerSessionUnsubscribeRef.current?.();
-      readerSessionUnsubscribeRef.current = subscribeReaderSession(created.id, (event) => {
-        const data = event?.data || {};
-        if (data.sessionId !== created.id) return;
-        if (event.event === 'reader.scan.product') {
-          if (data.epc) updatePiece(targetPieceIndex, 'epc', data.epc);
-          setScanNotice(data.product?.found === false ? 'EPC je očitan, ali artikal nije pronađen.' : 'EPC je očitan. G2 sada čeka barkod.');
-        }
-        if (event.event === 'reader.scan.completed') {
-          if (data.epc) updatePiece(targetPieceIndex, 'epc', data.epc);
-          if (data.barcode) updatePiece(targetPieceIndex, 'barcode', data.barcode);
-          setScanNotice('Očitavanje je završeno. EPC i barkod su upisani u artikal.'); readerSessionUnsubscribeRef.current?.(); readerSessionUnsubscribeRef.current = null; setScanSession(null); setScanPieceIndex(null);
-        }
-        if (event.event === 'reader.scan.cancelled') { setScanNotice('Sesija je prekinuta.'); setScanSession(null); setScanPieceIndex(null); }
-      }, (error) => setScanNotice(error?.message || 'Reader Station veza nije dostupna.'));
       setScanNotice('G2 čitač čeka EPC.');
+      readerSessionUnsubscribeRef.current?.();
+      readerSessionUnsubscribeRef.current = monitorReaderSession(created, 'scan', data => {
+        if (data.status === 'awaiting_epc' || !data.status) return;
+        if (!target.removed && data.epc && (data.status === 'completed' || data.epc !== appliedEpc)) {
+          appliedEpc = data.epc;
+          updatePiece(target.index, 'epc', data.epc);
+        }
+        if (data.status === 'awaiting_barcode') {
+          if (latestStatus !== data.status) {
+            setScanNotice(data.product?.found === false ? 'EPC je očitan, ali artikal nije pronađen.' : 'EPC je očitan. G2 sada čeka barkod.');
+          }
+          latestStatus = data.status;
+          return;
+        }
+        if (data.status === 'completed') {
+          if (!target.removed && data.barcode) updatePiece(target.index, 'barcode', data.barcode);
+          setScanNotice(target.removed
+            ? 'Očitavanje je završeno, ali izabrani komad više nije u artiklu.'
+            : 'Očitavanje je završeno. EPC i barkod su upisani u artikal.');
+        } else {
+          setScanNotice(data.status === 'expired' ? 'Vreme za očitavanje je isteklo.' : 'Sesija je prekinuta.');
+        }
+        readerScanTarget.current = null;
+        readerSessionUnsubscribeRef.current = null;
+        setScanSession(null);
+      }, error => {
+        latestStatus = undefined;
+        setScanNotice(error?.message || 'Reader Station veza nije dostupna.');
+      });
     } catch (error) {
+      readerScanTarget.current = null;
+      if (!readerModalActive.current) return;
       const message = error?.message || 'Ne mogu da pokrenem očitavanje.';
       if (message.includes('Čitač je zauzet')) {
         setWaitingForReaderRelease(true);
         setScanNotice('G2 čitač je zauzet. Pratim sesiju i javiću čim se oslobodi.');
       } else setScanNotice(message);
+    } finally {
+      readerStartPending.current = false;
     }
   };
 
   const handleQuantityChange = (value) => {
     handleChange('quantity', value);
     const quantity = Math.max(1, Number(value) || 1);
+    const scanTarget = readerScanTarget.current;
+    if (scanTarget && scanTarget.index >= quantity) scanTarget.removed = true;
     setPieceDetails((current) =>
       Array.from({ length: quantity }, (_, index) =>
         current[index] || {

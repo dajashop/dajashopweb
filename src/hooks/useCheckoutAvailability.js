@@ -66,23 +66,30 @@ export function useCheckoutAvailability() {
 
   useEffect(() => {
     mounted.current = true;
+    let wakeTimer;
     const checkWhenVisible = () => {
-      if (document.visibilityState !== 'hidden') void checkAvailability();
+      window.clearTimeout(wakeTimer);
+      if (!document.hidden) void checkAvailability();
     };
-    void checkAvailability();
+    const scheduleCheck = () => {
+      window.clearTimeout(wakeTimer);
+      if (!document.hidden) wakeTimer = window.setTimeout(checkWhenVisible, 150);
+    };
+    checkWhenVisible();
     const interval = window.setInterval(checkWhenVisible, 30_000);
-    window.addEventListener('online', checkWhenVisible);
+    window.addEventListener('online', scheduleCheck);
     window.addEventListener('offline', markUnavailable);
-    window.addEventListener('focus', checkWhenVisible);
-    document.addEventListener('visibilitychange', checkWhenVisible);
+    window.addEventListener('focus', scheduleCheck);
+    document.addEventListener('visibilitychange', scheduleCheck);
 
     return () => {
       mounted.current = false;
+      window.clearTimeout(wakeTimer);
       window.clearInterval(interval);
-      window.removeEventListener('online', checkWhenVisible);
+      window.removeEventListener('online', scheduleCheck);
       window.removeEventListener('offline', markUnavailable);
-      window.removeEventListener('focus', checkWhenVisible);
-      document.removeEventListener('visibilitychange', checkWhenVisible);
+      window.removeEventListener('focus', scheduleCheck);
+      document.removeEventListener('visibilitychange', scheduleCheck);
       const previous = request.current;
       request.current = null;
       previous?.controller.abort();

@@ -1183,8 +1183,8 @@ export const ordersApi = {
     const data = await apiRequest('/orders/me');
     return toArrayPayload(data).map(normalizeOrder);
   },
-  async adminList() {
-    const data = await apiRequest('/admin/orders', { staff: true });
+  async adminList(signal) {
+    const data = await apiRequest('/admin/orders', { staff: true, signal });
     return toArrayPayload(data).map(normalizeOrder);
   },
   retryEmail(orderId, deliveryId) {
@@ -1285,38 +1285,58 @@ export const accessControlApi = {
 /** Remote G2 stations are staff-only. The browser never talks to reader
  * hardware; Daja Platform owns the one-active-session lock. */
 export const readerStationApi = {
-  list() { return apiRequest('/rfid/reader-stations', { staff: true }); },
+  list(signal) { return apiRequest('/rfid/reader-stations', { staff: true, signal }); },
   start(stationId, clientId, preview) { return apiRequest('/rfid/reader-stations/sessions', { method: 'POST', staff: true, body: { stationId, clientId, ...(preview ? { preview } : {}) } }); },
-  session(sessionId) { return apiRequest(`/rfid/reader-stations/sessions/${encodeURIComponent(sessionId)}`, { staff: true }); },
+  session(sessionId, signal) { return apiRequest(`/rfid/reader-stations/sessions/${encodeURIComponent(sessionId)}`, { staff: true, signal }); },
   cancel(sessionId) { return apiRequest(`/rfid/reader-stations/sessions/${encodeURIComponent(sessionId)}/cancel`, { method: 'POST', staff: true }); },
   startFind(stationId, clientId, epc, preview) { return apiRequest('/rfid/reader-stations/find-sessions', { method: 'POST', staff: true, body: { stationId, clientId, epc, ...(preview ? { preview } : {}) } }); },
-  findSession(sessionId) { return apiRequest(`/rfid/reader-stations/find-sessions/${encodeURIComponent(sessionId)}`, { staff: true }); },
+  findSession(sessionId, signal) { return apiRequest(`/rfid/reader-stations/find-sessions/${encodeURIComponent(sessionId)}`, { staff: true, signal }); },
   cancelFind(sessionId) { return apiRequest(`/rfid/reader-stations/find-sessions/${encodeURIComponent(sessionId)}/cancel`, { method: 'POST', staff: true }); },
 };
 
-export function subscribeReaderSession(sessionId, onEvent, onError) {
+function subscribeReaderSessionEvents(sessionId, name, channels, onEvent, onError, onConnection) {
   if (!REALTIME_ENABLED) return () => {};
-  const token = getStaffAccessToken();
-  if (!token) { onError?.(new Error('Staff token nije dostupan za Reader Station.')); return () => {}; }
-  const socket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ token: `Bearer ${getStaffAccessToken() || ''}` }));
-  const channels = ['reader.scan.product', 'reader.scan.completed', 'reader.scan.cancelled'];
-  socket.on('connect', () => socket.emit('reader.scan.subscribe', { sessionId }, (result) => {
-    if (result?.ok === false) onError?.(new Error('Nije moguće povezati sesiju očitavanja.'));
-  }));
-  channels.forEach((channel) => socket.on(channel, onEvent));
-  socket.on('connect_error', onError || (() => {}));
-  return () => { channels.forEach((channel) => socket.off(channel, onEvent)); socket.close(); };
+  if (!getStaffAccessToken()) {
+    onError?.(new Error('Staff token nije dostupan za Reader Station.'));
+    return () => {};
+  }
+  const socket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ token: 'Bearer ' + (getStaffAccessToken() || '') }));
+  let connection = 0;
+  socket.on('connect', () => {
+    const attempt = ++connection;
+    socket.timeout(3_000).emit(name, { sessionId }, (error, result) => {
+      if (attempt !== connection || !socket.connected) return;
+      if (error || result?.ok !== true) {
+        onError?.(new Error('Nije moguće povezati sesiju čitača.'));
+        return;
+      }
+      onConnection?.(true);
+    });
+  });
+  channels.forEach(channel => socket.on(channel, onEvent));
+  const handleDisconnect = () => {
+    connection++;
+    onConnection?.(false);
+  };
+  const handleError = error => onError?.(error);
+  socket.on('disconnect', handleDisconnect);
+  socket.on('connect_error', handleError);
+  return () => {
+    channels.forEach(channel => socket.off(channel, onEvent));
+    socket.off('disconnect', handleDisconnect);
+    socket.off('connect_error', handleError);
+    socket.close();
+  };
 }
 
-export function subscribeReaderFind(sessionId, onEvent, onError) {
-  if (!REALTIME_ENABLED) return () => {};
-  const token = getStaffAccessToken();
-  if (!token) { onError?.(new Error('Staff token nije dostupan za Reader Station.')); return () => {}; }
-  const socket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ token: `Bearer ${getStaffAccessToken() || ''}` }));
-  const channels = ['reader.find.proximity', 'reader.find.completed', 'reader.find.cancelled'];
-  socket.on('connect', () => socket.emit('reader.find.subscribe', { sessionId }, (result) => { if (result?.ok === false) onError?.(new Error('Nije moguće povezati sesiju pronalaženja.')); }));
-  channels.forEach((channel) => socket.on(channel, onEvent)); socket.on('connect_error', onError || (() => {}));
-  return () => { channels.forEach((channel) => socket.off(channel, onEvent)); socket.close(); };
+export function subscribeReaderSession(sessionId, onEvent, onError, onConnection) {
+  return subscribeReaderSessionEvents(sessionId, 'reader.scan.subscribe',
+    ['reader.scan.product', 'reader.scan.completed', 'reader.scan.cancelled'], onEvent, onError, onConnection);
+}
+
+export function subscribeReaderFind(sessionId, onEvent, onError, onConnection) {
+  return subscribeReaderSessionEvents(sessionId, 'reader.find.subscribe',
+    ['reader.find.proximity', 'reader.find.completed', 'reader.find.cancelled'], onEvent, onError, onConnection);
 }
 
 export const productAlertsApi = {
@@ -1438,10 +1458,10 @@ export const mediaProcessingApi = {
   saveWorker(profile) { return apiRequest('/admin/media-processing/worker', { method: 'POST', staff: true, body: profile, signal: AbortSignal.timeout(15_000) }); },
   reportUploadFailure(mediaId) { return apiRequest(`/admin/media-processing/${encodeURIComponent(mediaId)}/upload-failed`, { method: 'POST', staff: true }); },
   closeAlert(alertId) { return apiRequest(`/admin/media-processing/alerts/${encodeURIComponent(alertId)}/close`, { method: 'POST', staff: true }); },
-  summary() { return apiRequest('/admin/media-processing/summary', { staff: true }); },
-  list(options = {}) {
+  summary(signal) { return apiRequest('/admin/media-processing/summary', { staff: true, signal }); },
+  list(options = {}, signal) {
     const query = new URLSearchParams(Object.entries(options).filter(([, value]) => value !== undefined && value !== ''));
-    return apiRequest(`/admin/media-processing?${query}`, { staff: true });
+    return apiRequest(`/admin/media-processing?${query}`, { staff: true, signal });
   },
   retry(mediaId) {
     return apiRequest(`/admin/media-processing/${encodeURIComponent(mediaId)}/retry`, { method: 'POST', staff: true });
@@ -1784,7 +1804,7 @@ export const promotionsAdminApi = {
   },
 };
 
-export function subscribeRealtime(channels, onEvent, onError) {
+export function subscribeRealtime(channels, onEvent, onError, onConnection) {
   if (!REALTIME_ENABLED) return () => {};
   let socket = null;
 
@@ -1803,6 +1823,10 @@ export function subscribeRealtime(channels, onEvent, onError) {
     }
     socket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ token: `Bearer ${getStaffAccessToken() || ''}` }));
     channels.forEach((channel) => socket.on(channel, onEvent));
+    if (onConnection) {
+      socket.on('connect', () => onConnection(true));
+      socket.on('disconnect', () => onConnection(false));
+    }
     socket.on('connect_error', onError || (() => {}));
   };
 

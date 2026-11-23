@@ -45,18 +45,21 @@ export default function MediaProcessingPanel({ visible, canRetry, canManageWorke
 
   useEffect(() => {
     let cancelled = false;
-    let inFlight = false;
+    let inFlight;
+    let dirty = false;
     let timer;
     async function load() {
-      if (cancelled || inFlight) return;
       window.clearTimeout(timer);
-      if (document.visibilityState !== 'visible') {
-        if (!visible || autoRefresh) timer = window.setTimeout(load, 30_000);
+      if (cancelled || document.hidden) return;
+      if (inFlight) {
+        dirty = true;
         return;
       }
-      inFlight = true;
+      const controller = new AbortController();
+      inFlight = controller;
+      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(20_000)]);
       try {
-        const next = await mediaProcessingApi.summary();
+        const next = await mediaProcessingApi.summary(signal);
         if (cancelled) return;
         setSummary(next);
         onSummary?.(next);
@@ -66,26 +69,33 @@ export default function MediaProcessingPanel({ visible, canRetry, canManageWorke
           if (!visible) setToast(true);
         }
         if (visible) {
-          const details = await mediaProcessingApi.list(JSON.parse(queryKey));
+          const details = await mediaProcessingApi.list(JSON.parse(queryKey), signal);
           if (cancelled) return;
-          setList({ ...details,queryKey });
+          setList({ ...details, queryKey });
         }
         setError('');
       } catch (caught) {
         if (!cancelled) setError(caught.message || t('Obaveštenja o slikama trenutno nisu dostupna.'));
       } finally {
-        inFlight = false;
-        if (!cancelled && (!visible || autoRefresh)) timer = window.setTimeout(load, 30_000);
+        inFlight = undefined;
+        if (!cancelled && !document.hidden) {
+          if (dirty) {
+            dirty = false;
+            void load();
+          } else if (!visible || autoRefresh) {
+            timer = window.setTimeout(load, 30_000);
+          }
+        }
       }
     }
     void load();
-    const onVisibility = () => { if (document.visibilityState === 'visible') void load(); };
-    document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener('visibilitychange', load);
     window.addEventListener('daja:media-status-changed', load);
     return () => {
       cancelled = true;
+      inFlight?.abort();
       window.clearTimeout(timer);
-      document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('visibilitychange', load);
       window.removeEventListener('daja:media-status-changed', load);
     };
   }, [visible, queryKey, refreshVersion, t, onSummary, autoRefresh]);

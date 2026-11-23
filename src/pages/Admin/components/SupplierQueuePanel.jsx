@@ -417,8 +417,8 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
     let running = false;
     let timer;
     const refresh = async () => {
-      if (stopped || running || document.visibilityState !== 'visible') return;
       window.clearTimeout(timer);
+      if (stopped || running || document.visibilityState !== 'visible') return;
       if (loadController.current) {
         timer = window.setTimeout(refresh, refreshDelay.current);
         return;
@@ -428,7 +428,7 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
         await load();
       } finally {
         running = false;
-        if (!stopped) timer = window.setTimeout(refresh, refreshDelay.current);
+        if (!stopped && !document.hidden) timer = window.setTimeout(refresh, refreshDelay.current);
       }
     };
     void refresh();
