@@ -1,5 +1,6 @@
 import { build } from 'vite';
 import react from '@vitejs/plugin-react';
+import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { assertPublicBuild } from './public-security.mjs';
 
@@ -11,7 +12,7 @@ await build({
   configFile: false,
   plugins: [react()],
   publicDir: false,
-  define: { 'process.env.NODE_ENV': JSON.stringify('production') },
+  define: { 'process.env.NODE_ENV': JSON.stringify('production'), __DAJA_SSR_RELEASE__: JSON.stringify(randomUUID()) },
   ssr: { target: 'webworker', noExternal: true },
   build: {
     ssr: 'src/ssr/worker.js',

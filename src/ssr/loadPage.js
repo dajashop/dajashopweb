@@ -28,12 +28,12 @@ export function publicCacheSeconds(data, maximum = 60) {
     Math.max(0, Math.floor((new Date(item.saleValidUntil).getTime() - Date.now()) / 1000) || 0)), maximum);
 }
 
-export async function loadPage(url, apiBase, readProduct, readCatalog, readPublicApi, requestHeaders = {}) {
+export async function loadPage(url, apiBase, readProduct, readCatalog, readPublicApi, requestHeaders = {}, fetchCatalog) {
   const path = stripLanguagePrefix(url.pathname).replace(/\/+$/, '') || '/';
   const api = async (route, optional = false) => {
     try {
       const loader = async () => {
-        const response = await fetch(`${apiBase}${route}`, { signal: AbortSignal.timeout(optional ? 3000 : 8000), headers: requestHeaders });
+        const response = fetchCatalog ? await fetchCatalog(route, optional ? 3000 : 8000) : await fetch(`${apiBase}${route}`, { signal: AbortSignal.timeout(optional ? 3000 : 8000), headers: requestHeaders });
         if (!response.ok) { const error = new Error(`Public catalog response: ${response.status}`); error.status = response.status; throw error; }
         const body = await response.json();
         return body?.data ?? body;
@@ -64,14 +64,11 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readPubli
   const department = catalogDepartment(path);
   const productLoader = async () => {
     const slug = path.split('/')[2];
-    const response = await fetch(`${apiBase}/public/catalog/products/${encodeURIComponent(decodeURIComponent(slug))}`, {
-      signal: AbortSignal.timeout(8000),
-      headers: requestHeaders,
-    });
-    if (response.status === 404) return { missing: true };
-    if (!response.ok) throw new Error(`Product response: ${response.status}`);
-    const body = await response.json();
-    return body?.data ?? body;
+    try { return await api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(slug))}`); }
+    catch (error) {
+      if (error.status === 404) return { missing: true };
+      throw error;
+    }
   };
   // The listing returns its filter configuration in the same response.
   const requestKey = department ? catalogPageRequest(department, url.searchParams, undefined, path) : null;
@@ -124,6 +121,7 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readPubli
   }
   data.relatedVariants = variants?.items || [];
   data.variantGroupId = variants?.groupId || null;
+  data.variantGroupCache = variants?._catalogCache || null;
   // Empty successful results are seeds too; failed optional requests can retry in the browser.
   data.relatedVariantsLoaded = Array.isArray(variants?.items);
   return data;

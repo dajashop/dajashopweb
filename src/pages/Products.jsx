@@ -35,8 +35,7 @@ import BreadcrumbJsonLd from '../components/seo/BreadcrumbJsonLd.jsx';
 import { seoConfig } from '../config/seo.js';
 import { visibleProductFeatures } from '../utils/catalogPresentation.js';
 import PageStatus from './PageStatus.jsx';
-import { prepareProductVariant, productResourceKey } from '../services/products.js';
-import { rememberResource } from '../services/catalogResourceCache.js';
+import { prepareProductVariant } from '../services/products.js';
 
 const DEPARTMENT_LABELS = {
   satovi: 'Ručni Satovi',
@@ -115,8 +114,6 @@ export default function Product() {
       const next = await prepareProductVariant(variant.slug, { signal: controller.signal });
       if (controller.signal.aborted || selection.current !== controller) return;
       if (!next?.id || next.redirectTo) throw new Error('Variant unavailable');
-      // Seed the new price, availability and purchase target together before changing routes.
-      rememberResource(productResourceKey(variant.slug), next);
       navigate(`/product/${variant.slug}`, { replace: true, state: { variantTransition: true } });
     } catch (error) {
       if (error.name !== 'AbortError' && selection.current === controller) {
@@ -145,6 +142,7 @@ export default function Product() {
     </div>
   );
 
+  const stalePrice = p._catalogStale === true;
   const siteRoot = seoConfig.siteUrl.replace(/\/$/, '');
   const productTitle = `${p.brand || ''} ${p.name || ''}`.trim();
   const seoTitle = (language === 'en' ? p.attributes?._translations?.en?.metaTitle : p.seo?.metaTitle) || productTitle;
@@ -161,7 +159,7 @@ export default function Product() {
   const insufficientBatteries = batteryChoices.length > 0 && Number(p.availability?.availableQuantity ?? p.availableQuantity ?? 0) < purchaseQuantity + batteryQuantityInCart;
 
   const handleAdd = () => {
-    if (isProcurementUnavailable(p)) return;
+    if (stalePrice || isProcurementUnavailable(p)) return;
     if (insufficientBatteries) {
       flash('Nedovoljna količina', 'Izaberite manju količinu baterija.', 'error');
       return;
@@ -211,10 +209,10 @@ export default function Product() {
         keywords={seoKeywords}
         image={seoImage}
         type="product"
-        productPrice={Number(p.price) > 0 ? p.price : undefined}
+        productPrice={!stalePrice && Number(p.price) > 0 ? p.price : undefined}
         url={`${siteRoot}/product/${p.slug}`}
       />
-      <ProductJsonLd product={p} reviews={p.reviews || []} relatedVariants={relatedVariants} groupId={variantGroupId} />
+      {!stalePrice && <ProductJsonLd product={p} reviews={p.reviews || []} relatedVariants={relatedVariants} groupId={variantGroupId} />}
       <BreadcrumbJsonLd
         defer={false}
         items={[
@@ -238,7 +236,7 @@ export default function Product() {
           <ProductActions
             key={p.id}
             product={purchaseView}
-            disabled={insufficientBatteries || isProcurementUnavailable(p)}
+            disabled={stalePrice || insufficientBatteries || isProcurementUnavailable(p)}
             onAdd={handleAdd}
             onWishlist={handleWishlist}
             isLiked={isLiked}

@@ -11,6 +11,7 @@ export default function ProductHeader({ product, adminTools }) {
   const { t: translateText, money } = useStorefront();
 
   if (!product) return null;
+  const stalePrice = product._catalogStale === true;
   const procurementUnavailable = isProcurementUnavailable(product);
   const legacyRegularPrice =
     product.regularPrice ??
@@ -54,7 +55,8 @@ export default function ProductHeader({ product, adminTools }) {
         <span className="model-name">{translateText(product.name)}</span>
       </h1>
 
-      {procurementUnavailable && Number(currentPrice) > 0 && <span className="product-last-price-label">{translateText('Poslednja poznata cena')}</span>}
+      {stalePrice && <span className="product-last-price-label" role="status">{translateText('Poslednja poznata cena · čeka potvrdu')}</span>}
+      {!stalePrice && procurementUnavailable && Number(currentPrice) > 0 && <span className="product-last-price-label">{translateText('Poslednja poznata cena')}</span>}
       <div className="price-tag" hidden={procurementUnavailable && !(Number(currentPrice) > 0)}>
         {translateText(hasSale ? (
           <>
@@ -70,7 +72,7 @@ export default function ProductHeader({ product, adminTools }) {
 
       {procurementUnavailable && <p className="product-procurement-unavailable" role="status">{translateText('Trenutno nije dostupan za nabavku')}</p>}
 
-      {pack && (
+      {!stalePrice && pack && (
         <div className="battery-pack-price">
           <p>{translateText(pack.quantity === 1 ? 'Cena za jednu bateriju' : pack.box ? 'Cena za celu kutiju od {count} komada' : 'Cena za pakovanje od {count} komada', { count: pack.quantity })}</p>
           {pack.quantity > 1 && <p className="battery-pack-calculation">
@@ -85,7 +87,7 @@ export default function ProductHeader({ product, adminTools }) {
         </div>
       )}
 
-      {showStock && !procurementUnavailable && (
+      {showStock && !stalePrice && !procurementUnavailable && (
         <p
           className={`product-stock ${inStock ? 'is-in-stock' : 'is-out-of-stock'}`}
         >

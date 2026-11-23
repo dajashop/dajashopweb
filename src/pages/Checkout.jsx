@@ -187,7 +187,7 @@ export default function Checkout() {
      if (!isCurrent()) return;
      const payload = {
        customer: { ...form.formData, address, uid: user?.uid || 'guest' },
-       items, subtotal: total, discountAmount: discount, subtotalAfterDiscount: total - discount,
+       items, confirmCatalogPrice: true, subtotal: total, discountAmount: discount, subtotalAfterDiscount: total - discount,
        shippingCost: shipping, finalTotal: amount, promoCode: promo.appliedPromo?.code || null,
        shippingMethod: 'courier', paymentMethod: 'cod', note,
      };
@@ -216,7 +216,14 @@ export default function Checkout() {
      }
      await acceptOrder(result, attempt, accountId, isCurrent, submittedCartHash);
    } catch (error) {
-     if (isCurrent()) setError(t(error.message) || t(CHECKOUT_UNAVAILABLE_MESSAGE));
+     if (isCurrent()) {
+       const prices = error.code === 'CHECKOUT_PRICE_CHANGED' ? error.details?.prices : null;
+       if (Array.isArray(prices) && prices.length === items.length && prices.every(price => typeof price === 'number' && price >= 0) &&
+           checkoutContext.current.items === items) {
+         dispatch({ type: 'REPRICE', prices, items });
+       }
+       setError(t(error.message) || t(CHECKOUT_UNAVAILABLE_MESSAGE));
+     }
    } finally {
      lock.current = false;
      setBusy(false);

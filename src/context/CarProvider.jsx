@@ -76,6 +76,10 @@ function reducer(state, action) {
           slug: product.slug ?? item.slug,
         };
       });
+    case 'REPRICE':
+      return state === action.items
+        ? state.map((item, index) => ({ ...item, price: action.prices[index] }))
+        : state;
     case 'SET_QTY':
       return state.map((x) =>
         (x.lineId || x.id) === action.id ? { ...x, qty: Math.max(1, action.qty) } : x,

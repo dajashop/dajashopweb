@@ -50,6 +50,7 @@ async function read(response) {
   if (!response.ok) {
     const error = new Error(translate(safeApiErrorMessage(response.status, body), typeof window === 'undefined' ? 'sr' : pathLanguage(window.location.pathname)));
     error.status = response.status; error.code = body?.error?.code;
+    if (error.code === 'CHECKOUT_PRICE_CHANGED') error.details = body.error.details;
     const retryAfter = response.headers.get('Retry-After');
     const seconds = Number(retryAfter);
     error.retryAfterMs = retryAfter && Number.isFinite(seconds) ? Math.max(1000, seconds * 1000) : 60_000;

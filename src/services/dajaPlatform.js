@@ -1,3 +1,4 @@
+import { handleCatalogInvalidation } from './catalogResourceCache.js';
 import { requestPhoneCode, confirmPhoneCode } from './phoneVerification.js';
 import {
   API_BASE_URL,
@@ -472,16 +473,17 @@ export const catalogApi = {
     const product = await apiRequest(`/staff/catalog/products/${encodeURIComponent(slug)}`, { staff: true, signal });
     return normalizeProduct({ ...product, isVisible: product.published !== false && product.active !== false });
   },
-  async listing(route, signal) {
+  async listing(route, signal, refresh = false) {
     let data;
     const request = new URLSearchParams(route.slice(5));
     const department = route.startsWith('page?') ? request.get('department') : null;
     const configuration = department ? cachedFilterConfiguration(department, true) : null;
     const generation = filterConfigurationGeneration();
     const requestedAt = Date.now();
-    const apiRoute = configuration?.version ? `${route}&configurationVersion=${encodeURIComponent(configuration.version)}` : route;
+    const apiRoute = configuration?.version && route.startsWith('page?') ? `${route}&configurationVersion=${encodeURIComponent(configuration.version)}` : route;
     try {
-      data = await apiRequest(`/public/catalog/${apiRoute}`, { auth: false, signal });
+      data = await apiRequest(`/public/catalog/${apiRoute}`, { auth: false, signal,
+        ...(refresh ? { headers: { 'X-Daja-Catalog-Refresh': '1' } } : {}) });
     } catch (error) {
       if (error.status !== 404) throw error;
       const { legacyListing } = await import('../utils/legacyListing.js');
@@ -501,7 +503,7 @@ export const catalogApi = {
       const params = new URLSearchParams(request.get('params') || '');
       params.set('page', request.get('page') || '1');
       const canonical = configuredFilterParams(decodeCatalogParams(params, filters.configuration, request.get('pathname')), filters.configuration);
-      return this.listing(catalogPageRequest(department, canonical), signal);
+      return this.listing(catalogPageRequest(department, canonical), signal, refresh);
     }
     if (department && !signal?.aborted && generation === filterConfigurationGeneration()) {
       const nextConfiguration = data.configuration || (data.configurationVersion === configuration?.version ? configuration?.configuration : null);
@@ -575,12 +577,13 @@ export const catalogApi = {
 
     return fetchAll ? products : products.slice(0, requestedLimit);
   },
-  async getProductBySlug(slug, { realtime = false, signal } = {}) {
+  async getProductBySlug(slug, { realtime = false, signal, refresh = false } = {}) {
     const data = await apiRequest(
       `/public/catalog/products/${encodeURIComponent(slug)}`,
       {
         auth: false,
         ...(realtime ? { query: { realtime: '1' } } : {}),
+        ...(refresh ? { headers: { 'X-Daja-Catalog-Refresh': '1' } } : {}),
         signal,
       },
     );
@@ -600,10 +603,11 @@ export const variantGroupsApi = {
   reset: (key, expectedRevision, expectedCatalogRevision) => apiRequest(`/admin/variant-groups/${encodeURIComponent(key)}/reset`, { staff: true, method: 'POST', body: { expectedRevision, expectedCatalogRevision } }),
   remove: (key, expectedRevision, expectedCatalogRevision) => apiRequest(`/admin/variant-groups/${encodeURIComponent(key)}`, { staff: true, method: 'DELETE', body: { expectedRevision, expectedCatalogRevision } }),
   resetProduct: (id, expectedRevision, expectedCatalogRevision) => apiRequest(`/admin/variant-groups/products/${encodeURIComponent(id)}/automatic`, { staff: true, method: 'POST', body: { expectedRevision, expectedCatalogRevision } }),
-  async publicMembers(slug, signal) {
-    const data = await apiRequest(`/public/catalog/products/${encodeURIComponent(slug)}/variants`, { auth: false, signal });
+  async publicMembers(slug, signal, refresh = false) {
+    const data = await apiRequest(`/public/catalog/products/${encodeURIComponent(slug)}/variants`, { auth: false, signal,
+      ...(refresh ? { headers: { 'X-Daja-Catalog-Refresh': '1' } } : {}) });
     if (!data || !Array.isArray(data.items)) throw new Error('Varijante nisu dostupne.');
-    return { items: data.items.map(normalizeProduct), groupId: data.groupId || null };
+    return { ...data, items: data.items.map(normalizeProduct), groupId: data.groupId || null };
   },
 };
 
@@ -1901,9 +1905,13 @@ export function subscribePublicCatalogRealtime(onEvent, onError) {
   if (!publicCatalogSocket) {
     publicCatalogSocket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ publicCatalog: true }));
     publicCatalogSocket.on('product.updated', (event) => {
-      publicCatalogListeners.forEach((listener) => listener(event));
+      const { slug, productId, deleted } = event.data || {};
+      const catalogCacheInvalidated = Boolean(slug || productId);
+      if (catalogCacheInvalidated) handleCatalogInvalidation({ slug, productId, type: deleted ? 'deleteBySlug' : 'updated' });
+      publicCatalogListeners.forEach(listener => listener({ ...event, catalogCacheInvalidated }));
     });
     publicCatalogSocket.on('catalog.variant-groups.updated', (event) => {
+      window.dispatchEvent(new Event('daja:variant-groups-changed'));
       publicCatalogListeners.forEach((listener) => listener(event));
     });
     publicCatalogSocket.on('connect_error', (error) => {

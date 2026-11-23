@@ -1,4 +1,4 @@
-import { cachedResource, rememberResource, requestResource } from '../services/catalogResourceCache.js';
+import { catalogAffected, catalogInvalidationEvent, cachedResource, rememberResource, requestResource } from '../services/catalogResourceCache.js';
 import { useEffect, useState } from 'react';
 import { variantGroupsApi, subscribePublicCatalogRealtime } from '../services/dajaPlatform.js';
 import { useConsent } from '../context/ConsentContext.jsx';
@@ -9,14 +9,14 @@ export default function useProductVariantGroup(slug, product) {
   const { hasDecision } = useConsent();
   const page = usePageData();
   const hasSeed = page?.hydrating && page?.data?.product?.slug === slug && page.data.relatedVariantsLoaded;
-  const initialGroup = hasSeed ? { items: page.data.relatedVariants || [], groupId: page.data.variantGroupId || null }
+  const initialGroup = hasSeed ? { _catalogCache: page.data.variantGroupCache, items: page.data.relatedVariants || [], groupId: page.data.variantGroupId || null }
     : cachedResource(`variants:${slug}`) || { items: [], groupId: null };
   const [result, setResult] = useState({ slug, source: product, ...initialGroup });
   useEffect(() => {
     if (!slug || !enabled) return undefined;
     const resourceKey = `variants:${slug}`;
     if (hasSeed) rememberResource(resourceKey, initialGroup);
-    const stored = cachedResource(resourceKey);
+    let stored = cachedResource(resourceKey, true);
     if (stored) setResult({ slug, source: product, ...stored });
     let mounted = true;
     let controller;
@@ -25,33 +25,31 @@ export default function useProductVariantGroup(slug, product) {
       controller = new AbortController();
       const signal = controller.signal;
       try {
-        const group = await requestResource(resourceKey, requestSignal => variantGroupsApi.publicMembers(slug, requestSignal), { signal, force });
-        if (mounted && !signal.aborted) setResult({ slug, source: product, ...group });
+        const group = await requestResource(resourceKey, requestSignal => variantGroupsApi.publicMembers(slug, requestSignal, force), { signal, force });
+        if (mounted && !signal.aborted) {
+          stored = group;
+          setResult({ slug, source: product, ...group });
+        }
       } catch (error) {
         if (mounted && !signal.aborted) setResult(current => current.slug === slug ? current : { slug, source: product, items: [], groupId: null });
       }
     };
     if (!cachedResource(resourceKey, true)) void load();
-    const refresh = () => { void load(true); };
+    const refresh = event => {
+      if (event.type === 'focus' && cachedResource(resourceKey, true)) return;
+      if (catalogAffected(resourceKey, stored, event.detail)) void load(true);
+    };
     window.addEventListener('focus', refresh);
-    window.addEventListener('daja:variant-groups-changed', refresh);
-    window.addEventListener('daja:products-changed', refresh);
-    window.addEventListener('daja:filters-changed', refresh);
+    window.addEventListener(catalogInvalidationEvent, refresh);
     return () => {
       mounted = false; controller?.abort();
       window.removeEventListener('focus', refresh);
-      window.removeEventListener('daja:variant-groups-changed', refresh);
-      window.removeEventListener('daja:products-changed', refresh);
-      window.removeEventListener('daja:filters-changed', refresh);
+      window.removeEventListener(catalogInvalidationEvent, refresh);
     };
   }, [slug, enabled]);
   useEffect(() => {
     if (!hasDecision) return undefined;
-    return subscribePublicCatalogRealtime(event => {
-      if (['catalog.variant-groups.updated', 'product.updated'].includes(event.event)) {
-        window.dispatchEvent(new Event('daja:variant-groups-changed'));
-      }
-    });
+    return subscribePublicCatalogRealtime(() => {});
   }, [hasDecision]);
   if (result.slug === slug) return result;
   // Keep the last server-resolved group visible during a switch. The request

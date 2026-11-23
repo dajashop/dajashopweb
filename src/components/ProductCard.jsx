@@ -456,11 +456,13 @@ function ProductCard({ p, priority = false, blankImage = false, showPurchase = t
 
           <div className="product-card__footer">
             <div className="product-card__price text-zinc-900 dark:text-white font-medium">
+              {p._catalogStale && <small className="block">{translateText('Poslednja poznata cena · čeka potvrdu')}</small>}
               {translateText(p.salePrice ? <><span className="line-through text-zinc-400 mr-2">{money(p.price)}</span><span className="text-red-600">{money(p.salePrice)}</span></> : money(p.price))}
             </div>
 
             {showPurchase && <button
               className="product-card__btn w-full py-2 bg-neutral-300 text-neutral-900 rounded-lg font-medium text-sm hover:bg-neutral-400 transition-all hover:shadow-md active:scale-95"
+              disabled={p._catalogStale === true}
               onClick={addToCart}
             >{translateText("Dodaj u korpu")}</button>}
           </div>

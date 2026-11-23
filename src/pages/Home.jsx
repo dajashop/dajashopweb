@@ -136,6 +136,7 @@ export default function Home() {
   const [hero, setHero] = useState(() => pageData?.data?.homeHero ?? { version: 0, slides: HOME_HERO_DEFAULTS, intervalMs: 5600 });
 
   useEffect(() => {
+    if (pageData?.data?.homeHero?._catalogCache?.freshUntil > Date.now()) return undefined;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10_000);
     homeHeroApi.public(controller.signal).then(settings => {

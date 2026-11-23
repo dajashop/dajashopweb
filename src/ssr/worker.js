@@ -1,4 +1,5 @@
-/* global HTMLRewriter */
+/* global HTMLRewriter, __DAJA_SSR_RELEASE__ */
+import { edgeCatalogRoute, publicHtmlKey, readEdgeCatalog, storePublicHtml } from './catalogCache.js';
 import { renderDocument, renderPage } from './entry-server.jsx';
 import { catalogDepartment, isProductPath, loadPage, PUBLIC_PATHS, publicCacheSeconds } from './loadPage.js';
 import { isBrandPath, catalogUrl, decodeCatalogParams, filterUrlEntries, urlSlug } from '../utils/catalogUrls.js';
@@ -52,25 +53,27 @@ async function errorPage(status, request, env) {
   });
 }
 
-async function cachedData(request, name, loader, ttl) {
+async function cachedData(request, name, loader, ttl, ctx) {
   const key = new URL(request.url);
   key.pathname = `/__ssr-data/v1/${name}`;
   key.search = '';
   const cacheRequest = new Request(key.toString());
   const cache = typeof caches !== 'undefined' ? caches.default : null;
-  const cached = await cache?.match(cacheRequest);
+  const cached = await cache?.match(cacheRequest).catch(() => undefined);
   if (cached) return cached.json();
   const value = await loader();
   const seconds = ttl(value);
   if (cache && value != null && seconds > 0 && !value?.missing && !value?.redirectTo) {
-    await cache.put(cacheRequest, new Response(JSON.stringify(value), {
+    const write = cache.put(cacheRequest, new Response(JSON.stringify(value), {
       headers: { 'Content-Type': 'application/json', 'Cache-Control': `public,max-age=${seconds}` },
-    }));
+    })).catch(() => {});
+    if (ctx) ctx.waitUntil(write);
+    else await write;
   }
   return value;
 }
 
-async function serveRequest(request, env) {
+async function serveRequest(request, env, ctx) {
     const url = new URL(request.url);
     // Bound URL parsing/filter work before issuing any backend subrequests.
     if (request.url.length > 4096 || [...url.searchParams].length > 40) {
@@ -132,16 +135,31 @@ async function serveRequest(request, env) {
     }
     if (!PUBLIC_PATHS.has(path) && !isProductPath(path) && !isBrandPath(path)) return errorPage(404, request, env);
     const siteUrl = PUBLIC_SITE_URL;
+    const cacheEnabled = env.PUBLIC_CATALOG_EDGE_V2 !== 'false' && typeof caches !== 'undefined' && ctx;
+    const htmlKey = cacheEnabled ? publicHtmlKey(request, apiBase, __DAJA_SSR_RELEASE__) : null;
+    if (htmlKey) {
+      const cached = await caches.default.match(htmlKey).catch(() => undefined);
+      if (cached && Number(cached.headers.get('X-Daja-Html-Fresh-Until')) > Date.now()) {
+        const headers = new Headers(cached.headers);
+        headers.set('Server-Timing', 'edge_html;desc="hit"');
+        return new Response(cached.body, { status: 200, headers });
+      }
+    }
+    const dataTiming = new Set();
     try {
       const [snapshot, pageTemplate] = await Promise.all([loadPage(url, apiBase,
-        loader => cachedData(request, `product/${encodeURIComponent(path.split('/')[2])}`, loader,
+        cacheEnabled ? null : loader => cachedData(request, `product/${encodeURIComponent(path.split('/')[2])}`, loader,
           product => publicCacheSeconds({ product })),
         loader => cachedData(request, 'catalog', loader, catalog => publicCacheSeconds({ catalog })),
-        // Cache anonymous listings, filters and variants too. Previously each
-        // repeated SSR page could issue several uncached database-backed calls.
-        (route, loader) => cachedData(request, `public-api/${encodeURIComponent(route)}`, loader,
-          value => publicCacheSeconds({ catalog: Array.isArray(value?.items) ? value.items : [] }, 30)),
+        (route, loader) => cacheEnabled && edgeCatalogRoute(route) ? loader() : cachedData(request, `public-api/${encodeURIComponent(route)}`, loader,
+          value => publicCacheSeconds({ catalog: Array.isArray(value?.items) ? value.items : [] }, 30), ctx),
         originHeaders(request, env),
+        cacheEnabled ? async (route, timeout) => {
+          const response = await readEdgeCatalog(request, ctx, apiBase, route, originHeaders(request, env), timeout);
+          const timing = response.headers.get('Server-Timing');
+          if (timing) dataTiming.add(timing);
+          return response;
+        } : null,
       ), env.ASSETS.fetch(new Request(new URL('/', url)))
         .then(async response => ({ response, text: await response.text() }))
         .catch(() => null)]);
@@ -190,9 +208,17 @@ async function serveRequest(request, env) {
       headers.set('Content-Language', language);
       // Only anonymous public data is serialized. Customer tokens, receipts,
       // drafts and cart contents never enter the shared cache or HTML.
-      const ttl = publicCacheSeconds(snapshot);
-      headers.set('Cache-Control', url.search || !ttl ? 'no-store' : `public,max-age=0,s-maxage=${ttl},must-revalidate`);
-      return new Response(request.method === 'HEAD' ? null : html, { status: 200, headers });
+      const resources = isProductPath(path) ? [snapshot.product?._catalogCache, snapshot.variantGroupCache]
+        : path === '/' ? [snapshot.homeProducts?._catalogCache, snapshot.homeHero?._catalogCache]
+          : [snapshot.catalogPage?._catalogCache];
+      const deadline = Math.min(...resources.map(item => item?.freshUntil || 0));
+      const stale = snapshot.product?._catalogStale || snapshot.catalogPage?._catalogStale || snapshot.homeProducts?._catalogStale;
+      if (stale) headers.set('X-Robots-Tag', 'noindex,follow');
+      headers.set('Cache-Control', 'no-store');
+      headers.set('Server-Timing', [...dataTiming, `edge_html;desc="${htmlKey ? 'miss' : 'bypass'}"`].join(', '));
+      const response = new Response(request.method === 'HEAD' ? null : html, { status: 200, headers });
+      if (!stale) storePublicHtml(ctx, htmlKey, html, response, deadline);
+      return response;
     } catch (error) {
       console.error('Public page rendering failed', { errorType: error.name });
       return errorPage(503, request, env);
@@ -200,9 +226,27 @@ async function serveRequest(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
-    const path = new URL(request.url).pathname;
-    // Checkout readiness is outside /api/v1 on the API; keep it out of page routing.
+  async fetch(request, env, ctx) {
+    const apiUrl = new URL(request.url);
+    const path = apiUrl.pathname;
+    const route = apiUrl.pathname.slice('/api/v1'.length) + apiUrl.search;
+    if (request.method === 'GET' && request.url.length <= 4096 && path.startsWith('/api/v1/') && edgeCatalogRoute(route) &&
+        typeof env.EDGE_SHARED_SECRET === 'string' && env.EDGE_SHARED_SECRET.length >= 32 &&
+        env.PUBLIC_CATALOG_EDGE_V2 !== 'false' && !request.headers.has('Authorization') &&
+        !/(?:^|;\s*)__Host-daja_[^=]+=/.test(request.headers.get('Cookie') || '')) {
+      try {
+        const apiBase = (env.DAJA_API_BASE_URL || import.meta.env.VITE_DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
+        const response = await readEdgeCatalog(request, ctx, apiBase, route, originHeaders(request, env));
+        const headers = new Headers(response.headers);
+        headers.set('X-Daja-Gateway', 'v1');
+        headers.set('X-Content-Type-Options', 'nosniff');
+        headers.delete('Set-Cookie');
+        return new Response(response.body, { status: response.status, headers });
+      } catch {
+        return Response.json({ error: { code: 'UPSTREAM_UNAVAILABLE', message: 'Service temporarily unavailable', details: {} } },
+          { status: 503, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
+      }
+    }
     if (/^\/(?:api\/v1(?:\/|$)|socket\.io(?:\/|$)|health\/ready$)/.test(path)) return proxyApi(request, env, true);
     const publicPath = stripLanguagePrefix(path);
     const crawler = request.cf?.botManagement?.verifiedBot || /bot\b|crawler|spider|slurp|facebookexternalhit|bingpreview|lighthouse/i.test(request.headers.get('User-Agent') || '');
@@ -219,7 +263,7 @@ export default {
     }
     let response;
     try {
-      response = await serveRequest(request, env);
+      response = await serveRequest(request, env, ctx);
     } catch {
       console.error('Request failed', { event: 'ssr_request_failure' });
       response = new Response('Service unavailable', {
@@ -228,13 +272,14 @@ export default {
     }
     let headers = new Headers(response.headers);
     for (const [name, value] of SECURITY_HEADERS) headers.set(name, value);
+    headers.delete('X-Daja-Html-Fresh-Until');
     headers.set('Content-Language', pathLanguage(new URL(request.url).pathname));
     if (/text\/html/i.test(headers.get('Content-Type') || '')) {
       const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(24))));
       headers.set('Content-Security-Policy', headers.get('Content-Security-Policy')
         .replace("script-src ", `script-src 'nonce-${nonce}' 'strict-dynamic' `));
       // Never share a per-response nonce through browser or CDN HTML caches.
-      // The anonymous API snapshot cache above remains enabled.
+      // The internal HTML cache stores the template before nonce insertion.
       // Edge email obfuscation rewrites React's HTML and injects a script
       // without our CSP nonce. Preserve the HTML instead of loosening CSP.
       headers.set('Cache-Control', 'no-store, no-transform');

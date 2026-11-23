@@ -1,4 +1,4 @@
-import { cachedResource, requestResource } from './catalogResourceCache.js';
+import { cachedResource, requestResource, staleCatalog } from './catalogResourceCache.js';
 import { adminCatalogApi, catalogApi } from './dajaPlatform';
 import mockProducts from '../data/mock/products';
 import { preloadProductImage, PRODUCT_GALLERY_SIZES, productGallerySrcSet } from '../utils/productImageFormats.js';
@@ -96,10 +96,10 @@ export async function removeImagesByPaths() {
 }
 
 export const productResourceKey = (slug, staffScope) => `product:${staffScope ? `staff:${staffScope}` : 'public'}:${slug}`;
-export const cachedProductBySlug = (slug, staffScope) => cachedResource(productResourceKey(slug, staffScope));
+export const cachedProductBySlug = (slug, staffScope) => cachedResource(productResourceKey(slug, staffScope), true);
 export function fetchProductBySlug(slug, { staffScope, includeHiddenForAdmin = false, signal, force = false } = {}) {
   return requestResource(productResourceKey(slug, staffScope),
-    requestSignal => loadProductBySlug(slug, staffScope, includeHiddenForAdmin, requestSignal), { signal, force });
+    requestSignal => loadProductBySlug(slug, staffScope, includeHiddenForAdmin, requestSignal, force), { signal, force });
 }
 const prefetches = new Map();
 export function prefetchProduct(slug, { image = false } = {}) {
@@ -147,15 +147,16 @@ function warmProductImage(product, signal) {
 export async function prepareProductVariant(slug, { signal } = {}) {
   const product = await fetchProductBySlug(slug, { signal });
   signal?.throwIfAborted();
+  if (staleCatalog(product)) throw new Error('Provera cene i dostupnosti');
   if (product?.salePrice && product.saleValidUntil && Date.parse(product.saleValidUntil) <= Date.now()) {
     return fetchProductBySlug(slug, { signal, force: true });
   }
   return product;
 }
-async function loadProductBySlug(slug, staffScope, includeHiddenForAdmin, signal) {
+async function loadProductBySlug(slug, staffScope, includeHiddenForAdmin, signal, refresh) {
   let publicProduct = null;
   try {
-    publicProduct = await catalogApi.getProductBySlug(slug, { signal });
+    publicProduct = await catalogApi.getProductBySlug(slug, { signal, refresh });
   } catch (error) {
     if (error.name === 'AbortError') throw error;
     if (error.status !== 404 && !allowMockFallback) {
@@ -174,13 +175,24 @@ async function loadProductBySlug(slug, staffScope, includeHiddenForAdmin, signal
   return publicProduct;
 }
 
-export async function applyPublicProductRealtimeEvent(event) {
+const realtimeUpdates = new Map();
+export function applyPublicProductRealtimeEvent(event) {
   const slug = event?.data?.slug || event?.slug;
-  if (!slug) return;
+  if (!slug) return Promise.resolve();
   if (event?.data?.deleted === true || event?.deleted === true) {
-    notifyProductsChanged({ type: 'deleteBySlug', slug });
-    return;
+    notifyProductsChanged({ type: 'deleteBySlug', slug, cacheInvalidated: event.catalogCacheInvalidated });
+    return Promise.resolve();
   }
+  const eventKey = slug + ':' + (event?.serverTime || '');
+  if (!realtimeUpdates.has(eventKey)) {
+    const work = refreshPublicProduct(slug, event.catalogCacheInvalidated).finally(() => realtimeUpdates.delete(eventKey));
+    realtimeUpdates.set(eventKey, work);
+  }
+  return realtimeUpdates.get(eventKey);
+}
+
+async function refreshPublicProduct(slug, cacheInvalidated) {
+  const notify = detail => notifyProductsChanged({ ...detail, cacheInvalidated });
   try {
     const product = await catalogApi.getProductBySlug(slug, { realtime: true });
     // Published hidden watches retain their detail page as unavailable.
@@ -190,25 +202,26 @@ export async function applyPublicProductRealtimeEvent(event) {
       if (redirectedSlug) {
         const redirectedProduct = await catalogApi.getProductBySlug(redirectedSlug, { realtime: true });
         if (redirectedProduct?.id) {
-          notifyProductsChanged({
+          notify({
             type: 'upsert',
             product: redirectedProduct,
+            previousSlug: slug,
             created: true,
           });
           return;
         }
       }
-      notifyProductsChanged({ type: 'deleteBySlug', slug });
+      notify({ type: 'deleteBySlug', slug });
       return;
     }
     if (!product?.id) {
-      notifyProductsChanged({ type: 'deleteBySlug', slug });
+      notify({ type: 'deleteBySlug', slug });
       return;
     }
-    notifyProductsChanged({ type: 'upsert', product, created: true });
+    notify({ type: 'upsert', product, created: true });
   } catch (error) {
     if (error?.status === 404) {
-      notifyProductsChanged({ type: 'deleteBySlug', slug });
+      notify({ type: 'deleteBySlug', slug });
       return;
     }
     console.warn('Realtime ažuriranje proizvoda nije uspelo:', error);

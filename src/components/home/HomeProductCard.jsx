@@ -80,10 +80,10 @@ export default function HomeProductCard({ product }) {
         </Link>
 
         <div className="homeCard__foot">
-          <span className="homeCard__price">{money(price)}</span>
+          <span className="homeCard__price">{product._catalogStale && <><small>{translateText('Poslednja poznata cena · čeka potvrdu')}</small><br /></>}{money(price)}</span>
           <div className="homeCard__actions">
             <Link to={`/product/${slug}`} className="btn btn--ghost-sm">{translateText("Detalji")}</Link>
-            <button type="button" className="btn btn--primary-sm" onClick={handleAdd}>{translateText("Dodaj")}</button>
+            <button type="button" className="btn btn--primary-sm" disabled={product._catalogStale === true} onClick={handleAdd}>{translateText("Dodaj")}</button>
           </div>
         </div>
       </div>

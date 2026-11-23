@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { apiRequest } from '../services/apiClient';
 import { normalizeProduct } from '../services/dajaPlatform.js';
+import { catalogInvalidationEvent } from '../services/catalogResourceCache.js';
 import { usePageData } from '../ssr/PageData.jsx';
 
 const refreshInterval = 30_000;
@@ -15,15 +16,16 @@ function nextSaleExpiry(data, now) {
   return Math.min(...expiries.filter(expiry => expiry > now));
 }
 
-function load() {
+function load(force = false) {
   if (cached?.expires > Date.now()) return Promise.resolve(cached.data);
   if (!pending) {
     const requestRevision = revision;
-    pending = apiRequest('/public/catalog/collections', { auth: false, signal: AbortSignal.timeout(15_000) })
+    pending = apiRequest('/public/catalog/collections', { auth: false, signal: AbortSignal.timeout(15_000),
+      ...(force ? { headers: { 'X-Daja-Catalog-Refresh': '1' } } : {}) })
       .then(data => {
         if (requestRevision !== revision) return null;
         const now = Date.now();
-        cached = { data, expires: Math.min(now + refreshInterval, nextSaleExpiry(data, now)) };
+        cached = { data, expires: Math.min(data?._catalogCache?.freshUntil ?? now + refreshInterval, nextSaleExpiry(data, now)) };
         return data;
       }).finally(() => { pending = null; });
   }
@@ -45,6 +47,8 @@ export default function useCollectionPreviews(enabled = true) {
     let stopped = false;
     let refreshing = false;
     let timer;
+    let forced = false;
+    if (seed?._catalogCache?.freshUntil > Date.now() && !cached) cached = { data: seed, expires: seed._catalogCache.freshUntil };
     async function refresh() {
       clearTimeout(timer);
       if (stopped || document.hidden || refreshing) return;
@@ -52,7 +56,9 @@ export default function useCollectionPreviews(enabled = true) {
       setNow(Date.now());
       let invalidated = false;
       try {
-        const data = await load();
+        const force = forced;
+        forced = false;
+        const data = await load(force);
         if (stopped) return;
         invalidated = data === null;
         if (!invalidated) {
@@ -67,7 +73,7 @@ export default function useCollectionPreviews(enabled = true) {
           const time = Date.now();
           const cacheExpiry = cached?.expires > time ? cached.expires : Infinity;
           const due = Math.min(time + refreshInterval, nextSaleExpiry(latest.current, time), cacheExpiry);
-          timer = setTimeout(refresh, invalidated ? 0 : Math.max(1, due - time));
+          timer = setTimeout(refresh, invalidated || forced ? 0 : Math.max(1, due - time));
         }
       }
     }
@@ -76,17 +82,18 @@ export default function useCollectionPreviews(enabled = true) {
         lastChange = event;
         revision++;
         cached = null;
+        forced = true;
       }
       void refresh();
     };
     void refresh();
-    window.addEventListener('daja:products-changed', invalidate);
+    window.addEventListener(catalogInvalidationEvent, invalidate);
     document.addEventListener('visibilitychange', refresh);
     window.addEventListener('online', refresh);
     return () => {
       stopped = true;
       clearTimeout(timer);
-      window.removeEventListener('daja:products-changed', invalidate);
+      window.removeEventListener(catalogInvalidationEvent, invalidate);
       document.removeEventListener('visibilitychange', refresh);
       window.removeEventListener('online', refresh);
     };

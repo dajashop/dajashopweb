@@ -1,7 +1,7 @@
 // src/hooks/useProduct.js
 import { useCallback, useEffect, useState } from "react";
 import { fetchProductBySlug, cachedProductBySlug, productResourceKey } from "../services/products";
-import { cachedResource, rememberResource } from '../services/catalogResourceCache.js';
+import { catalogAffected, catalogFallback, catalogInvalidationEvent, currentCatalogPrice, rememberResource, restoreCatalogResource, staleCatalog } from '../services/catalogResourceCache.js';
 import { usePageData } from '../ssr/PageData.jsx';
 import { useAuth, useStaffCatalogScope } from './useAuth.js';
 import { isAdminEmail } from '../services/dajaPlatform.js';
@@ -28,76 +28,86 @@ export default function useProduct(slug) {
 
   useEffect(() => {
     if (!slug) return;
-
     let mounted = true;
     let controller;
     let sequence = 0;
-    const stored = initialProduct || promotedProduct || cachedProductBySlug(slug, staffScope);
-    if (page?.hydrating && initialProduct) rememberResource(resourceKey, initialProduct);
-    setResult({ slug, resourceKey, product: stored, loading: !stored, error: null });
-    const load = (force = false) => {
+    let timer;
+    let known = initialProduct || promotedProduct || cachedProductBySlug(slug, staffScope);
+    if (page?.hydrating && initialProduct && !staffScope) rememberResource(resourceKey, initialProduct);
+    setResult({ slug, resourceKey, product: known, loading: !known, error: null });
+
+    const show = (data, error = null) => {
+      known = data;
+      clearTimeout(timer);
+      setResult({ slug, resourceKey, product: data, loading: false, error });
+      if (staleCatalog(data)) {
+        const delay = data._catalogCache.staleUntil - Date.now();
+        timer = setTimeout(() => show(null, Object.assign(new Error('Provera cene i dostupnosti'), { status: 503 })), Math.max(0, delay));
+        return;
+      }
+      const now = Date.now();
+      const boundaries = [data?.saleValidUntil, data?.nextSaleStartsAt].map(Date.parse).filter(time => time > now);
+      if (boundaries.length) {
+        timer = setTimeout(() => {
+          if (document.visibilityState === 'visible') void load(true);
+        }, Math.min(Math.min(...boundaries) - now + 30, 2_147_483_647));
+      }
+    };
+    const load = async (force = false, restore = false) => {
       controller?.abort();
       controller = new AbortController();
+      const { signal } = controller;
       const requestSequence = ++sequence;
-      void fetchProductBySlug(slug, { staffScope, includeHiddenForAdmin, signal: controller.signal, force }).then(data => {
-        if (mounted && requestSequence === sequence) setResult({ slug, resourceKey, product: data || null, loading: false,
-          error: data ? null : Object.assign(new Error('Proizvod nije pronađen u bazi.'), { status: 404 }) });
-      }).catch(error => {
-        if (mounted && requestSequence === sequence && error.name !== 'AbortError') setResult(current => ({ ...current, loading: false,
-          product: error.status === 404 ? null : current.product, error: current.product && error.status !== 404 ? null : error }));
-      });
+      const active = () => mounted && !signal.aborted && requestSequence === sequence;
+      try {
+        if (restore && !staffScope && !known) {
+          known = await restoreCatalogResource(resourceKey);
+          if (!active()) return;
+          if (cachedProductBySlug(slug)) { show(known); return; }
+        }
+        const data = await fetchProductBySlug(slug, { staffScope, includeHiddenForAdmin, signal, force });
+        if (!active()) return;
+        show(data || null, data ? null : Object.assign(new Error('Proizvod nije pronađen u bazi.'), { status: 404 }));
+      } catch (failure) {
+        if (!active() || failure.name === 'AbortError') return;
+        const fallback = !staffScope && catalogFallback(resourceKey, failure, known);
+        if (fallback) show(fallback);
+        else if (staffScope && known && failure.status !== 404) show(known);
+        else show(null, failure);
+      }
     };
-    if (!cachedResource(resourceKey, true)) load();
-    const refresh = () => load(true);
-    const onFocus = () => { if (document.visibilityState === 'visible' && !cachedResource(resourceKey, true)) load(); };
-    const events = ['daja:products-changed', 'daja:variant-groups-changed', 'daja:filters-changed'];
-    events.forEach(event => window.addEventListener(event, refresh));
+    if (known && !staleCatalog(known) && (cachedProductBySlug(slug, staffScope) || page?.hydrating &&
+        (!known._catalogCache || known._catalogCache.freshUntil > Date.now()))) show(known);
+    else void load(false, true);
+
+    const refresh = event => {
+      if (!catalogAffected(resourceKey, known, event.detail)) return;
+      // A known change supersedes the older offline copy, including a deletion.
+      const hadStale = staleCatalog(known);
+      known = null;
+      clearTimeout(timer);
+      if (hadStale || event.detail?.type === 'delete' || event.detail?.type === 'deleteBySlug') {
+        setResult({ slug, resourceKey, product: null, loading: true, error: null });
+      }
+      void load(true);
+    };
+    const onFocus = () => {
+      if (document.visibilityState === 'visible' && !cachedProductBySlug(slug, staffScope)) void load();
+    };
+    window.addEventListener(catalogInvalidationEvent, refresh);
     window.addEventListener('focus', onFocus);
+    window.addEventListener('online', onFocus);
     return () => {
-      mounted = false; controller?.abort();
-      events.forEach(event => window.removeEventListener(event, refresh));
+      mounted = false;
+      controller?.abort();
+      clearTimeout(timer);
+      window.removeEventListener(catalogInvalidationEvent, refresh);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('online', onFocus);
     };
   }, [slug, resourceKey, staffScope, includeHiddenForAdmin]);
 
-  useEffect(() => {
-    const updateCurrentProduct = (event) => {
-      const change = event.detail;
-      if (change?.type === 'upsert' && change.product) {
-        setResult((current) => current.slug === slug && current.product && (
-          change.product.slug === slug || (current.product && change.product.id === current.product.id)
-        ) ? { ...current, product: { ...current.product, ...change.product }, loading: false, error: null } : current);
-      }
-      if (change?.type === 'deleteBySlug' && change.slug === slug && !staffScope) {
-        setResult(current => current.slug === slug ? { ...current, product: null, loading: true } : current);
-      }
-      if (change?.type === 'delete') {
-        setResult((current) => current.slug === slug && current.product?.id === change.id
-          ? { ...current, product: null, loading: false } : current);
-      }
-    };
-    window.addEventListener('daja:products-changed', updateCurrentProduct);
-    return () => window.removeEventListener('daja:products-changed', updateCurrentProduct);
-  }, [slug, staffScope]);
-
-  useEffect(() => {
-    if (!product?.salePrice || !product.saleValidUntil || !slug) return undefined;
-    const delay = new Date(product.saleValidUntil).getTime() - Date.now();
-    if (!Number.isFinite(delay) || delay <= 0) return undefined;
-    let mounted = true;
-    const timer = window.setTimeout(async () => {
-      try {
-        const fresh = await fetchProductBySlug(slug, { staffScope, includeHiddenForAdmin, force: true });
-        if (mounted) setResult((current) => current.slug === slug
-          ? { ...current, product: fresh } : current);
-      } catch (err) {
-        console.warn('Osvežavanje cene proizvoda nije uspelo:', err);
-      }
-    }, Math.min(delay + 50, 2_147_483_647));
-    return () => { mounted = false; window.clearTimeout(timer); };
-  }, [product?.salePrice, product?.saleValidUntil, slug, staffScope, includeHiddenForAdmin]);
-
   const updateProduct = useCallback((patch) => setResult((current) => current.slug === slug && current.product
     ? { ...current, product: { ...current.product, ...patch } } : current), [slug]);
-  return { product, loading, error, updateProduct };
+  return { product: page?.hydrating ? product : currentCatalogPrice(product), loading, error, updateProduct };
 }

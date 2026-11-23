@@ -1,4 +1,8 @@
 {
+  "Poslednja poznata cena · čeka potvrdu": "Last known price \u00b7 awaiting confirmation",
+  "Provera cene i dostupnosti": "Checking price and availability",
+  "Cena u korpi je promenjena. Proverite novi iznos i ponovo potvrdite porudžbinu.": "A price in your cart has changed. Review your new total and confirm your order again.",
+  "Nema dovoljno baterija na stanju za izabranu količinu.": "There are not enough batteries in stock for the selected quantity.",
   "Adresa za dostavu": "Delivery address",
   "Trenutno uneta adresa": "Current address",
   "Unesi novu adresu": "Enter a new address",

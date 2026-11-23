@@ -1,4 +1,4 @@
-import { cachedResource, rememberResource, requestResource } from '../services/catalogResourceCache.js';
+import { catalogAffected, catalogInvalidationEvent, cachedResource, rememberResource, requestResource } from '../services/catalogResourceCache.js';
 import { useEffect, useState } from 'react';
 import { catalogApi, subscribePublicCatalogRealtime } from '../services/dajaPlatform.js';
 import { applyPublicProductRealtimeEvent } from '../services/products.js';
@@ -16,7 +16,7 @@ export default function useRelatedProducts(slug, enabled = true) {
     if (!slug || !enabled) return undefined;
     const resourceKey = `related:${slug}`;
     if (hasSeed) rememberResource(resourceKey, initialItems);
-    const stored = cachedResource(resourceKey);
+    let stored = cachedResource(resourceKey);
     if (stored) setResult({ slug, items: stored });
     let controller;
     let mounted = true;
@@ -26,28 +26,29 @@ export default function useRelatedProducts(slug, enabled = true) {
       const signal = controller.signal;
       try {
         const items = await requestResource(resourceKey, requestSignal => catalogApi.relatedProducts(slug, requestSignal), { signal, force });
-        if (mounted && !signal.aborted) setResult({ slug, items });
+        if (mounted && !signal.aborted) {
+          stored = items;
+          setResult({ slug, items });
+        }
       } catch {
         // Optional recommendations must never hide the main product page.
       }
     };
     if (!cachedResource(resourceKey, true)) void load();
-    const refresh = () => { void load(true); };
-    const events = ['daja:products-changed', 'daja:variant-groups-changed', 'daja:filters-changed'];
-    events.forEach(event => window.addEventListener(event, refresh));
+    const refresh = event => {
+      if (event.detail?.scope || catalogAffected(resourceKey, stored, event.detail)) void load(true);
+    };
+    window.addEventListener(catalogInvalidationEvent, refresh);
     return () => {
       mounted = false;
       controller?.abort();
-      events.forEach(event => window.removeEventListener(event, refresh));
+      window.removeEventListener(catalogInvalidationEvent, refresh);
     };
   }, [slug, enabled]);
 
   useEffect(() => {
     if (!hasDecision) return undefined;
-    // Preserve the product page's live updates without subscribing to a list.
-    return subscribePublicCatalogRealtime(event => {
-      void applyPublicProductRealtimeEvent(event);
-    });
+    return subscribePublicCatalogRealtime(event => { void applyPublicProductRealtimeEvent(event); });
   }, [hasDecision]);
 
   return result.slug === slug ? result.items : initialItems;
