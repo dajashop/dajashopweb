@@ -137,8 +137,6 @@ async function serveRequest(request, env) {
         loader => cachedData(request, `product/${encodeURIComponent(path.split('/')[2])}`, loader,
           product => publicCacheSeconds({ product })),
         loader => cachedData(request, 'catalog', loader, catalog => publicCacheSeconds({ catalog })),
-        loader => cachedData(request, `related/${encodeURIComponent(path.split('/')[2])}`, loader,
-          relatedProducts => publicCacheSeconds({ relatedProducts })),
         // Cache anonymous listings, filters and variants too. Previously each
         // repeated SSR page could issue several uncached database-backed calls.
         (route, loader) => cachedData(request, `public-api/${encodeURIComponent(route)}`, loader,

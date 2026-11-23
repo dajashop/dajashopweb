@@ -31,3 +31,22 @@ export function preloadProductImage(img, src, srcSet, sizes) {
   img.src = src;
   return () => picture?.remove();
 }
+
+// The gallery is a full column on phones and one of two columns on desktop.
+export const PRODUCT_GALLERY_SIZES = '(max-width: 1023px) calc(100vw - 40px), 56vw';
+
+export function productGallerySrcSet(image) {
+  const width = image?.width;
+  if (typeof image?.url !== 'string' || !Number.isInteger(width) || width <= 0 || !Array.isArray(image.sources)) return undefined;
+  const paired = Boolean(avifImageUrl(image.url));
+  const candidates = new Map();
+  for (const source of image.sources) {
+    if (typeof source?.url === 'string' && Number.isInteger(source.width) && source.width > 0 &&
+        source.width < width && source.url !== image.url && Boolean(avifImageUrl(source.url)) === paired) {
+      candidates.set(source.width, source.url);
+    }
+  }
+  if (!candidates.size) return undefined;
+  candidates.set(width, image.url);
+  return [...candidates].sort(([left], [right]) => left - right).map(([size, url]) => url + ' ' + size + 'w').join(', ');
+}

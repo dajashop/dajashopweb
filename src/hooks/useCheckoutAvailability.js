@@ -9,6 +9,7 @@ export function useCheckoutAvailability() {
   const [isChecking, setIsChecking] = useState(false);
   const mounted = useRef(false);
   const request = useRef(null);
+  const supportsAttempts = useRef(false);
 
   const markUnavailable = useCallback(() => {
     const previous = request.current;
@@ -46,8 +47,10 @@ export function useCheckoutAvailability() {
         // A proxy startup/error HTML page is not a healthy API response.
         const body = response.ok && response.headers.get('content-type')?.includes('application/json')
           ? await response.json() : null;
-        const available = (body?.data || body)?.status === 'ok' && navigator.onLine !== false;
+        const readiness = body?.data || body;
+        const available = readiness?.status === 'ok' && navigator.onLine !== false;
         if (!isCurrent()) return false;
+        supportsAttempts.current = available && readiness?.checkoutAttempts === true;
         setAvailability(available ? 'available' : 'unavailable');
         return available;
       } catch {
@@ -96,5 +99,8 @@ export function useCheckoutAvailability() {
     };
   }, [checkAvailability, markUnavailable]);
 
-  return { availability, isChecking, checkAvailability, markUnavailable };
+  return {
+    availability, isChecking, checkAvailability, markUnavailable,
+    supportsCheckoutAttempts: () => supportsAttempts.current,
+  };
 }

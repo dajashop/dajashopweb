@@ -1,9 +1,10 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
-import React, { lazy, useState, useMemo, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useMemo, useEffect } from 'react';
 import { Box, Maximize2, Image as ImageIcon } from 'lucide-react';
 import ClientOnly from '../ClientOnly.jsx';
 const Watch3DViewer = import.meta.env.SSR ? () => null : lazy(() => import('../Watch3DViewer.jsx'));
-import ImageGalleryModal from '../modals/ImageGalleryModal.jsx';
+import { PRODUCT_GALLERY_SIZES, productGallerySrcSet } from '../../utils/productImageFormats.js';
+const ImageGalleryModal = import.meta.env.SSR ? () => null : lazy(() => import('../modals/ImageGalleryModal.jsx'));
 import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import './ProductGallery.css';
 export default function ProductGallery({ product }) {
@@ -46,6 +47,7 @@ export default function ProductGallery({ product }) {
       list.push({
         type: 'image',
         src: img.url,
+        srcSet: productGallerySrcSet(img),
         thumb:
           img.thumb || (i === 0 ? product.thumbnailUrl || img.url : img.url),
         altText: img.altText || img.alt_text || '',
@@ -96,12 +98,14 @@ export default function ProductGallery({ product }) {
   return (
     <div className={`product__gallery${product.department === 'naocare' ? ' product__gallery--eyewear' : ''}`}>
       {isGalleryOpen && (
-        <ImageGalleryModal
-          images={galleryImages}
-          containThumbnails={product.department === 'naocare'}
-          initialIndex={Math.max(0, currentGalleryIndex)}
-          onClose={() => setIsGalleryOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <ImageGalleryModal
+            images={galleryImages}
+            containThumbnails={product.department === 'naocare'}
+            initialIndex={Math.max(0, currentGalleryIndex)}
+            onClose={() => setIsGalleryOpen(false)}
+          />
+        </Suspense>
       )}
 
       {/* Glavni Prikaz */}
@@ -117,6 +121,8 @@ export default function ProductGallery({ product }) {
           >
             <ProgressiveImage
               src={activeItem?.src}
+              srcSet={activeItem?.srcSet}
+              sizes={activeItem?.srcSet ? PRODUCT_GALLERY_SIZES : undefined}
               loading="eager"
               fetchPriority="high"
               thumbSrc={activeItem?.thumb}
@@ -153,7 +159,7 @@ export default function ProductGallery({ product }) {
                       translateText(item.altText ||
                       `${defaultAlt || product.name} - slika ${(item.imageIndex || 0) + 1}`)
                     }
-                    className="thumb-img" loading="lazy" decoding="async"
+                    className="thumb-img" loading="lazy" fetchPriority="low" decoding="async"
                   />
                 )}
               </button>

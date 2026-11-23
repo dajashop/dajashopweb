@@ -1,6 +1,7 @@
 import { cachedResource, requestResource } from './catalogResourceCache.js';
 import { adminCatalogApi, catalogApi } from './dajaPlatform';
 import mockProducts from '../data/mock/products';
+import { preloadProductImage, PRODUCT_GALLERY_SIZES, productGallerySrcSet } from '../utils/productImageFormats.js';
 
 const allowMockFallback =
   import.meta.env.DEV || import.meta.env.VITE_DAJA_MOCK_FALLBACK === 'true';
@@ -108,34 +109,44 @@ export function prefetchProduct(slug, { image = false } = {}) {
   const controller = new AbortController();
   prefetches.set(slug, controller);
   const timeout = window.setTimeout(() => controller.abort(), 10_000);
-  const load = image ? prepareProductVariant : fetchProductBySlug;
-  void load(slug, { signal: controller.signal }).catch(() => {}).finally(() => {
+  const load = async () => {
+    const product = await prepareProductVariant(slug, { signal: controller.signal });
+    if (image) await warmProductImage(product, controller.signal);
+  };
+  void load().catch(() => {}).finally(() => {
     window.clearTimeout(timeout); prefetches.delete(slug);
   });
 }
-export async function prepareProductVariant(slug, { signal } = {}) {
-  const product = await fetchProductBySlug(slug, { signal });
+
+function warmProductImage(product, signal) {
   const first = product?.images?.[0];
   const src = (typeof first === 'string' ? first : first?.url) || product?.mainImageUrl || product?.image;
-  if (src && typeof Image !== 'undefined') await new Promise((resolve, reject) => {
-    if (signal?.aborted) { reject(new DOMException('Aborted', 'AbortError')); return; }
+  if (!src || typeof Image === 'undefined' || signal.aborted) return;
+  return new Promise(resolve => {
     const image = new Image();
-    const cleanup = () => {
+    image.fetchPriority = 'low';
+    const srcSet = productGallerySrcSet(first);
+    let removePicture;
+    const finish = () => {
       clearTimeout(timeout);
-      signal?.removeEventListener('abort', abort);
+      signal.removeEventListener('abort', finish);
       image.onload = null;
       image.onerror = null;
+      removePicture?.();
+      resolve();
     };
-    const finish = () => { cleanup(); resolve(); };
-    const abort = () => { cleanup(); reject(new DOMException('Aborted', 'AbortError')); };
-    const timeout = setTimeout(finish, 5000);
-    signal?.addEventListener('abort', abort, { once: true });
+    const timeout = setTimeout(finish, 5_000);
+    signal.addEventListener('abort', finish, { once: true });
     image.onload = finish;
     image.onerror = finish;
-    image.src = src;
+    removePicture = preloadProductImage(image, src, srcSet, PRODUCT_GALLERY_SIZES);
     if (image.complete) finish();
   });
-  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+}
+
+export async function prepareProductVariant(slug, { signal } = {}) {
+  const product = await fetchProductBySlug(slug, { signal });
+  signal?.throwIfAborted();
   if (product?.salePrice && product.saleValidUntil && Date.parse(product.saleValidUntil) <= Date.now()) {
     return fetchProductBySlug(slug, { signal, force: true });
   }

@@ -1166,6 +1166,10 @@ export const customerApi = {
   },
 };
 
+function checkoutAttemptHeaders(attempt) {
+  return { 'Idempotency-Key': attempt.key, 'X-Daja-Checkout-Proof': attempt.proof };
+}
+
 export const ordersApi = {
   claim(id, claimToken) { return apiRequest(`/orders/${encodeURIComponent(id)}/claim`, { method: 'POST', body: { claimToken } }); },
   async create(payload) {
@@ -1178,6 +1182,25 @@ export const ordersApi = {
       throw new Error('DAJA orders API je vratio tekst/HTML umesto JSON-a.');
     }
     return normalizeOrder(data?.order || data);
+  },
+  async createAttempt(payload, attempt) {
+    const data = await apiRequest('/orders/attempt', {
+      method: 'POST', body: payload, headers: checkoutAttemptHeaders(attempt),
+      signal: AbortSignal.timeout(25_000),
+    });
+    const order = normalizeOrder(data?.order || data);
+    if (!order?.docId) throw new Error('Prijem porudžbine još nije potvrđen.');
+    return order;
+  },
+  async recoverAttempt(attempt, signal) {
+    const data = await apiRequest('/orders/attempt', {
+      headers: checkoutAttemptHeaders(attempt),
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(8_000)]) : AbortSignal.timeout(8_000),
+    });
+    if (data?.order === null) return null;
+    const order = normalizeOrder(data?.order);
+    if (!order?.docId) throw new Error('Prijem porudžbine još nije potvrđen.');
+    return order;
   },
   async mine() {
     const data = await apiRequest('/orders/me');

@@ -59,7 +59,23 @@ export default function Product() {
   const navigate = useNavigate();
   const { product: p, loading, error, updateProduct } = useProduct(slug);
   const { staffReady } = useAuth();
-  const relatedProducts = useRelatedProducts(slug, Boolean(p?.id));
+  const relatedAnchor = useRef(null);
+  const [relatedSlug, setRelatedSlug] = useState(null);
+  const relatedProducts = useRelatedProducts(slug, Boolean(p?.id) && relatedSlug === slug);
+  useEffect(() => {
+    if (!p?.id || !relatedAnchor.current) return undefined;
+    if (typeof IntersectionObserver === 'undefined') {
+      setRelatedSlug(slug);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting) return;
+      setRelatedSlug(slug);
+      observer.disconnect();
+    }, { rootMargin: '450px 0px' });
+    observer.observe(relatedAnchor.current);
+    return () => observer.disconnect();
+  }, [slug, p?.id]);
   const { items: cartItems = [], dispatch } = useCart();
   const { flash } = useFlash();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -99,8 +115,7 @@ export default function Product() {
       const next = await prepareProductVariant(variant.slug, { signal: controller.signal });
       if (controller.signal.aborted || selection.current !== controller) return;
       if (!next?.id || next.redirectTo) throw new Error('Variant unavailable');
-      // Image preparation may outlast the normal resource TTL; seed the exact
-      // complete payload immediately before the router switches products.
+      // Seed the new price, availability and purchase target together before changing routes.
       rememberResource(productResourceKey(variant.slug), next);
       navigate(`/product/${variant.slug}`, { replace: true, state: { variantTransition: true } });
     } catch (error) {
@@ -261,7 +276,7 @@ export default function Product() {
         </div>
       </div>
 
-      <div className="container">
+      <div className="container" ref={relatedAnchor}>
         <RelatedProducts currentProduct={p} allProducts={relatedProducts} />
       </div>
     </div>

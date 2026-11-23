@@ -28,7 +28,7 @@ export function publicCacheSeconds(data, maximum = 60) {
     Math.max(0, Math.floor((new Date(item.saleValidUntil).getTime() - Date.now()) / 1000) || 0)), maximum);
 }
 
-export async function loadPage(url, apiBase, readProduct, readCatalog, readRelated, readPublicApi, requestHeaders = {}) {
+export async function loadPage(url, apiBase, readProduct, readCatalog, readPublicApi, requestHeaders = {}) {
   const path = stripLanguagePrefix(url.pathname).replace(/\/+$/, '') || '/';
   const api = async (route, optional = false) => {
     try {
@@ -73,10 +73,6 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
     const body = await response.json();
     return body?.data ?? body;
   };
-  const relatedLoader = async () => {
-    const related = await api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/related`, true);
-    return Array.isArray(related?.items) ? related.items.slice(0, 12) : null;
-  };
   // The listing returns its filter configuration in the same response.
   const requestKey = department ? catalogPageRequest(department, url.searchParams, undefined, path) : null;
   let configuration = null;
@@ -101,11 +97,10 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
       return legacyListing(await (readCatalog ? readCatalog(catalogLoader) : catalogLoader()),route,configuration);
     }
   };
-  const [product, listing, variants, related, collectionPreviews, homeHero] = await Promise.all([
+  const [product, listing, variants, collectionPreviews, homeHero] = await Promise.all([
     isProductPath(path) ? (readProduct ? readProduct(productLoader) : productLoader()) : null,
     requestKey ? listingLoader(requestKey) : engravingRequest ? listingLoader(engravingRequest) : path === '/' ? listingLoader('home') : null,
     isProductPath(path) ? api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/variants`, true) : null,
-    isProductPath(path) ? (readRelated ? readRelated(relatedLoader) : relatedLoader()) : [],
     path === '/kolekcije-satova' || path.startsWith('/magazin/brendovi/') ? api('/public/catalog/collections', true) : null,
     path === '/' ? api('/public/catalog/hero-slides', true) : null,
   ]);
@@ -129,9 +124,7 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readRelat
   }
   data.relatedVariants = variants?.items || [];
   data.variantGroupId = variants?.groupId || null;
-  data.relatedProducts = related || [];
   // Empty successful results are seeds too; failed optional requests can retry in the browser.
   data.relatedVariantsLoaded = Array.isArray(variants?.items);
-  data.relatedProductsLoaded = Array.isArray(related);
   return data;
 }

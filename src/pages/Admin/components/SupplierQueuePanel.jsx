@@ -1153,7 +1153,10 @@ export default function SupplierQueuePanel({ canWrite, canChangeVisibility, onOp
                     )}
                   </td>
                   <td className="whitespace-nowrap p-3 text-neutral-500">
-                    <p>{date(link.lastCheckedAt)}</p>
+                    <p>Poslednji pokušaj: {date(link.lastCheckedAt)}</p>
+                    {link.lastGoodResult?.stockCheckedAt
+                      ? <p className="mt-1">Stanje potvrđeno: {date(link.lastGoodResult.stockCheckedAt)}</p>
+                      : <p className="mt-1">Datum potvrde nije zabeležen</p>}
                     <p title={date(link.nextCheckAt)} className="mt-1">
                       Naredna: {countdown(link.nextCheckAt, now)}
                     </p>

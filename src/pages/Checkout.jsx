@@ -9,6 +9,7 @@ import { usePromo } from '../hooks/usePromo.js';
 import { useFormValidator } from '../hooks/useFormValidator.js';
 import { useCheckoutAvailability, CHECKOUT_UNAVAILABLE_MESSAGE } from '../hooks/useCheckoutAvailability.js';
 import { ordersApi, customerApi } from '../services/dajaPlatform.js';
+import { beginCheckoutAttempt, checkoutCartHash, forgetCheckoutAttempt, readCheckoutAttempt } from '../services/checkoutAttempt.js';
 import { PASSWORD_RULE, FORM_RULES } from '../data/validationRules.js';
 import { commerceSeoConfig } from '../config/seo.js';
 import CartProductImage from '../components/CartProductImage.jsx';
@@ -52,6 +53,13 @@ export default function Checkout() {
  const lock=useRef(false), saveLock=useRef(false), touched=useRef(false), auto=useRef(false), heading=useRef(null);
  const reduce=useReducedMotion();
  const accountId = user?.id || user?.uid;
+ const checkoutActive = useRef(true);
+ const checkoutContext = useRef({ accountId, items, clearPromo: promo.removePromo });
+ checkoutContext.current = { accountId, items, clearPromo: promo.removePromo };
+ useEffect(() => {
+   checkoutActive.current = true;
+   return () => { checkoutActive.current = false; };
+ }, []);
  const currentAddressBook = accountId && addressBook?.accountId === accountId && addressBook.reload === addressReload ? addressBook : null;
  const savedAddressChoices = currentAddressBook?.addresses ?? noAddresses;
  useEffect(() => {
@@ -113,18 +121,106 @@ export default function Checkout() {
    }
    go(target);
  };
- async function next(){
-  if(lock.current)return;
-  if(step<2){navigateToStep(step+1);return;}
-  if(!form.validateAll()){go(form.isValid(addressFields) ? 1 : 0);return;}
-  lock.current=true;setBusy(true);setError('');
-  try {
-   if(!items.length)throw new Error(t('Vaša korpa je prazna.'));
-   if(!(await health.checkAvailability()))throw new Error(t(CHECKOUT_UNAVAILABLE_MESSAGE));
-   const result=await ordersApi.create({customer:{...form.formData,address,uid:user?.uid||'guest'},items,subtotal:total,discountAmount:discount,subtotalAfterDiscount:total-discount,shippingCost:shipping,finalTotal:amount,promoCode:promo.appliedPromo?.code||null,shippingMethod:'courier',paymentMethod:'cod',note});
-   setReceiptOwner(accountId);
-   setOrder(result);promo.removePromo();dispatch({type:'CLEAR'});requestAnimationFrame(()=>heading.current?.scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'}));
-  }catch(e){setError(t(e.message)||t(CHECKOUT_UNAVAILABLE_MESSAGE));}finally{lock.current=false;setBusy(false);}
+ async function acceptOrder(result, attempt, owner, active, cartHash = attempt?.cartHash) {
+   const latest = checkoutContext.current;
+   const currentHash = attempt && await checkoutCartHash(latest.items, attempt.proof).catch(() => null);
+   const clearCart = !attempt || (cartHash && currentHash === cartHash);
+   if (!active() || checkoutContext.current.accountId !== owner) return;
+   forgetCheckoutAttempt(owner, attempt);
+   setReceiptOwner(owner);
+   setError('');
+   setOrder(result);
+   if (clearCart && checkoutContext.current.items === latest.items) {
+     checkoutContext.current.clearPromo();
+     dispatch({type:'CLEAR'});
+   }
+   requestAnimationFrame(() => heading.current?.scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'}));
+ }
+ useEffect(() => {
+   if (!authReady || order) return undefined;
+   const attempt = readCheckoutAttempt(accountId);
+   if (!attempt) return undefined;
+   const controller = new AbortController();
+   let checking = false;
+   const active = () => !controller.signal.aborted && !lock.current &&
+     readCheckoutAttempt(accountId)?.key === attempt.key;
+   async function recover() {
+     if (checking || !active()) return;
+     checking = true;
+     try {
+       const result = await ordersApi.recoverAttempt(attempt, controller.signal);
+       if (result && active()) await acceptOrder(result, attempt, accountId, active);
+     } catch {
+       // Keep the attempt available for the next explicit check.
+     } finally {
+       checking = false;
+     }
+   }
+   void recover();
+   window.addEventListener('online', recover);
+   return () => {
+     controller.abort();
+     window.removeEventListener('online', recover);
+   };
+ }, [authReady, accountId, order, dispatch, reduce]);
+
+ async function next() {
+   if (lock.current) return;
+   if (step < 2) { navigateToStep(step + 1); return; }
+   if (!form.validateAll()) { go(form.isValid(addressFields) ? 1 : 0); return; }
+   lock.current = true;
+   setBusy(true);
+   setError('');
+   let attempt = readCheckoutAttempt(accountId);
+   const isCurrent = () => checkoutActive.current && checkoutContext.current.accountId === accountId;
+   try {
+     if (attempt) {
+       const receipt = await ordersApi.recoverAttempt(attempt);
+       if (!isCurrent()) return;
+       if (receipt) {
+         await acceptOrder(receipt, attempt, accountId, isCurrent);
+         return;
+       }
+     }
+     if (!items.length) throw new Error('Vaša korpa je prazna.');
+     if (!(await health.checkAvailability())) throw new Error(CHECKOUT_UNAVAILABLE_MESSAGE);
+     if (!isCurrent()) return;
+     const payload = {
+       customer: { ...form.formData, address, uid: user?.uid || 'guest' },
+       items, subtotal: total, discountAmount: discount, subtotalAfterDiscount: total - discount,
+       shippingCost: shipping, finalTotal: amount, promoCode: promo.appliedPromo?.code || null,
+       shippingMethod: 'courier', paymentMethod: 'cod', note,
+     };
+     if (!attempt && !health.supportsCheckoutAttempts()) {
+       const result = await ordersApi.create(payload);
+       await acceptOrder(result, null, accountId, isCurrent);
+       return;
+     }
+     let submittedCartHash;
+     if (attempt) {
+       submittedCartHash = await checkoutCartHash(items, attempt.proof);
+     } else {
+       attempt = await beginCheckoutAttempt(accountId, items);
+       submittedCartHash = attempt.cartHash;
+     }
+     if (!isCurrent()) return;
+     let result;
+     try {
+       result = await ordersApi.createAttempt(payload, attempt);
+     } catch (error) {
+       if (error.status && error.status < 500 && error.code !== 'CHECKOUT_ATTEMPT_CONFLICT') throw error;
+       const receipt = await ordersApi.recoverAttempt(attempt).catch(() => null);
+       if (!receipt) throw new Error('Prijem porudžbine još nije potvrđen. Pokušajte ponovo da proverite isti zahtev.');
+       await acceptOrder(receipt, attempt, accountId, isCurrent);
+       return;
+     }
+     await acceptOrder(result, attempt, accountId, isCurrent, submittedCartHash);
+   } catch (error) {
+     if (isCurrent()) setError(t(error.message) || t(CHECKOUT_UNAVAILABLE_MESSAGE));
+   } finally {
+     lock.current = false;
+     setBusy(false);
+   }
  }
  const receiptCustomer = order?.customer;
  const receiptEmail = normalizeEmail(receiptCustomer?.email);
