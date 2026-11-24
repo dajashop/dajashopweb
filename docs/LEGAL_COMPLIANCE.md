@@ -9,7 +9,7 @@ Obrenovićeva bb, Podzemni prolaz, lokal C31, 18105 Niš; `info@dajashop.rs`.
 
 `src/data/legalDocuments.js` i `daja-platform/apps/api/src/legal-policy-content.ts`
 moraju imati isti sadržaj i verziju. Engleski prevod je u `src/localization/en.json`.
-Pri bitnoj izmeni ažurirati i `CONSENT_VERSION` u `src/services/consentStorage.js`.
+Verzija pristanka u `src/services/consentStorage.js` preuzima se iz verzije web dokumenta.
 Ne ažurirati samo admin oznaku verzije. Tekst koji je važio za novu porudžbinu
 backend čuva u samoj porudžbini i šalje uz potvrdu zahteva.
 

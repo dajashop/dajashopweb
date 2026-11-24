@@ -81,6 +81,7 @@ export default function CookieConsentModal({
       await action();
     } catch (requestError) {
       setError(requestError?.message || 'Izbor nije sačuvan. Pokušajte ponovo.');
+    } finally {
       setSaving(false);
     }
   };
@@ -224,6 +225,12 @@ export default function CookieConsentModal({
         <footer className="cookie-consent__footer">
           {panel === PANELS.details ? (
             <div className="cookie-consent__actions">
+              {error && (
+                <button type="button" className="cookie-consent__secondary" disabled={saving}
+                  onClick={() => run(() => onSave({ preferences: false, externalGoogle: false, analytics: false }))}>
+                  {translateText('Samo neophodni')}
+                </button>
+              )}
               <button
                 type="button"
                 className="cookie-consent__secondary"

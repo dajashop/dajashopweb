@@ -1,3 +1,5 @@
+import { LEGAL_POLICY_VERSION } from '../data/legalDocuments.js';
+
 const OPTIONAL_STORAGE_KEYS = [
   'theme',
   'dajashop_search_history',
@@ -8,12 +10,13 @@ const OPTIONAL_STORAGE_KEYS = [
   'engraving-auto-suggestions'
 ];
 
-export const CONSENT_VERSION = '2026-11-23-privacy-storage-v1';
+export const CONSENT_VERSION = LEGAL_POLICY_VERSION;
 export const CONSENT_MAX_AGE = 180 * 86400_000;
 const EXPIRY_PREFIX = 'daja:preference-expiry:';
 
-export function validConsentRecord(record, version = CONSENT_VERSION) {
-  return Boolean(record?.receipt && record.version === version &&
+export function validConsentRecord(record) {
+  return Boolean(typeof record?.receipt === 'string' && /^[A-Za-z0-9_-]{24,160}$/.test(record.receipt) &&
+    record.version === CONSENT_VERSION &&
     Number.isFinite(record.expiresAt) && record.expiresAt > Date.now() &&
     record.expiresAt <= Date.now() + CONSENT_MAX_AGE + 60_000);
 }

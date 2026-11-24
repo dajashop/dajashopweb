@@ -8,7 +8,6 @@ import { privacyApi } from '../services/dajaPlatform.js';
 import {
   clearOptionalStorage,
   readConsentRecord,
-  removeStoredValue,
   setConsentStorageState,
   writeConsentRecord,
   validConsentRecord,
@@ -38,6 +37,8 @@ function normalizeCategories(value) {
   };
 }
 
+const OPTIONAL_SAVE_MESSAGE = 'Dodatne dozvole trenutno ne možemo da sačuvamo. Možete pokušati ponovo ili izabrati „Samo neophodni“ i nastaviti kupovinu.';
+
 export function ConsentProvider({ children }) {
   const { t: translateText } = useStorefront();
 
@@ -48,9 +49,11 @@ export function ConsentProvider({ children }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [googlePromptOpen, setGooglePromptOpen] = useState(false);
   const [googleSaving, setGoogleSaving] = useState(false);
+  const [googleError, setGoogleError] = useState('');
   const googleResolver = useRef(null);
   const googlePromptWasRequested = useRef(false);
   const analyticsWasAllowed = useRef(false);
+  const saveRevision = useRef(0);
   const isPolicyPage = ['/privacy', '/cookies', '/terms', '/withdrawal', '/whatsapp-privacy'].includes(pathname);
   const isPolicyPageRef = useRef(isPolicyPage);
   const showConsentModal = !loading && (settingsOpen || (!decision && !isPolicyPage));
@@ -91,8 +94,8 @@ export function ConsentProvider({ children }) {
     // Remove history saved by older versions, regardless of consent choice.
     try { window.localStorage.removeItem('dajashop_search_history'); } catch { /* Storage may be unavailable. */ }
     setConsentStorageState({ ready: false, preferences: false, externalGoogle: false });
-    // An unexpired receipt for this exact source version can enable the public
-    // disk cache immediately. The policy request still reconciles the API version.
+    // The receipt belongs to the policy presented by this storefront. The
+    // API confirms new grants, but its metadata cannot rename a saved choice.
     const initial = readConsentRecord();
     if (validConsentRecord(initial)) applyDecision(initial, { persist: false });
     let cancelled = false;
@@ -106,21 +109,10 @@ export function ConsentProvider({ children }) {
         // Read at resolution time too: another open tab may have made a
         // choice while this first-party policy request was in flight.
         const saved = readConsentRecord();
-        const canKeepSavedChoice = validConsentRecord(saved, resolvedPolicy.version) && saved.version === CONSENT_VERSION;
-        if (canKeepSavedChoice) {
-          applyDecision({
-            receipt: saved.receipt,
-            version: resolvedPolicy.version,
-            categories: saved.categories,
-            expiresAt: saved.expiresAt,
-          }, { persist: false });
+        if (validConsentRecord(saved)) {
+          applyDecision(saved, { persist: false });
         } else {
-          // Remove a superseded receipt before a possible analytics reload so
-          // an API/web deployment mismatch cannot re-enable it in a loop.
-          if (validConsentRecord(initial)) {
-            removeStoredValue('dajashop_privacy_receipt');
-            applyDecision({ categories: {}, expiresAt: 0 }, { persist: false });
-          }
+          if (validConsentRecord(initial)) applyDecision({ categories: {} }, { persist: false });
           setDecision(null);
           // The rollout deliberately drops old optional browser state. A cart,
           // wishlist and an alert-management token are functional data and are
@@ -140,9 +132,10 @@ export function ConsentProvider({ children }) {
   useEffect(() => {
     const onStorage = (event) => {
       if (event.key !== 'dajashop_privacy_receipt' && event.key !== null) return;
+      saveRevision.current++;
       try {
         const next = readConsentRecord();
-        if (validConsentRecord(next, policy.version) && next.version === CONSENT_VERSION) applyDecision(next, { persist: false });
+        if (validConsentRecord(next)) applyDecision(next, { persist: false });
         else {
           applyDecision({ categories: {}, expiresAt: 0 }, { persist: false });
           setDecision(null);
@@ -153,12 +146,13 @@ export function ConsentProvider({ children }) {
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, [applyDecision, policy.version]);
+  }, [applyDecision]);
 
   useEffect(() => {
     if (!decision?.expiresAt) return;
     const expire = () => {
       if (decision.expiresAt > Date.now()) return;
+      saveRevision.current++;
       applyDecision({ categories: {}, expiresAt: 0 }, { persist: false });
       setDecision(null);
     };
@@ -178,20 +172,23 @@ export function ConsentProvider({ children }) {
   }, [decision?.categories?.analytics, isPolicyPage, pathname]);
 
   const save = useCallback(async (categories, action = 'granted') => {
+    const revision = ++saveRevision.current;
     const normalized = normalizeCategories(categories);
     const refusal = !normalized.preferences && !normalized.externalGoogle && !normalized.analytics;
     const proposed = {
-      receipt: decision?.receipt || crypto.randomUUID().replaceAll('-', '') + crypto.randomUUID().replaceAll('-', ''),
+      receipt: validConsentRecord(decision)
+        ? decision.receipt
+        : crypto.randomUUID().replaceAll('-', '') + crypto.randomUUID().replaceAll('-', ''),
       version: CONSENT_VERSION, categories: normalized, expiresAt: Date.now() + CONSENT_MAX_AGE,
     };
     // Turning an optional purpose off takes effect before the network request.
     // Granting a new purpose still waits for the receipt to be recorded.
-    if (refusal || decision) applyDecision({ ...proposed, categories: {
+    if (decision && !refusal) applyDecision({ ...proposed, categories: {
       preferences: Boolean(decision?.categories.preferences && normalized.preferences),
       externalGoogle: Boolean(decision?.categories.externalGoogle && normalized.externalGoogle),
       analytics: Boolean(decision?.categories.analytics && normalized.analytics),
     } });
-    const response = await privacyApi.recordConsent(
+    const record = () => privacyApi.recordConsent(
       {
         receipt: proposed.receipt,
         policyVersion: CONSENT_VERSION,
@@ -201,24 +198,27 @@ export function ConsentProvider({ children }) {
       // The very first choice remains an anonymous first-party request. A
       // later settings change may be tied to the already signed-in account.
       { authenticated: Boolean(decision?.receipt) },
-    ).catch(error => {
-      if (!refusal) throw error;
-      return proposed; // Refusal must work even while the API is unreachable.
-    });
-    if (!refusal && response?.version !== CONSENT_VERSION) {
-      throw new Error('Politika privatnosti je ažurirana. Osvežite stranicu i ponovo izaberite dozvole.');
+    );
+    if (refusal) {
+      applyDecision(proposed);
+      setSettingsOpen(false);
+      // Only the browser controls the refusal. A late API answer must not
+      // replace it or change the version the visitor actually saw.
+      void record().catch(() => {});
+      return proposed;
     }
-    const next = {
-      receipt: response?.receipt || decision?.receipt,
-      version: response?.version || policy.version,
-      categories: response?.categories || normalizeCategories(categories),
-      expiresAt: proposed.expiresAt,
-    };
-    if (!next.receipt) throw new Error('Server nije vratio dokaz izbora.');
-    applyDecision(next);
+
+    const response = await record().catch(() => null);
+    if (revision !== saveRevision.current) return null;
+    const confirmed = normalizeCategories(response?.categories);
+    if (response?.receipt !== proposed.receipt || response?.version !== proposed.version ||
+        Object.keys(normalized).some(key => confirmed[key] !== normalized[key])) {
+      throw new Error(OPTIONAL_SAVE_MESSAGE);
+    }
+    applyDecision(proposed);
     setSettingsOpen(false);
-    return next;
-  }, [applyDecision, decision, policy.version]);
+    return proposed;
+  }, [applyDecision, decision]);
 
   const requestGooglePermission = useCallback(({ force = false } = {}) => {
     if (decision?.categories?.externalGoogle && validConsentRecord(readConsentRecord())) return Promise.resolve(true);
@@ -226,6 +226,7 @@ export function ConsentProvider({ children }) {
     // entry usable. An explicit map button can still reopen the choice.
     if (!force && googlePromptWasRequested.current) return Promise.resolve(false);
     googlePromptWasRequested.current = true;
+    setGoogleError('');
     setGooglePromptOpen(true);
     return new Promise((resolve) => {
       googleResolver.current = resolve;
@@ -234,15 +235,17 @@ export function ConsentProvider({ children }) {
 
   const respondGoogle = async (accepted) => {
     setGoogleSaving(true);
+    setGoogleError('');
     try {
       if (accepted) {
-        await save({ ...normalizeCategories(decision?.categories), externalGoogle: true }, 'updated');
+        const result = await save({ ...normalizeCategories(decision?.categories), externalGoogle: true }, 'updated');
+        accepted = Boolean(result?.categories.externalGoogle);
       }
       setGooglePromptOpen(false);
       googleResolver.current?.(accepted);
       googleResolver.current = null;
     } catch {
-      // Keep the explicit Google dialog open when the proof cannot be saved.
+      setGoogleError('Google usluge trenutno ne možemo da uključimo. Možete nastaviti sa ručnim unosom adrese.');
     } finally {
       setGoogleSaving(false);
     }
@@ -267,7 +270,7 @@ export function ConsentProvider({ children }) {
       {translateText(children)}
       <CookieConsentModal
         open={showConsentModal}
-        policy={policy}
+        policy={{ ...policy, version: CONSENT_VERSION }}
         forceSettings={Boolean(decision && settingsOpen)}
         initialCategories={decision?.categories}
         onCloseSettings={() => setSettingsOpen(false)}
@@ -279,13 +282,14 @@ export function ConsentProvider({ children }) {
           onAccept={() => void respondGoogle(true)}
           onDecline={() => void respondGoogle(false)}
           saving={googleSaving}
+          error={googleError}
         />
       )}
     </ConsentContext.Provider>
   );
 }
 
-function GooglePermissionDialog({ onAccept, onDecline, saving }) {
+function GooglePermissionDialog({ onAccept, onDecline, saving, error }) {
   const { t: translateText } = useStorefront();
 
   return (
@@ -295,6 +299,7 @@ function GooglePermissionDialog({ onAccept, onDecline, saving }) {
         <div className="google-consent__icon"><MapPinned size={23} /></div>
         <h2 id="google-consent-title">{translateText("Uključi Google usluge?")}</h2>
         <p>{translateText("Google mapa, predlog adrese i ocena prodavnice učitavaju se uz vašu dozvolu. Google može primiti IP adresu, podatke pregledača i adresu koju unesete. Ručni unos adrese i kupovina rade i bez toga. Ovaj izbor ne uključuje lokalno pamćenje ni analitiku.")}</p>
+        {error && <p role="alert">{translateText(error)}</p>}
         <div className="google-consent__actions">
           <button type="button" className="google-consent__secondary" onClick={onDecline} disabled={saving}>{translateText("Nastavi bez Google usluga")}</button>
           <button type="button" className="google-consent__primary" onClick={onAccept} disabled={saving}>{translateText(saving ? 'Čuvamo…' : 'Dozvoli Google usluge')}</button>

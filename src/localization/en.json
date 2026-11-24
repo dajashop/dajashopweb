@@ -1058,6 +1058,8 @@
   "Slanje nije uspelo. Pokušajte ponovo za trenutak.": "Could not send. Please try again in a moment.",
   "Vaša email adresa je već verifikovana.": "Your email address is already verified.",
   "Server nije vratio dokaz izbora.": "The server did not return a record of your choices.",
+  "Dodatne dozvole trenutno ne možemo da sačuvamo. Možete pokušati ponovo ili izabrati „Samo neophodni“ i nastaviti kupovinu.": "We can't save optional permissions right now. You can try again or choose “Necessary only” and continue shopping.",
+  "Google usluge trenutno ne možemo da uključimo. Možete nastaviti sa ručnim unosom adrese.": "We can't enable Google services right now. You can continue by entering your address manually.",
   "Uključi funkcionalne usluge?": "Enable functional services?",
   "Ovim izborom uključujete pamćenje funkcionalnih podešavanja, Google mapu naše lokacije, predlog adrese i prikaz Google ocene prodavnice. Google pri tome može obraditi tehničke podatke pregledača i adresu koju unesete. Sajt i kupovina dostupni su i bez ovih Google usluga.": "This enables saved functional settings, our Google location map, address suggestions and Google shop rating. Google may process browser technical data and the address you enter. You can use the website and shop without these Google services.",
   "Nastavi bez Google usluga": "Continue without Google services",
