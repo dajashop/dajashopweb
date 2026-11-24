@@ -183,8 +183,10 @@ export default function NewsletterModal() {
 
             {(status === 'idle' || status === 'loading' || status === 'error') && (
               <div className="newsletter-content">
-                <h2 id={titleId}>{translateText("Budite u toku")}</h2>
-                <p>{translateText("Prijavite se na DajaShop novosti i primajte informacije o dostupnosti, novitetima i savetima o satovima.")}</p>
+                <h2 id={titleId}>{translateText(isEmailChannel ? '10% na prvu porudžbinu' : 'Budite u toku')}</h2>
+                <p>{translateText(isEmailChannel
+                  ? 'Potvrdite prijavu na email novosti. Popust se automatski dodaje u korpi na nalogu sa istom potvrđenom adresom.'
+                  : 'Primajte novosti i ponude putem WhatsApp-a.')}</p>
                 <form className="newsletter-form" onSubmit={handleSubmit}>
                   <NotificationChannelPicker value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setErrorMsg(''); if (status === 'error') setStatus('idle'); }} disabled={status === 'loading'} contact={isEmailChannel ? email : phone} />
                   {deliveryChannel !== 'whatsapp' && <>
@@ -201,8 +203,6 @@ export default function NewsletterModal() {
                     onChange={(event) => { (isEmailChannel ? setEmail : setPhone)(event.target.value); setErrorMsg(''); if (status === 'error') setStatus('idle'); }}
                     disabled={status === 'loading'}
                   />
-                  <p className="newsletter-consent-notice">{translateText("Klikom na „Prijavi me” pristajete na novosti i ponude putem izabranog kanala. Više u ")}<a href={localizePath('/privacy')}>{translateText("Politici privatnosti")}</a>.
-                  </p>
                   {(errorMsg || status === 'error') && (
                     <span id={errorId} role="alert" className="newsletter-message error-message">
                       {translateText(errorMsg || 'Greška pri slanju. Pokušajte ponovo.')}
@@ -211,9 +211,9 @@ export default function NewsletterModal() {
                   <button type="submit" className="newsletter-submit" disabled={status === 'loading' || !notificationChannelAvailable(deliveryChannel)}>
                     {translateText(status === 'loading' ? 'Slanje...' : 'Prijavi me')}
                   </button>
+                  <p className="newsletter-consent-notice">{translateText('Prijavom prihvatate email novosti i ponude.')} <a href={localizePath('/privacy')}>{translateText('Politika privatnosti')}</a></p>
                   </>}
                 </form>
-                <p className="newsletter-disclaimer">{translateText("Odjava je moguća u bilo kom trenutku.")}</p>
               </div>
             )}
           </motion.div>

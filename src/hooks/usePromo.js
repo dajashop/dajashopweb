@@ -27,14 +27,19 @@ export function usePromo({ user, authReady = true, items = [], total = 0 } = {})
     const refresh = () => {
       if (document.visibilityState === 'visible') setEligibilityRevision(value => value + 1);
     };
+    const onStorage = (event) => {
+      if (event.key === 'daja_kod_dobrodoslice_na_cekanju') refresh();
+    };
     window.addEventListener('focus', refresh);
     window.addEventListener('online', refresh);
     window.addEventListener('daja:newsletter-changed', refresh);
+    window.addEventListener('storage', onStorage);
     document.addEventListener('visibilitychange', refresh);
     return () => {
       window.removeEventListener('focus', refresh);
       window.removeEventListener('online', refresh);
       window.removeEventListener('daja:newsletter-changed', refresh);
+      window.removeEventListener('storage', onStorage);
       document.removeEventListener('visibilitychange', refresh);
     };
   }, []);
@@ -122,10 +127,12 @@ export function usePromo({ user, authReady = true, items = [], total = 0 } = {})
     void validateAndApply(code, total, items, user, true, { persist: true });
   }, [authReady, hydrated, loading, appliedPromo, user, customerKey, items, total, eligibilityRevision, validateAndApply]);
 
-  const removePromo = () => {
+  const removePromo = ({ suppressWelcome = true } = {}) => {
     validationRequest.current += 1;
     setLoading(false);
-    if (appliedPromo?.code === 'DOBRODOSLI10') writeStoredValue('daja_welcome_promo_removed_for', customerKey, 'necessary');
+    if (suppressWelcome && appliedPromo?.code === 'DOBRODOSLI10') {
+      writeStoredValue('daja_welcome_promo_removed_for', customerKey, 'necessary');
+    }
     promoPersistence.current = true;
     setAppliedPromo(null);
     writeStoredValue('daja_active_promo', null, 'necessary');

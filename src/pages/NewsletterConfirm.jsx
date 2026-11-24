@@ -19,10 +19,12 @@ export default function NewsletterConfirm({ productAlert = false }) {
   const [status, setStatus] = useState(validToken ? 'ready' : 'error');
   const [error, setError] = useState('Link za potvrdu nije potpun. Zatražite novu prijavu.');
   const [active, setActive] = useState(true);
+  const [welcomeCode, setWelcomeCode] = useState(null);
   useEffect(() => {
     setStatus(isEmailLinkToken(token) ? 'ready' : 'error');
     setError('Link za potvrdu nije potpun ili nije važeći. Zatražite novu prijavu.');
     setActive(true);
+    setWelcomeCode(null);
   }, [token, productAlert]);
   async function confirm() {
     if (!['ready', 'retry'].includes(status)) return;
@@ -39,8 +41,9 @@ export default function NewsletterConfirm({ productAlert = false }) {
         else productAlertSubscriptions.markUnsubscribed(result.productId, result.variantId, result.type);
         window.dispatchEvent(new Event('daja:product-alerts-changed'));
       } else {
-        await novostiApi.confirm(token, { isCurrent: request.isCurrent });
+        const result = await novostiApi.confirm(token, { isCurrent: request.isCurrent });
         if (!request.isCurrent()) return;
+        setWelcomeCode(result?.kodDobrodoslice || null);
       }
       setStatus('success');
     } catch (requestError) {
@@ -60,6 +63,12 @@ export default function NewsletterConfirm({ productAlert = false }) {
         ? productAlert ? active ? 'Obaveštenje je uključeno. Odjava je dostupna u svakoj poruci.' : 'Obaveštenje je već isključeno ili više nije potrebno. Nova prijava je dostupna na stranici artikla.'
           : 'Dobro došli! Sada možete da primate naše novosti i ponude. Odjava je dostupna u svakoj poruci.'
         : ['error', 'retry'].includes(status) ? error : productAlert ? 'Klikom na dugme aktivirate traženo obaveštenje za artikal na ovoj email adresi.' : 'Klikom na dugme potvrđujete da želite da primate naše novosti i ponude na ovoj email adresi.')}</p>
+      {status === 'success' && !productAlert && welcomeCode && (
+        <p className="reset-password-page__copy">
+          <strong>{translateText('10% na prvu porudžbinu')} · {welcomeCode}</strong><br />
+          {translateText('Prijavite se sa istom potvrđenom email adresom. Kod će se automatski primeniti u korpi.')}
+        </p>
+      )}
       {['ready', 'retry', 'saving'].includes(status) && <button className="reset-password-page__button" onClick={confirm} disabled={status === 'saving'}>{translateText(status === 'saving' ? <><Loader2 size={18} />{translateText(" Potvrđujemo…")}</> : status === 'retry' ? 'Pokušaj ponovo' : 'Potvrdi prijavu')}</button>}
       <Link className="reset-password-page__secondary" to="/">{translateText("Nazad na DajaShop")}</Link>
     </div>

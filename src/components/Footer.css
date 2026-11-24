@@ -19,8 +19,8 @@
   border-top: 1px solid
     color-mix(in oklab, var(--color-border, #e5e7eb) 40%, transparent);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 40px 0;
-  margin-top: 80px;
+  padding: 24px 0;
+  margin-top: 40px;
 }
 
 /* The logout screen ends directly at the newsletter/footer section. */
@@ -57,7 +57,7 @@
 }
 
 .footer-newsletter-consent-notice {
-  margin: 10px 14px 0;
+  margin: 6px 8px 0;
   color: var(--color-muted, #6e6e73);
   font-size: .74rem;
   line-height: 1.35;
@@ -361,7 +361,7 @@ a.footer__contact-row:hover {
   .footer-newsletter-content {
     flex-direction: column;
     text-align: center;
-    gap: 24px;
+    gap: 14px;
     align-items: center;
   }
   .footer-newsletter-text {

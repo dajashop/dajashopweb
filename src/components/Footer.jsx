@@ -102,11 +102,10 @@ export default function Footer() {
       <div className="footer-newsletter-strip">
         <div className="container footer-newsletter-content">
           <div className="footer-newsletter-text">
-            <h3>{translateText("Budite u toku")}</h3>
-            <p>{translateText("Prijavite se za novitete, informacije o dostupnosti i savete o satovima.")}</p>
-            <p>
-              {translateText(' ')}{translateText("Pratite ono što je novo u našoj ponudi.")}</p>
-            <p></p>
+            <h3>{translateText(isEmailChannel ? '10% na prvu porudžbinu' : 'Budite u toku')}</h3>
+            <p>{translateText(isEmailChannel
+              ? 'Potvrdite prijavu na email novosti. Popust se automatski dodaje u korpi na nalogu sa istom potvrđenom adresom.'
+              : 'Primajte novosti i ponude putem WhatsApp-a.')}</p>
           </div>
 
           <form className="footer-newsletter-form" onSubmit={handleSubmit}>
@@ -158,8 +157,7 @@ export default function Footer() {
                 ))}
               </button>
             </div>
-            <p className="footer-newsletter-consent-notice">{translateText("Klikom na „Prijavi me” pristajete na novosti i ponude putem izabranog kanala. Više u ")}<Link to="/privacy">{translateText("Politici privatnosti")}</Link>.
-            </p>
+            <p className="footer-newsletter-consent-notice">{translateText('Prijavom prihvatate email novosti i ponude.')} <Link to="/privacy">{translateText('Politika privatnosti')}</Link></p>
             </>}
           </form>
         </div>

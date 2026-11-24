@@ -14,7 +14,7 @@
 .newsletter-modal {
   width: 100%;
   max-width: none;
-  padding: 28px 26px 24px;
+  padding: 22px 24px 18px;
   border: 1px solid var(--color-accent);
   border-radius: 16px;
   background: var(--color-surface); /* Tvoja tema */
@@ -74,14 +74,14 @@
   color: var(--color-muted);
   font-size: .9rem;
   line-height: 1.45;
-  margin: 0 0 18px;
+  margin: 0 0 12px;
 }
 
 /* Input polje */
 .newsletter-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 9px;
 }
 
 .newsletter-consent-notice {
@@ -139,15 +139,6 @@
 .newsletter-submit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.newsletter-disclaimer {
-  margin: 10px 0 0 !important;
-  color: var(--color-muted) !important;
-  font-size: .7rem !important;
-  line-height: 1.35 !important;
-  text-align: center;
-  opacity: .66;
 }
 
 /* Success stanje */

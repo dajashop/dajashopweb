@@ -211,20 +211,11 @@ export default function Cart() {
     return validateAndApply(code, total, items, user, false);
   };
 
-  const refreshPromo = async (nextItems) => {
-    if (!appliedPromo?.code) return;
-    if (!nextItems.length) { removePromo(); return; }
-    const nextTotal = nextItems.reduce((sum, item) => sum + item.price * item.qty, 0);
-    const result = await validateAndApply(appliedPromo.code, nextTotal, nextItems, user, true);
-    if (!result) removePromo();
-  };
-
-  const saveForLater = async (item) => {
+  const saveForLater = (item) => {
     if (!saved.save(item)) { flash('Čuvanje nije uspelo', 'Proizvod je ostao u korpi. Proverite da li browser dozvoljava lokalno čuvanje.', 'error'); return; }
     const id = item.lineId || item.id;
-    const nextItems = items.filter(active => (active.lineId || active.id) !== id);
     dispatch({ type: 'REMOVE', id });
-    await refreshPromo(nextItems);
+    if (items.length === 1) removePromo({ suppressWelcome: false });
   };
 
   const restoreSaved = async (item) => {
@@ -242,8 +233,6 @@ export default function Cart() {
         thumb: product.thumbnailUrl || item.thumb };
       if (!saved.take(item, qty)) throw new Error('Sačuvana lista je promenjena ili nije dostupna. Pokušajte ponovo.');
       dispatch({ type: 'ADD', item: restored, qty });
-      const nextItems = active ? currentItems.map(entry => (entry.lineId || entry.id) === id ? { ...entry, qty: entry.qty + qty } : entry) : [...currentItems, { ...restored, qty }];
-      await refreshPromo(nextItems);
     } catch (error) {
       flash('Proizvod nije vraćen', error.message || 'Pokušajte ponovo.', 'error');
     } finally { setRestoring(null); }
@@ -269,7 +258,7 @@ export default function Cart() {
 
     dispatch({ type: 'CLEAR' });
     setShowClearModal(false);
-    removePromo();
+    removePromo({ suppressWelcome: false });
 
     showUndo({ name: 'Sve proizvode' }, () => {
       itemsToRestore.forEach((item) => {
