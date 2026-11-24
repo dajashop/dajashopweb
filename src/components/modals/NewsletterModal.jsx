@@ -183,10 +183,13 @@ export default function NewsletterModal() {
 
             {(status === 'idle' || status === 'loading' || status === 'error') && (
               <div className="newsletter-content">
-                <h2 id={titleId}>{translateText(isEmailChannel ? '10% na prvu porudžbinu' : 'Budite u toku')}</h2>
-                <p>{translateText(isEmailChannel
-                  ? 'Potvrdite prijavu na email novosti. Popust se automatski dodaje u korpi na nalogu sa istom potvrđenom adresom.'
-                  : 'Primajte novosti i ponude putem WhatsApp-a.')}</p>
+                <h2 id={titleId}>{translateText('Budite u toku')}</h2>
+                <div className="newsletter-copy">
+                  <p>{translateText('Prijavite se za ponude, novitete i savete o satovima.')}</p>
+                  {isEmailChannel && (
+                    <p>{translateText('Za dobrodošlicu, ostvarite')} <strong>{translateText('10% popusta')}</strong> {translateText('na prvu kupovinu.')}</p>
+                  )}
+                </div>
                 <form className="newsletter-form" onSubmit={handleSubmit}>
                   <NotificationChannelPicker value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setErrorMsg(''); if (status === 'error') setStatus('idle'); }} disabled={status === 'loading'} contact={isEmailChannel ? email : phone} />
                   {deliveryChannel !== 'whatsapp' && <>

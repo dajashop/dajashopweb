@@ -51,6 +51,9 @@
   font-size: 1rem;
 }
 
+.footer-newsletter-text .footer-newsletter-offer { margin-top: 4px; }
+.footer-newsletter-offer strong { color: var(--color-text); font-weight: 800; }
+
 .footer-newsletter-form {
   flex: 1;
   max-width: 500px;

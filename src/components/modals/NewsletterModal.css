@@ -77,6 +77,11 @@
   margin: 0 0 12px;
 }
 
+.newsletter-copy { margin-bottom: 12px; }
+.newsletter-copy p { margin: 0; }
+.newsletter-copy p + p { margin-top: 4px; }
+.newsletter-copy strong { color: var(--color-text); font-weight: 800; }
+
 /* Input polje */
 .newsletter-form {
   display: flex;
