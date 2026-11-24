@@ -435,7 +435,7 @@ export async function apiRequest(path, options = {}) {
     const error = new Error(publicErrorMessage(response, rawData));
     error.status = response.status;
     error.code = rawData?.code || rawData?.error?.code;
-    if (error.code === 'CHECKOUT_PRICE_CHANGED') error.details = rawData?.error?.details;
+    if (error.code === 'CHECKOUT_PRICE_CHANGED' || error.code === 'CHECKOUT_TOTAL_CHANGED') error.details = rawData?.error?.details;
     throw error;
   }
   return unwrapEnvelope(rawData);
