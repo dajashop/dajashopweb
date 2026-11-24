@@ -1,5 +1,5 @@
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import {
   BarChart3,
   Check,
@@ -10,6 +10,9 @@ import {
   X,
 } from 'lucide-react';
 import './CookieConsentModal.css';
+
+const CookieInventory = lazy(() => import('./CookieInventory.jsx'));
+const INVENTORY_CATEGORIES = ['necessary', 'functional', 'google', 'analytics'];
 
 const PANELS = {
   consent: 'consent',
@@ -155,6 +158,7 @@ export default function CookieConsentModal({
               control={<ConsentSwitch disabled label={translateText("Nema neklasifikovanih kolačića")} />}
             />
           </div>
+          <p className="cookie-consent__inventory-legend">{translateText('Zvezdica označava deo naziva koji se razlikuje po artiklu, nalogu ili podešavanju.')}</p>
         </div>
       );
     }
@@ -280,7 +284,16 @@ function CookieCategory({ id, title, count, description, expanded, onToggle, con
         </button>
         {translateText(control)}
       </div>
-      {expanded && <p id={`cookie-category-${id}`} className="cookie-consent__detail-description">{translateText(description)}</p>}
+      {expanded && (
+        <div id={`cookie-category-${id}`}>
+          <p className="cookie-consent__detail-description">{translateText(description)}</p>
+          {INVENTORY_CATEGORIES.includes(id) && (
+            <Suspense fallback={<p className="cookie-consent__detail-description" role="status">{translateText('Učitavamo spisak zapisa…')}</p>}>
+              <CookieInventory category={id} />
+            </Suspense>
+          )}
+        </div>
+      )}
     </article>
   );
 }
