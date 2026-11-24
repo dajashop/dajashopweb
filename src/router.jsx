@@ -40,7 +40,7 @@ import ServiceDetail from './pages/ServiceDetail.jsx';
 import Engraving from './pages/Engraving.jsx';
 import PageStatus from './pages/PageStatus.jsx';
 const OrdersPage = import.meta.env.SSR ? AdminDashboardSkeleton : browserPage(() => import('./pages/Admin/OrdersPage'), <AdminDashboardSkeleton />);
-const LegalDocument = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/LegalDocument.jsx'));
+import LegalDocument from './pages/LegalDocument.jsx';
 const Unsubscribe = import.meta.env.SSR ? () => null : browserPage(() => import('./pages/Unsubscribe.jsx'));
 
 export default function AppRoutes() {
@@ -88,6 +88,7 @@ export default function AppRoutes() {
       <Route path="/privacy" element={<LegalDocument kind="privacy" />} />
       <Route path="/cookies" element={<LegalDocument kind="cookies" />} />
       <Route path="/terms" element={<LegalDocument kind="terms" />} />
+      <Route path="/withdrawal" element={<LegalDocument kind="withdrawal" />} />
       <Route path="/unsubscribe" element={<Unsubscribe />} />
       <Route path="*" element={<PageStatus />} />
     </Routes>

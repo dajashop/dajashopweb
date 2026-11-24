@@ -100,7 +100,7 @@ export default function OrderSummary({
         aria-describedby={availability !== 'available' ? 'checkout-availability' : undefined}
         aria-busy={isLoading || availability === 'checking'}
       >
-        {translateText(isLoading ? 'Obrada...' : availability === 'checking' ? 'Provera dostupnosti…' : availability === 'unavailable' ? 'Trenutno nije dostupno' : 'Potvrdi porudžbinu')}
+        {translateText(isLoading ? 'Obrada...' : availability === 'checking' ? 'Provera dostupnosti…' : availability === 'unavailable' ? 'Trenutno nije dostupno' : 'Poruči uz obavezu plaćanja')}
         {!isLoading && availability === 'available' && <ArrowRight size={18} />}
       </button>
 

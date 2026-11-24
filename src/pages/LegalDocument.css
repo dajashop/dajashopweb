@@ -18,3 +18,13 @@
 .legal-document--unsubscribe svg { color: #16803c; }
 .legal-document--unsubscribe h1 { margin-top: 14px; }
 .legal-document--unsubscribe p { max-width: 44ch; color: var(--color-muted, #6b7280); }
+.legal-document__actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; align-items: center; }
+.legal-document__actions button { border: 1px solid currentColor; border-radius: 6px; background: transparent; color: inherit; padding: 8px 12px; cursor: pointer; }
+@media print {
+  body * { visibility: hidden; }
+  .legal-document, .legal-document * { visibility: visible; }
+  .legal-document { position: absolute; inset: 0; width: 100%; max-width: none; color: #000; background: #fff; padding: 0; }
+  .legal-document__actions { display: none; }
+  .legal-document section { break-inside: auto; }
+  .legal-document h2 { break-after: avoid; }
+}

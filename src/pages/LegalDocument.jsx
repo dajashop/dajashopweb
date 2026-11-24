@@ -1,34 +1,22 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
-import { useEffect, useState } from 'react';
-import { AlertTriangle, Loader2 } from 'lucide-react';
 import SEOHead from '../components/seo/SEOHead.jsx';
 import { seoConfig } from '../config/seo.js';
-import { privacyApi } from '../services/dajaPlatform.js';
+import { LEGAL_DOCUMENTS, LEGAL_POLICY_VERSION } from '../data/legalDocuments.js';
+import { useConsent } from '../context/ConsentContext.jsx';
 import './LegalDocument.css';
 
 const fallbackTitles = {
   privacy: 'Politika privatnosti',
   cookies: 'Politika kolačića',
   terms: 'Uslovi korišćenja',
+  withdrawal: 'Obrazac za odustanak',
 };
 
 export default function LegalDocument({ kind }) {
-  const { t: translateText } = useStorefront();
+  const { t: translateText, localizePath } = useStorefront();
+  const { openSettings } = useConsent();
 
-  const [document, setDocument] = useState(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    privacyApi.document(kind)
-      .then((value) => {
-        if (!cancelled) setDocument(value);
-      })
-      .catch((requestError) => {
-        if (!cancelled) setError(requestError.message || 'Dokument trenutno nije dostupan.');
-      });
-    return () => { cancelled = true; };
-  }, [kind]);
+  const document = LEGAL_DOCUMENTS.find(item => item.kind === kind);
 
   const title = document?.title || fallbackTitles[kind];
   return (
@@ -38,22 +26,23 @@ export default function LegalDocument({ kind }) {
         <h1>{translateText(title)}</h1>
         <p>{seoConfig.business.name}</p>
         <address>{translateText(seoConfig.business.street)}<br />{seoConfig.business.postalCode} {seoConfig.business.city}</address>
-        {document?.updatedAt && <p>{translateText("Verzija / datum: ")}{translateText(document.version || document.updatedAt)}</p>}
+        {document?.updatedAt && <p>{translateText("Verzija / datum: ")}{document.updatedAt} · {LEGAL_POLICY_VERSION}</p>}
       </header>
-      {!document && !error && <div className="legal-document__loading"><Loader2 className="animate-spin" size={22} />{translateText(" Učitavanje dokumenta…")}</div>}
-      {error && <p className="legal-document__error">{translateText(error)}</p>}
-      {document?.ready === false && (
-        <aside className="legal-document__draft">
-          <AlertTriangle size={20} />
-          <span>{translateText("Ovaj pravni dokument je tehnički nacrt i ne sme biti objavljen kao konačna politika dok ga ne odobrite.")}</span>
-        </aside>
-      )}
+      <nav className="legal-document__actions" aria-label={translateText('Pravni dokumenti')}>
+        <a href={localizePath('/privacy')}>{translateText('Politika privatnosti')}</a>
+        <a href={localizePath('/cookies')}>{translateText('Politika kolačića')}</a>
+        <a href={localizePath('/terms')}>{translateText('Uslovi kupovine i korišćenja')}</a>
+        <a href={localizePath('/withdrawal')}>{translateText('Obrazac za odustanak')}</a>
+        <button type="button" onClick={() => window.print()}>{translateText('Odštampaj ili sačuvaj PDF')}</button>
+        {kind === 'cookies' && <button type="button" onClick={openSettings}>{translateText('Podesi kolačiće')}</button>}
+      </nav>
       {document?.sections?.map((section) => (
         <section key={section.title}>
           <h2>{translateText(section.title)}</h2>
           {section.body?.map((paragraph) => <p key={paragraph}>{translateText(paragraph)}</p>)}
         </section>
       ))}
+      <p><a href="mailto:info@dajashop.rs">info@dajashop.rs</a> · <a href="https://www.poverenik.rs/" target="_blank" rel="noopener noreferrer">Poverenik</a> · <a href="https://vansudsko.must.gov.rs/" target="_blank" rel="noopener noreferrer">{translateText('Vansudsko rešavanje sporova')}</a></p>
     </article>
   );
 }

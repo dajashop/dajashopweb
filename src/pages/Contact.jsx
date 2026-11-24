@@ -13,7 +13,7 @@ import { apiRequest } from '../services/apiClient.js';
  */
 
 export default function Contact() {
-  const { t: translateText } = useStorefront();
+  const { t: translateText, localizePath } = useStorefront();
 
   const [status, setStatus] = useState('idle');
   const requestId = useRef(null);
@@ -186,6 +186,7 @@ export default function Contact() {
             ></textarea>
           </div>
 
+          <p>{translateText('Kontakt podatke i poruku koristimo da odgovorimo na vaš zahtev, prema')} <a href={localizePath('/privacy')}>{translateText('Politici privatnosti')}</a>.</p>
           <button type="submit">
             {translateText(status === 'sending' ? 'Šaljemo poruku…' : 'Pošalji poruku')}
           </button>

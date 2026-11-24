@@ -4,14 +4,29 @@ const OPTIONAL_STORAGE_KEYS = [
   'daja_last_login',
   'dajashop_newsletter_seen',
   'dajashop_product_alert_subscriptions',
-  'dajashop_product_alert_preferences'
+  'dajashop_product_alert_preferences',
+  'engraving-auto-suggestions'
 ];
 
+export const CONSENT_VERSION = '2026-11-23-privacy-storage-v1';
+export const CONSENT_MAX_AGE = 180 * 86400_000;
+const EXPIRY_PREFIX = 'daja:preference-expiry:';
+
+export function validConsentRecord(record, version = CONSENT_VERSION) {
+  return Boolean(record?.receipt && record.version === version &&
+    Number.isFinite(record.expiresAt) && record.expiresAt > Date.now() &&
+    record.expiresAt <= Date.now() + CONSENT_MAX_AGE + 60_000);
+}
+
+// Restore only consent for the bundled policy version before catalogue effects
+// start. This avoids a network prerequisite for an already permitted disk read.
+const initialReceipt = readConsentRecord();
+const initialValid = validConsentRecord(initialReceipt);
 let state = {
-  ready: false,
-  preferences: false,
-  externalGoogle: false,
-  analytics: false,
+  ready: initialValid,
+  preferences: initialValid && initialReceipt.categories?.preferences === true,
+  externalGoogle: initialValid && initialReceipt.categories?.externalGoogle === true,
+  analytics: initialValid && initialReceipt.categories?.analytics === true,
 };
 
 export function setConsentStorageState(next) {
@@ -35,20 +50,25 @@ export function isNecessaryStorageAllowed() {
 }
 
 export function isPreferenceStorageAllowed() {
-  return state.ready && state.preferences;
+  return state.ready && state.preferences && validConsentRecord(readConsentRecord());
 }
 
 export function isGoogleAllowed() {
-  return state.ready && state.externalGoogle;
+  return state.ready && state.externalGoogle && validConsentRecord(readConsentRecord());
 }
 
 export function isAnalyticsAllowed() {
-  return state.ready && state.analytics;
+  return state.ready && state.analytics && validConsentRecord(readConsentRecord());
 }
 
 export function readStoredValue(key, category = 'necessary') {
   if (!allowed(category) || typeof window === 'undefined') return null;
   try {
+    const expiresAt = Number(window.localStorage.getItem(EXPIRY_PREFIX + key));
+    if (category === 'preferences' && (!Number.isFinite(expiresAt) || expiresAt <= Date.now())) {
+      removeStoredValue(key);
+      return null;
+    }
     return window.localStorage.getItem(key);
   } catch {
     return null;
@@ -60,8 +80,11 @@ export function writeStoredValue(key, value, category = 'necessary') {
   try {
     if (value === null || value === undefined || value === '') {
       window.localStorage.removeItem(key);
+      window.localStorage.removeItem(EXPIRY_PREFIX + key);
     } else {
       window.localStorage.setItem(key, String(value));
+      if (category === 'preferences') window.localStorage.setItem(EXPIRY_PREFIX + key,
+        String(Date.now() + (key === 'daja_last_login' ? 30 * 86400_000 : CONSENT_MAX_AGE)));
     }
     return true;
   } catch {
@@ -73,6 +96,7 @@ export function removeStoredValue(key) {
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.removeItem(key);
+    window.localStorage.removeItem(EXPIRY_PREFIX + key);
   } catch {
     // Storage is unavailable in some private browser contexts.
   }
@@ -105,7 +129,7 @@ export function clearOptionalStorage() {
   if (typeof window === 'undefined') return;
   OPTIONAL_STORAGE_KEYS.forEach(removeStoredValue);
   try {
-    Object.keys(window.localStorage).filter((key) => key.startsWith('daja_workforce_layout:')).forEach(removeStoredValue);
+    Object.keys(window.localStorage).filter((key) => key.startsWith('daja_workforce_layout:') || key.startsWith(EXPIRY_PREFIX)).forEach(removeStoredValue);
   } catch {
     // Optional layout storage may be unavailable.
   }

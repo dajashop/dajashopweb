@@ -13,21 +13,10 @@ export default function ProductHeader({ product, adminTools }) {
   if (!product) return null;
   const stalePrice = product._catalogStale === true;
   const procurementUnavailable = isProcurementUnavailable(product);
-  const legacyRegularPrice =
-    product.regularPrice ??
-    (product.salePrice !== null &&
-    product.salePrice !== undefined &&
-    product.salePrice < product.price
-      ? product.price
-      : null);
   const currentPrice =
     product.regularPrice !== null && product.regularPrice !== undefined
       ? product.price
       : (product.salePrice ?? product.price);
-  const hasSale =
-    legacyRegularPrice !== null &&
-    legacyRegularPrice !== undefined &&
-    Number(currentPrice) < Number(legacyRegularPrice);
   const inStock = product.availability?.inStock ?? product.inStock;
   const availableQuantity =
     product.availability?.availableQuantity ?? product.availableQuantity;
@@ -58,16 +47,8 @@ export default function ProductHeader({ product, adminTools }) {
       {stalePrice && <span className="product-last-price-label" role="status">{translateText('Poslednja poznata cena · čeka potvrdu')}</span>}
       {!stalePrice && procurementUnavailable && Number(currentPrice) > 0 && <span className="product-last-price-label">{translateText('Poslednja poznata cena')}</span>}
       <div className="price-tag" hidden={procurementUnavailable && !(Number(currentPrice) > 0)}>
-        {translateText(hasSale ? (
-          <>
-            <span className="product-regular-price">
-              {money(legacyRegularPrice)}
-            </span>
-            <span className="product-sale-price">{money(currentPrice)}</span>
-          </>
-        ) : (
-          money(currentPrice)
-        ))}
+        {/* A current regular price is not proof of the lowest prior 30-day price. */}
+        {money(currentPrice)}
       </div>
 
       {procurementUnavailable && <p className="product-procurement-unavailable" role="status">{translateText('Trenutno nije dostupan za nabavku')}</p>}

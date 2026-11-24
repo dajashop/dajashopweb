@@ -1,7 +1,27 @@
 import { isEmailLinkPath } from '../utils/emailLinkPrivacy.js';
+import { stripLanguagePrefix } from '../localization/paths.js';
+import { isAnalyticsAllowed } from './consentStorage.js';
 
 const SCRIPT_ID = 'dajashop-cloudflare-web-analytics';
 const SCRIPT_SRC = 'https://static.cloudflareinsights.com/beacon.min.js';
+let loaded = false;
+
+export function analyticsPageAllowed() {
+  if (typeof window === 'undefined') return false;
+  const path = stripLanguagePrefix(window.location.pathname);
+  const sensitiveQuery = [...new URLSearchParams(window.location.search).keys()].some(key => /token|code|state|email|phone/i.test(key));
+  return !isEmailLinkPath(path) && !sensitiveQuery &&
+    !/^\/(admin|account|orders|checkout|cart|privacy|cookies|terms|withdrawal|logout|graviranje|contact|search)(\/|$)/.test(path);
+}
+
+export function stopAnalyticsOnPrivatePage() {
+  if (loaded && !analyticsPageAllowed()) {
+    removeCloudflareWebAnalyticsScript();
+    // The beacon retains observers after script removal. Stop them by loading
+    // the sensitive route in a fresh document that does not install a beacon.
+    window.location.reload();
+  }
+}
 
 function configuredToken() {
   const token = import.meta.env.VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN;
@@ -14,7 +34,7 @@ function configuredToken() {
  */
 export function loadCloudflareWebAnalytics() {
   if (typeof document === 'undefined') return false;
-  if (isEmailLinkPath(window.location.pathname) || new URLSearchParams(window.location.search).has('token')) return false;
+  if (!isAnalyticsAllowed() || !analyticsPageAllowed()) return false;
 
   const token = configuredToken();
   if (!token) {
@@ -33,7 +53,8 @@ export function loadCloudflareWebAnalytics() {
   script.type = 'module';
   script.async = true;
   script.src = SCRIPT_SRC;
-  script.dataset.cfBeacon = JSON.stringify({ token });
+  script.dataset.cfBeacon = JSON.stringify({ token, spa: false });
+  loaded = true;
   document.head.appendChild(script);
   return true;
 }

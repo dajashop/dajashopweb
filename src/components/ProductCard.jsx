@@ -457,7 +457,7 @@ function ProductCard({ p, priority = false, blankImage = false, showPurchase = t
           <div className="product-card__footer">
             <div className="product-card__price text-zinc-900 dark:text-white font-medium">
               {p._catalogStale && <small className="block">{translateText('Poslednja poznata cena · čeka potvrdu')}</small>}
-              {translateText(p.salePrice ? <><span className="line-through text-zinc-400 mr-2">{money(p.price)}</span><span className="text-red-600">{money(p.salePrice)}</span></> : money(p.price))}
+              {money(p.salePrice ?? p.price)}
             </div>
 
             {showPurchase && <button

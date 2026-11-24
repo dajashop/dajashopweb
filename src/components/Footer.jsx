@@ -246,7 +246,8 @@ export default function Footer() {
           <div className="container footer__bottomWrap">
             <p>&copy; {translateText(year)}{translateText(" Daja Shop. Sva prava zadržana.")}</p>
             <div className="footer__links">
-              <Link to="/terms">{translateText("Uslovi korišćenja")}</Link>
+              <Link to="/terms">{translateText("Uslovi kupovine i korišćenja")}</Link>
+              <Link to="/withdrawal">{translateText("Obrazac za odustanak")}</Link>
               <Link to="/privacy">{translateText("Politika privatnosti")}</Link>
               <Link to="/cookies">{translateText("Kolačići")}</Link>
               <button type="button" className="footer__privacy-button" onClick={openSettings}>{translateText("Podešavanja privatnosti")}</button>

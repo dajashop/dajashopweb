@@ -21,7 +21,7 @@ const SECURITY_HEADERS = headerRules.split(/\r?\n\s*\r?\n/)[0].split(/\r?\n/)
   .filter(Boolean).map(match => [match[1].trim(), match[2]]);
 
 const PRIVATE_PATHS = new Set(['/cart', '/checkout', '/account', '/orders', '/admin',
-  '/verify-email', '/reset-password', '/newsletter-confirm', '/product-alert-confirm', '/logout', '/unsubscribe', '/privacy', '/cookies', '/terms', '/search']);
+  '/verify-email', '/reset-password', '/newsletter-confirm', '/product-alert-confirm', '/logout', '/unsubscribe', '/privacy', '/cookies', '/terms', '/withdrawal', '/search']);
 
 async function errorPage(status, request, env) {
   try {
@@ -121,6 +121,15 @@ async function serveRequest(request, env, ctx) {
     }
     if (language === 'en' && url.pathname !== localizedPath(path, language)) {
       return Response.redirect(new URL(`${localizedPath(path, language)}${url.search}`, url.origin).toString(), 301);
+    }
+    if (['/privacy', '/cookies', '/terms', '/withdrawal'].includes(path)) {
+      // Legal information remains readable without JavaScript, cookies or API
+      // availability. Source copy and its language are part of this release.
+      const asset = await env.ASSETS.fetch(new Request(new URL('/', url)));
+      const html = renderDocument(await asset.text(), renderPage(url.pathname, {}, PUBLIC_SITE_URL));
+      return new Response(request.method === 'HEAD' ? null : html, { headers: {
+        'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex,follow',
+      } });
     }
     if (PRIVATE_PATHS.has(path) || path.startsWith('/account/') || path.startsWith('/admin/')) {
       const asset = await env.ASSETS.fetch(new Request(new URL('/', url)));

@@ -89,8 +89,6 @@ export default function CookieConsentModal({
     if (!saving) setPanel(nextPanel);
   };
 
-  const functionalEnabled = preferences && externalGoogle;
-
   const toggleCategory = (category) => {
     setExpandedCategories((current) => ({ ...current, [category]: !current[category] }));
   };
@@ -112,17 +110,26 @@ export default function CookieConsentModal({
             />
             <CookieCategory
               id="functional"
-              title={translateText("Funkcionalni")}
-              count="2"
-              description={translateText("Pamte temu, prijavu, prikaz newsletter ponude i poziciju u katalogu, a omogućavaju i Google mapu naše lokacije, predlog adrese i prikaz Google ocene prodavnice. Google može obraditi tehničke podatke pregledača i adresu koju unesete.")}
+              title={translateText("Lokalno pamćenje")}
+              count=""
+              description={translateText("Uz dozvolu pamtimo temu, predloge gravure i prikaz ponude do 180 dana, poslednji način prijave do 30 dana i poziciju kataloga tokom kartice. Keš proizvoda važi najviše 5 minuta. Kupovina radi i bez ovog pamćenja.")}
               expanded={expandedCategories.functional}
               onToggle={() => toggleCategory('functional')}
-              control={<ConsentSwitch checked={functionalEnabled} onChange={() => { setPreferences(!functionalEnabled); setExternalGoogle(!functionalEnabled); }} disabled={saving} label={translateText("Funkcionalni kolačići i usluge")} />}
+              control={<ConsentSwitch checked={preferences} onChange={() => setPreferences(!preferences)} disabled={saving} label={translateText("Lokalno pamćenje")} />}
+            />
+            <CookieCategory
+              id="google"
+              title={translateText("Google usluge")}
+              count=""
+              description={translateText("Google mapa, predlog adrese i ocena prodavnice šalju Googleu tehničke podatke i unetu adresu. Ovu dozvolu birate odvojeno. Adresu uvek možete uneti ručno.")}
+              expanded={expandedCategories.google !== false}
+              onToggle={() => setExpandedCategories(current => ({ ...current, google: current.google === false }))}
+              control={<ConsentSwitch checked={externalGoogle} onChange={() => setExternalGoogle(!externalGoogle)} disabled={saving} label={translateText("Google usluge")} />}
             />
             <CookieCategory
               id="analytics"
               title={translateText("Analitika")}
-              count="1"
+              count=""
               description={translateText("Cloudflare Web Analytics meri korišćenje i performanse sajta kako bismo ga unapredili. Ne koristi se za personalizovano oglašavanje.")}
               expanded={expandedCategories.analytics}
               onToggle={() => toggleCategory('analytics')}
@@ -160,7 +167,7 @@ export default function CookieConsentModal({
           </div>
           <div className="cookie-consent__info-list">
             <div><ShieldCheck size={20} /><p><strong>{translateText("Neophodno")}</strong>{translateText(" omogućava bezbedan rad korpe, naloga i vašeg izbora privatnosti.")}</p></div>
-            <div><Settings2 size={20} /><p><strong>{translateText("Funkcionalni")}</strong>{translateText(" pamte temu, prijavu, prikaz newsletter ponude i poziciju u katalogu, kao i omogućavaju Google mapu naše lokacije, predlog adrese i prikaz Google ocene prodavnice.")}</p></div>
+            <div><Settings2 size={20} /><p><strong>{translateText("Funkcionalni")}</strong>{translateText(" imaju zasebne izbore za lokalno pamćenje i Google usluge. Kupovina je dostupna i kada ih odbijete.")}</p></div>
             <div><BarChart3 size={20} /><p><strong>{translateText("Analitika")}</strong>{translateText(" nam pokazuje kako posetioci koriste sajt, bez prikazivanja oglasa.")}</p></div>
             <div><Info size={20} /><p><strong>{translateText("Marketing i neklasifikovani kolačići")}</strong>{translateText(" trenutno se ne koriste na sajtu.")}</p></div>
           </div>
@@ -175,7 +182,7 @@ export default function CookieConsentModal({
       <div className="cookie-consent__panel" id="cookie-consent-panel" role="tabpanel" aria-labelledby="cookie-consent-tab">
         <div className="cookie-consent__panel-heading">
           <h2 id="cookie-consent-title">{translateText("Vaša privatnost")}</h2>
-          <p>{translateText("Koristimo neophodne kolačiće za pouzdan rad sajta. Uz vašu dozvolu uključujemo funkcionalne opcije i analitiku radi boljeg iskustva kupovine. Funkcionalne opcije pamte vaša podešavanja i omogućavaju Google mapu, predlog adrese i prikaz Google ocene prodavnice.")}</p>
+          <p>{translateText("Neophodni kolačići omogućavaju prijavu, korpu i bezbedan rad sajta. Vi birate dodatno lokalno pamćenje, Google usluge i analitiku. Sve opcione svrhe su isključene dok ih ne dozvolite. Izbor možete kasnije promeniti u podnožju sajta.")}</p>
         </div>
         <p className="cookie-consent__subcopy">{translateText("Sve opcione kategorije možete uključiti, isključiti ili pregledati u Podešavanjima.")}</p>
       </div>
@@ -221,7 +228,7 @@ export default function CookieConsentModal({
                 type="button"
                 className="cookie-consent__secondary"
                 disabled={saving}
-                onClick={() => run(() => onSave({ preferences: functionalEnabled, externalGoogle: functionalEnabled, analytics }))}
+                onClick={() => run(() => onSave({ preferences, externalGoogle, analytics }))}
               >
                 <Check size={18} /> {translateText(saving ? 'Čuvamo…' : 'Sačuvaj izbor')}
               </button>
@@ -231,6 +238,9 @@ export default function CookieConsentModal({
             </div>
           ) : (
             <div className="cookie-consent__actions">
+              <button type="button" className="cookie-consent__secondary" disabled={saving} onClick={() => run(() => onSave({ preferences: false, externalGoogle: false, analytics: false }))}>
+                {translateText('Samo neophodni')}
+              </button>
               <button type="button" className="cookie-consent__secondary" disabled={saving} onClick={() => selectPanel(PANELS.details)}>
                 <Settings2 size={18} />{translateText(" Podešavanja")}</button>
               <button type="button" className="cookie-consent__primary" disabled={saving} onClick={() => run(onAll)}>
@@ -259,7 +269,7 @@ function CookieCategory({ id, title, count, description, expanded, onToggle, con
         >
           <ChevronDown className={expanded ? 'is-expanded' : ''} size={18} aria-hidden="true" />
           <span>{translateText(title)}</span>
-          <small>{translateText(count)}</small>
+          {count && <small>{translateText(count)}</small>}
         </button>
         {translateText(control)}
       </div>

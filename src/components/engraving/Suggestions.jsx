@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { Sparkles, RefreshCw } from 'lucide-react';
 import { renderDesign, canvasOf } from '../../engraving/design';
 import { classifyContent, generateSuggestions, starterDesign } from '../../engraving/suggestions';
-const preference = () => { try { return localStorage.getItem('engraving-auto-suggestions') !== 'off'; } catch { return true; } };
+import { readStoredValue, writeStoredValue } from '../../services/consentStorage.js';
+const preference = () => readStoredValue('engraving-auto-suggestions', 'preferences') !== 'off';
 function SuggestionPreview({ suggestion, assets }) {
   const { t: translateText } = useStorefront();
 
@@ -37,7 +38,7 @@ export default function Suggestions({ design, assets, apply, setReserveCenter })
   const locked = design.layers.some((item) => item.locked);
   const choices = proposals.filter((item) => filter === 'all' || (filter === 'date' ? item.id.startsWith('date-') : filter === 'arc' ? item.design.layers.some((layer) => layer.type === 'text' && layer.curve !== 'straight') : item.design.layers.every((layer) => layer.type !== 'text' || layer.curve === 'straight')));
   return <div className="engrave-proposals"><div className="engrave-proposal-heading"><span><Sparkles size={18} /><b>{translateText("Predlozi za vašu gravuru")}</b></span>{populated && <small>{translateText(classifyContent(design.layers))}</small>}</div>
-    <div className="engrave-proposal-settings"><label><input type="checkbox" checked={automatic} onChange={(event) => { setAutomatic(event.target.checked); try { localStorage.setItem('engraving-auto-suggestions', event.target.checked ? 'on' : 'off'); } catch { /* Editing works without browser storage. */ } }} />{translateText("Automatski predlozi")}</label><label><input type="checkbox" checked={design.reserveCenter !== false} onChange={(event) => setReserveCenter(event.target.checked)} />{translateText("Sačuvaj sredinu za fabričku gravuru")}</label></div>
+    <div className="engrave-proposal-settings"><label><input type="checkbox" checked={automatic} onChange={(event) => { setAutomatic(event.target.checked); writeStoredValue('engraving-auto-suggestions', event.target.checked ? 'on' : 'off', 'preferences'); }} />{translateText("Automatski predlozi")}</label><label><input type="checkbox" checked={design.reserveCenter !== false} onChange={(event) => setReserveCenter(event.target.checked)} />{translateText("Sačuvaj sredinu za fabričku gravuru")}</label></div>
     <p className="engrave-note">{translateText(design.reserveCenter !== false ? 'Rasporedi ostavljaju sredinu slobodnom. Fabrički natpis i njegov položaj razlikuju se od sata do sata.' : 'Dozvoljen je i raspored u sredini poklopca. Proverite postojeći fabrički natpis.')}{translateText(" Predlog se primenjuje tek kada ga izaberete.")}</p>
     {populated ? <><div className="engrave-proposal-filters">{[['all', 'Sve'], ['arc', 'U luk'], ['straight', 'Prav tekst'], ...(proposals.some((item) => item.id.startsWith('date-')) ? [['date', 'Zapisi datuma']] : [])].map(([key, title]) => <button key={key} className={filter === key ? 'active' : ''} onClick={() => { setFilter(key); setLimit(12); }}>{translateText(title)}</button>)}<button onClick={generate}><RefreshCw size={14} />{translateText(automatic ? 'Osveži' : 'Napravi predloge')}</button></div>
       {stale && <p role="status" className="engrave-note">{translateText(automatic ? 'Pripremamo rasporede za nove izmene…' : 'Automatski predlozi su isključeni. Kliknite „Napravi predloge“ za trenutni tekst i slike.')}</p>}

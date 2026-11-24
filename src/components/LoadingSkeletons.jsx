@@ -15,7 +15,7 @@ export function ProductCardSkeleton({ square = false, product, staff = false, ca
       </div>
       <div className="product-card__name font-bold text-lg text-zinc-800 mb-1 leading-tight"><span className="loading-card-text">{product?.name || 'MODEL PROIZVODA'}</span></div>
       <div className="product-card__footer">
-        <div className="product-card__price text-zinc-900 dark:text-white font-medium">{product?.salePrice ? <><span className="loading-card-text mr-2">{money(product.price)}</span><span className="loading-card-text">{money(product.salePrice)}</span></> : <span className="loading-card-text">{money(product?.price ?? 12345)}</span>}</div>
+        <div className="product-card__price text-zinc-900 dark:text-white font-medium"><span className="loading-card-text">{money(product?.salePrice ?? product?.price ?? 12345)}</span></div>
         <div className="product-card__btn w-full py-2 bg-neutral-300 rounded-lg font-medium text-sm text-center"><span className="loading-card-text">{t('Dodaj u korpu')}</span></div>
       </div>
       {staff && <div className={`mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700 grid gap-2 ${canDelete ? 'grid-cols-4' : 'grid-cols-3'}`}>

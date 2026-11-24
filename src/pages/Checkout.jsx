@@ -12,6 +12,7 @@ import { ordersApi, customerApi } from '../services/dajaPlatform.js';
 import { beginCheckoutAttempt, checkoutCartHash, forgetCheckoutAttempt, readCheckoutAttempt } from '../services/checkoutAttempt.js';
 import { PASSWORD_RULE, FORM_RULES } from '../data/validationRules.js';
 import { commerceSeoConfig } from '../config/seo.js';
+import { LEGAL_POLICY_VERSION } from '../data/legalDocuments.js';
 import CartProductImage from '../components/CartProductImage.jsx';
 import DeliveryForm from '../components/checkout/DeliveryForm';
 import EngravingSummary from '../components/engraving/EngravingSummary';
@@ -38,6 +39,7 @@ export default function Checkout() {
    for (let i = step + 1; i <= n; i++) navigate(location.pathname + location.search, { state: { ...location.state, checkoutStep: i }, preventScrollReset: true });
  };
  const [order,setOrder]=useState(null), [note,setNote]=useState(''), [busy,setBusy]=useState(false), [error,setError]=useState('');
+ const [confirmedQuote, setConfirmedQuote] = useState(null);
  const [addressBook, setAddressBook] = useState(null);
  const [addressReload, setAddressReload] = useState(0);
  const [receiptOwner, setReceiptOwner] = useState(null);
@@ -85,9 +87,11 @@ export default function Checkout() {
  useEffect(() => {
    heading.current?.focus({ preventScroll: true });
  }, [step]);
- const discount=promo.appliedPromo?.amount || 0;
- const shipping=promo.appliedPromo?.freeShipping || total-discount>=commerceSeoConfig.freeShippingThreshold ? 0 : 380;
- const amount=order?.finalTotal ?? total-discount+shipping;
+ const quoteKey = JSON.stringify([accountId, items, promo.appliedPromo, total]);
+ const quote = confirmedQuote?.key === quoteKey ? confirmedQuote : null;
+ const discount=quote?.discountAmount ?? (promo.appliedPromo?.amount || 0);
+ const shipping=quote?.shippingCost ?? (promo.appliedPromo?.freeShipping || total-discount>=commerceSeoConfig.freeShippingThreshold ? 0 : commerceSeoConfig.shippingCost);
+ const amount=order?.finalTotal ?? quote?.finalTotal ?? total-discount+shipping;
  const address=formatDeliveryAddress(form.formData.address,form.formData.addressDetails);
  const selectedAddress = savedAddressChoices.find(savedAddress =>
    sameDeliveryAddress(savedAddress, { address, city: form.formData.city, zip: form.formData.postalCode })
@@ -187,7 +191,7 @@ export default function Checkout() {
      if (!isCurrent()) return;
      const payload = {
        customer: { ...form.formData, address, uid: user?.uid || 'guest' },
-       items, confirmCatalogPrice: true, subtotal: total, discountAmount: discount, subtotalAfterDiscount: total - discount,
+       items, confirmCatalogPrice: true, termsVersion: LEGAL_POLICY_VERSION, subtotal: total, discountAmount: discount, subtotalAfterDiscount: total - discount,
        shippingCost: shipping, finalTotal: amount, promoCode: promo.appliedPromo?.code || null,
        shippingMethod: 'courier', paymentMethod: 'cod', note,
      };
@@ -217,6 +221,9 @@ export default function Checkout() {
      await acceptOrder(result, attempt, accountId, isCurrent, submittedCartHash);
    } catch (error) {
      if (isCurrent()) {
+       const changed = error.code === 'CHECKOUT_TOTAL_CHANGED' && error.details;
+       if (changed && ['subtotal', 'discountAmount', 'shippingCost', 'finalTotal'].every(key => Number.isFinite(changed[key]) && changed[key] >= 0) &&
+           checkoutContext.current.items === items) setConfirmedQuote({ key: quoteKey, ...changed });
        const prices = error.code === 'CHECKOUT_PRICE_CHANGED' ? error.details?.prices : null;
        if (Array.isArray(prices) && prices.length === items.length && prices.every(price => typeof price === 'number' && price >= 0) &&
            checkoutContext.current.items === items) {
@@ -311,7 +318,7 @@ export default function Checkout() {
   </dl>
   <p className="flow-muted">{t('Plaćanje se vrši u dinarima (RSD).')}</p>
  </>;
- const actionLabel = ['Nastavi na adresu', 'Nastavi na potvrdu', 'Potvrdi porudžbinu'][step];
+ const actionLabel = ['Nastavi na adresu', 'Nastavi na potvrdu', 'Poruči uz obavezu plaćanja'][step];
  const action = (
   <button type="button" className="flow-primary" disabled={!authReady || busy || promo.loading || !items.length} onClick={next}>
    {t(busy ? 'Slanje porudžbine…' : actionLabel)}
@@ -320,7 +327,7 @@ export default function Checkout() {
  );
  return <div className={`checkout-page checkout-flow${!order && step === 2 ? ' flow-confirmation' : ''}`}><SEOHead title={t('Plaćanje')} noIndex/><div className="flow-layout"><div className="flow-left"><div ref={heading} tabIndex={-1} className="flow-heading">
  <div className={order ? 'flow-success' : undefined}>
-  {!order && <h1>{t('Završite kupovinu')}</h1>}
+  {!order && <><h1>{t('Završite kupovinu')}</h1><p className="flow-muted">{t('Dostava je dostupna u Srbiji. Plaćanje je pouzećem u dinarima.')}</p></>}
   <nav className={`flow-progress ${order ? 'flow-progress--complete' : ''}`} aria-label={t('Koraci kupovine')}>
    <div className="flow-track"><motion.div animate={{width: order ? '100%' : `${step * 50}%`}} transition={{duration: reduce ? 0 : .25}}/></div>
    {[User,MapPin,Check].map((Icon,i) => (
@@ -395,6 +402,8 @@ export default function Checkout() {
    {note && <p className="flow-muted">{note}</p>}
   </div>
  </section>}
+ {step === 2 && <p className="flow-muted">{t('Slanjem porudžbine prihvatate')} <Link to="/terms" target="_blank">{t('Uslove kupovine i korišćenja')}</Link>. {t('Podatke koristimo za kupovinu i dostavu prema')} <Link to="/privacy" target="_blank">{t('Politici privatnosti')}</Link>. <Link to="/withdrawal" target="_blank">{t('Obrazac za odustanak')}</Link>.</p>}
+ {step === 2 && items.some(item => item.engraving) && <p className="flow-muted">{t('Za robu sa vašom ličnom gravurom ne važi odustanak bez razloga. Pravo na reklamaciju zbog nedostatka ostaje. Proverite sadržaj gravure pre poručivanja.')}</p>}
  {error && <p role="alert" className="flow-error">{error}</p>}
  {step > 0 && <button className="flow-back" type="button" onClick={() => go(step - 1)}><ArrowLeft size={16} />{t('Nazad')}</button>}
  <div className="flow-mobile-action"><div><small>{t('Ukupno')}</small><strong>{price(amount)}</strong></div>{action}</div>

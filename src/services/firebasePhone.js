@@ -1,5 +1,6 @@
 import { apiRequest } from './apiClient';
 import { pathLanguage } from '../localization/paths.js';
+import { translate } from '../localization/translate.js';
 
 let capabilitiesRequest;
 let capabilitiesExpiresAt = 0;
@@ -41,6 +42,10 @@ async function firebaseRuntime() {
 
 export async function requestFirebasePhone(phone, purpose) {
   if (sending) throw new Error('Sačekajte da se prethodno slanje završi.');
+  const language = pathLanguage(window.location.pathname);
+  if (!window.confirm(translate('SMS potvrda koristi Google Firebase i reCAPTCHA. Google prima i čuva broj telefona i tehničke podatke radi provere i sprečavanja zloupotreba. Nastavkom slanja koda dozvoljavate ovu obradu za SMS potvrdu. Možete izabrati email ili drugi ponuđeni način prijave.', language))) {
+    throw new Error(translate('SMS potvrda nije pokrenuta. Izaberite drugi način ili ponovo zatražite kod.', language));
+  }
   sending = true;
   let verifier;
   let container;
