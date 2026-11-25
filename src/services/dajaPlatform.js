@@ -1358,12 +1358,12 @@ function subscribeReaderSessionEvents(sessionId, name, channels, onEvent, onErro
 
 export function subscribeReaderSession(sessionId, onEvent, onError, onConnection) {
   return subscribeReaderSessionEvents(sessionId, 'reader.scan.subscribe',
-    ['reader.scan.product', 'reader.scan.completed', 'reader.scan.cancelled'], onEvent, onError, onConnection);
+    ['reader.scan.product', 'reader.scan.completed', 'reader.scan.cancelled', 'reader.label.updated'], onEvent, onError, onConnection);
 }
 
 export function subscribeReaderFind(sessionId, onEvent, onError, onConnection) {
   return subscribeReaderSessionEvents(sessionId, 'reader.find.subscribe',
-    ['reader.find.proximity', 'reader.find.completed', 'reader.find.cancelled'], onEvent, onError, onConnection);
+    ['reader.find.proximity', 'reader.find.completed', 'reader.find.cancelled', 'reader.label.updated'], onEvent, onError, onConnection);
 }
 
 export const productAlertsApi = {

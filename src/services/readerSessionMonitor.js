@@ -15,6 +15,7 @@ export function monitorReaderSession(session, kind, onData, onError) {
   let readAgain = false;
   let eventVersion = 0;
   let stopRealtime;
+  const lastLabelEdits = {};
 
   const stop = () => {
     if (!active) return;
@@ -30,7 +31,14 @@ export function monitorReaderSession(session, kind, onData, onError) {
     if (terminalStatuses.has(data.status)) stop();
     if (data.expiresAt) expiresAt = Date.parse(data.expiresAt);
     else if (data.expiresInSeconds > 0) expiresAt = Date.now() + data.expiresInSeconds * 1_000;
-    onData(data);
+    const labelEdits = {};
+    for (const field of ['sku', 'variantName']) {
+      const value = data.product?.labelEdits?.[field];
+      if (typeof value !== 'string' || lastLabelEdits[field] === value) continue;
+      lastLabelEdits[field] = value;
+      labelEdits[field] = value;
+    }
+    onData(data, Object.keys(labelEdits).length ? labelEdits : undefined);
   };
   async function refresh() {
     if (!active || document.hidden || navigator.onLine === false) return;
@@ -73,6 +81,9 @@ export function monitorReaderSession(session, kind, onData, onError) {
     if (!active || event.data?.sessionId !== sessionId) return;
     eventVersion++;
     switch (event.event) {
+      case 'reader.label.updated':
+        apply(event.data);
+        break;
       case 'reader.scan.product':
         apply({ ...event.data, status: 'awaiting_barcode' });
         break;

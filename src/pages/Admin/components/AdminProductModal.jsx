@@ -34,6 +34,7 @@ import CustomSelect from './CustomSelect.jsx';
 import { RichDescription } from '../../../components/RichDescription.jsx';
 import { descriptionText } from '../../../components/description.js';
 import { productSeoDescription } from '../../../utils/productSeoDescription.js';
+import { productSpecGroups } from '../../../utils/productSpecGroups.js';
 import ProductOperationsPanel from './ProductOperationsPanel.jsx';
 import WorkforceReviewNotes from './WorkforceReviewNotes.jsx';
 import useWorkTiming from '../../../hooks/useWorkTiming';
@@ -48,6 +49,11 @@ import {
 const supplierPreviewInFlight = new Map();
 const supplierPreviewCache = new Map();
 const MemoizedSpecificationEditor = memo(SpecificationEditor);
+const readerVisualSpecs = new Set([
+  'stil', 'oblik', 'materijal_kucista', 'boja_kucista', 'precnik_kucista', 'dimenzije_kucista', 'debljina_kucista', 'staklo',
+  'boja_brojcanika', 'prikaz', 'luminescencija',
+  'materijal_narukvice', 'boja_narukvice', 'stil_narukvice', 'sirina_narukvice', 'duzina_narukvice', 'kopca',
+]);
 
 function validateEpcInput(value) {
   const epc = value
@@ -123,12 +129,16 @@ function readerStationPreview(form, pendingPrice, barcode, defaultName) {
     ? (activePendingSale ? pendingPrice.amount : form.price)
     : (activeSavedSale ? form.salePrice : form.price);
   const priceMinor = String(price ?? '').trim() ? Math.round(Number(price) * 100) : NaN;
+  const visualSpecs = Object.fromEntries(productSpecGroups(form).flatMap(({ entries }) =>
+    entries.filter(({ normalized }) => readerVisualSpecs.has(normalized)).map(({ normalized, value }) => [normalized, value.slice(0, 120)])
+  ));
   return {
     name: form.name?.trim() || defaultName,
     sku: form.sku?.trim() || undefined,
     variantName: form.variantName?.trim() || undefined,
     barcode: barcode || undefined,
     imageUrl,
+    visualSpecs,
     ...(Number.isSafeInteger(priceMinor) && priceMinor >= 0 ? { priceMinor, currency: form.currency || 'RSD' } : {})
   };
 }
@@ -1024,7 +1034,8 @@ export default function AdminProductModal({
       setFindSignal(0);
       setScanNotice(`G2 čitač traži izabrani RFID tag (najviše ${created.expiresInSeconds || 90} sekundi).`);
       findSessionUnsubscribeRef.current?.();
-      findSessionUnsubscribeRef.current = monitorReaderSession(created, 'find', data => {
+      findSessionUnsubscribeRef.current = monitorReaderSession(created, 'find', (data, labelEdits) => {
+        if (labelEdits) setForm(current => ({ ...current, ...labelEdits }));
         if (data.status === 'completed' || data.status === 'cancelled' || data.status === 'expired') {
           const notice = data.status === 'expired' ? 'Vreme za pronalaženje je isteklo.'
             : data.status === 'completed' ? 'Traženje je završeno.' : 'Traženje je zaustavljeno.';
@@ -1076,7 +1087,8 @@ export default function AdminProductModal({
       setScanSession(created);
       setScanNotice('G2 čitač čeka EPC.');
       readerSessionUnsubscribeRef.current?.();
-      readerSessionUnsubscribeRef.current = monitorReaderSession(created, 'scan', data => {
+      readerSessionUnsubscribeRef.current = monitorReaderSession(created, 'scan', (data, labelEdits) => {
+        if (labelEdits) setForm(current => ({ ...current, ...labelEdits }));
         if (data.status === 'awaiting_epc' || !data.status) return;
         if (!target.removed && data.epc && (data.status === 'completed' || data.epc !== appliedEpc)) {
           appliedEpc = data.epc;
