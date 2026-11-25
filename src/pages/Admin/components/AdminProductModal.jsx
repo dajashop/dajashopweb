@@ -148,8 +148,10 @@ function applyReaderEdits(form, edits) {
   const specs = { ...form.specs };
   for (const [slug, value] of Object.entries(visualSpecs || {})) {
     if (!readerVisualSpecs.has(slug)) continue;
-    const key = Object.keys(specs).find(candidate => normalizeSpec(candidate) === slug) || slug;
-    specs[key] = value;
+    for (const key of Object.keys(specs)) {
+      if (normalizeSpec(key) === slug) delete specs[key];
+    }
+    if (value) specs[slug] = value;
   }
   return { ...form, ...label, specs };
 }
