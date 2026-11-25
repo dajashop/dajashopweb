@@ -134,6 +134,10 @@ function readerStationPreview(form, pendingPrice, barcode, defaultName) {
   ));
   return {
     name: form.name?.trim() || defaultName,
+    brandName: form.brand?.trim() || undefined,
+    modelNumber: form.mpn?.trim() || undefined,
+    gender: form.gender?.trim() || undefined,
+    departmentSlug: form.department || undefined,
     sku: form.sku?.trim() || undefined,
     variantName: form.variantName?.trim() || undefined,
     barcode: barcode || undefined,
