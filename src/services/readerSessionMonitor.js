@@ -4,7 +4,8 @@ const terminalStatuses = new Set(['completed', 'cancelled', 'expired']);
 
 export function monitorReaderSession(session, kind, onData, onError) {
   const sessionId = session.id;
-  let expiresAt = Date.parse(session.expiresAt);
+  let expiresAt = session.expiresAt ? Date.parse(session.expiresAt)
+    : (session.expiresInSeconds > 0 ? Date.now() + session.expiresInSeconds * 1_000 : NaN);
   const read = kind === 'find' ? readerStationApi.findSession : readerStationApi.session;
   const subscribe = kind === 'find' ? subscribeReaderFind : subscribeReaderSession;
   let active = true;
@@ -84,7 +85,7 @@ export function monitorReaderSession(session, kind, onData, onError) {
         break;
       case 'reader.scan.cancelled':
       case 'reader.find.cancelled':
-        apply({ ...event.data, status: 'cancelled' });
+        apply({ ...event.data, status: event.data.status === 'expired' ? 'expired' : 'cancelled' });
         break;
     }
   }, onError, ready => {
