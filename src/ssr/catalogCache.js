@@ -1,7 +1,11 @@
+import { catalogLandings } from '../data/catalogLandings.js';
+import { stripLanguagePrefix } from '../localization/paths.js';
+
 const flights = new Map();
 const metaHeader = 'X-Daja-Catalog-Cache';
 const publicRoot = '/public/catalog/';
 const defaultPaths = new Set(['', '/catalog', '/muski-satovi', '/zenski-satovi', '/naocare', '/baterije', '/daljinski']);
+const publicListingPaths = new Set([...defaultPaths, ...catalogLandings.map(({ path }) => path)]);
 const bypass = request => request.headers.get('X-Daja-Catalog-Refresh') === '1' || /(?:^|,)\s*(?:no-cache|no-store)\s*(?:,|$)/i.test(request.headers.get('Cache-Control') || '');
 
 export function edgeCatalogRoute(route) {
@@ -131,7 +135,10 @@ export function publicHtmlKey(request, apiBase, release) {
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.search || request.headers.has('Authorization') ||
       /(?:^|;\s*)__Host-daja_[^=]+=/.test(request.headers.get('Cookie') || '') || bypass(request)) return null;
-  if (!/^(?:\/(?:en\/?)?|\/(?:en\/)?(?:catalog|product\/[a-z0-9][a-z0-9_-]{0,180}))$/i.test(url.pathname)) return null;
+  const path = stripLanguagePrefix(url.pathname);
+  if (path !== '/' && !publicListingPaths.has(path) &&
+      !/^\/brend\/[a-z0-9][a-z0-9-]{0,180}$/.test(path) &&
+      !/^\/product\/[a-z0-9][a-z0-9_-]{0,180}$/i.test(path)) return null;
   return cacheKey(request, 'html', release + ':' + apiBase + ':' + url.pathname);
 }
 
