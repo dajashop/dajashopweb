@@ -1321,34 +1321,36 @@ export const readerStationApi = {
   cancelFind(sessionId) { return apiRequest(`/rfid/reader-stations/find-sessions/${encodeURIComponent(sessionId)}/cancel`, { method: 'POST', staff: true }); },
 };
 
-function subscribeReaderSessionEvents(sessionId, name, channels, onEvent, onError, onConnection) {
-  if (!REALTIME_ENABLED) return () => {};
-  if (!getStaffAccessToken()) {
-    onError?.(new Error('Staff token nije dostupan za Reader Station.'));
-    return () => {};
-  }
+function subscribeReaderSessionEvents(sessionId, name, channels, onEvent, onConnection) {
+  if (!REALTIME_ENABLED || !getStaffAccessToken()) return () => {};
   const socket = createRealtimeSocket(realtimeNamespaceUrl(), () => ({ token: 'Bearer ' + (getStaffAccessToken() || '') }));
   let connection = 0;
-  socket.on('connect', () => {
-    const attempt = ++connection;
+  let joinTimer;
+  const join = (connectionId, retries = 0) => {
+    if (connectionId !== connection || !socket.connected) return;
     socket.timeout(3_000).emit(name, { sessionId }, (error, result) => {
-      if (attempt !== connection || !socket.connected) return;
+      if (connectionId !== connection || !socket.connected) return;
       if (error || result?.ok !== true) {
-        onError?.(new Error('Nije moguće povezati sesiju čitača.'));
+        onConnection?.(false);
+        if (retries < 3) joinTimer = setTimeout(() => join(connectionId, retries + 1), 700 * (retries + 1));
         return;
       }
       onConnection?.(true);
     });
-  });
+  };
+  socket.on('connect', () => join(++connection));
   channels.forEach(channel => socket.on(channel, onEvent));
   const handleDisconnect = () => {
     connection++;
+    clearTimeout(joinTimer);
     onConnection?.(false);
   };
-  const handleError = error => onError?.(error);
+  const handleError = () => onConnection?.(false);
   socket.on('disconnect', handleDisconnect);
   socket.on('connect_error', handleError);
   return () => {
+    connection++;
+    clearTimeout(joinTimer);
     channels.forEach(channel => socket.off(channel, onEvent));
     socket.off('disconnect', handleDisconnect);
     socket.off('connect_error', handleError);
@@ -1356,14 +1358,14 @@ function subscribeReaderSessionEvents(sessionId, name, channels, onEvent, onErro
   };
 }
 
-export function subscribeReaderSession(sessionId, onEvent, onError, onConnection) {
+export function subscribeReaderSession(sessionId, onEvent, onConnection) {
   return subscribeReaderSessionEvents(sessionId, 'reader.scan.subscribe',
-    ['reader.scan.product', 'reader.scan.completed', 'reader.scan.cancelled', 'reader.label.updated'], onEvent, onError, onConnection);
+    ['reader.scan.product', 'reader.scan.completed', 'reader.scan.cancelled', 'reader.label.updated', 'reader.session.extended'], onEvent, onConnection);
 }
 
-export function subscribeReaderFind(sessionId, onEvent, onError, onConnection) {
+export function subscribeReaderFind(sessionId, onEvent, onConnection) {
   return subscribeReaderSessionEvents(sessionId, 'reader.find.subscribe',
-    ['reader.find.proximity', 'reader.find.completed', 'reader.find.cancelled', 'reader.label.updated'], onEvent, onError, onConnection);
+    ['reader.find.proximity', 'reader.find.completed', 'reader.find.cancelled', 'reader.label.updated', 'reader.session.extended'], onEvent, onConnection);
 }
 
 export const productAlertsApi = {

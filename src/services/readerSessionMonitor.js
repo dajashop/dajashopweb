@@ -16,6 +16,9 @@ export function monitorReaderSession(session, kind, onData, onError) {
   let eventVersion = 0;
   let stopRealtime;
   const lastLabelEdits = {};
+  const lastSpecEdits = new Map();
+  let failedSince;
+  let connectionWarning = false;
 
   const stop = () => {
     if (!active) return;
@@ -30,7 +33,7 @@ export function monitorReaderSession(session, kind, onData, onError) {
     if (!active || !data) return;
     if (terminalStatuses.has(data.status)) stop();
     if (data.expiresAt) expiresAt = Date.parse(data.expiresAt);
-    else if (data.expiresInSeconds > 0) expiresAt = Date.now() + data.expiresInSeconds * 1_000;
+    else if (data.expiresInSeconds > 0) expiresAt = Date.now() + (data.expiresInSeconds + (data.extensionGraceSeconds || 0)) * 1_000;
     const labelEdits = {};
     for (const field of ['sku', 'variantName']) {
       const value = data.product?.labelEdits?.[field];
@@ -38,7 +41,16 @@ export function monitorReaderSession(session, kind, onData, onError) {
       lastLabelEdits[field] = value;
       labelEdits[field] = value;
     }
-    onData(data, Object.keys(labelEdits).length ? labelEdits : undefined);
+    const visualSpecs = Object.fromEntries(Object.entries(data.product?.labelEdits?.visualSpecs || {}).filter(([key, value]) => {
+      if (typeof value !== 'string' || lastSpecEdits.get(key) === value) return false;
+      lastSpecEdits.set(key, value);
+      return true;
+    }));
+    if (Object.keys(visualSpecs).length) labelEdits.visualSpecs = visualSpecs;
+    const recovered = connectionWarning;
+    failedSince = undefined;
+    connectionWarning = false;
+    onData(data, Object.keys(labelEdits).length ? labelEdits : undefined, recovered);
   };
   async function refresh() {
     if (!active || document.hidden || navigator.onLine === false) return;
@@ -51,7 +63,12 @@ export function monitorReaderSession(session, kind, onData, onError) {
       if (!controller.signal.aborted && data?.id === sessionId &&
           (version === eventVersion || terminalStatuses.has(data.status))) apply(data);
     } catch {
-      // A failed read does not tell us anything about the actual session.
+      if (!active || document.hidden || navigator.onLine === false) return;
+      failedSince ??= Date.now();
+      if (!connectionWarning && Date.now() - failedSince >= 12_000) {
+        connectionWarning = true;
+        onError?.(new Error('Trenutno ne mogu da proverim sesiju G2 čitača. Pokušavam ponovo.'));
+      }
     } finally {
       clearTimeout(timeout);
       request = undefined;
@@ -82,6 +99,7 @@ export function monitorReaderSession(session, kind, onData, onError) {
     eventVersion++;
     switch (event.event) {
       case 'reader.label.updated':
+      case 'reader.session.extended':
         apply(event.data);
         break;
       case 'reader.scan.product':
@@ -99,7 +117,7 @@ export function monitorReaderSession(session, kind, onData, onError) {
         apply({ ...event.data, status: event.data.status === 'expired' ? 'expired' : 'cancelled' });
         break;
     }
-  }, onError, ready => {
+  }, ready => {
     connected = ready;
     wake();
   });

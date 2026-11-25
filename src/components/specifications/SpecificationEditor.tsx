@@ -38,6 +38,28 @@ function matches(rules: Rules, data: EditorData, values: Record<string,string>, 
   }));
 }
 const isSeries = (spec: Spec | undefined) => normalizeSpec(spec?.slug || '') === 'serija' || normalizeSpec(spec?.name || '') === 'serija';
+function optionAllowedForEditor(data: EditorData, brand: string, field: Field | undefined, value: string, values: Record<string,string>) {
+  const rules = field?.options.find(option => normalizeSpec(option.value) === normalizeSpec(value))?.rules;
+  if (isSeries(data.specifications.find(spec => spec.id === field?.specId))) {
+    if (!value.trim()) return true;
+    return Boolean(brand.trim() && rules?.some(row => row.some(condition => condition.brand &&
+      condition.operator === 'equals' && normalizeSpec(condition.value) === normalizeSpec(brand)) && matches([row],data,values,brand,false)));
+  }
+  return !rules || matches(rules,data,values,brand);
+}
+
+export function readerSpecificationOptions(data: EditorData, brand: string, values: Record<string,string>, keys: ReadonlySet<string>) {
+  return Object.fromEntries(data.specifications.flatMap(spec => {
+    const key = normalizeSpec(spec.slug);
+    if (!keys.has(key)) return [];
+    const field = data.configuration.fields.find(item => item.specId === spec.id);
+    if (!matches(field?.visibility || [], data, values, brand) && !read(spec, values)) return [];
+    const options = spec.optionValues.filter(value => value.length <= 120 && optionAllowedForEditor(data, brand, field, value, values))
+      .sort((a,b) => compareOptions(data,spec.id,a,b)).slice(0,250)
+      .map(value => [value, usageCount(data,spec.id,value) ?? data.ranking[spec.id]?.[value] ?? 0] as const);
+    return [[key, options] as const];
+  }));
+}
 function useConnected() {
   const [connected,setConnected]=useState(navigator.onLine);
   useEffect(()=>{const update=()=>setConnected(navigator.onLine);window.addEventListener('online',update);window.addEventListener('offline',update);return()=>{window.removeEventListener('online',update);window.removeEventListener('offline',update);};},[]);
@@ -104,22 +126,17 @@ function ValueInput({eyewear=false,remote=false,battery=false,spec,value,options
   </div>;
 }
 
-export function SpecificationEditor({api,departmentId,brand='',values,onChange,online=true,disabled=false,images=[],onPreview,onAddImage,onBusyChange,showPreview=true,eyewear=false,remote=false,battery=false}: {eyewear?:boolean;remote?:boolean;battery?:boolean;api:EditorApi;departmentId:string;brand?:string;values:Record<string,string>;onChange:(values:Record<string,string>)=>void;online?:boolean;disabled?:boolean;images?:string[];onPreview?:(index:number)=>void;onAddImage?:()=>void;onBusyChange?:(busy:boolean)=>void;showPreview?:boolean}) {
+export function SpecificationEditor({api,departmentId,brand='',values,onChange,online=true,disabled=false,images=[],onPreview,onAddImage,onBusyChange,onEditorData,showPreview=true,eyewear=false,remote=false,battery=false}: {eyewear?:boolean;remote?:boolean;battery?:boolean;api:EditorApi;departmentId:string;brand?:string;values:Record<string,string>;onChange:(values:Record<string,string>)=>void;online?:boolean;disabled?:boolean;images?:string[];onPreview?:(index:number)=>void;onAddImage?:()=>void;onBusyChange?:(busy:boolean)=>void;onEditorData?:(departmentId:string,data:EditorData)=>void;showPreview?:boolean}) {
   const connected=useConnected();online=online&&connected;
   const {data,setData,error,loading,reload}=useEditor(api,departmentId);
+  useEffect(() => { if (data) onEditorData?.(departmentId, data); }, [data, departmentId, onEditorData]);
   const [emptyOnly,setEmptyOnly]=useState(false);const [collapsed,setCollapsed]=useState<Record<string,boolean>>({});const [image,setImage]=useState(0);
   const [activeSpec,setActiveSpec]=useState('');
   const [busy,setBusy]=useState('');const busyRef=useRef(false);const [messages,setMessages]=useState<Record<string,string>>({});
   useEffect(()=>setImage(0),[images[0]]);
   const typeSpec=data?.specifications.find(s=>normalizeSpec(s.slug)==='tip_mehanizma');const type=read(typeSpec,values);
-  const optionAllowed=(f:Field|undefined,value:string,next:Record<string,string>)=>{
-    const rule=f?.options.find(o=>normalizeSpec(o.value)===normalizeSpec(value));
-    if(isSeries(data?.specifications.find(s=>s.id===f?.specId))){
-      if(!value.trim())return true;
-      return Boolean(brand.trim()&&rule?.rules.some(row=>row.some(c=>c.brand&&c.operator==='equals'&&normalizeSpec(c.value)===normalizeSpec(brand))&&matches([row],data!,next,brand,false)));
-    }
-    return !rule||matches(rule.rules,data!,next,brand);
-  };
+  const optionAllowed=(f:Field|undefined,value:string,next:Record<string,string>)=>
+    !data || optionAllowedForEditor(data,brand,f,value,next);
   const fieldApplicable=(spec:Spec,next:Record<string,string>)=>{
     const f=data?.configuration.fields.find(f=>f.specId===spec.id);
     return isSeries(spec)?spec.optionValues.some(value=>optionAllowed(f,value,next)):matches(f?.visibility||[],data!,next,brand);

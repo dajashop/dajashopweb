@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useState, useEffect, useMemo, useRef } from 'react';
 import { eyewearModel, eyewearValueError, missingEyewearFields } from '../../../utils/eyewearCatalog';
-import { SpecificationEditor, SpecificationPreview } from '../../../components/specifications/SpecificationEditor';
+import { normalizeSpec, readerSpecificationOptions, SpecificationEditor, SpecificationPreview } from '../../../components/specifications/SpecificationEditor';
 import { specificationEditorApi } from '../../../services/dajaPlatform';
 import { createPortal } from 'react-dom';
 // eslint-disable-next-line no-unused-vars
@@ -141,6 +141,17 @@ function readerStationPreview(form, pendingPrice, barcode, defaultName) {
     visualSpecs,
     ...(Number.isSafeInteger(priceMinor) && priceMinor >= 0 ? { priceMinor, currency: form.currency || 'RSD' } : {})
   };
+}
+
+function applyReaderEdits(form, edits) {
+  const { visualSpecs, ...label } = edits;
+  const specs = { ...form.specs };
+  for (const [slug, value] of Object.entries(visualSpecs || {})) {
+    if (!readerVisualSpecs.has(slug)) continue;
+    const key = Object.keys(specs).find(candidate => normalizeSpec(candidate) === slug) || slug;
+    specs[key] = value;
+  }
+  return { ...form, ...label, specs };
 }
 
 function catalogAttributeKey(value) {
@@ -346,6 +357,10 @@ export default function AdminProductModal({
   const addingSpecRef = useRef(false);
   const changeSpecifications = useCallback((specs) => {
     setForm((previous) => ({ ...previous, specs }));
+  }, []);
+  const specEditorDataRef = useRef(null);
+  const captureSpecificationData = useCallback((departmentId, data) => {
+    specEditorDataRef.current = { departmentId, data };
   }, []);
   const changeSpecificationBusy = useCallback((busy) => {
     addingSpecRef.current = busy;
@@ -1013,6 +1028,15 @@ export default function AdminProductModal({
     setFindSignal(0);
     if (id) await readerStationApi.cancelFind(id).catch(() => undefined);
   };
+  const prepareReaderPreview = async (barcode, defaultName) => {
+    const preview = readerStationPreview(form, pendingPrice, barcode, defaultName);
+    const departmentId = departments.find(department => department.slug === form.department)?.id;
+    if (!departmentId) return preview;
+    const captured = specEditorDataRef.current;
+    const data = captured?.departmentId === departmentId ? captured.data
+      : await specificationEditorApi({ action: 'get', departmentId, includeUsage: true }).catch(() => null);
+    return data ? { ...preview, visualSpecOptions: readerSpecificationOptions(data, form.brand || '', form.specs || {}, readerVisualSpecs) } : preview;
+  };
   const startFindSession = async () => {
     const epc = validateEpcInput(selectedPiece.epc || '').value;
     if (!epc) { setScanNotice('Izabrani komad nema važeći EPC za pronalaženje.'); return; }
@@ -1021,9 +1045,11 @@ export default function AdminProductModal({
     const modal = readerModalActive.current;
     readerStartPending.current = true;
     setWaitingForReaderRelease(false);
+    setScanNotice('Pripremam podatke za G2…');
     try {
-      const response = await readerStationApi.startFind(readerStationId, crypto.randomUUID(), epc,
-        readerStationPreview(form, pendingPrice, selectedPiece.barcode || form.barcode, 'Artikal'));
+      const preview = await prepareReaderPreview(selectedPiece.barcode || form.barcode, 'Artikal');
+      if (readerModalActive.current !== modal) return;
+      const response = await readerStationApi.startFind(readerStationId, crypto.randomUUID(), epc, preview);
       const created = { ...response, id: response.id || response.sessionId };
       if (readerModalActive.current !== modal) {
         void readerStationApi.cancelFind(created.id).catch(() => undefined);
@@ -1032,10 +1058,10 @@ export default function AdminProductModal({
       readerSessionIds.current.find = created.id;
       setFindSession(created);
       setFindSignal(0);
-      setScanNotice(`G2 čitač traži izabrani RFID tag (najviše ${created.expiresInSeconds || 90} sekundi).`);
+      setScanNotice('G2 čitač traži izabrani RFID tag.');
       findSessionUnsubscribeRef.current?.();
-      findSessionUnsubscribeRef.current = monitorReaderSession(created, 'find', (data, labelEdits) => {
-        if (labelEdits) setForm(current => ({ ...current, ...labelEdits }));
+      findSessionUnsubscribeRef.current = monitorReaderSession(created, 'find', (data, labelEdits, recovered) => {
+        if (labelEdits) setForm(current => applyReaderEdits(current, labelEdits));
         if (data.status === 'completed' || data.status === 'cancelled' || data.status === 'expired') {
           const notice = data.status === 'expired' ? 'Vreme za pronalaženje je isteklo.'
             : data.status === 'completed' ? 'Traženje je završeno.' : 'Traženje je zaustavljeno.';
@@ -1049,7 +1075,7 @@ export default function AdminProductModal({
           const percent = Math.round((proximity || 0) * 100);
           setFindSignal(percent);
           setScanNotice('Signal: ' + percent + '% · ' + (rssi ?? '—') + ' dBm');
-        }
+        } else if (recovered && data.status === 'active') setScanNotice('G2 čitač traži izabrani RFID tag.');
       }, error => setScanNotice(error?.message || 'Reader Station veza nije dostupna.'));
     } catch (error) {
       if (readerModalActive.current !== modal) return;
@@ -1073,8 +1099,10 @@ export default function AdminProductModal({
     const target = { index: selectedPieceIndex, removed: false };
     readerScanTarget.current = target;
     try {
+      const preview = await prepareReaderPreview(form.barcode, 'Novi artikal');
+      if (readerModalActive.current !== modal) return;
       const created = await readerStationApi.start(readerStationId, crypto.randomUUID(), {
-        ...readerStationPreview(form, pendingPrice, form.barcode, 'Novi artikal'),
+        ...preview,
         description: form.description?.trim().slice(0, 1000) || undefined
       });
       if (readerModalActive.current !== modal) {
@@ -1087,8 +1115,9 @@ export default function AdminProductModal({
       setScanSession(created);
       setScanNotice('G2 čitač čeka EPC.');
       readerSessionUnsubscribeRef.current?.();
-      readerSessionUnsubscribeRef.current = monitorReaderSession(created, 'scan', (data, labelEdits) => {
-        if (labelEdits) setForm(current => ({ ...current, ...labelEdits }));
+      readerSessionUnsubscribeRef.current = monitorReaderSession(created, 'scan', (data, labelEdits, recovered) => {
+        if (labelEdits) setForm(current => applyReaderEdits(current, labelEdits));
+        if (recovered && data.status === 'awaiting_epc') setScanNotice('G2 čitač čeka EPC.');
         if (data.status === 'awaiting_epc' || !data.status) return;
         if (!target.removed && data.epc && (data.status === 'completed' || data.epc !== appliedEpc)) {
           appliedEpc = data.epc;
@@ -2508,6 +2537,7 @@ export default function AdminProductModal({
                   brand={form.brand || ''}
                   values={form.specs || {}}
                   onChange={changeSpecifications}
+                  onEditorData={captureSpecificationData}
                   online={specOnline}
                   disabled={loading}
                   onBusyChange={changeSpecificationBusy}
