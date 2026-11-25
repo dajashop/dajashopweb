@@ -101,6 +101,38 @@ function regularPriceForAdmin(product, variant) {
   return variant?.price ?? product?.price ?? '';
 }
 
+function readerStationPreview(form, pendingPrice, barcode, defaultName) {
+  const imageCandidates = [form.images?.[0]?.thumb, form.thumbnailUrl, form.mainImageUrl, form.images?.[0]?.url, form.seo?.ogImage];
+  let imageUrl;
+  for (const candidate of imageCandidates) {
+    if (!candidate) continue;
+    try {
+      const url = new URL(candidate, window.location.origin);
+      if (url.protocol !== 'https:' || url.href.length > 2000) continue;
+      imageUrl = url.href;
+      break;
+    } catch {
+      // The next candidate may already have a public URL.
+    }
+  }
+  const now = Date.now();
+  const activeSavedSale = form.salePrice != null && Date.parse(form.saleValidUntil) > now;
+  const activePendingSale = pendingPrice?.amount && (!pendingPrice.from || Date.parse(pendingPrice.from) <= now) &&
+    Date.parse(pendingPrice.until) > now;
+  const price = pendingPrice?.saleChanged
+    ? (activePendingSale ? pendingPrice.amount : form.price)
+    : (activeSavedSale ? form.salePrice : form.price);
+  const priceMinor = String(price ?? '').trim() ? Math.round(Number(price) * 100) : NaN;
+  return {
+    name: form.name?.trim() || defaultName,
+    sku: form.sku?.trim() || undefined,
+    variantName: form.variantName?.trim() || undefined,
+    barcode: barcode || undefined,
+    imageUrl,
+    ...(Number.isSafeInteger(priceMinor) && priceMinor >= 0 ? { priceMinor, currency: form.currency || 'RSD' } : {})
+  };
+}
+
 function catalogAttributeKey(value) {
   const normalized = String(value || '')
     .normalize('NFKD')
@@ -949,7 +981,9 @@ export default function AdminProductModal({
     if (readerStartPending.current) return;
     readerStartPending.current = true;
     try {
-      const created = await readerStationApi.startFind(readerStationId, crypto.randomUUID(), epc, { name: form.name || 'Artikal', sku: form.sku || undefined, barcode: selectedPiece.barcode || form.barcode || undefined, imageUrl: form.mainImageUrl || form.images?.[0]?.url || undefined });
+      const response = await readerStationApi.startFind(readerStationId, crypto.randomUUID(), epc,
+        readerStationPreview(form, pendingPrice, selectedPiece.barcode || form.barcode, 'Artikal'));
+      const created = { ...response, id: response.id || response.sessionId };
       if (!readerModalActive.current) {
         void readerStationApi.cancelFind(created.id).catch(() => undefined);
         return;
@@ -988,9 +1022,8 @@ export default function AdminProductModal({
     readerScanTarget.current = target;
     try {
       const created = await readerStationApi.start(readerStationId, crypto.randomUUID(), {
-        name: form.name || 'Novi artikal', sku: form.sku || undefined, barcode: form.barcode || undefined,
-        imageUrl: form.mainImageUrl || form.images?.[0]?.url || form.seo?.ogImage || undefined,
-        description: form.description || undefined
+        ...readerStationPreview(form, pendingPrice, form.barcode, 'Novi artikal'),
+        description: form.description?.trim().slice(0, 1000) || undefined
       });
       if (!readerModalActive.current) {
         void readerStationApi.cancel(created.id).catch(() => undefined);
@@ -2003,6 +2036,7 @@ export default function AdminProductModal({
                     </span>
                     <input
                       value={form.variantName || ''}
+                      inputMode="numeric"
                       onChange={(e) => handleChange('variantName', e.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-400 transition-all font-medium"
                       placeholder="Unesite poseban naziv za kasu"
@@ -2012,10 +2046,11 @@ export default function AdminProductModal({
                 <div className="order-3">
                   <label className="block">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 block">
-                      Šifra proizvoda
+                      Šifra proizvoda (opciono)
                     </span>
                     <input
                       value={form.sku || ''}
+                      inputMode="numeric"
                       onChange={(e) => handleChange('sku', e.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2 text-sm text-neutral-600 font-mono outline-none focus:ring-2 focus:ring-neutral-200"
                       placeholder="npr. ECB-900DB-1BER"
