@@ -90,7 +90,7 @@ function ProfileSection({ user }) {
       );
     } catch (error) {
       console.error(error);
-      flash('Greška', 'Greška pri slanju linka. Pokušajte ponovo.', 'error');
+      flash('Greška', error.message || 'Greška pri slanju linka. Pokušajte ponovo.', 'error');
     } finally {
       setLoading(false);
     }
