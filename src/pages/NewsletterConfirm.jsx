@@ -1,6 +1,7 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
 import { useEffect, useState } from 'react';
 import { useEmailLinkRequest } from '../hooks/useEmailLinkRequest.js';
+import { useAuth } from '../hooks/useAuth.js';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Mail, Loader2 } from 'lucide-react';
 import { novostiApi, productAlertsApi, productAlertSubscriptions } from '../services/dajaPlatform.js';
@@ -10,6 +11,7 @@ import './ResetPassword.css';
 
 export default function NewsletterConfirm({ productAlert = false }) {
   const { t: translateText } = useStorefront();
+  const { user, showAuth } = useAuth();
 
   const [params] = useSearchParams();
   const token = params.get('token') || '';
@@ -64,10 +66,19 @@ export default function NewsletterConfirm({ productAlert = false }) {
           : 'Dobro došli! Sada možete da primate naše novosti i ponude. Odjava je dostupna u svakoj poruci.'
         : ['error', 'retry'].includes(status) ? error : productAlert ? 'Klikom na dugme aktivirate traženo obaveštenje za artikal na ovoj email adresi.' : 'Klikom na dugme potvrđujete da želite da primate naše novosti i ponude na ovoj email adresi.')}</p>
       {status === 'success' && !productAlert && welcomeCode && (
-        <p className="reset-password-page__copy">
-          <strong>{translateText('10% na prvu porudžbinu')} · {welcomeCode}</strong><br />
-          {translateText('Prijavite se sa istom potvrđenom email adresom. Kod će se automatski primeniti u korpi.')}
-        </p>
+        <>
+          <p className="reset-password-page__copy">
+            <strong>{translateText('10% na prvu porudžbinu')} · {welcomeCode}</strong><br />
+            {translateText('Za popust koristite nalog sa istom email adresom i potvrdite adresu naloga. Ako se popust ne prikaže u korpi, unesite kod ručno.')}
+          </p>
+          {user ? (
+            <Link className="reset-password-page__button" to="/cart">{translateText('Otvori korpu')}</Link>
+          ) : (
+            <button type="button" className="reset-password-page__button" onClick={() => showAuth('login')}>
+              {translateText('Prijavi se / Registruj se')}
+            </button>
+          )}
+        </>
       )}
       {['ready', 'retry', 'saving'].includes(status) && <button className="reset-password-page__button" onClick={confirm} disabled={status === 'saving'}>{translateText(status === 'saving' ? <><Loader2 size={18} />{translateText(" Potvrđujemo…")}</> : status === 'retry' ? 'Pokušaj ponovo' : 'Potvrdi prijavu')}</button>}
       <Link className="reset-password-page__secondary" to="/">{translateText("Nazad na DajaShop")}</Link>

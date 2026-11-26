@@ -118,7 +118,7 @@ export function usePromo({ user, authReady = true, items = [], total = 0 } = {})
 
   useEffect(() => {
     if (!authReady || !hydrated || loading || !items.length) return;
-    if (!appliedPromo && (!user?.email || !user.emailVerified ||
+    if (!appliedPromo && (!user?.email ||
       readStoredValue('daja_welcome_promo_removed_for', 'necessary') === customerKey)) return;
     const code = appliedPromo?.code || 'DOBRODOSLI10';
     const attempt = JSON.stringify([customerKey, user?.emailVerified, code, items, eligibilityRevision]);

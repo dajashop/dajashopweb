@@ -657,6 +657,8 @@ export default function AuthModal() {
         newErrors.password = 'Email ili lozinka nisu tačni.';
       else if (err.code === 'auth/email-already-in-use')
         newErrors.identity = 'Ovaj email je već registrovan.';
+      else if (!isLogin && err.status === 409 && err.code === 'CONFLICT')
+        newErrors.identity = err.message;
       else if (err.code === 'auth/user-not-found')
         newErrors.identity = 'Korisnik nije pronađen.';
       else alert(translateText(err.message || 'Došlo je do greške.'));
