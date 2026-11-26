@@ -73,6 +73,63 @@
   text-decoration: underline;
 }
 
+.footer-newsletter-success {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in oklab, #15803d 36%, var(--color-border));
+  border-radius: 18px;
+  background: color-mix(in oklab, #22c55e 9%, var(--color-bg));
+  color: var(--color-text);
+  text-align: left;
+  animation: newsletter-confirm-in .28s ease-out both;
+}
+
+.footer-newsletter-check {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #15803d;
+  color: #fff;
+  animation: newsletter-check-in .32s ease-out both;
+}
+
+.footer-newsletter-success p { margin: 4px 0 0; color: var(--color-muted); font-size: .88rem; }
+
+.footer-newsletter-action {
+  padding: 0;
+  margin: 8px 16px 0 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: .84rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.footer-newsletter-action--secondary { color: var(--color-muted); }
+.footer-newsletter-action:disabled { opacity: .65; cursor: wait; }
+.footer-newsletter-error { margin: 8px 0 0; color: var(--color-text); font-size: .85rem; }
+
+@keyframes newsletter-confirm-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes newsletter-check-in {
+  from { transform: scale(.65); }
+  65% { transform: scale(1.1); }
+  to { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .footer-newsletter-success, .footer-newsletter-check { animation: none; }
+}
+
 .footer-input-wrapper {
   position: relative;
   display: flex;

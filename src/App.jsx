@@ -7,7 +7,6 @@ import Header, { StorefrontNotice } from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import AuthModal from './components/AuthModal.jsx';
 import { useLocation, useNavigationType } from 'react-router-dom';
-import NewsletterModal from './components/modals/NewsletterModal.jsx';
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import { useAuth } from './hooks/useAuth.js';
 import OrganizationJsonLd from './components/seo/OrganizationJsonLd.jsx';
@@ -69,7 +68,6 @@ export default function App() {
         style={isFullBleedPage ? undefined : { padding: '20px 0 48px' }}
       >
         <AuthModal />
-        {!['/checkout', '/product-alert-confirm', '/newsletter-confirm', '/verify-email', '/reset-password', '/unsubscribe'].includes(pathname) && <NewsletterModal />}
         {pageStatus ? <PageStatus status={pageStatus} /> : <AppRoutes />}
       </main>
       {pathname === '/checkout' ? <CheckoutFooter /> : <Footer />}

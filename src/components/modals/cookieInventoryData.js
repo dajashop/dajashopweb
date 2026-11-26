@@ -48,6 +48,12 @@ export const cookieInventory = {
           "purpose": "Povezuje proveru pristupnog ključa sa započetom prijavom."
         },
         {
+          "name": "__Host-daja_welcome",
+          "type": "Kolačić",
+          "duration": "Do 30 dana",
+          "purpose": "Pamti potvrdu emaila za korišćenje kupona dobrodošlice u istom pregledaču."
+        },
+        {
           "name": "daja_oauth_browser_state",
           "type": "sessionStorage",
           "duration": "Do 10 minuta važenja",

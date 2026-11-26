@@ -7,7 +7,7 @@ import { useConsent } from '../../context/ConsentContext.jsx';
 
 import './PrivacySection.css';
 import ConfirmModal from '../modals/ConfirmModal.jsx';
-import NotificationChannelPicker, { notificationChannelAvailable, notificationChannelNotice } from '../NotificationChannelPicker.jsx';
+import { Link } from 'react-router-dom';
 
 const alertLabel = {
   price_change: 'Promena cene',
@@ -17,12 +17,10 @@ const alertLabel = {
 export default function PrivacySection({ user }) {
   const { t: translateText, money } = useStorefront();
 
-  const { categories, openSettings, policy } = useConsent();
+  const { categories, openSettings } = useConsent();
   const [snapshot, setSnapshot] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
-  const [marketingOptIn, setMarketingOptIn] = useState(false);
-  const [deliveryChannel, setDeliveryChannel] = useState('email');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [confirmWatch, setConfirmWatch] = useState(null);
@@ -68,23 +66,16 @@ export default function PrivacySection({ user }) {
   };
 
   const prijaviNaNovosti = async () => {
-    if (!notificationChannelAvailable(deliveryChannel)) { setError(notificationChannelNotice(deliveryChannel)); return; }
-    if (!marketingOptIn) {
-      setError('Potvrdite da želite da primate novosti emailom.');
-      return;
-    }
     setBusy('newsletter');
     try {
       const subscription = await novostiApi.subscribe(user.email, {
         source: 'account_privacy',
-        policyVersion: policy?.version,
-        deliveryChannel,
         acceptedMarketing: true,
         authenticated: true,
       });
-      setMarketingOptIn(false);
+      if (!subscription?.active) throw new Error('Prijava na novosti trenutno nije dostupna. Pokušajte ponovo.');
       await refresh();
-      setNotice(subscription.requiresConfirmation ? 'Proverite email i potvrdite prijavu na novosti.' : 'Prijavljeni ste na novosti.');
+      setNotice('Prijavljeni ste na novosti.');
     } catch (requestError) {
       setError(requestError.message || 'Prijava na novosti nije uspela.');
     } finally {
@@ -175,21 +166,14 @@ export default function PrivacySection({ user }) {
             <button type="button" className="privacy-section__danger" onClick={() => void odjaviNovosti()} disabled={busy === 'newsletter'}>
               {translateText(busy === 'newsletter' ? 'Odjavljujemo…' : 'Odjavi me sa novosti')}
             </button>
-            <NotificationChannelPicker value={deliveryChannel} onChange={setDeliveryChannel} contact={user.phoneNumber || ''} />
           </>
         ) : (
           <>
             <p>{translateText("Niste prijavljeni na novosti.")}</p>
-            <NotificationChannelPicker value={deliveryChannel} onChange={(channel) => { setDeliveryChannel(channel); setMarketingOptIn(false); setError(''); }} disabled={busy === 'newsletter'} contact={deliveryChannel === 'email' ? user.email : user.phoneNumber || ''} />
-            {deliveryChannel !== 'whatsapp' && <>
-            <label className="privacy-section__check">
-              <input type="checkbox" checked={marketingOptIn} onChange={(event) => setMarketingOptIn(event.target.checked)} disabled={busy === 'newsletter'} />
-              <span>{translateText("Želim da primam novosti i ponude putem izabranog kanala.")}</span>
-            </label>
-            <button type="button" className="privacy-section__primary" onClick={() => void prijaviNaNovosti()} disabled={busy === 'newsletter' || !notificationChannelAvailable(deliveryChannel)}>
-              {translateText(busy === 'newsletter' ? 'Prijavljujemo…' : 'Prijavi me na novosti')}
+            <p>{translateText('Klikom na „Prijavi me“ pristajete na novosti i ponude emailom. Možete se odjaviti iz svake poruke.')} <Link to="/privacy">{translateText('Politika privatnosti')}</Link></p>
+            <button type="button" className="privacy-section__primary" onClick={() => void prijaviNaNovosti()} disabled={busy === 'newsletter'}>
+              {translateText(busy === 'newsletter' ? 'Prijavljujemo…' : 'Prijavi me')}
             </button>
-            </>}
           </>
         ))}
       </article>

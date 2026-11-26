@@ -1,5 +1,5 @@
 import { useStorefront } from '../localization/StorefrontContext.jsx';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { seoConfig } from '../config/seo.js';
 import brandLogo from '../assets/dajashop-logo.svg';
@@ -11,158 +11,147 @@ import {
   ArrowRight,
   Loader2,
   Check,
-  Unlock,
 } from 'lucide-react';
 import './Footer.css';
-import NotificationChannelPicker, { notificationChannelAvailable, notificationChannelNotice } from './NotificationChannelPicker.jsx';
 import SocialLinks from './SocialLinks.jsx';
-import { useFlash } from '../hooks/useFlash';
-import { novostiApi } from '../services/dajaPlatform';
+import { useAuth } from '../hooks/useAuth.js';
+import { customerApi, novostiApi } from '../services/dajaPlatform';
 import { useConsent } from '../context/ConsentContext.jsx';
 
 export default function Footer() {
   const { t: translateText } = useStorefront();
 
   const year = new Date().getFullYear();
-  const { flash } = useFlash();
-  const { policy, openSettings } = useConsent();
-
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [deliveryChannel, setDeliveryChannel] = useState('email');
-  const isEmailChannel = deliveryChannel === 'email';
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const { openSettings } = useConsent();
+  const { user } = useAuth();
+  const [enteredEmail, setEnteredEmail] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const [subscription, setSubscription] = useState(null);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [error, setError] = useState('');
+  const accountEmail = user?.email || '';
+  const email = enteredEmail ?? accountEmail;
+  const emailVerified = subscription?.emailVerified ||
+    (user?.emailVerified && subscription?.address.toLowerCase() === accountEmail.toLowerCase());
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!notificationChannelAvailable(deliveryChannel)) { flash('Greška', notificationChannelNotice(deliveryChannel), 'info'); return; }
-    if (!email || !email.includes('@')) {
-      flash('Greška', 'Molimo unesite validnu email adresu.', 'error');
+    if (busy) return;
+    if (!e.currentTarget.elements.newsletterEmail.validity.valid) {
+      setError('Unesite validnu email adresu.');
       return;
     }
-    setLoading(true);
+    const address = email.trim();
+    setBusy('subscribe');
+    setError('');
     try {
-      const subscription = await novostiApi.subscribe(email, {
+      const result = await novostiApi.subscribe(address, {
         source: 'footer',
-        policyVersion: policy?.version,
-        deliveryChannel,
         acceptedMarketing: true,
+        authenticated: accountEmail.toLowerCase() === address.toLowerCase(),
       });
-
-      if (subscription?.alreadySubscribed) {
-        setSuccess(false);
-        flash(
-          'Već ste prijavljeni',
-          'Ova email adresa je već prijavljena na DajaShop novosti.',
-          'info',
-        );
+      if (!result?.active) {
+        setError('Prijava na novosti trenutno nije dostupna. Pokušajte ponovo.');
         return;
       }
-
-      setSuccess(true);
-      flash(
-        'Uspeh',
-        subscription?.requiresConfirmation
-          ? 'Proverite email i potvrdite prijavu. Novosti ćete primati tek nakon potvrde. Proverite i spam folder.'
-          : subscription?.imaPravoNaKodDobrodoslice
-          ? 'Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice i kod dobrodošlice.'
-          : subscription?.poslatMailDobrodoslice
-            ? 'Uspešno ste prijavljeni. Proverite inbox i spam folder za poruku dobrodošlice.'
-            : 'Uspešno ste prijavljeni na DajaShop novosti.',
-        'success',
-      );
-      setEmail('');
-
-      setTimeout(() => setSuccess(false), 3500);
-    } catch (error) {
-      console.error('Greška pri prijavi na novosti:', error);
-      if (error?.status === 409) {
-        flash(
-          'Već ste prijavljeni',
-          'Ova email adresa je već prijavljena na DajaShop novosti.',
-          'info',
-        );
-      } else {
-        flash(
-          'Greška',
-          error.message || 'Prijava na novosti nije uspela.',
-          'error',
-        );
-      }
-      setSuccess(false);
+      setSubscription({ ...result, address });
+      setVerificationSent(false);
+    } catch (requestError) {
+      setError(requestError.message || 'Prijava na novosti nije uspela.');
     } finally {
-      setLoading(false);
+      setBusy(null);
+    }
+  };
+
+  const sendVerification = async () => {
+    if (!subscription || busy) return;
+    setBusy('verify');
+    setError('');
+    try {
+      if (accountEmail.toLowerCase() === subscription.address.toLowerCase()) {
+        const result = await customerApi.requestEmailVerification();
+        if (result.status === 'already_verified') {
+          setSubscription(current => ({ ...current, emailVerified: true }));
+          return;
+        }
+      } else {
+        await novostiApi.sendEmailVerification(subscription.address);
+      }
+      setVerificationSent(true);
+    } catch (requestError) {
+      setError(requestError.message || 'Slanje linka nije uspelo. Pokušajte ponovo.');
+    } finally {
+      setBusy(null);
     }
   };
 
   return (
     <footer className="footer">
       {/* Traka za prijavu na novosti. */}
-      <div className="footer-newsletter-strip">
+      <div className="footer-newsletter-strip" id="novosti">
         <div className="container footer-newsletter-content">
           <div className="footer-newsletter-text">
             <h3>{translateText('Budite u toku')}</h3>
             <p>{translateText('Prijavite se za ekskluzivne ponude, novitete i savete o satovima.')}</p>
-            {isEmailChannel && (
-              <p className="footer-newsletter-offer">
-                {translateText('Kao gest dobrodošlice, za Vas smo pripremili')} <strong>{translateText('10% popusta')}</strong> {translateText('koji možete iskoristiti na prvu kupovinu.')}
-              </p>
-            )}
+            <p className="footer-newsletter-offer"><strong>{translateText('10% na prvu porudžbinu')}</strong> {translateText('uz potvrđenu email adresu.')}</p>
           </div>
 
-          <form className="footer-newsletter-form" onSubmit={handleSubmit}>
-            <NotificationChannelPicker value={deliveryChannel} onChange={setDeliveryChannel} disabled={loading || success} contact={isEmailChannel ? email : phone} />
-            {deliveryChannel !== 'whatsapp' && <>
-            <div
-              className={`footer-input-wrapper ${
-                success ? 'border-green-500' : ''
-              }`}
-            >
-              {isEmailChannel ? <Mail className="footer-input-icon" size={18} /> : <Phone className="footer-input-icon" size={18} />}
-              <input
-                type={isEmailChannel ? "email" : "tel"}
-                autoComplete={isEmailChannel ? "email" : "tel"}
-                placeholder={isEmailChannel ? translateText("Vaša email adresa...") : "+381601234567"}
-                aria-label={translateText(isEmailChannel ? "Email adresa" : "Broj telefona")}
-                value={isEmailChannel ? email : phone}
-                onChange={(e) => (isEmailChannel ? setEmail : setPhone)(e.target.value)}
-                disabled={loading || success}
-                required
-              />
-              <button
-                type="submit"
-                className="footer-submit-btn"
-                aria-label={translateText("Prijavi me")}
-                disabled={loading || success || !notificationChannelAvailable(deliveryChannel)}
-                style={
-                  success
-                    ? {
-                        backgroundColor: '#10b981',
-                        color: '#fff',
-                        borderColor: '#10b981',
-                      }
-                    : {}
-                }
-              >
-                {translateText(loading ? (
-                  <Loader2 size={18} className="animate-spin" />
-                ) : success ? (
-                  <>
-                    <Check size={18} />
-                    <span className="btn-text">{translateText("Poslato")}</span>
-                  </>
-                ) : (
-                  <>
-                    <ArrowRight size={18} />
-                    <span className="btn-text">{translateText("Prijavi me")}</span>
-                  </>
-                ))}
-              </button>
-            </div>
-            <p className="footer-newsletter-consent-notice">{translateText('Prijavom prihvatate email novosti i ponude.')} <Link to="/privacy">{translateText('Politika privatnosti')}</Link></p>
-            </>}
-          </form>
+          <div className="footer-newsletter-form">
+            {subscription ? (
+              <div className="footer-newsletter-success">
+                <div className="footer-newsletter-check" aria-hidden="true"><Check size={20} strokeWidth={2.8} /></div>
+                <div>
+                  <strong role="status">{translateText(subscription.alreadySubscribed ? 'Već ste prijavljeni na DajaShop novosti.' : 'Uspešno ste se prijavili na DajaShop novosti.')}</strong>
+                  {!emailVerified ? (
+                    <>
+                      <p>{translateText('Još jedan korak do 10% na prvu porudžbinu. Potvrdite svoju email adresu.')}</p>
+                      {verificationSent ? (
+                        <p role="status">{translateText('Link za verifikaciju je zatražen. Proverite prijemno sanduče i neželjenu poštu.')}</p>
+                      ) : (
+                        <button type="button" className="footer-newsletter-action" disabled={Boolean(busy)} onClick={sendVerification}>
+                          {translateText(busy === 'verify' ? 'Šaljemo link...' : 'Pošalji verifikacioni link')}
+                        </button>
+                      )}
+                    </>
+                  ) : subscription.kodDobrodoslice ? (
+                    <p>{translateText('Email je potvrđen. Iskoristite 10% na prvu porudžbinu uz kod')} <b>{subscription.kodDobrodoslice}</b>.</p>
+                  ) : <p>{translateText('Email adresa je potvrđena.')}</p>}
+                  <button type="button" className="footer-newsletter-action footer-newsletter-action--secondary" disabled={Boolean(busy)} onClick={() => { setSubscription(null); setError(''); }}>
+                    {translateText('Unesi drugu email adresu')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} noValidate>
+                <div className="footer-input-wrapper">
+                  <Mail className="footer-input-icon" size={18} aria-hidden="true" />
+                  <input
+                    type="email"
+                    name="newsletterEmail"
+                    autoComplete="email"
+                    placeholder={translateText('Vaša email adresa...')}
+                    aria-label={translateText('Email adresa')}
+                    aria-describedby="footer-newsletter-consent"
+                    value={email}
+                    onFocus={(event) => event.currentTarget.select()}
+                    onClick={(event) => { if (enteredEmail === null) event.currentTarget.select(); }}
+                    onChange={(event) => { setEnteredEmail(event.target.value); setError(''); }}
+                    disabled={Boolean(busy)}
+                    maxLength={254}
+                    required
+                  />
+                  <button type="submit" className="footer-submit-btn" disabled={Boolean(busy)} aria-label={translateText('Prijavi me')}>
+                    {busy === 'subscribe' ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <ArrowRight size={18} aria-hidden="true" />}
+                    <span className="btn-text">{translateText('Prijavi me')}</span>
+                  </button>
+                </div>
+                <p id="footer-newsletter-consent" className="footer-newsletter-consent-notice">
+                  {translateText('Klikom na „Prijavi me“ pristajete na novosti i ponude emailom. Možete se odjaviti iz svake poruke.')} <Link to="/privacy">{translateText('Politika privatnosti')}</Link>
+                </p>
+              </form>
+            )}
+            {error && <p className="footer-newsletter-error" role="alert">{translateText(error)}</p>}
+          </div>
         </div>
       </div>
 

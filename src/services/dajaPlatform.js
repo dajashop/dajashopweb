@@ -1709,6 +1709,9 @@ export const novostiApi = {
     window.dispatchEvent(new Event('daja:newsletter-changed'));
     return subscription;
   },
+  sendEmailVerification(email) {
+    return apiRequest('/newsletter/email-verification', { method: 'POST', auth: false, body: { email } });
+  },
   async confirm(token, { isCurrent = () => true } = {}) {
     const result = await apiRequest('/newsletter/confirm', {
       method: 'POST',
@@ -1716,7 +1719,10 @@ export const novostiApi = {
       auth: false,
     });
     if (!isCurrent()) return result;
-    if (result?.kodDobrodoslice) writeStoredValue('daja_kod_dobrodoslice_na_cekanju', result.kodDobrodoslice, 'necessary');
+    if (result?.kodDobrodoslice) {
+      writeStoredValue('daja_kod_dobrodoslice_na_cekanju', result.kodDobrodoslice, 'necessary');
+      writeStoredValue('daja_welcome_promo_removed_for', null, 'necessary');
+    }
     window.dispatchEvent(new Event('daja:newsletter-changed'));
     return result;
   },
