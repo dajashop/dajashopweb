@@ -3,6 +3,8 @@ import { stripLanguagePrefix } from '../localization/paths.js';
 
 const flights = new Map();
 const metaHeader = 'X-Daja-Catalog-Cache';
+const PUBLIC_STALE_WINDOW = 60_000;
+export const isMarketingParameter = name => name.startsWith('utm_') || name === 'gclid' || name === 'fbclid';
 const publicRoot = '/public/catalog/';
 const defaultPaths = new Set(['', '/catalog', '/muski-satovi', '/zenski-satovi', '/naocare', '/baterije', '/daljinski']);
 const publicListingPaths = new Set([...defaultPaths, ...catalogLandings.map(({ path }) => path)]);
@@ -49,7 +51,7 @@ function withTiming(response, state) {
   return new Response(response.body, { status: response.status, headers });
 }
 
-export async function readEdgeCatalog(request, ctx, apiBase, route, originHeaders, timeout = 8000) {
+export async function readEdgeCatalog(request, ctx, apiBase, route, originHeaders, timeout = 8000, serveWhileRefreshing = false) {
   const normalized = edgeCatalogRoute(route);
   const fetchOrigin = (apiRoute, etag) => {
     const headers = new Headers(originHeaders);
@@ -70,17 +72,18 @@ export async function readEdgeCatalog(request, ctx, apiBase, route, originHeader
   let flight = flights.get(flightKey);
   if (!flight && flights.size >= 64) return fetchOrigin(normalized);
   if (!flight) {
+    const cachedForRevalidation = retained?.clone();
     flight = (async () => {
       const response = await fetchOrigin(normalized, previous?.etag);
       const refreshed = response.status === 304 && retained ? metadata(response) : null;
       if (response.status === 304 && !refreshed) throw new Error('Catalog validation was incomplete');
-      const source = refreshed ? retained : response;
+      const source = refreshed ? cachedForRevalidation : response;
       const headers = new Headers(source.headers);
       headers.delete('Content-Encoding');
       headers.delete('Content-Length');
       let body;
       if (refreshed) {
-        const payload = await retained.json();
+        const payload = await cachedForRevalidation.json();
         if (payload?.data?._catalogCache) payload.data._catalogCache = refreshed;
         body = new TextEncoder().encode(JSON.stringify(payload));
         headers.set(metaHeader, JSON.stringify(refreshed));
@@ -96,7 +99,7 @@ export async function readEdgeCatalog(request, ctx, apiBase, route, originHeader
         stored.set('Cache-Control', `public,max-age=${Math.ceil((data.staleUntil - Date.now()) / 1000)}`);
         ctx.waitUntil(cache.put(key, new Response(body, { headers: stored })).catch(() => {}));
       } else if (source.status === 200 || source.status === 404 || source.status === 410 || (source.status >= 300 && source.status < 400)) {
-        ctx.waitUntil(cache.delete(key).catch(() => {}));
+        await cache.delete(key).catch(() => {});
       }
       return { body: body.byteLength ? body : null, status: source.status, headers, refreshed };
     })().finally(() => flights.delete(flightKey));
@@ -104,13 +107,7 @@ export async function readEdgeCatalog(request, ctx, apiBase, route, originHeader
   }
 
   const allowsStale = /\/(?:home|products\/[^/]+)$/.test(normalized) || normalized.startsWith(publicRoot + 'page?');
-  let result;
-  try {
-    result = await flight;
-  } catch (error) {
-    if (!allowsStale || !(previous?.staleUntil > Date.now())) throw error;
-  }
-  if ((!result || result.status >= 500) && allowsStale && previous?.staleUntil > Date.now()) {
+  async function readStale(until, state) {
     const headers = new Headers(retained.headers);
     headers.delete('Content-Encoding');
     const body = await retained.json();
@@ -120,12 +117,28 @@ export async function readEdgeCatalog(request, ctx, apiBase, route, originHeader
     };
     if (body?.data && typeof body.data === 'object') {
       const data = stripExpiredSale(body.data);
-      body.data = { ...data, _catalogCache: previous, _catalogStale: true,
+      body.data = { ...data, _catalogCache: { ...previous, staleUntil: until }, _catalogStale: true,
         ...(Array.isArray(data.items) ? { items: data.items.map(stripExpiredSale) } : {}) };
     }
     headers.delete('Content-Length');
     headers.delete('ETag');
-    return withTiming(Response.json(body, { headers }), 'stale');
+    return withTiming(Response.json(body, { headers }), state);
+  }
+  const until = Math.min(previous?.staleUntil ?? 0, (previous?.freshUntil ?? 0) + PUBLIC_STALE_WINDOW);
+  if (serveWhileRefreshing && (allowsStale || normalized === publicRoot + 'hero-slides') &&
+      until > Date.now() && !flights.has(key.url + ':refresh')) {
+    ctx.waitUntil(flight.catch(() => {}));
+    return readStale(until, 'updating');
+  }
+
+  let result;
+  try {
+    result = await flight;
+  } catch (error) {
+    if (!allowsStale || !(previous?.staleUntil > Date.now())) throw error;
+  }
+  if ((!result || result.status >= 500) && allowsStale && previous?.staleUntil > Date.now()) {
+    return readStale(previous.staleUntil, 'stale');
   }
   return withTiming(new Response(result.body, { status: result.status, headers: result.headers }),
     result.refreshed ? 'revalidated' : 'miss');
@@ -133,7 +146,7 @@ export async function readEdgeCatalog(request, ctx, apiBase, route, originHeader
 
 export function publicHtmlKey(request, apiBase, release) {
   const url = new URL(request.url);
-  if (request.method !== 'GET' || url.search || request.headers.has('Authorization') ||
+  if (request.method !== 'GET' || [...url.searchParams.keys()].some(name => !isMarketingParameter(name)) || request.headers.has('Authorization') ||
       /(?:^|;\s*)__Host-daja_[^=]+=/.test(request.headers.get('Cookie') || '') || bypass(request)) return null;
   const path = stripLanguagePrefix(url.pathname);
   if (path !== '/' && !publicListingPaths.has(path) &&

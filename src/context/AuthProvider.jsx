@@ -49,6 +49,7 @@ export function AuthProvider({ children }) {
   const [userInfo, setUserInfo] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   const [staffReady, setStaffReady] = useState(false);
+  const [staffPending, setStaffPending] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [mode, setMode] = useState('login');
   const [pendingPhone, setPendingPhone] = useState(null);
@@ -66,6 +67,7 @@ export function AuthProvider({ children }) {
       setUser(null);
       setUserInfo(null);
       setStaffReady(false);
+      setStaffPending(false);
       setAuthReady(true);
       return null;
     }
@@ -73,37 +75,26 @@ export function AuthProvider({ children }) {
     // A customer account switch must never inherit the previous account's
     // staff-ready state while its new session is still being resolved.
     setStaffReady(false);
+    setStaffPending(true);
+    let checkingStaff = false;
     try {
-      const me = await authApi.me();
-      if (sequence !== loadSequence.current) return null;
+      const { user: me, profile, staffCandidate } = await authApi.sessionProfile();
+      if (sequence !== loadSequence.current || !getAccessToken()) return null;
 
-      // The API is authoritative: configured owners and explicitly assigned
-      // catalog contributors may both exchange their Google customer session
-      // for a staff session. A normal customer simply gets no staff token.
-      await authApi.createAdminSession().catch(() => null);
-      if (sequence !== loadSequence.current) return null;
-      setStaffReady(Boolean(getStaffAccessToken()));
-
-      // Publish the admin user only after the staff-session exchange. This
-      // prevents admin widgets from sending their first request with a normal
-      // customer token while the staff token is still being created.
-      try {
-        const customer = await customerApi.me();
-        if (sequence !== loadSequence.current) return null;
-        const hydratedUser = {
-          ...me,
-          ...customer,
-          emailVerified: Boolean(customer?.emailVerified ?? me?.emailVerified),
-        };
-        setUser(hydratedUser);
-        setUserInfo(customer);
-        return hydratedUser;
-      } catch {
-        if (sequence !== loadSequence.current || !getAccessToken()) return null;
-        setUser(me);
-        setUserInfo(me);
-        return me;
+      if (staffCandidate !== false) {
+        checkingStaff = true;
+        void authApi.createAdminSession().catch(() => null).then(() => {
+          if (sequence !== loadSequence.current) return;
+          setStaffReady(Boolean(getAccessToken() && getStaffAccessToken()));
+          setStaffPending(false);
+        });
       }
+      const customer = profile === undefined ? await customerApi.me().catch(() => null) : profile;
+      if (sequence !== loadSequence.current || !getAccessToken()) return null;
+      const hydratedUser = { ...me, ...customer, emailVerified: Boolean(customer?.emailVerified ?? me?.emailVerified) };
+      setUser(hydratedUser);
+      setUserInfo(customer ?? me);
+      return hydratedUser;
     } catch (error) {
       if (sequence !== loadSequence.current) return null;
       if (getAccessToken() && error?.status !== 401 && error?.status !== 403) {
@@ -116,7 +107,10 @@ export function AuthProvider({ children }) {
       setStaffReady(false);
       return null;
     } finally {
-      if (sequence === loadSequence.current) setAuthReady(true);
+      if (sequence === loadSequence.current) {
+        setAuthReady(true);
+        if (!checkingStaff) setStaffPending(false);
+      }
     }
   }, []);
 
@@ -127,6 +121,7 @@ export function AuthProvider({ children }) {
       setUserInfo(null);
       setAuthReady(false);
       setStaffReady(false);
+      setStaffPending(false);
       return undefined;
     }
     setAuthReady(false);
@@ -357,6 +352,7 @@ export function AuthProvider({ children }) {
       userInfo,
       authReady,
       staffReady,
+      staffPending,
       authOpen,
       showAuth,
       hideAuth,
@@ -382,6 +378,7 @@ export function AuthProvider({ children }) {
       userInfo,
       authReady,
       staffReady,
+      staffPending,
       authOpen,
       mode,
       oauthJustSucceeded,

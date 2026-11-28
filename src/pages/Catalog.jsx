@@ -363,7 +363,7 @@ export default function Catalog({ department = 'satovi', seo }) {
           <div style={pending ? { visibility: 'hidden' } : undefined} inert={pending || undefined} aria-hidden={pending || undefined}><ProductGrid items={itemsToShow} /></div>
           {pending && <div className="catalog__cards-skeleton"><CatalogSkeleton square={department === 'naocare'} products={departmentItems} /></div>}
         </div>
-        <div className="catalog__footer" hidden={pending}>
+        <div className="catalog__footer" data-catalog-page-end hidden={pending}>
           <div className="catalog__pagination">
             <Pagination
               page={page}

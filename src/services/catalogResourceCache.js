@@ -103,6 +103,11 @@ export function catalogFallback(key, error, value = cachedResource(key)) {
 }
 
 let channel;
+export function catalogRequestPending(key) {
+  const entry = requests.get(key);
+  return Boolean(entry && !entry.controller.signal.aborted);
+}
+
 export function requestResource(key, loader, { signal, force = false, cacheResult = true } = {}) {
   if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
   const stored = cacheResult && !force && cachedResource(key, true);
@@ -144,8 +149,12 @@ export function requestResource(key, loader, { signal, force = false, cacheResul
       signal?.removeEventListener('abort', abort);
       entry.consumers--;
       if (!entry.consumers && !entry.settled) {
-        entry.controller.abort();
-        if (requests.get(key) === entry) requests.delete(key);
+        // A route transition releases the prefetch just before the next page subscribes.
+        setTimeout(() => {
+          if (entry.consumers || entry.settled || requests.get(key) !== entry) return;
+          entry.controller.abort();
+          requests.delete(key);
+        }, 0);
       }
     };
     const abort = () => { release(); reject(new DOMException('Aborted', 'AbortError')); };

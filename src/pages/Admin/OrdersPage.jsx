@@ -7,11 +7,11 @@ import AdminOrders from './components/AdminOrders'; // Tvoja postojeća komponen
 import SEOHead from '../../components/seo/SEOHead.jsx';
 
 export default function OrdersPage() {
-  const { user, authReady, staffReady, showAuth } = useAuth();
+  const { user, authReady, staffReady, staffPending, showAuth } = useAuth();
   const nav = useNavigate();
   const isAuthorized = isAdminEmail(user?.email) && staffReady;
 
-  if (!authReady) return <AdminDashboardSkeleton />;
+  if (!authReady || staffPending) return <AdminDashboardSkeleton />;
   if (!isAuthorized) {
     return (
       <div className="p-8 text-center text-slate-500">

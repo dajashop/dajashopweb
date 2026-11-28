@@ -30,7 +30,8 @@ export function publicCacheSeconds(data, maximum = 60) {
 
 export async function loadPage(url, apiBase, readProduct, readCatalog, readPublicApi, requestHeaders = {}, fetchCatalog) {
   const path = stripLanguagePrefix(url.pathname).replace(/\/+$/, '') || '/';
-  const api = async (route, optional = false) => {
+  const api = async (route, optional = false, budget) => {
+    let timer;
     try {
       const loader = async () => {
         const response = fetchCatalog ? await fetchCatalog(route, optional ? 3000 : 8000) : await fetch(`${apiBase}${route}`, { signal: AbortSignal.timeout(optional ? 3000 : 8000), headers: requestHeaders });
@@ -38,10 +39,15 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readPubli
         const body = await response.json();
         return body?.data ?? body;
       };
-      return await (readPublicApi ? readPublicApi(route, loader) : loader());
+      const result = readPublicApi ? readPublicApi(route, loader) : loader();
+      return await (budget ? Promise.race([result, new Promise(resolve => {
+        timer = setTimeout(() => resolve(null), budget);
+      })]) : result);
     } catch (error) {
       if (optional) return null;
       throw error;
+    } finally {
+      clearTimeout(timer);
     }
   };
   const catalogLoader = async () => {
@@ -97,7 +103,7 @@ export async function loadPage(url, apiBase, readProduct, readCatalog, readPubli
   const [product, listing, variants, collectionPreviews, homeHero] = await Promise.all([
     isProductPath(path) ? (readProduct ? readProduct(productLoader) : productLoader()) : null,
     requestKey ? listingLoader(requestKey) : engravingRequest ? listingLoader(engravingRequest) : path === '/' ? listingLoader('home') : null,
-    isProductPath(path) ? api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/variants`, true) : null,
+    isProductPath(path) ? api(`/public/catalog/products/${encodeURIComponent(decodeURIComponent(path.split('/')[2]))}/variants`, true, 250) : null,
     path === '/kolekcije-satova' || path.startsWith('/magazin/brendovi/') ? api('/public/catalog/collections', true) : null,
     path === '/' ? api('/public/catalog/hero-slides', true) : null,
   ]);

@@ -2694,10 +2694,10 @@ function AdminDashboardContent() {
 }
 
 export default function AdminDashboard() {
-  const { user, authReady, staffReady, showAuth } = useAuth();
+  const { user, authReady, staffReady, staffPending, showAuth } = useAuth();
   const isAuthorized = Boolean(user && staffReady);
 
-  if (!authReady) {
+  if (!authReady || staffPending) {
     return <AdminDashboardSkeleton />;
   }
   if (!isAuthorized) {

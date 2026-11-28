@@ -292,6 +292,10 @@ export const authApi = {
   async me() {
     return normalizeUser(await apiRequest('/customer-auth/me'));
   },
+  async sessionProfile() {
+    const data = await apiRequest('/customer-auth/me', { query: { include: 'profile' } });
+    return { user: normalizeUser(data), profile: data?.profile, staffCandidate: data?.staffCandidate };
+  },
   async login(payload) {
     const data = await apiRequest('/customer-auth/login', {
       method: 'POST',

@@ -35,7 +35,7 @@ export default function MobileStorefrontPreferences() {
       </div>
     </div>
 
-    <details className="mobile-preferences__currency">
+    <details className="mobile-preferences__currency" onToggle={event => { if (event.currentTarget.open) retryRate(); }}>
       <summary>
         <span>{t('Valuta')}</span>
         <strong>{currentCurrency.code} <span>{currentCurrency.symbol}</span></strong>

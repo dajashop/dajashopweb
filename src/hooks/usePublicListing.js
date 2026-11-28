@@ -1,5 +1,5 @@
-import { cachedResource, catalogAffected, catalogFallback, catalogInvalidationEvent, currentCatalogPrice, invalidateCatalogResource, rememberResource, requestResource, restoreCatalogResource, staleCatalog } from '../services/catalogResourceCache.js';
-import { backgroundCatalogAllowed, beginCatalogForeground, waitForCatalogPriority, prepareCatalogRoutes, preloadCatalogImages, waitForVisibleCatalogImages } from '../services/catalogPreparation.js';
+import { cachedResource, catalogAffected, catalogFallback, catalogInvalidationEvent, catalogRequestPending, currentCatalogPrice, invalidateCatalogResource, rememberResource, requestResource, restoreCatalogResource, staleCatalog } from '../services/catalogResourceCache.js';
+import { backgroundCatalogAllowed, beginCatalogForeground, waitForCatalogPriority, preloadCatalogImages } from '../services/catalogPreparation.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { catalogApi, subscribePublicCatalogRealtime, subscribeStaffCatalogRealtime } from '../services/dajaPlatform.js';
 import { usePageData } from '../ssr/PageData.jsx';
@@ -65,7 +65,7 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
       setState(previous => ({ ...previous, request: cacheKey, pending: true, error: null }));
       const finishForeground = beginCatalogForeground();
       try {
-        if (restore && !includeHiddenForAdmin && !known) {
+        if (restore && !includeHiddenForAdmin && !known && !catalogRequestPending(cacheKey)) {
           known = await restoreCatalogResource(cacheKey);
           if (!active()) return;
           if (known && cachedResource(cacheKey, true)) {
@@ -110,45 +110,29 @@ export default function usePublicListing(route, seedField, enabled = true, inclu
     };
   }, [route, cacheKey, scope, enabled, includeHiddenForAdmin, hasDecision]);
   useEffect(() => {
-    if (!enabled || !current || state.route !== cacheKey || state.pending || staleCatalog(current) || !route.startsWith('page?') || !backgroundCatalogAllowed()) return undefined;
-    const pages = Math.max(1, Math.ceil(current.total / current.perPage));
+    if (!enabled || !current || state.route !== cacheKey || state.pending || staleCatalog(current) ||
+        !route.startsWith('page?') || !backgroundCatalogAllowed() || typeof IntersectionObserver === 'undefined' ||
+        current.page >= Math.ceil(current.total / current.perPage)) return undefined;
+    const target = document.querySelector('[data-catalog-page-end]');
+    if (!target) return undefined;
     const controller = new AbortController();
     const { signal } = controller;
-    let timer;
-    let started = false;
-    const start = async () => {
-      if (signal.aborted || started) return;
-      started = true;
-      try {
-        // Finish this page's images before warming exactly one full page.
+    const observer = new IntersectionObserver(entries => {
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      observer.disconnect();
+      void (async () => {
         await waitForCatalogPriority(signal);
-        await waitForVisibleCatalogImages(includeHiddenForAdmin ? cacheKey : route, signal);
-        if (signal.aborted) return;
-        await preloadCatalogImages(current.items, signal);
-        if (signal.aborted) return;
-        const gallery = preloadCatalogImages(current.items, signal, { gallery: true, concurrency: 2 }).catch(() => {});
-        if (current.page >= pages) { await gallery; return; }
+        if (signal.aborted || !backgroundCatalogAllowed()) return;
         const params = new URLSearchParams(route.slice(5));
         params.set('page', String(current.page + 1));
-        const next = `page?${params}`;
-        const nextKey = listingKey(next, includeHiddenForAdmin);
-        let preparation = Promise.resolve();
-        if (current.page + 2 <= pages) {
-          const later = new URLSearchParams(params);
-          later.set('page', String(current.page + 2));
-          // Only IDs and order for the page after next, in parallel with the
-          // full next page. A missing preparation endpoint cannot block it.
-          preparation = prepareCatalogRoutes([`page?${later}`], includeHiddenForAdmin, signal).catch(() => {});
+        const nextPage = await requestListing(`page?${params}`, includeHiddenForAdmin, signal);
+        if (!signal.aborted && !staleCatalog(nextPage)) {
+          await preloadCatalogImages(nextPage.items.slice(0, 10), signal);
         }
-        await waitForCatalogPriority(signal);
-        const nextPage = cachedResource(nextKey, true) || await requestListing(next, includeHiddenForAdmin, signal);
-        if (signal.aborted) return;
-        await preloadCatalogImages(nextPage.items, signal);
-        await Promise.all([preparation, gallery]);
-      } catch { /* Speculation must never interrupt foreground navigation. */ }
-    };
-    timer = window.setTimeout(start, 150);
-    return () => { controller.abort(); window.clearTimeout(timer); };
+      })().catch(() => {}); // Optional work must yield to navigation.
+    }, { rootMargin: '0px 0px 650px 0px' });
+    observer.observe(target);
+    return () => { controller.abort(); observer.disconnect(); };
   }, [route, cacheKey, current, state.route, state.pending, enabled, includeHiddenForAdmin]);
   useEffect(() => {
     if (!enabled || !current) return undefined;

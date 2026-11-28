@@ -1,9 +1,8 @@
 import ProgressiveImage from '../ui/ProgressiveImage.jsx';
 import { useStorefront } from '../../localization/StorefrontContext.jsx';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Layers } from 'lucide-react';
 import Link from '../ProductLink.jsx';
-import { prepareProductVariant } from '../../services/products.js';
 import { batteryPackaging } from '../../utils/batteryPackaging.js';
 import './ProductVariants.css';
 
@@ -13,20 +12,6 @@ export default function ProductVariants({ product, relatedVariants, onSelect, pe
 
   const members = [product, ...(relatedVariants || [])]
     .sort((a, b) => (packs ? (batteryPackaging(a)?.quantity ?? 0) - (batteryPackaging(b)?.quantity ?? 0) : 0) || String(a.name).localeCompare(String(b.name), 'sr') || String(a.id).localeCompare(String(b.id)));
-  const preloadSlugs = members.filter(item => item.slug !== product.slug).slice(0, 4).map(item => item.slug).join('|');
-  useEffect(() => {
-    const connection = navigator.connection;
-    if (!preloadSlugs || connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType)) return undefined;
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      for (const slug of preloadSlugs.split('|')) {
-        if (controller.signal.aborted) break;
-        try { await prepareProductVariant(slug, { signal: controller.signal }); } catch { /* Optional preloading. */ }
-      }
-    }, 200);
-    return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [preloadSlugs]);
-
   if (!relatedVariants?.length) return null;
   return (
     <div className="product__variants" aria-busy={Boolean(pendingSlug)}>

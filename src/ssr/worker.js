@@ -1,5 +1,5 @@
 /* global HTMLRewriter, __DAJA_SSR_RELEASE__ */
-import { edgeCatalogRoute, publicHtmlKey, readEdgeCatalog, storePublicHtml } from './catalogCache.js';
+import { edgeCatalogRoute, isMarketingParameter, publicHtmlKey, readEdgeCatalog, storePublicHtml } from './catalogCache.js';
 import { renderDocument, renderPage } from './entry-server.jsx';
 import { catalogDepartment, isProductPath, loadPage, PUBLIC_PATHS, publicCacheSeconds } from './loadPage.js';
 import { isBrandPath, catalogUrl, decodeCatalogParams, filterUrlEntries, urlSlug } from '../utils/catalogUrls.js';
@@ -154,9 +154,10 @@ async function serveRequest(request, env, ctx) {
         return new Response(cached.body, { status: 200, headers });
       }
     }
+    const documentUrl = htmlKey ? new URL(url.pathname, url) : url;
     const dataTiming = new Set();
     try {
-      const [snapshot, pageTemplate] = await Promise.all([loadPage(url, apiBase,
+      const [snapshot, pageTemplate] = await Promise.all([loadPage(documentUrl, apiBase,
         cacheEnabled ? null : loader => cachedData(request, `product/${encodeURIComponent(path.split('/')[2])}`, loader,
           product => publicCacheSeconds({ product })),
         loader => cachedData(request, 'catalog', loader, catalog => publicCacheSeconds({ catalog })),
@@ -164,7 +165,9 @@ async function serveRequest(request, env, ctx) {
           value => publicCacheSeconds({ catalog: Array.isArray(value?.items) ? value.items : [] }, 30), ctx),
         originHeaders(request, env),
         cacheEnabled ? async (route, timeout) => {
-          const response = await readEdgeCatalog(request, ctx, apiBase, route, originHeaders(request, env), timeout);
+          const loading = readEdgeCatalog(request, ctx, apiBase, route, originHeaders(request, env), timeout, Boolean(htmlKey));
+          if (route.endsWith('/variants')) ctx.waitUntil(loading.then(() => {}, () => {}));
+          const response = await loading;
           const timing = response.headers.get('Server-Timing');
           if (timing) dataTiming.add(timing);
           return response;
@@ -196,13 +199,19 @@ async function serveRequest(request, env, ctx) {
           const brand = filterUrlEntries(configuration).find(entry => entry.node.sources.includes('brand'));
           if (!brand?.options.some(entry => entry.option.visible && (entry.slug === slug || urlSlug(entry.option.label) === urlSlug(slug)))) return errorPage(404, request, env);
         }
-        const params = configuredFilterParams(decodeCatalogParams(url.searchParams, configuration, path), configuration);
+        const params = configuredFilterParams(decodeCatalogParams(documentUrl.searchParams, configuration, path), configuration);
         const readable = localizedPath(catalogUrl(params, configuration, path), language);
-        if (readable !== `${url.pathname}${url.search}`) return Response.redirect(new URL(readable, siteUrl).toString(), 301);
+        if (readable !== `${documentUrl.pathname}${documentUrl.search}`) {
+          const destination = new URL(readable, siteUrl);
+          if (htmlKey) {
+            for (const [name, value] of url.searchParams) if (isMarketingParameter(name)) destination.searchParams.append(name, value);
+          }
+          return Response.redirect(destination.toString(), 301);
+        }
       }
       if (!pageTemplate?.response.ok) throw new Error('Page template unavailable');
       const { response: templateResponse, text: template } = pageTemplate;
-      const rendered = renderPage(`${url.pathname}${url.search}`, snapshot, siteUrl);
+      const rendered = renderPage(`${documentUrl.pathname}${documentUrl.search}`, snapshot, siteUrl);
       let html = renderDocument(template, rendered);
       // Query pages remain crawlable so bots can read noindex. Pagination is
       // deliberately excluded from this rule and gets a self canonical.
@@ -217,11 +226,11 @@ async function serveRequest(request, env, ctx) {
       headers.set('Content-Language', language);
       // Only anonymous public data is serialized. Customer tokens, receipts,
       // drafts and cart contents never enter the shared cache or HTML.
-      const resources = isProductPath(path) ? [snapshot.product?._catalogCache, snapshot.variantGroupCache]
+      const resources = isProductPath(path) ? [snapshot.product?._catalogCache, ...(snapshot.variantGroupCache ? [snapshot.variantGroupCache] : [])]
         : path === '/' ? [snapshot.homeProducts?._catalogCache, snapshot.homeHero?._catalogCache]
           : [snapshot.catalogPage?._catalogCache];
       const deadline = Math.min(...resources.map(item => item?.freshUntil || 0));
-      const stale = snapshot.product?._catalogStale || snapshot.catalogPage?._catalogStale || snapshot.homeProducts?._catalogStale;
+      const stale = snapshot.product?._catalogStale || snapshot.catalogPage?._catalogStale || snapshot.homeProducts?._catalogStale || snapshot.homeHero?._catalogStale;
       if (stale) headers.set('X-Robots-Tag', 'noindex,follow');
       headers.set('Cache-Control', 'no-store');
       headers.set('Server-Timing', [...dataTiming, `edge_html;desc="${htmlKey ? 'miss' : 'bypass'}"`].join(', '));
@@ -246,6 +255,15 @@ export default {
       try {
         const apiBase = (env.DAJA_API_BASE_URL || import.meta.env.VITE_DAJA_API_BASE_URL || 'https://daja-platform-api.onrender.com/api/v1').replace(/\/$/, '');
         const response = await readEdgeCatalog(request, ctx, apiBase, route, originHeaders(request, env));
+        if (typeof caches !== 'undefined' && /^\/public\/catalog\/products\/[^/]+$/.test(route) &&
+            [301, 302, 307, 308, 404, 410].includes(response.status)) {
+          const productPath = '/product/' + route.slice(route.lastIndexOf('/') + 1);
+          await Promise.all(['sr', 'en'].map(language => {
+            const page = new Request(new URL(localizedPath(productPath, language), request.url));
+            const key = publicHtmlKey(page, apiBase, __DAJA_SSR_RELEASE__);
+            return key ? caches.default.delete(key).catch(() => {}) : undefined;
+          }));
+        }
         const headers = new Headers(response.headers);
         headers.set('X-Daja-Gateway', 'v1');
         headers.set('X-Content-Type-Options', 'nosniff');

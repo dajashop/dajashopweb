@@ -21,6 +21,8 @@ export const CURRENCIES = [
 const LANGUAGE_KEY = 'dajashop_language';
 const CURRENCY_KEY = 'dajashop_currency';
 const StorefrontContext = createContext(null);
+const RATE_TTL = 15 * 60_000;
+const rateDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Belgrade', dateStyle: 'short' });
 
 export function StorefrontProvider({ children, initialLanguage = 'sr' }) {
   // Language follows the URL on the server and client; stored preferences
@@ -30,7 +32,8 @@ export function StorefrontProvider({ children, initialLanguage = 'sr' }) {
   const [rates, setRates] = useState({ RSD: 1 });
   const [rateDate, setRateDate] = useState(null);
   const [rateStatus, setRateStatus] = useState('loading');
-  const [rateAttempt, setRateAttempt] = useState(0);
+  const rateFreshness = useRef(null);
+  const rateRequest = useRef(null);
   const chosen = useRef({ currency: null });
   const restored = useRef(false);
   const locale = LANGUAGES.find(item => item.code === language)?.locale || 'sr-RS';
@@ -75,10 +78,16 @@ export function StorefrontProvider({ children, initialLanguage = 'sr' }) {
     };
   }, [language]);
 
-  useEffect(() => {
+  const retryRate = useCallback(() => {
+    const now = Date.now();
+    const day = rateDay.format(now);
+    if (rateRequest.current?.day === day ||
+        (rateFreshness.current?.day === day && now < rateFreshness.current.until)) return;
+    rateRequest.current?.controller.abort();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    let active = true;
+    rateRequest.current = { controller, day };
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    const current = () => rateRequest.current?.controller === controller;
     setRateStatus('loading');
     fetch(`${API_BASE_URL}/public/catalog/exchange-rates`, { signal: controller.signal, credentials: 'omit' })
       .then(response => { if (!response.ok) throw new Error('Exchange rate unavailable'); return response.json(); })
@@ -91,24 +100,34 @@ export function StorefrontProvider({ children, initialLanguage = 'sr' }) {
           if (Number.isFinite(rate) && rate > 0) nextRates[code] = rate;
         }
         if (Object.keys(nextRates).length === 1) throw new Error('Invalid exchange rates');
-        if (active) { setRates(nextRates); setRateDate(data.asOf || null); setRateStatus('ready'); }
+        if (!current()) return;
+        rateFreshness.current = { day, until: Date.now() + RATE_TTL };
+        setRates(nextRates); setRateDate(data.asOf || null); setRateStatus('ready');
       })
-      .catch(() => { if (active) { setRates({ RSD: 1 }); setRateStatus('error'); } })
-      .finally(() => clearTimeout(timeout));
-    return () => { active = false; clearTimeout(timeout); controller.abort(); };
-  }, [rateAttempt]);
+      .catch(() => { if (current()) { setRates({ RSD: 1 }); setRateStatus('error'); } })
+      .finally(() => {
+        if (current()) rateRequest.current = null;
+        clearTimeout(timeout);
+      });
+  }, []);
+  useEffect(() => () => {
+    const request = rateRequest.current;
+    rateRequest.current = null;
+    request?.controller.abort();
+  }, []);
 
   const t = useCallback((value, parameters) => translate(value, language, parameters), [language]);
   const money = useCallback((amount, options = {}) => formatMoney(amount, { locale, currency: displayCurrency, rates, precision: options.precision }), [locale, displayCurrency, rates]);
   const moneyRsd = useCallback(amount => formatMoney(amount, { locale, currency: 'RSD' }), [locale]);
-  const retryRate = useCallback(() => setRateAttempt(value => value + 1), []);
   useEffect(() => { document.documentElement.lang = language; }, [language]);
   useEffect(() => {
-    const interval = setInterval(retryRate, 15 * 60 * 1000);
+    if (currency === 'RSD') return undefined;
     const visible = () => { if (document.visibilityState === 'visible') retryRate(); };
+    visible();
+    const interval = setInterval(visible, RATE_TTL);
     document.addEventListener('visibilitychange', visible);
     return () => { clearInterval(interval); document.removeEventListener('visibilitychange', visible); };
-  }, [retryRate]);
+  }, [currency, retryRate]);
   const localizePath = useCallback(value => localizedPath(value, language), [language]);
   const value = useMemo(() => ({ language, locale, currency, displayCurrency, setLanguage, setCurrency, rates, rateDate, rateStatus, retryRate, t, money, moneyRsd, localizePath }),
     [language, locale, currency, displayCurrency, setLanguage, setCurrency, rates, rateDate, rateStatus, retryRate, t, money, moneyRsd, localizePath]);

@@ -66,24 +66,13 @@ export async function prepareCatalogRoutes(routes, admin, signal) {
     });
   }
 }
-// Native images paint independently in the UI. These low-priority requests
-// warm page covers and extra gallery photos without gating any current card.
-export async function preloadCatalogImages(items, signal, { gallery = false, concurrency = 3 } = {}) {
-  const candidates = [];
-  if (gallery) {
-    // Round-robin: load each card's second photo before anyone's third photo.
-    const depth = Math.max(0, ...items.map(item => item.images?.length || 0));
-    for (let index = 1; index < depth; index++) {
-      for (const item of items) {
-        const image = item.images?.[index];
-        candidates.push({ src: typeof image === 'string' ? image : image?.url });
-      }
-    }
-  } else {
-    candidates.push(...items.map(item => ({ src: item.thumbnailUrl || item.images?.[0]?.thumb
-      || item.images?.[0]?.url || item.primaryImageUrl || item.mainImageUrl || item.image,
-      srcSet: catalogImageSrcSet(item.images?.[0]) })));
-  }
+// Warm the card covers of the next page without competing with visible images.
+export async function preloadCatalogImages(items, signal) {
+  const candidates = items.map(item => ({
+    src: item.thumbnailUrl || item.images?.[0]?.thumb || item.images?.[0]?.url ||
+      item.primaryImageUrl || item.mainImageUrl || item.image,
+    srcSet: catalogImageSrcSet(item.images?.[0])
+  }));
   const urls = [...new Map(candidates.filter(item => item.src).map(item => [item.src, item])).values()].filter(item => (warmedImages.get(item.src) || 0) < Date.now());
   let cursor = 0;
   const worker = async () => {
@@ -110,7 +99,7 @@ export async function preloadCatalogImages(items, signal, { gallery = false, con
       });
     }
   };
-  await Promise.all(Array.from({ length: Math.min(concurrency, urls.length) }, worker));
+  await Promise.all(Array.from({ length: Math.min(3, urls.length) }, worker));
 }
 export async function waitForVisibleCatalogImages(route, signal) {
   const root = document.querySelector('[data-catalog-listing]');
